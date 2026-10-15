@@ -60,6 +60,27 @@ odds for a game with an unmapped team are still stored, and accepting the alias 
 (`betdata relink` runs automatically). Accepted aliases are also appended to
 `seeds/team_aliases.csv`, so a rebuilt database gets them back — commit that file.
 
+## Sharp and frequent odds (SharpAPI, OddsPapi)
+
+```bash
+uv run betdata run sharpapi odds --sport nba          # DraftKings + FanDuel, paged, >=10 s apart
+uv run betdata run oddspapi tournaments --sport nba   # 1 request: find the league's tournament id
+uv run betdata run oddspapi markets --sport nba       # 1 request: market/outcome id catalog
+uv run betdata run oddspapi odds --sport nba          # 1 request: Pinnacle's board for the league
+uv run betdata reparse oddspapi <raw_id>              # rebuild after editing the market map
+```
+
+SharpAPI is polled every 10 minutes in the 3 hours before games (hourly earlier that day);
+suspended prices are kept as `suspended`. OddsPapi is archive-first: its market and outcome
+ids are mapped in `config/sources.yaml` (`oddspapi.markets`, only NBA moneyline is known so
+far), unmapped markets are counted and skipped, and every response is archived so the history
+can be rebuilt with `reparse` once the map is filled in. Leagues without a tournament id or
+market map are skipped without spending a request.
+
+**Closing lines:** `v_closing_lines` gives one closing line per source/game/book/market/side:
+the source's own close (nflverse, CFBD) when it reports one, otherwise the last polled state at
+or before kickoff (`closing_basis` says which; check `fetched_at` for freshness).
+
 ## Running unattended
 
 ```bash
@@ -117,7 +138,7 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 
 | Source | Free limit | Plan |
 |---|---|---|
-| The Odds API | 500 credits/mo | NFL ~5×/wk, NCAAF 3×/wk, NBA and NCAAB daily (~285/mo) |
+| The Odds API | 500 credits/mo | one multi-book snapshot before each kickoff window (~74–330/mo) |
 | SharpAPI | 12 req/min, DK + FD, 60 s delay | every 10 min near tip/kickoff, hourly otherwise; capped at 6/min |
 | OddsPapi | ~250/mo (unconfirmed) | ~8/day: one board per sport plus big slates |
 | nflverse (`nflreadpy`) | none | schedules/closing lines/results daily, PBP nightly, injuries daily |
@@ -134,7 +155,7 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 - [x] **M3** unattended scheduler, gating, spend projection, status
 - [x] **M4** college team import, review queue and alias tools, relink; NBA/NCAAF/NCAAB odds
 - [x] **M5** CFBD college schedules, scores and lines; budgeted backfill
-- [ ] M6 SharpAPI + OddsPapi
+- [x] **M6** SharpAPI (frequent DK/FD), OddsPapi (Pinnacle, archive-first), closing-line view
 - [ ] M7 NBA (nba_api + sportsdataverse fallback), NCAAB results
 - [ ] M8 Open-Meteo + venues
 - [ ] M9 injuries, PBP parquet, Postgres check

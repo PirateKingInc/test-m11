@@ -1,0 +1,94 @@
+[
+ {
+  "fixtureId": "id1000132600001",
+  "sportId": 11,
+  "tournamentId": 132,
+  "statusId": 0,
+  "startTime": "2026-11-21T00:30:00.000Z",
+  "participant1Id": 1,
+  "participant1Name": "Boston Celtics",
+  "participant2Id": 2,
+  "participant2Name": "New York Knicks",
+  "bookmakerOdds": {
+   "pinnacle": {
+    "bookmakerIsActive": true,
+    "bookmakerFixtureId": "p1",
+    "markets": {
+     "111": {
+      "outcomes": {
+       "111": {
+        "players": {
+         "0": {
+          "price": 1.55,
+          "active": true
+         }
+        }
+       },
+       "112": {
+        "players": {
+         "0": {
+          "price": 2.55,
+          "active": true
+         }
+        }
+       }
+      }
+     },
+     "113": {
+      "outcomes": {
+       "113": {
+        "players": {
+         "0": {
+          "price": 1.909,
+          "active": true,
+          "handicap": -4.5
+         }
+        }
+       },
+       "114": {
+        "players": {
+         "0": {
+          "price": 1.909,
+          "active": true,
+          "handicap": 4.5
+         }
+        }
+       }
+      }
+     },
+     "117": {
+      "handicap": 224.5,
+      "outcomes": {
+       "117": {
+        "players": {
+         "0": {
+          "price": 1.87,
+          "active": true
+         }
+        }
+       },
+       "118": {
+        "players": {
+         "0": {
+          "price": 1.95,
+          "active": false
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "fixtureId": "id1000132600002",
+  "sportId": 11,
+  "tournamentId": 132,
+  "statusId": 0,
+  "startTime": "2026-11-21T03:00:00.000Z",
+  "participant1Name": "Los Angeles Lakers",
+  "participant2Name": "Golden State Warriors",
+  "bookmakerOdds": {}
+ }
+]

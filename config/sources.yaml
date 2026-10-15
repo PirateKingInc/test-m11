@@ -24,14 +24,34 @@ sources:
 
   # Not implemented yet (later milestones). Listed so quotas are visible in one place.
   oddspapi:
-    enabled: false
+    enabled: true
     api_key_env: ODDSPAPI_KEY
-    quota: {limit: 250, period: month, reset_day: 1, safety_margin: 0.10}  # unconfirmed; verify on account
+    base_url: https://api.oddspapi.io/v4
+    quota: {limit: 250, period: month, reset_day: 1, safety_margin: 0.10}  # vendor's figure
+    bookmaker: pinnacle  # one book per call; Pinnacle = sharp reference line
+    sport_ids: {nfl: 14, ncaaf: 14, nba: 11, ncaab: 11}
+    # Fill missing ids from `betdata run oddspapi tournaments --sport nba` (1 call each).
+    # A league left empty is skipped, not failed. NFL = 31 per the vendor's NFL guide.
+    tournaments: {nfl: 31, nba: null, ncaaf: null, ncaab: null}
+    participant1_is_home: true  # unverified; check one fixture against the real schedule
+    # marketId -> {market, outcomes: {outcomeId: home|away|over|under}, [line]}.
+    # Only the NBA moneyline is documented (vendor tutorial). Fill the rest from
+    # `betdata run oddspapi markets --sport nba`, then `betdata reparse oddspapi <raw_id>`.
+    markets:
+      nba:
+        "111": {market: h2h, outcomes: {"111": home, "112": away}}
 
   sharpapi:
-    enabled: false
+    enabled: true
     api_key_env: SHARPAPI_KEY
-    max_requests_per_minute: 6  # free tier allows 12; we use half
+    base_url: https://api.sharpapi.io/api/v1
+    min_interval_seconds: 10  # <= 6 requests/minute; free tier allows 12
+    # Runaway guard only (12/min would be 17,280/day); normal use is a few hundred a day.
+    quota: {limit: 3000, period: day, safety_margin: 0.0, burst: 1.0}
+    sportsbooks: [draftkings, fanduel]  # the two books on the free tier
+    markets: [moneyline, point_spread, total_points]  # SDK spelling; see sharpapi.py docstring
+    pregame_only: true
+    leagues: {nfl: nfl, nba: nba, ncaaf: ncaaf, ncaab: ncaab}  # college ids unverified
 
   cfbd:
     enabled: true

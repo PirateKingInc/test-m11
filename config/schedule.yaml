@@ -150,3 +150,110 @@ jobs:
     cron: "35 7 * * *"
     misfire_grace_minutes: 720
     active_months: [11, 12, 1, 2, 3, 4]
+
+  # --- SharpAPI (free: DraftKings + FanDuel, 12 req/min; we space calls >= 10 s) -------------
+  # Every 10 minutes while a game starts within 3 hours, hourly while one starts within a day.
+  # Snapshots are change-only, so frequent polling costs little storage; the last poll before
+  # tip is the closing line in v_closing_lines. A few hundred requests/day at most.
+
+  - id: sharp-nfl-near
+    source: sharpapi
+    job: odds
+    params: {sport: nfl}
+    cron: "*/10 * * * *"
+    misfire_grace_minutes: 5
+    when: {sport: nfl, after_minutes: 0, before_minutes: 180}
+
+  - id: sharp-nfl-day
+    source: sharpapi
+    job: odds
+    params: {sport: nfl}
+    cron: "5 * * * *"
+    misfire_grace_minutes: 30
+    when: {sport: nfl, after_minutes: 180, before_minutes: 1440}
+
+  - id: sharp-nba-near
+    source: sharpapi
+    job: odds
+    params: {sport: nba}
+    cron: "*/10 * * * *"
+    misfire_grace_minutes: 5
+    when: {sport: nba, after_minutes: 0, before_minutes: 180}
+
+  - id: sharp-nba-day
+    source: sharpapi
+    job: odds
+    params: {sport: nba}
+    cron: "5 * * * *"
+    misfire_grace_minutes: 30
+    when: {sport: nba, after_minutes: 180, before_minutes: 1440}
+
+  - id: sharp-ncaab-near
+    source: sharpapi
+    job: odds
+    params: {sport: ncaab}
+    cron: "*/10 * * * *"
+    misfire_grace_minutes: 5
+    when: {sport: ncaab, after_minutes: 0, before_minutes: 180}
+
+  - id: sharp-ncaab-day
+    source: sharpapi
+    job: odds
+    params: {sport: ncaab}
+    cron: "5 * * * *"
+    misfire_grace_minutes: 30
+    when: {sport: ncaab, after_minutes: 180, before_minutes: 1440}
+
+  - id: sharp-ncaaf-near
+    source: sharpapi
+    job: odds
+    params: {sport: ncaaf}
+    cron: "*/10 * * * *"
+    misfire_grace_minutes: 5
+    when: {sport: ncaaf, after_minutes: 0, before_minutes: 180}
+
+  - id: sharp-ncaaf-day
+    source: sharpapi
+    job: odds
+    params: {sport: ncaaf}
+    cron: "5 * * * *"
+    misfire_grace_minutes: 30
+    when: {sport: ncaaf, after_minutes: 180, before_minutes: 1440}
+
+  # --- OddsPapi (~250 requests/month): one Pinnacle board per league before game time ------
+  # ~80 requests/month at peak. Leagues without a tournament id in sources.yaml are skipped.
+
+  - id: papi-nfl
+    source: oddspapi
+    job: odds
+    params: {sport: nfl}
+    cron: "30 11 * * 0"  # Sunday before the early games
+    when: {sport: nfl, after_minutes: 0, before_minutes: 150}
+
+  - id: papi-nfl-primetime
+    source: oddspapi
+    job: odds
+    params: {sport: nfl}
+    cron: "30 19 * * 1,4"  # Monday and Thursday night
+    when: {sport: nfl, after_minutes: 0, before_minutes: 150}
+
+  - id: papi-nba
+    source: oddspapi
+    job: odds
+    params: {sport: nba}
+    cron: "30 17 * * *"
+    when: {sport: nba, after_minutes: 0, before_minutes: 420}
+
+  - id: papi-ncaab
+    source: oddspapi
+    job: odds
+    params: {sport: ncaab}
+    cron: "0 17 * * *"
+    when: {sport: ncaab, after_minutes: 0, before_minutes: 420}
+
+  - id: papi-ncaaf
+    source: oddspapi
+    job: odds
+    params: {sport: ncaaf}
+    cron: "0 11 * * 6"
+    when: {sport: ncaaf, after_minutes: 0, before_minutes: 600}

@@ -94,12 +94,18 @@ class SourceClient:
         user_agent: str = "betdata/0.1 (personal research)",
         headers: dict[str, str] | None = None,
         label: str = "",
+        min_interval: float = 0.0,
+        monotonic: Callable[[], float] = time.monotonic,
     ):
         self.engine = engine
         self.source = source
         # Prefix for the endpoint as logged/archived, when one source has several hosts
         # (e.g. "football:" and "basketball:" for CFBD).
         self.label = label
+        # Client-side rate limit: at least this many seconds between requests (all attempts).
+        self.min_interval = min_interval
+        self._monotonic = monotonic
+        self._last_request: float | None = None
         self.quota = quota
         self.cost_parser = cost_parser or (lambda _r: CostReport())
         self.max_attempts = max_attempts
@@ -146,6 +152,7 @@ class SourceClient:
         for attempt in range(1, self.max_attempts + 1):
             if self.quota and est_cost > 0:
                 self.quota.check(est_cost, priority)
+            self._respect_min_interval()
             started = self.clock()
             t0 = time.monotonic()
             try:
@@ -220,6 +227,13 @@ class SourceClient:
         raise ApiError(f"{self.source} {endpoint} failed: {last_error}", status=last_status)
 
     # -- internals ------------------------------------------------------------
+
+    def _respect_min_interval(self) -> None:
+        if self.min_interval and self._last_request is not None:
+            wait = self.min_interval - (self._monotonic() - self._last_request)
+            if wait > 0:
+                self.sleep(wait)
+        self._last_request = self._monotonic()
 
     def _backoff(self, attempt: int) -> float:
         # Full jitter: uniform(0, base * 2^(attempt-1)), capped.

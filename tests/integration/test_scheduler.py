@@ -41,6 +41,12 @@ class Router:
         path = request.url.path
         self.calls.append(path)
         host = request.url.host
+        if host == "api.sharpapi.io":
+            return httpx.Response(
+                200, json={"data": [], "meta": {"pagination": {"has_more": False}}}
+            )
+        if host == "api.oddspapi.io":
+            return httpx.Response(200, json=[])
         if "college" in host:
             sport = "football" if "football" in host else "basketball"
             return httpx.Response(
@@ -231,7 +237,13 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
                 source_kwargs=kwargs)  # fmt: skip
 
     all_runs = runs(engine)
-    assert all(r.status == "ok" for r in all_runs), [(r.scheduled_job, r.message) for r in all_runs]
+    # Allowed non-ok: OddsPapi leagues not configured yet are skipped without a call.
+    bad = [
+        (r.scheduled_job, r.status, r.message)
+        for r in all_runs
+        if r.status != "ok" and not (r.message or "").startswith("NotConfigured")
+    ]
+    assert bad == []
     by_job = {}
     for r in all_runs:
         by_job[r.scheduled_job] = by_job.get(r.scheduled_job, 0) + 1
@@ -247,6 +259,12 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
     assert by_job["cfbd-ncaaf-games"] == 7 and by_job["cfbd-ncaaf-lines"] == 7
     assert by_job["cfbd-ncaaf-games-saturday-night"] == 1
     assert "cfbd-ncaab-games" not in by_job  # basketball starts in November
+    # SharpAPI: every 10 min in the 3 h before each kickoff window; nothing for idle sports
+    assert by_job["sharp-nfl-near"] > 0 and "sharp-nba-near" not in by_job
+    # OddsPapi: Sunday before the early games + Thursday night (sample has no Monday game);
+    # skipped without a request because no NFL market map is configured yet
+    assert by_job["papi-nfl"] == 1 and by_job["papi-nfl-primetime"] == 1
+    assert not [c for c in router.calls if "odds-by-tournaments" in c]
 
     q = runner.QuotaManager(engine, "the_odds_api", settings.source("the_odds_api").quota,
                             clock=clock).status()  # fmt: skip

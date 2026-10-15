@@ -22,3 +22,7 @@ class ParseError(IngestError):
 
 class ConfigError(IngestError):
     """Missing API key or bad configuration for a source."""
+
+
+class NotConfigured(IngestError):
+    """The job needs configuration that isn't filled in yet; it is skipped, not failed."""

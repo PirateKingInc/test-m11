@@ -96,3 +96,15 @@ def test_quota_checked_before_network(engine, fake_api, clock, sleeps):
     with pytest.raises(QuotaExceeded):
         c.get("/x", est_cost=11, priority="high")
     assert fake_api.requests == []
+
+
+def test_min_interval_spaces_requests(engine, fake_api, clock, sleeps):
+    now = {"t": 100.0}
+    c = client(engine, fake_api, clock, sleeps, min_interval=10, monotonic=lambda: now["t"])
+    fake_api.add(200).add(200).add(200)
+    c.get("/x")
+    now["t"] = 103.0  # 3 s later -> must wait 7 s
+    c.get("/x")
+    now["t"] = 130.0  # long after -> no wait
+    c.get("/x")
+    assert sleeps == [7.0]

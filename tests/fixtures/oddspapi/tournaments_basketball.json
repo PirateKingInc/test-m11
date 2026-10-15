@@ -1,0 +1,15 @@
+[
+ {
+  "tournamentId": 132,
+  "tournamentName": "NBA",
+  "tournamentSlug": "nba",
+  "categoryName": "USA",
+  "upcomingFixtures": 120
+ },
+ {
+  "tournamentId": 648,
+  "tournamentName": "NCAA Division I",
+  "tournamentSlug": "ncaa",
+  "categoryName": "USA"
+ }
+]

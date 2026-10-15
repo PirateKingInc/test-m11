@@ -85,6 +85,8 @@ def engine(tmp_path):
 def settings(monkeypatch):
     monkeypatch.setenv("ODDS_API_KEY", "test-key-123")
     monkeypatch.setenv("CFBD_API_KEY", "cfbd-test-key")
+    monkeypatch.setenv("SHARPAPI_KEY", "sharp-test-key")
+    monkeypatch.setenv("ODDSPAPI_KEY", "oddspapi-test-key")
     return load_settings(
         config_path=PROJECT_ROOT / "config" / "sources.yaml", env_path=Path("/nonexistent")
     )
