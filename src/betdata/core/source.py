@@ -55,12 +55,19 @@ class RawInput:
 class Source(ABC):
     name: str
 
-    def __init__(self, engine: Engine, config: SourceConfig):
+    def __init__(self, engine: Engine, config: SourceConfig, clock=None):
         self.engine = engine
         self.config = config
+        self.clock = clock or utcnow
 
+    @classmethod
     @abstractmethod
-    def jobs(self) -> dict[str, JobSpec]: ...
+    def jobs(cls) -> dict[str, JobSpec]: ...
+
+    def close(self) -> None:
+        client = getattr(self, "client", None)
+        if client is not None:
+            client.close()
 
     @abstractmethod
     def fetch(
@@ -76,11 +83,22 @@ class Source(ABC):
     ) -> tuple[int, int]:
         """Returns (rows_inserted, rows_seen)."""
 
+    def estimate_cost(self, job: str, params: dict[str, Any]) -> int:
+        """Quota units one run of `job` is expected to cost (0 for unmetered sources)."""
+        return 0
+
     @abstractmethod
     def job_for_endpoint(self, endpoint: str) -> str:
         """Which job's parser handles a stored raw response (used by reparse)."""
 
-    def run(self, job: str, priority: str | None = None, **params: Any) -> RunResult:
+    def run(
+        self,
+        job: str,
+        priority: str | None = None,
+        *,
+        scheduled_job: str | None = None,
+        **params: Any,
+    ) -> RunResult:
         spec = self.jobs().get(job)
         if spec is None:
             raise KeyError(f"{self.name} has no job {job!r}; available: {sorted(self.jobs())}")
@@ -88,7 +106,11 @@ class Source(ABC):
         with self.engine.begin() as conn:
             run_id = conn.execute(
                 insert(ingest_runs).values(
-                    source=self.name, job=job, params=params, started_at=utcnow()
+                    source=self.name,
+                    job=job,
+                    params=params,
+                    scheduled_job=scheduled_job,
+                    started_at=self.clock(),
                 )
             ).inserted_primary_key[0]
 
@@ -117,7 +139,7 @@ class Source(ABC):
                     update(ingest_runs)
                     .where(ingest_runs.c.run_id == run_id)
                     .values(
-                        finished_at=utcnow(),
+                        finished_at=self.clock(),
                         status=result.status,
                         rows_inserted=result.rows_inserted,
                         rows_seen=result.rows_seen,

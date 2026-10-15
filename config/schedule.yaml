@@ -1,0 +1,47 @@
+# Unattended polling schedule. Cron expressions are in `timezone`.
+#
+# `when` gates a job on the games table: it only runs if at least one not-final game of
+# `sport` kicks off in (now + after_minutes, now + before_minutes]. A gated-out tick costs
+# nothing and is not logged as a run. The QuotaManager still has the final say on spend.
+#
+# Check projected spend before changing anything:  betdata scheduler plan --days 30
+
+timezone: America/New_York
+
+defaults:
+  priority: normal
+  misfire_grace_minutes: 30  # if the machine was asleep at fire time, still run within this
+
+jobs:
+  # --- nflverse: free; schedule, scores, current and closing lines ---------------------
+  - id: nflverse-schedules-morning
+    source: nflverse
+    job: schedules
+    cron: "15 7 * * *"
+    misfire_grace_minutes: 720
+
+  - id: nflverse-schedules-night  # picks up final scores the same night
+    source: nflverse
+    job: schedules
+    cron: "45 23 * * *"
+    misfire_grace_minutes: 360
+
+  # --- The Odds API (500 credits/month) -------------------------------------------------
+  - id: odds-nfl-events  # free; keeps event ids current
+    source: the_odds_api
+    job: events
+    params: {sport: nfl}
+    cron: "30 6 * * *"
+    misfire_grace_minutes: 720
+    when: {sport: nfl, after_minutes: 0, before_minutes: 14400}  # games in next 10 days
+
+  # One multi-book snapshot 0-60 min before every NFL kickoff window (London, 1pm, 4pm,
+  # TNF/SNF/MNF, Saturdays, holidays). 3 credits per window, ~80 credits/month in season.
+  # nflverse already supplies a free daily line, so no separate "opener" poll here.
+  - id: odds-nfl-prekick
+    source: the_odds_api
+    job: odds
+    params: {sport: nfl}
+    cron: "50 * * * *"
+    misfire_grace_minutes: 15
+    when: {sport: nfl, after_minutes: 0, before_minutes: 60}

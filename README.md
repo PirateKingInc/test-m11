@@ -26,6 +26,24 @@ uv run betdata reparse the_odds_api <raw_id>          # re-parse a stored respon
 
 `--priority high` skips daily pacing (never the hard cap). Tests: `uv run pytest`.
 
+## Running unattended
+
+```bash
+uv run betdata scheduler plan --days 30   # projected quota spend from schedule + known games
+uv run betdata scheduler list             # validate config/schedule.yaml, show next fire times
+uv run betdata scheduler run              # foreground daemon (one instance; lock in data/)
+uv run betdata status                     # health, last/next runs, quota, data, problems
+uv run betdata status --check             # exit 1 on problems, for cron/monitoring
+```
+
+Jobs live in `config/schedule.yaml` (cron in US Eastern). Odds jobs are gated on the games
+table: `odds-nfl-prekick` ticks hourly but only spends credits when an NFL game kicks off in
+the next 60 minutes, giving one multi-book snapshot per kickoff window (~80 credits/month in
+season). Jobs run one at a time; a job that crashes is logged and the scheduler carries on;
+missed runs (machine asleep) run once on wake if within the job's grace period. Logs go to
+`data/logs/scheduler.log`. To keep it running, see `deploy/betdata-scheduler.service`
+(systemd); on macOS use a launchd agent or `tmux`.
+
 ## How it works
 
 - **One module per source** in `src/betdata/sources/`, each implementing `fetch` / `parse` /
@@ -74,7 +92,7 @@ uv run betdata reparse the_odds_api <raw_id>          # re-parse a stored respon
 - [x] **M0** foundation: schema + migration, seeds, HTTP client, quota, usage log, raw store
 - [x] **M1** The Odds API → NFL end to end
 - [x] **M2** nflverse schedules, results and closing lines; cross-source game matching; backfill
-- [ ] M3 unattended scheduler + status
+- [x] **M3** unattended scheduler, gating, spend projection, status
 - [ ] M4 team-mapping tools; The Odds API for NBA/NCAAF/NCAAB
 - [ ] M5 CFBD football + basketball
 - [ ] M6 SharpAPI + OddsPapi

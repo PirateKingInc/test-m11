@@ -175,7 +175,7 @@ class TheOddsApiSource(Source):
         sleep=None,
         clock=None,
     ):
-        super().__init__(engine, config)
+        super().__init__(engine, config, clock)
         extra = {k: v for k, v in dict(sleep=sleep, clock=clock).items() if v is not None}
         quota_extra = {"clock": clock} if clock else {}
         self.quota = (
@@ -191,7 +191,8 @@ class TheOddsApiSource(Source):
             **extra,
         )
 
-    def jobs(self) -> dict[str, JobSpec]:
+    @classmethod
+    def jobs(cls) -> dict[str, JobSpec]:
         return {
             "events": JobSpec("events", "List upcoming events for a sport (free)."),
             "odds": JobSpec(
@@ -211,6 +212,15 @@ class TheOddsApiSource(Source):
             raise ConfigError(f"{self.config.api_key_env} is not set (see .env.example)")
         return key
 
+    def _odds_scope(self, params):
+        markets = params.get("markets") or self.config.options.get("markets", ["h2h"])
+        books = params.get("bookmakers")
+        regions = None if books else self.config.options.get("regions", ["us"])
+        return markets, regions, books
+
+    def estimate_cost(self, job: str, params: dict[str, Any]) -> int:
+        return estimate_cost(*self._odds_scope(params)) if job == "odds" else 0
+
     def fetch(self, job: str, params: dict[str, Any], *, priority: str, run_id: int) -> RawInput:
         sport = params.get("sport")
         if not sport:
@@ -219,9 +229,7 @@ class TheOddsApiSource(Source):
         if job == "events":
             endpoint, query, cost = f"{endpoint_base}/events", {"dateFormat": "iso"}, 0
         else:
-            markets = params.get("markets") or self.config.options.get("markets", ["h2h"])
-            books = params.get("bookmakers")
-            regions = None if books else self.config.options.get("regions", ["us"])
+            markets, regions, books = self._odds_scope(params)
             endpoint = f"{endpoint_base}/odds"
             query = {
                 "markets": ",".join(markets),

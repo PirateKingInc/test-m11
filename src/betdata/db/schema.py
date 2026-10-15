@@ -246,6 +246,7 @@ ingest_runs = Table(
     Column("source", String(32), nullable=False),
     Column("job", String(64), nullable=False),
     Column("params", JSON),
+    Column("scheduled_job", String(64)),  # schedule.yaml job id; null for manual runs
     Column("started_at", UTCDateTime, nullable=False, default=utcnow),
     Column("finished_at", UTCDateTime),
     Column("status", String(16), nullable=False, default="running"),  # running, ok, failed, skipped

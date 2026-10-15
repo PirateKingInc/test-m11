@@ -1,0 +1,19 @@
+# systemd user service for the betdata scheduler.
+#   cp deploy/betdata-scheduler.service ~/.config/systemd/user/
+#   edit WorkingDirectory below, then:
+#   systemctl --user daemon-reload && systemctl --user enable --now betdata-scheduler
+#   loginctl enable-linger $USER     # keep running when you are logged out
+#   journalctl --user -u betdata-scheduler -f
+[Unit]
+Description=betdata ingestion scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/test-m11
+ExecStart=%h/.local/bin/uv run betdata scheduler run
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=default.target

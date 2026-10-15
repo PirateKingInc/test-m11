@@ -9,12 +9,14 @@ from betdata.config import get_settings
 from betdata.core.quota import QuotaManager
 from betdata.db import seed as seed_mod
 from betdata.db.engine import make_engine, upgrade
-from betdata.db.schema import ingest_runs, teams, unmatched_entities
+from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
 from betdata.sources import REGISTRY
 
 app = typer.Typer(help="Sports data ingestion.", no_args_is_help=True)
 db_app = typer.Typer(help="Database setup.", no_args_is_help=True)
 app.add_typer(db_app, name="db")
+sched_app = typer.Typer(help="Unattended scheduled polling.", no_args_is_help=True)
+app.add_typer(sched_app, name="scheduler")
 
 
 @app.callback()
@@ -122,6 +124,54 @@ def unmatched():
             typer.echo(
                 f"{r.source:14} {r.kind:5} {r.raw_value!r} x{r.times_seen} suggest={r.suggestion}"
             )
+
+
+@app.command()
+def status(
+    check: bool = typer.Option(False, help="Exit 1 if there are problems (for monitoring)."),
+):
+    """Health, last/next runs, quota, data counts and problems."""
+    from betdata.scheduler.jobs import load_schedule
+    from betdata.status import build_status
+
+    report = build_status(_engine(), get_settings(), load_schedule(), utcnow())
+    typer.echo("\n".join(report.lines))
+    if check and report.problems:
+        raise typer.Exit(1)
+
+
+@sched_app.command("run")
+def scheduler_run():
+    """Run the scheduler in the foreground (use systemd/launchd/tmux to keep it alive)."""
+    from betdata.scheduler.jobs import load_schedule
+    from betdata.scheduler.runner import run_forever
+
+    run_forever(_engine(), get_settings(), REGISTRY, load_schedule())
+
+
+@sched_app.command("list")
+def scheduler_list():
+    """Validate config/schedule.yaml and show each job's next fire time."""
+    from betdata.scheduler.jobs import load_schedule, validate
+    from betdata.scheduler.runner import next_runs
+
+    schedule = load_schedule()
+    for problem in validate(schedule, get_settings(), REGISTRY):
+        typer.echo(f"PROBLEM {problem}")
+    for job_id, nxt in next_runs(schedule, utcnow()):
+        when = nxt.astimezone(schedule.timezone).strftime("%a %Y-%m-%d %H:%M %Z") if nxt else "-"
+        typer.echo(f"{job_id:30} next {when}")
+
+
+@sched_app.command("plan")
+def scheduler_plan(days: int = typer.Option(30, help="How many days ahead to project.")):
+    """Project quota spend from the schedule and the games already in the database."""
+    from betdata.scheduler.jobs import load_schedule
+    from betdata.scheduler.runner import project, projection_report
+
+    settings, engine = get_settings(), _engine()
+    projections = project(engine, settings, REGISTRY, load_schedule(), utcnow(), days)
+    typer.echo("\n".join(projection_report(engine, settings, projections, days)))
 
 
 if __name__ == "__main__":

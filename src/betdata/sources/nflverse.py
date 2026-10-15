@@ -171,8 +171,7 @@ class NflverseSource(Source):
         sleep=None,
         clock=None,
     ):
-        super().__init__(engine, config)
-        self.clock = clock or utcnow
+        super().__init__(engine, config, clock)
         extra = {k: v for k, v in dict(sleep=sleep, clock=clock).items() if v is not None}
         self.client = SourceClient(
             engine,
@@ -185,7 +184,8 @@ class NflverseSource(Source):
             **extra,
         )
 
-    def jobs(self) -> dict[str, JobSpec]:
+    @classmethod
+    def jobs(cls) -> dict[str, JobSpec]:
         return {
             "schedules": JobSpec(
                 "schedules",

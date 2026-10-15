@@ -5,6 +5,8 @@ description = "Scheduled ingestion of free sports odds and stats data into a loc
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.13",
+    "apscheduler>=3.10,<4",
+    "filelock>=3.12",
     "httpx>=0.27",
     "pydantic>=2.7",
     "python-dotenv>=1.0",
