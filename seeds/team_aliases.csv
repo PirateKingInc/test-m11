@@ -1,0 +1,12 @@
+sport,source,alias,canonical_name
+nfl,*,Oakland Raiders,Las Vegas Raiders
+nfl,*,OAK,Las Vegas Raiders
+nfl,*,San Diego Chargers,Los Angeles Chargers
+nfl,*,SD,Los Angeles Chargers
+nfl,*,St. Louis Rams,Los Angeles Rams
+nfl,*,STL,Los Angeles Rams
+nfl,*,LAR,Los Angeles Rams
+nfl,*,Washington Redskins,Washington Commanders
+nfl,*,Washington Football Team,Washington Commanders
+nfl,*,WSH,Washington Commanders
+nfl,*,JAC,Jacksonville Jaguars

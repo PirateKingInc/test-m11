@@ -1,0 +1,39 @@
+# Per-source settings. Secrets live in .env; this file only names the env var.
+# Quota limits are the published free tiers. `safety_margin` is held back and never spent.
+# The QuotaManager enforces these regardless of what any schedule asks for.
+
+sources:
+  the_odds_api:
+    enabled: true
+    api_key_env: ODDS_API_KEY
+    base_url: https://api.the-odds-api.com/v4
+    quota: {limit: 500, period: month, reset_day: 1, safety_margin: 0.10}
+    regions: [us]
+    markets: [h2h, spreads, totals]
+    odds_format: american
+    sport_keys:
+      nfl: americanfootball_nfl
+      ncaaf: americanfootball_ncaaf
+      nba: basketball_nba
+      ncaab: basketball_ncaab
+
+  # Not implemented yet (later milestones). Listed so quotas are visible in one place.
+  oddspapi:
+    enabled: false
+    api_key_env: ODDSPAPI_KEY
+    quota: {limit: 250, period: month, reset_day: 1, safety_margin: 0.10}  # unconfirmed; verify on account
+
+  sharpapi:
+    enabled: false
+    api_key_env: SHARPAPI_KEY
+    max_requests_per_minute: 6  # free tier allows 12; we use half
+
+  cfbd:
+    enabled: false
+    api_key_env: CFBD_API_KEY
+    # One quota shared by football and basketball.
+    quota: {limit: 1000, period: month, reset_day: 1, safety_margin: 0.10}
+
+  open_meteo:
+    enabled: false
+    quota: {limit: 10000, period: day, safety_margin: 0.50}

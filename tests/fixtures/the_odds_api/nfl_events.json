@@ -1,0 +1,18 @@
+[
+ {
+  "id": "e912304de2b2ce35b473ce2ecd3d1502",
+  "sport_key": "americanfootball_nfl",
+  "sport_title": "NFL",
+  "commence_time": "2026-10-18T20:05:00Z",
+  "home_team": "Las Vegas Raiders",
+  "away_team": "Kansas City Chiefs"
+ },
+ {
+  "id": "4b25562aa9e87b57aa16f970abaec8cc",
+  "sport_key": "americanfootball_nfl",
+  "sport_title": "NFL",
+  "commence_time": "2026-10-18T17:00:00Z",
+  "home_team": "Buffalo Bills",
+  "away_team": "New York Jets"
+ }
+]

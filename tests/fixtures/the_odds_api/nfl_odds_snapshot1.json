@@ -1,0 +1,181 @@
+[
+ {
+  "id": "e912304de2b2ce35b473ce2ecd3d1502",
+  "sport_key": "americanfootball_nfl",
+  "sport_title": "NFL",
+  "commence_time": "2026-10-18T20:05:00Z",
+  "home_team": "Las Vegas Raiders",
+  "away_team": "Kansas City Chiefs",
+  "bookmakers": [
+   {
+    "key": "draftkings",
+    "title": "DraftKings",
+    "last_update": "2026-10-15T13:58:12Z",
+    "markets": [
+     {
+      "key": "h2h",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "Kansas City Chiefs",
+        "price": -450
+       },
+       {
+        "name": "Las Vegas Raiders",
+        "price": 340
+       }
+      ]
+     },
+     {
+      "key": "spreads",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "Kansas City Chiefs",
+        "price": -110,
+        "point": -9.5
+       },
+       {
+        "name": "Las Vegas Raiders",
+        "price": -110,
+        "point": 9.5
+       }
+      ]
+     },
+     {
+      "key": "totals",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "Over",
+        "price": -112,
+        "point": 44.5
+       },
+       {
+        "name": "Under",
+        "price": -108,
+        "point": 44.5
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "key": "fanduel",
+    "title": "FanDuel",
+    "last_update": "2026-10-15T13:58:12Z",
+    "markets": [
+     {
+      "key": "h2h",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "Kansas City Chiefs",
+        "price": -440
+       },
+       {
+        "name": "Las Vegas Raiders",
+        "price": 350
+       }
+      ]
+     },
+     {
+      "key": "spreads",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "Kansas City Chiefs",
+        "price": -108,
+        "point": -9.5
+       },
+       {
+        "name": "Las Vegas Raiders",
+        "price": -112,
+        "point": 9.5
+       }
+      ]
+     },
+     {
+      "key": "totals",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "Over",
+        "price": -110,
+        "point": 44.5
+       },
+       {
+        "name": "Under",
+        "price": -110,
+        "point": 44.5
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "4b25562aa9e87b57aa16f970abaec8cc",
+  "sport_key": "americanfootball_nfl",
+  "sport_title": "NFL",
+  "commence_time": "2026-10-18T17:00:00Z",
+  "home_team": "Buffalo Bills",
+  "away_team": "New York Jets",
+  "bookmakers": [
+   {
+    "key": "draftkings",
+    "title": "DraftKings",
+    "last_update": "2026-10-15T13:58:12Z",
+    "markets": [
+     {
+      "key": "h2h",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "New York Jets",
+        "price": 330
+       },
+       {
+        "name": "Buffalo Bills",
+        "price": -420
+       }
+      ]
+     },
+     {
+      "key": "spreads",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "New York Jets",
+        "price": -110,
+        "point": 8.5
+       },
+       {
+        "name": "Buffalo Bills",
+        "price": -110,
+        "point": -8.5
+       }
+      ]
+     },
+     {
+      "key": "totals",
+      "last_update": "2026-10-15T13:58:12Z",
+      "outcomes": [
+       {
+        "name": "Over",
+        "price": -110,
+        "point": 41.5
+       },
+       {
+        "name": "Under",
+        "price": -110,
+        "point": 41.5
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+]
