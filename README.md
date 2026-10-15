@@ -140,7 +140,7 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 |---|---|---|
 | The Odds API | 500 credits/mo | one multi-book snapshot before each kickoff window (~74–330/mo) |
 | SharpAPI | 12 req/min, DK + FD, 60 s delay | every 10 min near tip/kickoff, hourly otherwise; capped at 6/min |
-| OddsPapi | ~250/mo (unconfirmed) | ~8/day: one board per sport plus big slates |
+| OddsPapi | ~250/mo (vendor figure) | one Pinnacle board per league before game time (~80/mo at peak) |
 | nflverse (`nflreadpy`) | none | schedules/closing lines/results daily, PBP nightly, injuries daily |
 | nba_api | unofficial | daily, 1 req/2 s, falls back to sportsdataverse |
 | sportsdataverse | none | NBA fallback; NCAAB/NCAAF results |
