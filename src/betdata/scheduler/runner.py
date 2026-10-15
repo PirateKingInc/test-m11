@@ -20,11 +20,36 @@ from sqlalchemy import Engine
 from betdata.config import PROJECT_ROOT, Settings
 from betdata.core.quota import QuotaManager
 from betdata.db.schema import utcnow
-from betdata.scheduler.jobs import JobDef, Schedule, execute, gate_open, validate
+from betdata.scheduler.jobs import JobDef, Schedule, execute, gate_open, in_season, validate
 
 log = logging.getLogger(__name__)
 LOCK_PATH = PROJECT_ROOT / "data" / "scheduler.lock"
 LOG_PATH = PROJECT_ROOT / "data" / "logs" / "scheduler.log"
+
+
+_DOW_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def standard_cron(expr: str) -> str:
+    """Translate the day-of-week field from standard cron (0 or 7 = Sunday, 1 = Monday) to
+    names. APScheduler 3's from_crontab reads numbers as 0 = Monday, so "6" would mean Sunday
+    and every Saturday job would run a day late."""
+    fields = expr.split()
+    if len(fields) != 5:
+        raise ValueError(f"expected 5 cron fields, got {len(fields)}: {expr!r}")
+
+    def name(token: str) -> str:
+        return _DOW_NAMES[int(token)] if token.isdigit() and int(token) <= 7 else token
+
+    parts = []
+    for item in fields[4].split(","):
+        step = ""
+        if "/" in item:
+            item, step = item.split("/", 1)
+            step = "/" + step
+        parts.append("-".join(name(t) for t in item.split("-")) + step)
+    fields[4] = ",".join(parts)
+    return " ".join(fields)
 
 
 class WallClockCronTrigger(BaseTrigger):
@@ -42,7 +67,7 @@ class WallClockCronTrigger(BaseTrigger):
     def __init__(self, crontab: str, timezone: ZoneInfo):
         self.timezone = timezone
         self.crontab = crontab
-        self._wall = CronTrigger.from_crontab(crontab, timezone=UTC)
+        self._wall = CronTrigger.from_crontab(standard_cron(crontab), timezone=UTC)
 
     def _to_wall(self, dt: datetime) -> datetime:
         return dt.astimezone(self.timezone).replace(tzinfo=UTC)
@@ -92,6 +117,7 @@ def build_scheduler(
             execute,
             trigger=trigger_for(job, schedule),
             args=(engine, settings, registry, job),
+            kwargs={"timezone": schedule.timezone},
             id=job.id,
             name=job.id,
             coalesce=True,  # after sleep/downtime, run a missed job once, not N times
@@ -170,6 +196,8 @@ def project(
         p = JobProjection(job.id, job.source)
         for t in fire_times(trigger_for(job, schedule), start, end):
             p.ticks += 1
+            if not in_season(job, t, schedule.timezone):
+                continue
             if job.when is None or gate_open(engine, job.when, t):
                 p.runs += 1
                 p.units += cost

@@ -23,6 +23,9 @@ class QuotaPolicy:
     period: str = "month"
     reset_day: int = 1  # day of month the monthly quota resets
     safety_margin: float = 0.10  # fraction of `limit` we never spend
+    # Pacing: a day may spend up to `burst` x an even share of what is left. Sports demand is
+    # weekly (Saturday college, Sunday NFL), so a strict even split would skip real games.
+    burst: float = 2.0
 
 
 @dataclass(frozen=True)

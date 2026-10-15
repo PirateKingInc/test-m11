@@ -92,9 +92,14 @@ class SourceClient:
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], datetime] = utcnow,
         user_agent: str = "betdata/0.1 (personal research)",
+        headers: dict[str, str] | None = None,
+        label: str = "",
     ):
         self.engine = engine
         self.source = source
+        # Prefix for the endpoint as logged/archived, when one source has several hosts
+        # (e.g. "football:" and "basketball:" for CFBD).
+        self.label = label
         self.quota = quota
         self.cost_parser = cost_parser or (lambda _r: CostReport())
         self.max_attempts = max_attempts
@@ -109,7 +114,7 @@ class SourceClient:
             transport=transport,
             timeout=timeout,
             follow_redirects=True,  # GitHub release downloads redirect to a CDN
-            headers={"User-Agent": user_agent},
+            headers={"User-Agent": user_agent, **(headers or {})},
         )
 
     def close(self) -> None:
@@ -175,14 +180,16 @@ class SourceClient:
             if ok:
                 with self.engine.begin() as conn:
                     previous = (
-                        raw_store.find_identical(conn, self.source, endpoint, resp.content)
+                        raw_store.find_identical(
+                            conn, self.source, self.label + endpoint, resp.content
+                        )
                         if dedupe
                         else None
                     )
                     raw_id = previous or raw_store.save(
                         conn,
                         source=self.source,
-                        endpoint=endpoint,
+                        endpoint=self.label + endpoint,
                         params=redact(params),
                         http_status=resp.status_code,
                         fetched_at=started,
@@ -225,7 +232,7 @@ class SourceClient:
             conn.execute(
                 insert(api_usage).values(
                     source=self.source,
-                    endpoint=endpoint,
+                    endpoint=self.label + endpoint,
                     called_at=started,
                     cost_units=report.cost or 0,
                     cost_reported=cost_reported,

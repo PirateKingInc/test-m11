@@ -1,4 +1,5 @@
+from betdata.sources.cfbd import CfbdSource
 from betdata.sources.nflverse import NflverseSource
 from betdata.sources.the_odds_api import TheOddsApiSource
 
-REGISTRY = {cls.name: cls for cls in (TheOddsApiSource, NflverseSource)}
+REGISTRY = {cls.name: cls for cls in (TheOddsApiSource, NflverseSource, CfbdSource)}

@@ -8,8 +8,10 @@ response (x-requests-remaining / -used / -last) are reconciled into the quota ta
 
 from __future__ import annotations
 
+import json
 import logging
 import math
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
@@ -19,8 +21,10 @@ from pydantic import BaseModel, TypeAdapter, ValidationError
 from betdata.config import SourceConfig
 from betdata.core.errors import ConfigError, ParseError
 from betdata.core.http import CostReport, SourceClient
+from betdata.core.matching import sport_id
 from betdata.core.models import ParsedEvent, ParsedOdds, ParsedPrice
 from betdata.core.normalize.odds_math import american_to_decimal
+from betdata.core.normalize.teams import TeamResolver
 from betdata.core.odds_loader import load_odds
 from betdata.core.quota import QuotaManager
 from betdata.core.source import JobSpec, RawInput, Source
@@ -160,6 +164,23 @@ def parse_odds(
     return out
 
 
+@dataclass
+class ParsedParticipants:
+    sport: str
+    names: list[str]
+
+
+def parse_participants(body: bytes, *, sport: str) -> ParsedParticipants:
+    """`/participants` returns [{"id": ..., "full_name": ...}] (shape per The Odds API v4 docs;
+    not yet checked against a live response, so `name` is accepted too)."""
+    try:
+        items = json.loads(body)
+        names = [i.get("full_name") or i["name"] for i in items]
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
+        raise ParseError(f"{NAME}: unexpected participants response: {e}") from e
+    return ParsedParticipants(sport, sorted(set(names)))
+
+
 # --- Source -----------------------------------------------------------------
 
 
@@ -198,6 +219,11 @@ class TheOddsApiSource(Source):
             "odds": JobSpec(
                 "odds", "Snapshot featured markets for a sport (costs markets x regions)."
             ),
+            "participants": JobSpec(
+                "participants",
+                "Check every team name The Odds API uses for a sport against our teams; "
+                "unknown names go to the review queue (1 credit). inserted = names queued.",
+            ),
         }
 
     def _sport_key(self, sport: str) -> str:
@@ -219,6 +245,8 @@ class TheOddsApiSource(Source):
         return markets, regions, books
 
     def estimate_cost(self, job: str, params: dict[str, Any]) -> int:
+        if job == "participants":
+            return 1
         return estimate_cost(*self._odds_scope(params)) if job == "odds" else 0
 
     def fetch(self, job: str, params: dict[str, Any], *, priority: str, run_id: int) -> RawInput:
@@ -228,6 +256,8 @@ class TheOddsApiSource(Source):
         endpoint_base = f"/sports/{self._sport_key(sport)}"
         if job == "events":
             endpoint, query, cost = f"{endpoint_base}/events", {"dateFormat": "iso"}, 0
+        elif job == "participants":
+            endpoint, query, cost = f"{endpoint_base}/participants", {}, 1
         else:
             markets, regions, books = self._odds_scope(params)
             endpoint = f"{endpoint_base}/odds"
@@ -247,7 +277,7 @@ class TheOddsApiSource(Source):
         return RawInput(endpoint, stored, resp.body, resp.fetched_at, resp.raw_id)
 
     def job_for_endpoint(self, endpoint: str) -> str:
-        return "events" if endpoint.endswith("/events") else "odds"
+        return endpoint.rsplit("/", 1)[-1]  # events | odds | participants
 
     def _sport_from_endpoint(self, endpoint: str) -> str:
         sport_key = endpoint.split("/")[2]
@@ -256,7 +286,9 @@ class TheOddsApiSource(Source):
                 return sport
         raise ParseError(f"{NAME}: unknown sport key {sport_key!r}")
 
-    def parse(self, job: str, raw: RawInput) -> ParsedOdds:
+    def parse(self, job: str, raw: RawInput) -> ParsedOdds | ParsedParticipants:
+        if job == "participants":
+            return parse_participants(raw.body, sport=self._sport_from_endpoint(raw.endpoint))
         params = raw.params or {}
         books = params.get("bookmakers")
         return parse_odds(
@@ -267,6 +299,14 @@ class TheOddsApiSource(Source):
             requested_books=tuple(books.split(",")) if books else None,
         )
 
-    def load(self, conn, job: str, batch: ParsedOdds, *, run_id, raw_id) -> tuple[int, int]:
+    def load(self, conn, job: str, batch, *, run_id, raw_id) -> tuple[int, int]:
+        if job == "participants":
+            resolver = TeamResolver(conn, sport_id(conn, batch.sport))
+            unknown = [n for n in batch.names if resolver.resolve(NAME, n) is None]
+            if unknown:
+                log.info(
+                    "%s %s: %d unmatched names queued for review", NAME, batch.sport, len(unknown)
+                )
+            return len(unknown), len(batch.names)
         stats = load_odds(conn, source=NAME, batch=batch, run_id=run_id, raw_id=raw_id)
         return stats.inserted + stats.removed, stats.prices_seen or stats.events

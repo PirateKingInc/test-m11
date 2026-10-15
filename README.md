@@ -20,11 +20,31 @@ uv run betdata run nflverse schedules                 # NFL schedule, scores, li
 uv run betdata run nflverse schedules --seasons all  # backfill 1999-present (~15 s, no quota)
 uv run betdata quota                                  # budget per metered API
 uv run betdata runs                                   # recent ingestion runs
-uv run betdata unmatched                              # team names that need an alias
+uv run betdata unmatched                              # team names waiting for review
 uv run betdata reparse the_odds_api <raw_id>          # re-parse a stored response, no API call
 ```
 
 `--priority high` skips daily pacing (never the hard cap). Tests: `uv run pytest`.
+
+## Teams and name mapping
+
+NFL and NBA teams ship in `seeds/`. College teams come from CFBD (1 call each, shared quota):
+
+```bash
+uv run betdata teams import --sport ncaaf      # FBS + FCS, with "School Mascot" and alt names
+uv run betdata teams import --sport ncaab      # D-I, with ESPN display names and ESPN ids
+uv run betdata run the-odds-api participants --sport ncaab   # 1 credit: check every Odds API name
+uv run betdata unmatched                        # what didn't map, with a suggested team + score
+uv run betdata alias accept 12 15 --yes         # accept reviewed suggestions
+uv run betdata alias accept --all --sport ncaab --min-score 0.9   # shows the list, asks first
+uv run betdata alias add ncaab "Saint Marys (CA) Gaels" "Saint Mary's" --source the_odds_api
+uv run betdata teams list ncaab --search miami
+```
+
+Names are never guessed into a match. An alias two schools share ("Miami") is never added;
+odds for a game with an unmapped team are still stored, and accepting the alias links them
+(`betdata relink` runs automatically). Accepted aliases are also appended to
+`seeds/team_aliases.csv`, so a rebuilt database gets them back — commit that file.
 
 ## Running unattended
 
@@ -36,10 +56,13 @@ uv run betdata status                     # health, last/next runs, quota, data,
 uv run betdata status --check             # exit 1 on problems, for cron/monitoring
 ```
 
-Jobs live in `config/schedule.yaml` (cron in US Eastern). Odds jobs are gated on the games
-table: `odds-nfl-prekick` ticks hourly but only spends credits when an NFL game kicks off in
-the next 60 minutes, giving one multi-book snapshot per kickoff window (~80 credits/month in
-season). Jobs run one at a time; a job that crashes is logged and the scheduler carries on;
+Jobs live in `config/schedule.yaml` (standard cron, US Eastern). Odds jobs are gated on the
+games table, so credits are only spent when games are about to start: NFL gets one snapshot
+before every kickoff window (~80 credits/month), NBA and college basketball one before the
+evening tips (plus weekend/Saturday day games), college football three on Saturdays. Event
+lists for sports without a schedule source yet are gated by season months. Worst case with all
+four sports in season is ~330 of 450 usable credits/month; daily pacing allows up to 2x an even
+share so busy Saturdays/Sundays are not skipped. Jobs run one at a time; a job that crashes is logged and the scheduler carries on;
 missed runs (machine asleep) run once on wake if within the job's grace period. Logs go to
 `data/logs/scheduler.log`. To keep it running, see `deploy/betdata-scheduler.service`
 (systemd); on macOS use a launchd agent or `tmux`.
@@ -93,7 +116,7 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 - [x] **M1** The Odds API → NFL end to end
 - [x] **M2** nflverse schedules, results and closing lines; cross-source game matching; backfill
 - [x] **M3** unattended scheduler, gating, spend projection, status
-- [ ] M4 team-mapping tools; The Odds API for NBA/NCAAF/NCAAB
+- [x] **M4** college team import, review queue and alias tools, relink; NBA/NCAAF/NCAAB odds
 - [ ] M5 CFBD football + basketball
 - [ ] M6 SharpAPI + OddsPapi
 - [ ] M7 NBA (nba_api + sportsdataverse fallback), NCAAB results

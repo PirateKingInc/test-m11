@@ -40,6 +40,8 @@ class Router:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
         self.calls.append(path)
+        if "/sports/" in path and "americanfootball_nfl" not in path:
+            return httpx.Response(200, content=b"[]", headers={"x-requests-last": "0"})
         if path.endswith("/schedules/games.csv"):
             return httpx.Response(200, content=SAMPLE)
         if path.endswith("/events"):
@@ -208,13 +210,17 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
     start = datetime(2026, 10, 15, 4, 0, tzinfo=UTC)  # Thu 00:00 ET
     end = start + timedelta(days=7)
     ticks = sorted(
-        (t, job)
-        for job in schedule.jobs
-        for t in fire_times(runner.trigger_for(job, schedule), start, end)
+        (
+            (t, job)
+            for job in schedule.jobs
+            for t in fire_times(runner.trigger_for(job, schedule), start, end)
+        ),
+        key=lambda tj: (tj[0], tj[1].id),
     )
     for t, job in ticks:
         clock.now = t
-        execute(engine, settings, REGISTRY, job, now=t, source_kwargs=kwargs)
+        execute(engine, settings, REGISTRY, job, now=t, timezone=schedule.timezone,
+                source_kwargs=kwargs)  # fmt: skip
 
     all_runs = runs(engine)
     assert all(r.status == "ok" for r in all_runs), [(r.scheduled_job, r.message) for r in all_runs]
@@ -254,3 +260,32 @@ def test_status_reports_failures_and_paused_sources(
     report = build_status(engine, settings, schedule, clock.now)
     text = "\n".join(report.problems)
     assert "circuit open" in text and "failed" in text
+
+
+def test_out_of_season_job_does_not_run(engine, settings, kwargs, router, schedule):
+    job = next(j for j in schedule.jobs if j.id == "odds-ncaab-events")  # Nov-Apr
+    october = datetime(2026, 10, 15, 10, 40, tzinfo=UTC)
+    december = datetime(2026, 12, 15, 11, 40, tzinfo=UTC)
+    run = execute(engine, settings, REGISTRY, job, now=october, timezone=NY, source_kwargs=kwargs)
+    assert run is None and router.calls == []
+    run = execute(engine, settings, REGISTRY, job, now=december, timezone=NY, source_kwargs=kwargs)
+    assert run.status == "ok"
+    assert router.calls == ["/v4/sports/basketball_ncaab/events"]
+
+
+@pytest.mark.parametrize(
+    "dow,expected",
+    [
+        ("6", ["Sat"]),
+        ("0", ["Sun"]),
+        ("7", ["Sun"]),
+        ("0,6", ["Sat", "Sun"]),
+        ("1-5", ["Mon", "Tue", "Wed", "Thu", "Fri"]),
+        ("sat", ["Sat"]),
+    ],
+)
+def test_cron_weekdays_use_standard_numbering(dow, expected):
+    t = WallClockCronTrigger(f"40 11 * * {dow}", NY)
+    start = datetime(2026, 10, 12, 4, 0, tzinfo=UTC)  # Mon 00:00 ET
+    days = [x.strftime("%a") for x in fire_times(t, start, start + timedelta(days=7))]
+    assert sorted(days) == sorted(expected)

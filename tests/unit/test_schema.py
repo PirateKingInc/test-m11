@@ -22,7 +22,7 @@ def test_seed_is_idempotent(engine):
     seed(engine)
     with engine.connect() as conn:
         assert conn.execute(select(func.count()).select_from(sports)).scalar() == 4
-        assert conn.execute(select(func.count()).select_from(teams)).scalar() == 32
+        assert conn.execute(select(func.count()).select_from(teams)).scalar() == 32 + 30
 
 
 def test_naive_datetimes_rejected(engine):

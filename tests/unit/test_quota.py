@@ -53,8 +53,8 @@ def test_api_reported_remaining_overrides_lower_local_count(engine, clock):
 
 def test_pacing_limits_normal_priority_only(engine, clock):
     qm = QuotaManager(engine, "the_odds_api", POLICY, clock=clock)
-    s = qm.status()  # Oct 15 -> Nov 1 = 17 days, 450 usable -> 26/day
-    assert s.daily_allowance == 450 // 17
+    s = qm.status()  # Oct 15 -> Nov 1 = 17 days, 450 usable -> 26.5/day even, x2 burst
+    assert s.daily_allowance == int(450 / 17 * 2)
     spend(engine, clock, s.daily_allowance)
     with pytest.raises(QuotaExceeded, match="paced"):
         qm.check(3)

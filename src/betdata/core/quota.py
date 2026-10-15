@@ -6,8 +6,8 @@ drift can only make us more conservative.
 
 Two checks before every call:
   * hard cap: never spend past limit * (1 - safety_margin) in the period
-  * pacing (priority="normal" only): spread what is left evenly over the rest of the period,
-    so an early-month burst cannot starve later weeks. priority="high" skips pacing only.
+  * pacing (priority="normal" only): a day may spend at most `burst` x an even share of what
+    is left, so a runaway job cannot drain the month. priority="high" skips pacing only.
 """
 
 from __future__ import annotations
@@ -90,7 +90,10 @@ class QuotaManager:
         usable = math.floor(self.policy.limit * (1 - self.policy.safety_margin))
         remaining_usable = max(0, usable - used_effective)
         days_left = max(1, math.ceil((end - day_start).total_seconds() / 86400))
-        daily_allowance = math.floor((remaining_usable + used_today) / days_left)
+        even_share = (remaining_usable + used_today) / days_left
+        daily_allowance = min(
+            remaining_usable + used_today, math.floor(even_share * self.policy.burst)
+        )
         return QuotaStatus(
             source=self.source,
             limit=self.policy.limit,

@@ -17,6 +17,10 @@ db_app = typer.Typer(help="Database setup.", no_args_is_help=True)
 app.add_typer(db_app, name="db")
 sched_app = typer.Typer(help="Unattended scheduled polling.", no_args_is_help=True)
 app.add_typer(sched_app, name="scheduler")
+teams_app = typer.Typer(help="Team registry.", no_args_is_help=True)
+app.add_typer(teams_app, name="teams")
+alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=True)
+app.add_typer(alias_app, name="alias")
 
 
 @app.callback()
@@ -110,20 +114,168 @@ def reparse(source: str, raw_id: int):
     typer.echo(f"raw {raw_id}: inserted={inserted} seen={seen}")
 
 
+def _pending(conn, sport: str | None = None, ids: list[int] | None = None):
+    from betdata.db.schema import sports
+
+    q = (
+        select(unmatched_entities, sports.c.key.label("sport"))
+        .join(sports, sports.c.sport_id == unmatched_entities.c.sport_id)
+        .where(unmatched_entities.c.resolved.is_(False), unmatched_entities.c.kind == "team")
+        .order_by(sports.c.key, desc(unmatched_entities.c.times_seen))
+    )
+    if sport:
+        q = q.where(sports.c.key == sport)
+    if ids:
+        q = q.where(unmatched_entities.c.unmatched_id.in_(ids))
+    return conn.execute(q).all()
+
+
+def _suggestions(conn, rows):
+    """(row, Suggestion | None) with suggestions recomputed against the current team list."""
+    from betdata.core.normalize.teams import TeamResolver
+
+    resolvers: dict[int, TeamResolver] = {}
+    out = []
+    for r in rows:
+        resolver = resolvers.setdefault(r.sport_id, TeamResolver(conn, r.sport_id))
+        out.append((r, resolver.suggest(r.raw_value)))
+    return out
+
+
 @app.command()
-def unmatched():
-    """Names we could not map to a team. Add them to seeds/team_aliases.csv, then `db seed`."""
+def unmatched(sport: str = typer.Option(None, help="Only this sport.")):
+    """Team names no source could map. Fix with `betdata alias accept ID` or `alias add`."""
     with _engine().connect() as conn:
-        rows = conn.execute(
-            select(unmatched_entities, teams.c.canonical_name.label("suggestion"))
-            .outerjoin(teams, teams.c.team_id == unmatched_entities.c.suggested_team_id)
-            .where(unmatched_entities.c.resolved.is_(False))
-            .order_by(desc(unmatched_entities.c.times_seen))
+        rows = _suggestions(conn, _pending(conn, sport))
+    if not rows:
+        typer.echo("nothing to review")
+    for r, sug in rows:
+        hint = f"-> {sug.label!r} ({sug.score:.2f})" if sug else "-> no suggestion"
+        name = repr(r.raw_value)
+        typer.echo(
+            f"{r.unmatched_id:5} {r.sport:6} {r.source:14} {name:40} x{r.times_seen:<4} {hint}"
         )
-        for r in rows:
+
+
+@alias_app.command("add")
+def alias_add(
+    sport: str,
+    alias: str,
+    team: str = typer.Argument(..., help="Canonical name (or any name that already resolves)."),
+    source: str = typer.Option("*", help="Source that uses this spelling; * = any source."),
+):
+    """Map a name to a team, e.g. `betdata alias add ncaab "UConn Huskies" Connecticut`."""
+    from betdata.core.teams_admin import AliasConflict, add_alias, find_team, relink
+
+    with _engine().begin() as conn:
+        team_id = find_team(conn, sport, team)
+        if team_id is None:
+            raise typer.BadParameter(f"no {sport} team called {team!r} (see `betdata teams list`)")
+        try:
+            added = add_alias(conn, sport=sport, source=source, alias=alias, team_id=team_id)
+        except AliasConflict as e:
+            raise typer.BadParameter(str(e)) from None
+        stats = relink(conn)
+    typer.echo(
+        f"{'added' if added else 'already present'}; relinked {stats.events_linked} events, "
+        f"{stats.snapshots_linked} odds rows"
+    )
+
+
+@alias_app.command("accept")
+def alias_accept(
+    ids: list[int] = typer.Argument(None, help="unmatched ids from `betdata unmatched`"),
+    sport: str = typer.Option(None, help="With --all: only this sport."),
+    all_: bool = typer.Option(False, "--all", help="Every pending name that has a suggestion."),
+    min_score: float = typer.Option(0.0, help="With --all: skip suggestions below this score."),
+    yes: bool = typer.Option(False, "--yes", help="Apply without asking."),
+):
+    """Accept the suggested team for reviewed names. Shows the list and asks first."""
+    from betdata.core.teams_admin import AliasConflict, add_alias, relink
+
+    if not ids and not all_:
+        raise typer.BadParameter("give unmatched ids, or --all")
+    with _engine().begin() as conn:
+        picks = [
+            (r, s) for r, s in _suggestions(conn, _pending(conn, sport, ids or None))
+            if s and s.score >= min_score
+        ]  # fmt: skip
+        if not picks:
+            typer.echo("nothing to accept")
+            return
+        for r, s in picks:
             typer.echo(
-                f"{r.source:14} {r.kind:5} {r.raw_value!r} x{r.times_seen} suggest={r.suggestion}"
+                f"  {r.sport:6} {r.source:14} {r.raw_value!r:40} -> {s.label!r} ({s.score:.2f})"
             )
+        if not yes and not typer.confirm(f"Add these {len(picks)} aliases?"):
+            raise typer.Abort()
+        added = 0
+        for r, s in picks:
+            try:
+                added += add_alias(
+                    conn, sport=r.sport, source=r.source, alias=r.raw_value, team_id=s.team_id
+                )
+            except AliasConflict as e:
+                typer.echo(f"skipped: {e}")
+        stats = relink(conn)
+    typer.echo(
+        f"added {added}; relinked {stats.events_linked} events, {stats.snapshots_linked} odds rows"
+    )
+
+
+@app.command("relink")
+def relink_cmd(source: str = typer.Option(None)):
+    """Link stored events whose teams are now known to games (no API calls)."""
+    from betdata.core.teams_admin import relink
+
+    with _engine().begin() as conn:
+        stats = relink(conn, source=source.replace("-", "_") if source else None)
+    typer.echo(
+        f"checked {stats.events_checked} events; linked {stats.events_linked}; "
+        f"{stats.snapshots_linked} odds rows now have a game"
+    )
+
+
+@teams_app.command("import")
+def teams_import(
+    sport: str = typer.Option(..., help="ncaaf or ncaab"),
+    season: int = typer.Option(None, help="Season (default: current)."),
+):
+    """Import college teams and their common names from CFBD (1 call from the shared quota)."""
+    from betdata.core.teams_admin import relink
+
+    job = {"ncaaf": "teams_football", "ncaab": "teams_basketball"}.get(sport)
+    if job is None:
+        raise typer.BadParameter("sport must be ncaaf or ncaab (NFL/NBA teams come from seeds)")
+    params = {"season": season} if season else {}
+    result = _source("cfbd").run(job, **params)
+    typer.echo(
+        f"run {result.run_id}: {result.status} teams={result.rows_seen} "
+        f"aliases_added={result.rows_inserted} {result.message}"
+    )
+    if result.status != "ok":
+        raise typer.Exit(1)
+    counts = seed_mod.seed(_engine())  # load saved aliases that were waiting for these teams
+    with _engine().begin() as conn:
+        stats = relink(conn)
+    typer.echo(
+        f"seed aliases pending={counts['aliases_pending']}; relinked {stats.events_linked} events"
+    )
+
+
+@teams_app.command("list")
+def teams_list(sport: str, search: str = typer.Option(None, help="Substring filter.")):
+    """Canonical team names for a sport (use these with `alias add`)."""
+    from betdata.core.matching import sport_id
+
+    with _engine().connect() as conn:
+        q = select(teams.c.canonical_name, teams.c.abbrev, teams.c.conference).where(
+            teams.c.sport_id == sport_id(conn, sport)
+        )
+        if search:
+            q = q.where(teams.c.canonical_name.ilike(f"%{search}%"))
+        for name, abbrev, conf in conn.execute(q.order_by(teams.c.canonical_name)):
+            typer.echo(f"{name:35} {abbrev or '':8} {conf or ''}")
 
 
 @app.command()

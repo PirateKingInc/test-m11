@@ -69,15 +69,29 @@ def _latest_snapshots(conn, source, event_ids, at):
 
 
 def resolve_events(
-    conn: Connection, *, source: str, sport: str, events, authoritative: bool = False
+    conn: Connection,
+    *,
+    source: str,
+    sport: str,
+    events,
+    authoritative: bool = False,
+    record: bool = True,
 ) -> dict[str, GameMatch | None]:
-    """Map each event to a game (creating games as needed). None = a team is unmatched."""
+    """Map each event to a game (creating games as needed). None = a team is unmatched.
+
+    `record=True` stores the events in source_events and unmatched names in the review queue.
+    """
+    from betdata.core.teams_admin import record_events
+
     sid = sport_id(conn, sport)
     team_resolver = TeamResolver(conn, sid)
+    team = team_resolver.resolve if record else team_resolver.lookup
+    if record:
+        record_events(conn, source=source, sport=sport, events=events)
     out: dict[str, GameMatch | None] = {}
     for ev in events:
-        home = team_resolver.resolve(source, ev.home_name)
-        away = team_resolver.resolve(source, ev.away_name)
+        home = team(source, ev.home_name)
+        away = team(source, ev.away_name)
         if home is None or away is None:
             out[ev.source_game_id] = None
             continue

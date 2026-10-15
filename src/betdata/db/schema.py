@@ -98,6 +98,15 @@ team_aliases = Table(
     UniqueConstraint("source", "sport_id", "alias"),
 )
 
+team_source_ids = Table(
+    "team_source_ids",
+    metadata,
+    Column("source", String(32), primary_key=True),
+    Column("sport_id", ForeignKey("sports.sport_id"), primary_key=True),
+    Column("source_team_id", String(64), primary_key=True),
+    Column("team_id", ForeignKey("teams.team_id"), nullable=False, index=True),
+)
+
 unmatched_entities = Table(
     "unmatched_entities",
     metadata,
@@ -187,6 +196,21 @@ game_source_ids = Table(
     Column("game_id", ForeignKey("games.game_id"), nullable=False, index=True),
     # True when this source's "home" team is the game's away team (neutral sites).
     Column("home_away_swapped", Boolean, nullable=False, default=False, server_default=false()),
+)
+
+# Every event a source has listed, with the names it used. Lets odds stored before a team
+# name was mapped be linked to games later (`betdata relink`) without re-calling the API.
+source_events = Table(
+    "source_events",
+    metadata,
+    Column("source", String(32), primary_key=True),
+    Column("source_game_id", String(128), primary_key=True),
+    Column("sport_id", ForeignKey("sports.sport_id"), nullable=False),
+    Column("home_name", String(128), nullable=False),
+    Column("away_name", String(128), nullable=False),
+    Column("start_time_utc", UTCDateTime, nullable=False),
+    Column("first_seen", UTCDateTime, nullable=False),
+    Column("last_seen", UTCDateTime, nullable=False),
 )
 
 results = Table(

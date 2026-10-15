@@ -34,8 +34,10 @@ sources:
     max_requests_per_minute: 6  # free tier allows 12; we use half
 
   cfbd:
-    enabled: false
+    enabled: true
     api_key_env: CFBD_API_KEY
+    football_base_url: https://api.collegefootballdata.com
+    basketball_base_url: https://api.collegebasketballdata.com
     # One quota shared by football and basketball.
     quota: {limit: 1000, period: month, reset_day: 1, safety_margin: 0.10}
 

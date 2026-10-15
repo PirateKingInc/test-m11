@@ -53,6 +53,19 @@ class FakeApi:
         return httpx.MockTransport(self.handler)
 
 
+@pytest.fixture(autouse=True)
+def isolated_seeds(tmp_path, monkeypatch):
+    """Aliases added during tests are appended to a copy of seeds/, never the real one."""
+    import shutil
+
+    from betdata.db import seed as seed_mod
+
+    copy = tmp_path / "seeds"
+    shutil.copytree(seed_mod.SEEDS, copy)
+    monkeypatch.setattr(seed_mod, "SEEDS", copy)
+    return copy
+
+
 @pytest.fixture
 def clock():
     return Clock(datetime(2026, 10, 15, 14, 0, tzinfo=UTC))
@@ -71,6 +84,7 @@ def engine(tmp_path):
 @pytest.fixture
 def settings(monkeypatch):
     monkeypatch.setenv("ODDS_API_KEY", "test-key-123")
+    monkeypatch.setenv("CFBD_API_KEY", "cfbd-test-key")
     return load_settings(
         config_path=PROJECT_ROOT / "config" / "sources.yaml", env_path=Path("/nonexistent")
     )

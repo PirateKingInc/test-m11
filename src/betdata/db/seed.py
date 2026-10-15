@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import logging
 from pathlib import Path
 
 from sqlalchemy import Connection, Engine, insert, select
@@ -11,6 +12,7 @@ from betdata.config import PROJECT_ROOT
 from betdata.db.schema import book_aliases, books, markets, sports, team_aliases, teams
 
 SEEDS = PROJECT_ROOT / "seeds"
+log = logging.getLogger(__name__)
 
 
 def _rows(path: Path):
@@ -28,7 +30,7 @@ def _get_or_insert(conn: Connection, table, pk_col, where: dict, values: dict | 
 
 
 def seed(engine: Engine, seeds_dir: Path = SEEDS) -> dict[str, int]:
-    counts = {"sports": 0, "teams": 0, "aliases": 0, "books": 0, "markets": 0}
+    counts = {"sports": 0, "teams": 0, "aliases": 0, "aliases_pending": 0, "books": 0, "markets": 0}
     with engine.begin() as conn:
         sport_ids = {}
         for r in _rows(seeds_dir / "sports.csv"):
@@ -67,11 +69,21 @@ def seed(engine: Engine, seeds_dir: Path = SEEDS) -> dict[str, int]:
         alias_path = seeds_dir / "team_aliases.csv"
         if alias_path.exists():
             for r in _rows(alias_path):
-                tid = team_ids.get((r["sport"], r["canonical_name"]))
+                tid = (
+                    team_ids.get((r["sport"], r["canonical_name"]))
+                    or conn.execute(
+                        select(teams.c.team_id).where(
+                            teams.c.sport_id == sport_ids[r["sport"]],
+                            teams.c.canonical_name == r["canonical_name"],
+                        )
+                    ).scalar()
+                )
                 if tid is None:
-                    raise ValueError(
-                        f"alias {r['alias']!r} points at unknown team {r['canonical_name']!r}"
-                    )
+                    # College teams come from `betdata teams import`; their aliases load on
+                    # the next seed after that.
+                    log.info("alias %r waits for team %r", r["alias"], r["canonical_name"])
+                    counts["aliases_pending"] += 1
+                    continue
                 _get_or_insert(
                     conn,
                     team_aliases,

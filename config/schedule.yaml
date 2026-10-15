@@ -45,3 +45,68 @@ jobs:
     cron: "50 * * * *"
     misfire_grace_minutes: 15
     when: {sport: nfl, after_minutes: 0, before_minutes: 60}
+
+  # --- NBA, college basketball, college football ------------------------------------------
+  # Until M5/M7 add schedule sources, these sports learn their games from The Odds API's free
+  # /events list, so the events jobs are gated by month rather than by known games.
+  # Worst-case month (Nov: all four sports, NBA weekend matinees every weekend): ~330 of
+  # 450 usable credits. `betdata scheduler plan` gives the real projection once games load.
+
+  - id: odds-nba-events
+    source: the_odds_api
+    job: events
+    params: {sport: nba}
+    cron: "35 6 * * *"
+    misfire_grace_minutes: 720
+    active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+
+  - id: odds-nba-evening  # before the 7pm tips; covers every game through midnight
+    source: the_odds_api
+    job: odds
+    params: {sport: nba}
+    cron: "40 18 * * *"
+    when: {sport: nba, after_minutes: 0, before_minutes: 330}
+
+  - id: odds-nba-weekend-day  # weekend matinees (noon-4:30pm tips)
+    source: the_odds_api
+    job: odds
+    params: {sport: nba}
+    cron: "40 11 * * 0,6"
+    when: {sport: nba, after_minutes: 0, before_minutes: 300}
+
+  - id: odds-ncaab-events
+    source: the_odds_api
+    job: events
+    params: {sport: ncaab}
+    cron: "40 6 * * *"
+    misfire_grace_minutes: 720
+    active_months: [11, 12, 1, 2, 3, 4]
+
+  - id: odds-ncaab-evening  # 6pm-midnight tips, where most weekday games are
+    source: the_odds_api
+    job: odds
+    params: {sport: ncaab}
+    cron: "40 17 * * *"
+    when: {sport: ncaab, after_minutes: 0, before_minutes: 420}
+
+  - id: odds-ncaab-saturday-day
+    source: the_odds_api
+    job: odds
+    params: {sport: ncaab}
+    cron: "40 11 * * 6"
+    when: {sport: ncaab, after_minutes: 0, before_minutes: 330}
+
+  - id: odds-ncaaf-events
+    source: the_odds_api
+    job: events
+    params: {sport: ncaaf}
+    cron: "45 6 * * *"
+    misfire_grace_minutes: 720
+    active_months: [8, 9, 10, 11, 12, 1]
+
+  - id: odds-ncaaf-saturday  # before the noon, 3:30 and 7:30 Saturday windows
+    source: the_odds_api
+    job: odds
+    params: {sport: ncaaf}
+    cron: "40 11,15,19 * * 6"
+    when: {sport: ncaaf, after_minutes: 0, before_minutes: 120}

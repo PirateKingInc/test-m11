@@ -17,7 +17,7 @@ from betdata.db.schema import (
     sports,
     unmatched_entities,
 )
-from betdata.scheduler.jobs import Schedule
+from betdata.scheduler.jobs import Schedule, in_season
 from betdata.scheduler.runner import fire_times, trigger_for
 
 
@@ -69,8 +69,14 @@ def build_status(
             if job.when is None:
                 interval = _expected_interval(job, schedule, now)
                 grace = timedelta(minutes=job.misfire_grace_minutes)
-                if interval and (
-                    last_ok is None or now - last_ok.started_at > 2 * interval + grace
+                window_start = now - 2 * interval - grace if interval else now
+                in_season_whole_window = in_season(job, now, tz) and in_season(
+                    job, window_start, tz
+                )
+                if (
+                    interval
+                    and in_season_whole_window
+                    and (last_ok is None or now - last_ok.started_at > 2 * interval + grace)
                 ):
                     since = _fmt(last_ok.started_at if last_ok else None, tz)
                     r.problems.append(
