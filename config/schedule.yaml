@@ -47,8 +47,8 @@ jobs:
     when: {sport: nfl, after_minutes: 0, before_minutes: 60}
 
   # --- NBA, college basketball, college football ------------------------------------------
-  # Until M5/M7 add schedule sources, these sports learn their games from The Odds API's free
-  # /events list, so the events jobs are gated by month rather than by known games.
+  # NCAAF/NCAAB schedules come from CFBD (below); NBA's from these free /events lists until
+  # M7. Event lists are gated by month rather than by known games.
   # Worst-case month (Nov: all four sports, NBA weekend matinees every weekend): ~330 of
   # 450 usable credits. `betdata scheduler plan` gives the real projection once games load.
 
@@ -110,3 +110,43 @@ jobs:
     params: {sport: ncaaf}
     cron: "40 11,15,19 * * 6"
     when: {sport: ncaaf, after_minutes: 0, before_minutes: 120}
+
+  # --- CFBD (1,000 calls/month shared by football and basketball) ---------------------------
+  # CFBD is the schedule authority for college; these also bring scores and free opening /
+  # current / closing lines from several providers. ~70 calls/month in football season,
+  # ~60 in basketball season, ~130 when both run (Nov-Jan) of 900 usable.
+
+  - id: cfbd-ncaaf-games
+    source: cfbd
+    job: games_football
+    cron: "20 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [8, 9, 10, 11, 12, 1]
+
+  - id: cfbd-ncaaf-games-saturday-night  # final scores the same night
+    source: cfbd
+    job: games_football
+    cron: "55 23 * * 6"
+    misfire_grace_minutes: 360
+    active_months: [8, 9, 10, 11, 12, 1]
+
+  - id: cfbd-ncaaf-lines
+    source: cfbd
+    job: lines_football
+    cron: "25 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [8, 9, 10, 11, 12, 1]
+
+  - id: cfbd-ncaab-games  # rolling window: 3 days back (scores) to 8 days ahead
+    source: cfbd
+    job: games_basketball
+    cron: "30 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [11, 12, 1, 2, 3, 4]
+
+  - id: cfbd-ncaab-lines
+    source: cfbd
+    job: lines_basketball
+    cron: "35 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [11, 12, 1, 2, 3, 4]

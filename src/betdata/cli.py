@@ -65,10 +65,17 @@ def run(
     sport: str = typer.Option(None, help="nfl, ncaaf, nba, ncaab (odds sources)"),
     seasons: str = typer.Option(None, help="2026 | 2015-2026 | all (nflverse; default current)"),
     priority: str = typer.Option(None, help="normal (paced) or high (skips pacing, never the cap)"),
+    param: list[str] = typer.Option(None, "--param", help="Extra job parameter key=value."),
 ):
     """Run one job, e.g. `betdata run the-odds-api odds --sport nfl`,
-    `betdata run nflverse schedules --seasons all` (backfill)."""
+    `betdata run nflverse schedules --seasons all`,
+    `betdata run cfbd games_basketball --param start=2026-11-01 --param end=2026-11-30`."""
     params = {k: v for k, v in dict(sport=sport, seasons=seasons).items() if v is not None}
+    for item in param or []:
+        key, sep, value = item.partition("=")
+        if not sep:
+            raise typer.BadParameter(f"--param expects key=value, got {item!r}")
+        params[key] = value
     result = _source(source).run(job, priority=priority, **params)
     typer.echo(
         f"run {result.run_id}: {result.status} inserted={result.rows_inserted} "
@@ -76,6 +83,49 @@ def run(
     )
     if result.status == "failed":
         raise typer.Exit(1)
+
+
+@app.command()
+def backfill(
+    sport: str = typer.Option(..., help="ncaaf or ncaab (NFL: `run nflverse schedules`)"),
+    seasons: str = typer.Option(..., help="2025 | 2018-2025"),
+    yes: bool = typer.Option(False, "--yes", help="Run without asking."),
+    refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
+):
+    """Load past college seasons from CFBD: 2 calls per football season, 12 per basketball
+    season. Shows the cost against the remaining budget and asks first."""
+    from betdata.sources.cfbd import backfill_plan
+    from betdata.sources.nflverse import parse_seasons
+
+    if sport not in ("ncaaf", "ncaab"):
+        raise typer.BadParameter("sport must be ncaaf or ncaab")
+    source = _source("cfbd")
+    plan = backfill_plan(sport, sorted(parse_seasons(seasons) or []))
+    cached = [] if refetch else [(j, p) for j, p in plan if source.already_fetched(j, p)]
+    plan = [item for item in plan if item not in cached]
+    if cached:
+        typer.echo(f"{len(cached)} windows already fetched (skipped; --refetch to call again)")
+    status = source.quota.status()
+    typer.echo(
+        f"{len(plan)} CFBD calls; {status.remaining_usable} usable left this month "
+        f"(resets {status.period_end:%Y-%m-%d})"
+    )
+    if len(plan) > status.remaining_usable:
+        typer.echo("not enough budget this month; backfill fewer seasons now and the rest later")
+        raise typer.Exit(1)
+    if not yes and not typer.confirm("Run it?"):
+        raise typer.Abort()
+    total = 0
+    for job, params in plan:
+        result = source.run(job, priority="high", **params)
+        typer.echo(
+            f"  {job} {params}: {result.status} inserted={result.rows_inserted} {result.message}"
+        )
+        if result.status != "ok":
+            typer.echo("stopped; rerun the same command to continue (loading is idempotent)")
+            raise typer.Exit(1)
+        total += result.rows_inserted
+    typer.echo(f"done: {total} rows")
 
 
 @app.command()

@@ -1,0 +1,128 @@
+[
+ {
+  "id": 401700002,
+  "season": 2026,
+  "seasonType": "regular",
+  "week": 2,
+  "startDate": "2026-09-05T23:00:00.000Z",
+  "homeTeamId": 333,
+  "homeTeam": "Alabama",
+  "homeConference": null,
+  "homeClassification": "fbs",
+  "homeScore": 56,
+  "awayTeamId": 2464,
+  "awayTeam": "Northern Iowa",
+  "awayConference": null,
+  "awayClassification": "fcs",
+  "awayScore": 7,
+  "lines": [
+   {
+    "provider": "consensus",
+    "spread": -45.5,
+    "formattedSpread": "Alabama -45.5",
+    "spreadOpen": -44,
+    "overUnder": 55.5,
+    "overUnderOpen": 54,
+    "homeMoneyline": null,
+    "awayMoneyline": null
+   }
+  ]
+ },
+ {
+  "id": 401700003,
+  "season": 2026,
+  "seasonType": "regular",
+  "week": 3,
+  "startDate": "2026-09-12T19:30:00.000Z",
+  "homeTeamId": 30,
+  "homeTeam": "USC",
+  "homeConference": null,
+  "homeClassification": "fbs",
+  "homeScore": 24,
+  "awayTeamId": 2579,
+  "awayTeam": "South Carolina",
+  "awayConference": null,
+  "awayClassification": "fbs",
+  "awayScore": 27,
+  "lines": [
+   {
+    "provider": "consensus",
+    "spread": 3.5,
+    "formattedSpread": "South Carolina -3.5",
+    "spreadOpen": 2.5,
+    "overUnder": 48.5,
+    "overUnderOpen": 47.5,
+    "homeMoneyline": 140,
+    "awayMoneyline": -165
+   },
+   {
+    "provider": "Bovada",
+    "spread": -3.5,
+    "formattedSpread": "South Carolina -3.5",
+    "spreadOpen": null,
+    "overUnder": 48.0,
+    "overUnderOpen": null,
+    "homeMoneyline": 145,
+    "awayMoneyline": -170
+   }
+  ]
+ },
+ {
+  "id": 401700005,
+  "season": 2026,
+  "seasonType": "regular",
+  "week": 2,
+  "startDate": "2026-09-05T03:00:00.000Z",
+  "homeTeamId": 23,
+  "homeTeam": "San Jos\u00e9 State",
+  "homeConference": null,
+  "homeClassification": "fbs",
+  "homeScore": 49,
+  "awayTeamId": 2008,
+  "awayTeam": "Grand Valley State",
+  "awayConference": null,
+  "awayClassification": "ii",
+  "awayScore": 3,
+  "lines": [
+   {
+    "provider": "consensus",
+    "spread": -40,
+    "formattedSpread": "San Jos\u00e9 State -40",
+    "spreadOpen": null,
+    "overUnder": 60,
+    "overUnderOpen": null,
+    "homeMoneyline": null,
+    "awayMoneyline": null
+   }
+  ]
+ },
+ {
+  "id": 401700006,
+  "season": 2026,
+  "seasonType": "regular",
+  "week": 8,
+  "startDate": "2026-10-17T23:30:00.000Z",
+  "homeTeamId": 333,
+  "homeTeam": "Alabama",
+  "homeConference": null,
+  "homeClassification": "fbs",
+  "homeScore": null,
+  "awayTeamId": 23,
+  "awayTeam": "San Jos\u00e9 State",
+  "awayConference": null,
+  "awayClassification": "fbs",
+  "awayScore": null,
+  "lines": [
+   {
+    "provider": "DraftKings",
+    "spread": -24.5,
+    "formattedSpread": "Alabama -24.5",
+    "spreadOpen": -21.5,
+    "overUnder": 58.5,
+    "overUnderOpen": 57.5,
+    "homeMoneyline": -2500,
+    "awayMoneyline": 1200
+   }
+  ]
+ }
+]

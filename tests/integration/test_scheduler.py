@@ -40,6 +40,12 @@ class Router:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
         self.calls.append(path)
+        host = request.url.host
+        if "college" in host:
+            sport = "football" if "football" in host else "basketball"
+            return httpx.Response(
+                200, content=fixture_bytes("cfbd", f"{path.strip('/')}_{sport}.json")
+            )
         if "/sports/" in path and "americanfootball_nfl" not in path:
             return httpx.Response(200, content=b"[]", headers={"x-requests-last": "0"})
         if path.endswith("/schedules/games.csv"):
@@ -207,6 +213,8 @@ def test_projection_counts_only_gated_in_ticks(engine, settings, kwargs, schedul
 
 
 def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, clock):
+    cfbd = REGISTRY["cfbd"](engine, settings.source("cfbd"), **kwargs)
+    assert cfbd.run("teams_football").status == "ok"  # one-time setup before going unattended
     start = datetime(2026, 10, 15, 4, 0, tzinfo=UTC)  # Thu 00:00 ET
     end = start + timedelta(days=7)
     ticks = sorted(
@@ -235,6 +243,10 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
     # Thu SEA@DEN, Sun HOU@JAX (London), Sun 1pm slate, Sun 4pm slate (KC@LV from odds data)
     assert by_job["odds-nfl-prekick"] == 4
     assert router.calls.count("/v4/sports/americanfootball_nfl/odds") == 4
+    # college football in season: daily games + lines, plus Saturday-night scores
+    assert by_job["cfbd-ncaaf-games"] == 7 and by_job["cfbd-ncaaf-lines"] == 7
+    assert by_job["cfbd-ncaaf-games-saturday-night"] == 1
+    assert "cfbd-ncaab-games" not in by_job  # basketball starts in November
 
     q = runner.QuotaManager(engine, "the_odds_api", settings.source("the_odds_api").quota,
                             clock=clock).status()  # fmt: skip

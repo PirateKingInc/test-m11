@@ -22,7 +22,7 @@ from betdata.core.matching import GameMatch, find_or_create_game, sport_id
 from betdata.core.models import ParsedOdds
 from betdata.core.normalize.catalog import BookResolver, MarketResolver
 from betdata.core.normalize.teams import TeamResolver
-from betdata.db.schema import odds_snapshots
+from betdata.db.schema import game_source_ids, odds_snapshots, team_source_ids
 
 log = logging.getLogger(__name__)
 _CHUNK = 500  # stay under SQLite's bound-parameter limit
@@ -85,13 +85,25 @@ def resolve_events(
 
     sid = sport_id(conn, sport)
     team_resolver = TeamResolver(conn, sid)
-    team = team_resolver.resolve if record else team_resolver.lookup
+    by_name = team_resolver.resolve if record else team_resolver.lookup
+    by_id = dict(
+        conn.execute(
+            select(team_source_ids.c.source_team_id, team_source_ids.c.team_id).where(
+                team_source_ids.c.source == source, team_source_ids.c.sport_id == sid
+            )
+        ).all()
+    )
+
+    def team(source_team_id, name):
+        found = by_id.get(source_team_id) if source_team_id else None
+        return found if found is not None else by_name(source, name)
+
     if record:
         record_events(conn, source=source, sport=sport, events=events)
     out: dict[str, GameMatch | None] = {}
     for ev in events:
-        home = team(source, ev.home_name)
-        away = team(source, ev.away_name)
+        home = team(ev.home_source_team_id, ev.home_name)
+        away = team(ev.away_source_team_id, ev.away_name)
         if home is None or away is None:
             out[ev.source_game_id] = None
             continue
@@ -108,9 +120,26 @@ def resolve_events(
             season=ev.season,
             season_type=ev.season_type,
             week=ev.week,
+            status=ev.status,
             authoritative=authoritative,
         )
+        for other, other_id in ev.extra_ids.items():
+            _link_extra_id(conn, other, other_id, out[ev.source_game_id].game_id)
     return out
+
+
+def _link_extra_id(conn, source: str, source_game_id: str, game_id: int) -> None:
+    exists = conn.execute(
+        select(game_source_ids.c.game_id).where(
+            game_source_ids.c.source == source, game_source_ids.c.source_game_id == source_game_id
+        )
+    ).first()
+    if not exists:
+        conn.execute(
+            insert(game_source_ids).values(
+                source=source, source_game_id=source_game_id, game_id=game_id
+            )
+        )
 
 
 def load_odds(

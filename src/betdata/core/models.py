@@ -21,6 +21,13 @@ class ParsedEvent:
     home_score: int | None = None
     away_score: int | None = None
     final: bool = False
+    # scheduled, in_progress, final, postponed, cancelled (when the source reports it)
+    status: str | None = None
+    # The source's own team ids, tried before names (robust to renames).
+    home_source_team_id: str | None = None
+    away_source_team_id: str | None = None
+    # Ids for the same game in other systems, e.g. {"espn": "401..."}.
+    extra_ids: dict[str, str] = field(default_factory=dict, hash=False, compare=False)
 
 
 @dataclass(frozen=True)

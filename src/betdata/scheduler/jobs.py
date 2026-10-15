@@ -102,7 +102,7 @@ def gate_open(engine: Engine, gate: Gate, now: datetime) -> bool:
             .select_from(games.join(sports))
             .where(
                 sports.c.key == gate.sport,
-                games.c.status != "final",
+                games.c.status == "scheduled",  # not final, postponed or cancelled
                 games.c.start_time_utc > lo,
                 games.c.start_time_utc <= hi,
             )

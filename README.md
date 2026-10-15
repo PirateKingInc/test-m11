@@ -41,6 +41,20 @@ uv run betdata alias add ncaab "Saint Marys (CA) Gaels" "Saint Mary's" --source 
 uv run betdata teams list ncaab --search miami
 ```
 
+Then load college schedules, scores and lines (CFBD is the schedule authority for NCAAF/NCAAB):
+
+```bash
+uv run betdata backfill --sport ncaaf --seasons 2015-2025   # 2 calls/season; asks first
+uv run betdata backfill --sport ncaab --seasons 2022-2025   # 12 calls/season (monthly windows)
+uv run betdata run cfbd games_basketball --param start=2026-11-01 --param end=2026-11-30
+```
+
+Backfill shows the cost against this month's remaining CFBD budget, refuses if it doesn't fit,
+and skips windows already fetched (stored responses), so an interrupted backfill can be rerun
+for free. CFBD lines are stored per provider (consensus, DraftKings, ESPN Bet, Bovada, ...) as
+`source_opening`, then `poll` while the game is upcoming, and `source_closing` once final;
+spreads/totals carry a line but no price. Basketball games against non-D-I teams are skipped.
+
 Names are never guessed into a match. An alias two schools share ("Miami") is never added;
 odds for a game with an unmapped team are still stored, and accepting the alias links them
 (`betdata relink` runs automatically). Accepted aliases are also appended to
@@ -94,6 +108,8 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
   returns `game_outcome` in the game's orientation.
 - **nflverse lines** are stored as book `nflverse` (nflverse does not name the book): `poll`
   snapshots while a game is upcoming, `source_closing` once it is final.
+- **Game status**: `scheduled`, `final`, `postponed`, `cancelled` (from CFBD basketball). Odds
+  jobs only spend credits on `scheduled` games.
 - **Portability**: SQLAlchemy Core + Alembic, generic types, UTC everywhere. Set
   `BETDATA_DB_URL` to a Postgres URL to switch.
 
@@ -117,7 +133,7 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 - [x] **M2** nflverse schedules, results and closing lines; cross-source game matching; backfill
 - [x] **M3** unattended scheduler, gating, spend projection, status
 - [x] **M4** college team import, review queue and alias tools, relink; NBA/NCAAF/NCAAB odds
-- [ ] M5 CFBD football + basketball
+- [x] **M5** CFBD college schedules, scores and lines; budgeted backfill
 - [ ] M6 SharpAPI + OddsPapi
 - [ ] M7 NBA (nba_api + sportsdataverse fallback), NCAAB results
 - [ ] M8 Open-Meteo + venues

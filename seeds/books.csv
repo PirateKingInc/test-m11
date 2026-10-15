@@ -1,16 +1,16 @@
-key,name,region,is_sharp,the_odds_api_key
-draftkings,DraftKings,us,0,draftkings
-fanduel,FanDuel,us,0,fanduel
-betmgm,BetMGM,us,0,betmgm
-caesars,Caesars,us,0,williamhill_us
-espnbet,ESPN BET,us,0,espnbet
-fanatics,Fanatics,us,0,fanatics
-betrivers,BetRivers,us,0,betrivers
-ballybet,Bally Bet,us,0,ballybet
-hardrockbet,Hard Rock Bet,us,0,hardrockbet
-bovada,Bovada,us,0,bovada
-betonline,BetOnline.ag,us,0,betonlineag
-mybookie,MyBookie.ag,us,0,mybookieag
-betus,BetUS,us,0,betus
-lowvig,LowVig.ag,us,0,lowvig
-pinnacle,Pinnacle,eu,1,pinnacle
+key,name,region,is_sharp,the_odds_api_key,cfbd_key
+draftkings,DraftKings,us,0,draftkings,
+fanduel,FanDuel,us,0,fanduel,
+betmgm,BetMGM,us,0,betmgm,
+caesars,Caesars,us,0,williamhill_us,William Hill (New Jersey)
+espnbet,ESPN BET,us,0,espnbet,
+fanatics,Fanatics,us,0,fanatics,
+betrivers,BetRivers,us,0,betrivers,
+ballybet,Bally Bet,us,0,ballybet,
+hardrockbet,Hard Rock Bet,us,0,hardrockbet,
+bovada,Bovada,us,0,bovada,
+betonline,BetOnline.ag,us,0,betonlineag,
+mybookie,MyBookie.ag,us,0,mybookieag,
+betus,BetUS,us,0,betus,
+lowvig,LowVig.ag,us,0,lowvig,
+pinnacle,Pinnacle,eu,1,pinnacle,

@@ -1,0 +1,86 @@
+[
+ {
+  "gameId": 9001,
+  "season": 2027,
+  "seasonType": "regular",
+  "startDate": "2026-11-10T00:00:00.000Z",
+  "homeTeamId": 1,
+  "homeTeam": "UConn",
+  "homeConference": null,
+  "homeScore": 78,
+  "awayTeamId": 6,
+  "awayTeam": "Kansas",
+  "awayConference": null,
+  "awayScore": 74,
+  "lines": [
+   {
+    "provider": "ESPN BET",
+    "spread": -2.5,
+    "overUnder": 145.5,
+    "homeMoneyline": -140,
+    "awayMoneyline": 120,
+    "spreadOpen": -1.5,
+    "overUnderOpen": 144.5
+   }
+  ]
+ },
+ {
+  "gameId": 9003,
+  "season": 2027,
+  "seasonType": "regular",
+  "startDate": "2026-11-20T00:00:00.000Z",
+  "homeTeamId": 4,
+  "homeTeam": "Miami",
+  "homeConference": null,
+  "homeScore": null,
+  "awayTeamId": 5,
+  "awayTeam": "Miami (OH)",
+  "awayConference": null,
+  "awayScore": null,
+  "lines": [
+   {
+    "provider": "DraftKings",
+    "spread": 6.5,
+    "overUnder": 139.5,
+    "homeMoneyline": 220,
+    "awayMoneyline": -270,
+    "spreadOpen": null,
+    "overUnderOpen": null
+   },
+   {
+    "provider": "Bovada",
+    "spread": -6.5,
+    "overUnder": 140.0,
+    "homeMoneyline": 225,
+    "awayMoneyline": -280,
+    "spreadOpen": null,
+    "overUnderOpen": null
+   }
+  ]
+ },
+ {
+  "gameId": 9004,
+  "season": 2027,
+  "seasonType": "regular",
+  "startDate": "2026-11-08T01:00:00.000Z",
+  "homeTeamId": 6,
+  "homeTeam": "Kansas",
+  "homeConference": null,
+  "homeScore": 101,
+  "awayTeamId": 99999,
+  "awayTeam": "Haskell Indian Nations",
+  "awayConference": null,
+  "awayScore": 45,
+  "lines": [
+   {
+    "provider": "consensus",
+    "spread": -30.5,
+    "overUnder": 150.5,
+    "homeMoneyline": null,
+    "awayMoneyline": null,
+    "spreadOpen": null,
+    "overUnderOpen": null
+   }
+  ]
+ }
+]

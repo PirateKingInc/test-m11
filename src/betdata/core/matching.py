@@ -86,12 +86,15 @@ def find_or_create_game(
     season: int | None = None,
     season_type: str | None = None,
     week: int | None = None,
+    status: str | None = None,
     authoritative: bool = False,
 ) -> GameMatch:
     schedule = dict(
         start_time_utc=start_time_utc, season=season or season_for(sport, start_time_utc)
     )
-    for k, v in dict(season_type=season_type, week=week, neutral_site=neutral_site).items():
+    for k, v in dict(
+        season_type=season_type, week=week, neutral_site=neutral_site, status=status
+    ).items():
         if v is not None:
             schedule[k] = v
 
