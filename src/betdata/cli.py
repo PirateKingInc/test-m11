@@ -56,11 +56,14 @@ def db_seed():
 def run(
     source: str,
     job: str,
-    sport: str = typer.Option(..., help="nfl, ncaaf, nba, ncaab"),
+    sport: str = typer.Option(None, help="nfl, ncaaf, nba, ncaab (odds sources)"),
+    seasons: str = typer.Option(None, help="2026 | 2015-2026 | all (nflverse; default current)"),
     priority: str = typer.Option(None, help="normal (paced) or high (skips pacing, never the cap)"),
 ):
-    """Run one ingestion job, e.g. `betdata run the-odds-api odds --sport nfl`."""
-    result = _source(source).run(job, priority=priority, sport=sport)
+    """Run one job, e.g. `betdata run the-odds-api odds --sport nfl`,
+    `betdata run nflverse schedules --seasons all` (backfill)."""
+    params = {k: v for k, v in dict(sport=sport, seasons=seasons).items() if v is not None}
+    result = _source(source).run(job, priority=priority, **params)
     typer.echo(
         f"run {result.run_id}: {result.status} inserted={result.rows_inserted} "
         f"seen={result.rows_seen} {result.message}"

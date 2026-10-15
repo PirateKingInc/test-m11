@@ -48,6 +48,7 @@ class ApiResponse:
     fetched_at: datetime
     raw_id: int
     usage: CostReport
+    unchanged: bool = False  # body identical to the last stored response; raw_id points at it
 
     def json(self) -> Any:
         return json.loads(self.body)
@@ -107,6 +108,7 @@ class SourceClient:
             base_url=base_url,
             transport=transport,
             timeout=timeout,
+            follow_redirects=True,  # GitHub release downloads redirect to a CDN
             headers={"User-Agent": user_agent},
         )
 
@@ -129,7 +131,10 @@ class SourceClient:
         est_cost: int = 1,
         priority: str = "normal",
         run_id: int | None = None,
+        dedupe: bool = False,
     ) -> ApiResponse:
+        """`dedupe=True`: if the body equals the last stored response for this endpoint, do not
+        store it again (for large static files such as nflverse releases)."""
         self._check_breaker()
         last_error: str = ""
         last_status: int | None = None
@@ -169,7 +174,12 @@ class SourceClient:
 
             if ok:
                 with self.engine.begin() as conn:
-                    raw_id = raw_store.save(
+                    previous = (
+                        raw_store.find_identical(conn, self.source, endpoint, resp.content)
+                        if dedupe
+                        else None
+                    )
+                    raw_id = previous or raw_store.save(
                         conn,
                         source=self.source,
                         endpoint=endpoint,
@@ -181,7 +191,13 @@ class SourceClient:
                     )
                 self._record_success()
                 return ApiResponse(
-                    resp.status_code, resp.headers, resp.content, started, raw_id, report
+                    resp.status_code,
+                    resp.headers,
+                    resp.content,
+                    started,
+                    raw_id,
+                    report,
+                    unchanged=previous is not None,
                 )
 
             last_error, last_status = err, resp.status_code

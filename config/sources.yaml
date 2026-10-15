@@ -17,6 +17,11 @@ sources:
       nba: basketball_nba
       ncaab: basketball_ncaab
 
+  nflverse:
+    enabled: true
+    base_url: https://github.com/nflverse/nflverse-data/releases/download
+    # No quota: static files on GitHub releases. Unchanged files are not re-archived.
+
   # Not implemented yet (later milestones). Listed so quotas are visible in one place.
   oddspapi:
     enabled: false

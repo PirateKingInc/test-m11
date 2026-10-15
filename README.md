@@ -16,6 +16,8 @@ uv run betdata db init        # create/upgrade schema (Alembic) + load seeds/*.c
 ```bash
 uv run betdata run the-odds-api events --sport nfl   # free: discovers upcoming games
 uv run betdata run the-odds-api odds --sport nfl     # 3 credits: h2h + spreads + totals, US books
+uv run betdata run nflverse schedules                 # NFL schedule, scores, lines (current season)
+uv run betdata run nflverse schedules --seasons all  # backfill 1999-present (~15 s, no quota)
 uv run betdata quota                                  # budget per metered API
 uv run betdata runs                                   # recent ingestion runs
 uv run betdata unmatched                              # team names that need an alias
@@ -43,6 +45,14 @@ uv run betdata reparse the_odds_api <raw_id>          # re-parse a stored respon
   match. Fuzzy matches are only suggestions in `unmatched_entities`; odds for unmatched teams
   are still stored (with `game_id` null). Fix by adding a row to `seeds/team_aliases.csv` and
   running `betdata db seed`.
+- **Games across sources** (`core/matching.py`): one `games` row per real game; each source's
+  id maps to it via `game_source_ids` (same teams within 36 h). An authoritative schedule
+  source (nflverse for NFL) owns kickoff, season, week and which team is home; others can only
+  update games they created. Odds keep each source's own home/away orientation forever;
+  `home_away_swapped` records neutral-site disagreements and the `v_odds_snapshots` view
+  returns `game_outcome` in the game's orientation.
+- **nflverse lines** are stored as book `nflverse` (nflverse does not name the book): `poll`
+  snapshots while a game is upcoming, `source_closing` once it is final.
 - **Portability**: SQLAlchemy Core + Alembic, generic types, UTC everywhere. Set
   `BETDATA_DB_URL` to a Postgres URL to switch.
 
@@ -63,7 +73,7 @@ uv run betdata reparse the_odds_api <raw_id>          # re-parse a stored respon
 
 - [x] **M0** foundation: schema + migration, seeds, HTTP client, quota, usage log, raw store
 - [x] **M1** The Odds API → NFL end to end
-- [ ] M2 nflverse schedules/results/closing lines, cross-source game matching, backfill
+- [x] **M2** nflverse schedules, results and closing lines; cross-source game matching; backfill
 - [ ] M3 unattended scheduler + status
 - [ ] M4 team-mapping tools; The Odds API for NBA/NCAAF/NCAAB
 - [ ] M5 CFBD football + basketball

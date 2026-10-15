@@ -7,7 +7,7 @@ import hashlib
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Connection, insert, select
+from sqlalchemy import Connection, desc, insert, select
 
 from betdata.db.schema import raw_responses
 
@@ -46,3 +46,16 @@ def load(conn: Connection, raw_id: int):
     out = dict(row)
     out["body"] = gzip.decompress(out.pop("body_gz"))
     return out
+
+
+def find_identical(conn: Connection, source: str, endpoint: str, body: bytes) -> int | None:
+    """raw_id of the most recent stored response for this endpoint if its body is identical."""
+    latest = conn.execute(
+        select(raw_responses.c.raw_id, raw_responses.c.sha256)
+        .where(raw_responses.c.source == source, raw_responses.c.endpoint == endpoint)
+        .order_by(desc(raw_responses.c.fetched_at), desc(raw_responses.c.raw_id))
+        .limit(1)
+    ).first()
+    if latest and latest.sha256 == hashlib.sha256(body).hexdigest():
+        return latest.raw_id
+    return None

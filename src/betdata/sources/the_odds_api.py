@@ -212,7 +212,9 @@ class TheOddsApiSource(Source):
         return key
 
     def fetch(self, job: str, params: dict[str, Any], *, priority: str, run_id: int) -> RawInput:
-        sport = params["sport"]
+        sport = params.get("sport")
+        if not sport:
+            raise ConfigError(f"{NAME}: --sport is required")
         endpoint_base = f"/sports/{self._sport_key(sport)}"
         if job == "events":
             endpoint, query, cost = f"{endpoint_base}/events", {"dateFormat": "iso"}, 0

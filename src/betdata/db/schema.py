@@ -25,6 +25,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.sql.expression import false
 from sqlalchemy.types import TypeDecorator
 
 metadata = MetaData(
@@ -171,6 +172,8 @@ games = Table(
     Column("venue_id", ForeignKey("venues.venue_id")),
     Column("neutral_site", Boolean),
     Column("status", String(16), nullable=False, default="scheduled"),
+    # Source that owns start time/season/week/orientation (e.g. nflverse for NFL).
+    Column("schedule_source", String(32)),
     Column("created_at", UTCDateTime, nullable=False, default=utcnow),
     Column("updated_at", UTCDateTime, nullable=False, default=utcnow, onupdate=utcnow),
     Index("ix_games_lookup", "sport_id", "home_team_id", "away_team_id", "start_time_utc"),
@@ -182,6 +185,8 @@ game_source_ids = Table(
     Column("source", String(32), primary_key=True),
     Column("source_game_id", String(128), primary_key=True),
     Column("game_id", ForeignKey("games.game_id"), nullable=False, index=True),
+    # True when this source's "home" team is the game's away team (neutral sites).
+    Column("home_away_swapped", Boolean, nullable=False, default=False, server_default=false()),
 )
 
 results = Table(
