@@ -54,8 +54,9 @@ def import_teams(cfbd, fake_api, which):
 
 
 def resolver(engine, sport):
-    conn = engine.connect()
-    return TeamResolver(conn, sport_id(conn, sport))
+    """TeamResolver loads everything up front; lookups need no open connection."""
+    with engine.connect() as conn:
+        return TeamResolver(conn, sport_id(conn, sport))
 
 
 def count(engine, table, *where):
@@ -192,7 +193,8 @@ def test_unmatched_then_accept_then_relink(cfbd, odds_api, engine, fake_api, iso
         u = conn.execute(select(unmatched_entities)).mappings().one()
         assert conn.execute(select(func.count()).select_from(source_events)).scalar() == 1
     assert u["raw_value"] == "Saint Marys (CA) Gaels"
-    smc = find_team(engine.connect(), "ncaab", "Saint Mary's")
+    with engine.connect() as conn:
+        smc = find_team(conn, "ncaab", "Saint Mary's")
     assert u["suggested_team_id"] == smc
 
     with engine.begin() as conn:
@@ -257,7 +259,7 @@ def test_cli_review_flow(cfbd, odds_api, engine, fake_api, monkeypatch):
 
     from betdata.cli import app
 
-    monkeypatch.setenv("BETDATA_DB_URL", str(engine.url))
+    monkeypatch.setenv("BETDATA_DB_URL", engine.url.render_as_string(hide_password=False))
     get_settings.cache_clear()
     try:
         runner = CliRunner()

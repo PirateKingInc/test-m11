@@ -103,8 +103,25 @@ def engine(tmp_path):
         eng.dispose()
     finally:
         with admin.begin() as conn:
-            conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+            # A test that leaks an open connection holds locks on its schema; fail loudly
+            # instead of waiting forever, then clean up anyway.
+            conn.execute(text("SET LOCAL lock_timeout = '10s'"))
+            try:
+                conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+                leaked = False
+            except Exception:  # noqa: BLE001
+                leaked = True
+        if leaked:
+            with admin.begin() as conn:
+                conn.execute(text(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND pid <> pg_backend_pid() "
+                    "AND query NOT ILIKE '%DROP SCHEMA%' AND backend_type = 'client backend'"
+                ))  # fmt: skip
+                conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         admin.dispose()
+        if leaked:
+            pytest.fail("test left a database connection open (schema drop was blocked)")
 
 
 @pytest.fixture
