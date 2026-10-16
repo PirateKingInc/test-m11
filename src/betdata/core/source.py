@@ -19,7 +19,13 @@ from sqlalchemy import Engine, insert, update
 
 from betdata.config import SourceConfig
 from betdata.core import raw_store
-from betdata.core.errors import IngestError, NotConfigured, QuotaExceeded, SourceUnavailable
+from betdata.core.errors import (
+    IngestError,
+    NotConfigured,
+    NothingToDo,
+    QuotaExceeded,
+    SourceUnavailable,
+)
 from betdata.db.schema import ingest_runs, utcnow
 
 log = logging.getLogger(__name__)
@@ -126,7 +132,7 @@ class Source(ABC):
         except IngestError as e:
             # Expected failure modes (quota, breaker, API error, format change): record and move on.
             result.message = f"{type(e).__name__}: {e}"
-            skipped = isinstance(e, QuotaExceeded | SourceUnavailable | NotConfigured)
+            skipped = isinstance(e, QuotaExceeded | SourceUnavailable | NotConfigured | NothingToDo)
             result.status = "skipped" if skipped else "failed"
             log.warning("%s.%s %s: %s", self.name, job, result.status, result.message)
         except Exception as e:

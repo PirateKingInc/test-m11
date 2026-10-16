@@ -76,6 +76,29 @@ scores still flow; when nba_cdn works, it takes the games over. All-Star exhibit
 placeholders are skipped. For college basketball, sportsdataverse attaches to CFBD's games by
 the ESPN game id CFBD records, giving a second, keyless source of scores.
 
+## Venues and weather
+
+```bash
+uv run betdata run cfbd venues_football              # 1 CFBD call: every college venue + coords
+uv run betdata run open-meteo forecast --sport nfl   # outdoor games in the next 7 days
+uv run betdata run open-meteo observed --sport nfl   # finished games, once the archive has them
+uv run betdata backfill --source open_meteo --sport nfl --seasons 2015-2025   # history
+```
+
+NFL venues ship in `seeds/venues_nfl.csv` (all 67 stadium ids nflverse uses since 1999, with
+coordinates and roof type; nflverse's roof field is wrong for a few international venues and
+is corrected there). College venues come from CFBD: home stadiums with the team import,
+neutral and bowl sites from `venues_football`. Each game also stores its own roof state when
+nflverse reports it (`open`/`closed` for retractable roofs).
+
+Weather comes from Open-Meteo (free, non-commercial, CC BY 4.0 — attribute "Weather data by
+Open-Meteo.com"). Forecasts for outdoor and retractable-roof NFL/college football games run every
+3 hours for the coming week and every one is kept (`lead_hours` says how far ahead it was);
+observed (ERA5 reanalysis) weather is added ~6 days after each game. Rows cover the kickoff
+hour and the next three, in UTC: temperature (°C), wind and gusts (km/h), direction, rain (mm),
+humidity. Domes are skipped. `betdata status` flags upcoming outdoor games with no venue
+coordinates.
+
 ## Sharp and frequent odds (SharpAPI, OddsPapi)
 
 ```bash
@@ -161,7 +184,7 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 | NBA (cdn.nba.com) | unofficial, no quota | season schedule daily, scoreboard twice nightly |
 | sportsdataverse | none (GitHub releases) | NBA fallback + history; backup NCAAB scores |
 | CFBD | 1,000/mo shared FB + BB | ~150/mo ongoing, ~300 for backfill, 900 hard cap |
-| Open-Meteo | 10k/day, non-commercial | outdoor games: forecasts at T-72/24/3 h, observed next day |
+| Open-Meteo | 10k/day (weighted), non-commercial | outdoor games: forecast every 3 h for the week, observed ~6 days after (~150/day) |
 
 ## Milestones
 
@@ -173,5 +196,5 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 - [x] **M5** CFBD college schedules, scores and lines; budgeted backfill
 - [x] **M6** SharpAPI (frequent DK/FD), OddsPapi (Pinnacle, archive-first), closing-line view
 - [x] **M7** NBA schedules/scores (cdn.nba.com + sportsdataverse fallback); backup NCAAB scores
-- [ ] M8 Open-Meteo + venues
+- [x] **M8** venues (NFL seed, CFBD) and Open-Meteo forecasts / observed weather
 - [ ] M9 injuries, PBP parquet, Postgres check

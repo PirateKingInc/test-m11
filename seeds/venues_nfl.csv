@@ -1,0 +1,68 @@
+nflverse_id,name,city,state,country,lat,lon,roof_type
+ATL00,Georgia Dome,Atlanta,GA,US,33.758,-84.401,dome
+ATL97,Mercedes-Benz Stadium,Atlanta,GA,US,33.755,-84.401,retractable
+BAL00,M&T Bank Stadium,Baltimore,MD,US,39.278,-76.623,open
+BOS00,Gillette Stadium,Foxborough,MA,US,42.091,-71.264,open
+BOS99,Foxboro Stadium,Foxborough,MA,US,42.093,-71.262,open
+BRG00,Tiger Stadium (LSU),Baton Rouge,LA,US,30.412,-91.184,open
+BUF00,Highmark Stadium,Orchard Park,NY,US,42.774,-78.787,open
+BUF01,Rogers Centre,Toronto,ON,CA,43.641,-79.389,retractable
+CAR00,Bank of America Stadium,Charlotte,NC,US,35.226,-80.853,open
+CHI98,Soldier Field,Chicago,IL,US,41.862,-87.617,open
+CHI99,Memorial Stadium (Champaign),Champaign,IL,US,40.099,-88.236,open
+CIN00,Paycor Stadium,Cincinnati,OH,US,39.095,-84.516,open
+CIN99,Cinergy Field,Cincinnati,OH,US,39.097,-84.508,open
+CLE00,Huntington Bank Field,Cleveland,OH,US,41.506,-81.699,open
+DAL00,AT&T Stadium,Arlington,TX,US,32.748,-97.093,retractable
+DAL99,Texas Stadium,Irving,TX,US,32.840,-96.911,open
+DEN00,Empower Field at Mile High,Denver,CO,US,39.744,-105.020,open
+DEN99,Mile High Stadium,Denver,CO,US,39.746,-105.022,open
+DET00,Ford Field,Detroit,MI,US,42.340,-83.046,dome
+DET99,Pontiac Silverdome,Pontiac,MI,US,42.646,-83.255,dome
+FRA00,Deutsche Bank Park,Frankfurt,HE,DE,50.069,8.645,retractable
+GER00,Allianz Arena,Munich,BY,DE,48.219,11.625,open
+GNB00,Lambeau Field,Green Bay,WI,US,44.501,-88.062,open
+HOU00,NRG Stadium,Houston,TX,US,29.685,-95.411,retractable
+IND00,Lucas Oil Stadium,Indianapolis,IN,US,39.760,-86.164,retractable
+IND99,RCA Dome,Indianapolis,IN,US,39.763,-86.163,dome
+JAX00,EverBank Stadium,Jacksonville,FL,US,30.324,-81.637,open
+KAN00,GEHA Field at Arrowhead Stadium,Kansas City,MO,US,39.049,-94.484,open
+LAX01,SoFi Stadium,Inglewood,CA,US,33.953,-118.339,dome
+LAX97,StubHub Center,Carson,CA,US,33.864,-118.261,open
+LAX99,Los Angeles Memorial Coliseum,Los Angeles,CA,US,34.014,-118.288,open
+LON00,Wembley Stadium,London,ENG,GB,51.556,-0.280,open
+LON01,Twickenham Stadium,London,ENG,GB,51.456,-0.342,open
+LON02,Tottenham Hotspur Stadium,London,ENG,GB,51.604,-0.066,open
+MAD01,Santiago Bernabeu,Madrid,MD,ES,40.453,-3.688,retractable
+MEL00,Melbourne Cricket Ground,Melbourne,VIC,AU,-37.820,144.983,open
+MEX00,Estadio Banorte (Azteca),Mexico City,CMX,MX,19.303,-99.150,open
+MIA00,Hard Rock Stadium,Miami Gardens,FL,US,25.958,-80.239,open
+MIN00,Hubert H. Humphrey Metrodome,Minneapolis,MN,US,44.974,-93.258,dome
+MIN01,U.S. Bank Stadium,Minneapolis,MN,US,44.974,-93.258,dome
+MIN98,TCF Bank Stadium,Minneapolis,MN,US,44.976,-93.225,open
+MUN01,Allianz Arena (FC Bayern Munich Stadium),Munich,BY,DE,48.219,11.625,open
+NAS00,Nissan Stadium,Nashville,TN,US,36.166,-86.771,open
+NOR00,Caesars Superdome,New Orleans,LA,US,29.951,-90.081,dome
+NYC00,Giants Stadium,East Rutherford,NJ,US,40.812,-74.074,open
+NYC01,MetLife Stadium,East Rutherford,NJ,US,40.814,-74.074,open
+OAK00,Oakland Coliseum,Oakland,CA,US,37.752,-122.201,open
+PAR00,Stade de France,Saint-Denis,IDF,FR,48.924,2.360,open
+PHI00,Lincoln Financial Field,Philadelphia,PA,US,39.901,-75.168,open
+PHI99,Veterans Stadium,Philadelphia,PA,US,39.907,-75.171,open
+PHO00,State Farm Stadium,Glendale,AZ,US,33.528,-112.263,retractable
+PHO99,Sun Devil Stadium,Tempe,AZ,US,33.426,-111.933,open
+PIT00,Acrisure Stadium,Pittsburgh,PA,US,40.447,-80.016,open
+PIT99,Three Rivers Stadium,Pittsburgh,PA,US,40.447,-80.013,open
+RIO00,Maracana Stadium,Rio de Janeiro,RJ,BR,-22.912,-43.230,open
+SAN00,Alamodome,San Antonio,TX,US,29.417,-98.479,dome
+SAO00,Arena Corinthians,Sao Paulo,SP,BR,-23.545,-46.474,open
+SDG00,Qualcomm Stadium,San Diego,CA,US,32.783,-117.120,open
+SEA00,Lumen Field,Seattle,WA,US,47.595,-122.332,open
+SEA98,Kingdome,Seattle,WA,US,47.595,-122.332,dome
+SEA99,Husky Stadium,Seattle,WA,US,47.650,-122.302,open
+SFO00,Candlestick Park,San Francisco,CA,US,37.714,-122.386,open
+SFO01,Levi's Stadium,Santa Clara,CA,US,37.403,-121.970,open
+STL00,Edward Jones Dome,St. Louis,MO,US,38.633,-90.188,dome
+TAM00,Raymond James Stadium,Tampa,FL,US,27.976,-82.503,open
+VEG00,Allegiant Stadium,Las Vegas,NV,US,36.091,-115.184,dome
+WAS00,Northwest Stadium,Landover,MD,US,38.908,-76.864,open

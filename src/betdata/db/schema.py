@@ -136,6 +136,15 @@ venues = Table(
     Column("roof_type", String(16)),  # open, dome, retractable
     Column("surface", String(32)),
     Column("tz", String(64)),
+    Column("country", String(2)),  # ISO 3166-1 alpha-2
+)
+
+venue_source_ids = Table(
+    "venue_source_ids",
+    metadata,
+    Column("source", String(32), primary_key=True),
+    Column("source_venue_id", String(64), primary_key=True),
+    Column("venue_id", ForeignKey("venues.venue_id"), nullable=False, index=True),
 )
 
 books = Table(
@@ -180,6 +189,8 @@ games = Table(
     Column("away_team_id", ForeignKey("teams.team_id"), nullable=False),
     Column("venue_id", ForeignKey("venues.venue_id")),
     Column("neutral_site", Boolean),
+    # Per-game roof state where the source reports it: outdoors, dome, open, closed.
+    Column("roof", String(16)),
     Column("status", String(16), nullable=False, default="scheduled"),
     # Source that owns start time/season/week/orientation (e.g. nflverse for NFL).
     Column("schedule_source", String(32)),

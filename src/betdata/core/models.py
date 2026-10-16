@@ -26,6 +26,11 @@ class ParsedEvent:
     # The source's own team ids, tried before names (robust to renames).
     home_source_team_id: str | None = None
     away_source_team_id: str | None = None
+    # The source's venue id and name (a new venue is created from the name if unknown), and
+    # per-game roof state where reported (outdoors, dome, open, closed).
+    venue_source_id: str | None = None
+    venue_name: str | None = None
+    roof: str | None = None
     # Ids for the same game in other systems, e.g. {"espn": "401..."}.
     extra_ids: dict[str, str] = field(default_factory=dict, hash=False, compare=False)
 

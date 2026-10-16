@@ -25,6 +25,7 @@ from betdata.scheduler.runner import WallClockCronTrigger, fire_times, project
 from betdata.sources import REGISTRY
 from betdata.status import build_status
 from tests.conftest import fixture_bytes
+from tests.integration.test_weather_venues import FakeOpenMeteo
 
 NY = ZoneInfo("America/New_York")
 SAMPLE = fixture_bytes("nflverse", "games_sample.csv")
@@ -41,6 +42,8 @@ class Router:
         path = request.url.path
         self.calls.append(path)
         host = request.url.host
+        if host.endswith("open-meteo.com"):
+            return FakeOpenMeteo()(request)
         if host == "cdn.nba.com":
             name = path.rsplit("/", 1)[-1]
             return httpx.Response(200, content=fixture_bytes("nba_cdn", name))
@@ -248,7 +251,7 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
     bad = [
         (r.scheduled_job, r.status, r.message)
         for r in all_runs
-        if r.status != "ok" and not (r.message or "").startswith("NotConfigured")
+        if r.status != "ok" and not (r.message or "").startswith(("NotConfigured", "NothingToDo"))
     ]
     assert bad == []
     by_job = {}
@@ -269,6 +272,12 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
     # NBA (October = in season): daily schedule from both sources, scoreboard twice a night
     assert by_job["nba-cdn-schedule"] == 7 and by_job["sdv-nba-schedule"] == 7
     assert by_job["nba-cdn-scoreboard"] == 14
+    # Weather: forecasts every 3 h while NFL games are within a week. The sample's last game
+    # this season-week kicks off Sunday afternoon, after which the gate closes: Thu 00:20 ET to
+    # Sun ~16:00 ET is ~3.6 days of 3-hourly runs. Nothing observed yet (too recent).
+    assert 25 <= by_job["weather-forecast-nfl"] <= 30
+    assert not [r for r in all_runs
+                if r.scheduled_job == "weather-observed-nfl" and r.status == "ok"]  # fmt: skip
     assert "sdv-ncaab-schedule" not in by_job
     # SharpAPI: every 10 min in the 3 h before each kickoff window; nothing for idle sports
     assert by_job["sharp-nfl-near"] > 0 and "sharp-ncaab-near" not in by_job

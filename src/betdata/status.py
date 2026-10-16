@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from sqlalchemy import Engine, case, desc, func, select
+from sqlalchemy import Engine, and_, case, desc, func, or_, select
 
 from betdata.config import Settings
 from betdata.core.quota import QuotaManager
@@ -16,6 +16,7 @@ from betdata.db.schema import (
     source_health,
     sports,
     unmatched_entities,
+    venues,
 )
 from betdata.scheduler.jobs import Schedule, in_season
 from betdata.scheduler.runner import fire_times, trigger_for
@@ -48,7 +49,15 @@ def build_status(
 
         def last_run(job_id, status=None):
             q = select(ingest_runs).where(ingest_runs.c.scheduled_job == job_id)
-            if status:
+            if status == "healthy":  # ran fine, or correctly found nothing to do
+                q = q.where(
+                    or_(
+                        ingest_runs.c.status == "ok",
+                        and_(ingest_runs.c.status == "skipped",
+                             ingest_runs.c.message.like("NothingToDo%")),
+                    )
+                )  # fmt: skip
+            elif status:
                 q = q.where(ingest_runs.c.status == status)
             return conn.execute(q.order_by(desc(ingest_runs.c.run_id)).limit(1)).first()
 
@@ -59,7 +68,7 @@ def build_status(
             if not job.enabled:
                 continue
             last = last_run(job.id)
-            last_ok = last_run(job.id, "ok")
+            last_ok = last_run(job.id, "healthy")
             nxt = trigger_for(job, schedule).get_next_fire_time(None, now)
             last_txt = f"{last.status} {_fmt(last.started_at, tz)}" if last else "never run"
             gated = (
@@ -80,7 +89,7 @@ def build_status(
                 ):
                     since = _fmt(last_ok.started_at if last_ok else None, tz)
                     r.problems.append(
-                        f"{job.id}: no successful run since {since} (expected every {interval})"
+                        f"{job.id}: no healthy run since {since} (expected every {interval})"
                     )
 
         r.lines.append("")
@@ -150,6 +159,27 @@ def build_status(
         ):
             latest_txt = _fmt(latest, tz) if isinstance(latest, datetime) else str(latest)[:16]
             r.lines.append(f"  odds from {source:14} {n:8} snapshots, latest {latest_txt}")
+        no_coords = conn.execute(
+            select(sports.c.key, func.count())
+            .select_from(
+                games.join(sports).outerjoin(venues, venues.c.venue_id == games.c.venue_id)
+            )
+            .where(
+                sports.c.key.in_(("nfl", "ncaaf")),
+                games.c.status == "scheduled",
+                games.c.start_time_utc > now,
+                games.c.start_time_utc <= now + timedelta(days=7),
+                or_(games.c.venue_id.is_(None), venues.c.lat.is_(None)),
+                or_(venues.c.roof_type.is_(None), venues.c.roof_type != "dome"),
+            )
+            .group_by(sports.c.key)
+        ).all()
+        for key, n in no_coords:
+            r.lines.append(f"  {key}: {n} games this week without venue coordinates (no weather)")
+            r.problems.append(
+                f"{n} {key} games this week have no venue coordinates; add them to "
+                f"seeds/venues_*.csv or run `betdata run cfbd venues_football`"
+            )
         unmatched = conn.execute(
             select(func.count()).where(unmatched_entities.c.resolved.is_(False))
         ).scalar()

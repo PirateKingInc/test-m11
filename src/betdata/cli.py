@@ -89,7 +89,9 @@ def run(
 def backfill(
     sport: str = typer.Option(..., help="ncaaf, ncaab (cfbd) or nba, ncaab (sportsdataverse)"),
     seasons: str = typer.Option(..., help="2025 | 2018-2025"),
-    source_name: str = typer.Option("cfbd", "--source", help="cfbd or sportsdataverse"),
+    source_name: str = typer.Option(
+        "cfbd", "--source", help="cfbd, sportsdataverse, or open_meteo (weather)"
+    ),
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
 ):
@@ -100,6 +102,18 @@ def backfill(
     from betdata.sources.nflverse import parse_seasons
 
     years = sorted(parse_seasons(seasons) or [])
+    if source_name == "open_meteo":
+        if sport not in ("nfl", "ncaaf"):
+            raise typer.BadParameter("weather backfill covers nfl and ncaaf")
+        meteo = _source("open_meteo")
+        while True:  # each run does up to 200 requests; stops when done or out of daily budget
+            result = meteo.run("observed", priority="high", sport=sport, seasons=seasons)
+            typer.echo(f"  {result.status}: games={result.rows_seen} rows={result.rows_inserted} "
+                       f"{result.message}")  # fmt: skip
+            if result.status != "ok":
+                done = "NothingToDo" in result.message
+                typer.echo("done" if done else "stopped; rerun later to continue")
+                raise typer.Exit(0 if done else 1)
     if source_name == "sportsdataverse":
         if sport not in ("nba", "ncaab"):
             raise typer.BadParameter("sportsdataverse backfill covers nba and ncaab")
@@ -112,7 +126,7 @@ def backfill(
                 raise typer.Exit(1)
         return
     if source_name != "cfbd":
-        raise typer.BadParameter("--source must be cfbd or sportsdataverse")
+        raise typer.BadParameter("--source must be cfbd, sportsdataverse or open_meteo")
     if sport not in ("ncaaf", "ncaab"):
         raise typer.BadParameter("sport must be ncaaf or ncaab")
     source = _source("cfbd")

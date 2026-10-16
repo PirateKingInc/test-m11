@@ -34,6 +34,7 @@ from betdata.core.quota import QuotaManager
 from betdata.core.results_loader import load_results
 from betdata.core.source import JobSpec, RawInput, Source
 from betdata.core.teams_admin import add_alias, link_source_team, upsert_team
+from betdata.core.venues import upsert_venue
 from betdata.db.schema import raw_responses, team_source_ids
 from betdata.db.schema import teams as teams_table
 from betdata.sources import cfbd_games
@@ -46,6 +47,38 @@ BASKETBALL_BASE = "https://api.collegebasketballdata.com"
 FOOTBALL_CLASSIFICATIONS = {"fbs", "fcs"}
 
 
+class _Venue(BaseModel):
+    id: int | None = None
+    name: str | None = None
+    city: str | None = None
+    state: str | None = None
+    countryCode: str | None = None
+    timezone: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    elevation: str | float | None = None
+    grass: bool | None = None
+    dome: bool | None = None
+
+    def fields(self) -> dict:
+        try:
+            elevation = float(self.elevation) if self.elevation not in (None, "") else None
+        except ValueError:
+            elevation = None
+        return dict(
+            name=self.name,
+            city=self.city,
+            state=self.state,
+            country=self.countryCode,
+            tz=self.timezone,
+            lat=self.latitude,
+            lon=self.longitude,
+            elevation_m=elevation,
+            roof_type=None if self.dome is None else ("dome" if self.dome else "open"),
+            surface=None if self.grass is None else ("grass" if self.grass else "artificial"),
+        )
+
+
 class _FootballTeam(BaseModel):
     id: int
     school: str
@@ -55,6 +88,7 @@ class _FootballTeam(BaseModel):
     conference: str | None = None
     division: str | None = None
     classification: str | None = None
+    location: _Venue | None = None
 
 
 class _BasketballTeam(BaseModel):
@@ -78,6 +112,7 @@ class ParsedTeam:
     division_level: str | None = None
     shared_aliases: set[str] = field(default_factory=set)  # names any source might use
     espn_id: str | None = None
+    home_venue: _Venue | None = None
 
 
 @dataclass
@@ -111,6 +146,7 @@ def parse_football_teams(body: bytes) -> ParsedTeams:
                 division=t.division,
                 division_level=level.upper(),
                 shared_aliases=names,
+                home_venue=t.location if t.location and t.location.id is not None else None,
             )
         )
     return ParsedTeams("ncaaf", out)
@@ -176,6 +212,9 @@ def load_teams(conn, batch: ParsedTeams) -> TeamLoadStats:
             link_source_team(
                 conn, source="espn", sport_id=sid, source_team_id=t.espn_id, team_id=team_id
             )
+        if t.home_venue is not None:
+            upsert_venue(conn, source=NAME, source_venue_id=str(t.home_venue.id),
+                         **t.home_venue.fields())  # fmt: skip
         for alias in sorted(t.shared_aliases):
             if alias == t.canonical_name:
                 continue
@@ -243,6 +282,9 @@ class CfbdSource(Source):
         return {
             "teams_football": JobSpec("teams_football", "Import FBS+FCS teams and aliases."),
             "teams_basketball": JobSpec("teams_basketball", "Import D-I teams and aliases."),
+            "venues_football": JobSpec(
+                "venues_football", "All football venues with coordinates (1 call)."
+            ),
             "games_football": JobSpec(
                 "games_football", "Season schedule and scores (FBS games). --param season=2026"
             ),
@@ -279,6 +321,8 @@ class CfbdSource(Source):
             return self.football, "/teams", {"year": season or season_for("ncaaf", self.clock())}
         if job == "teams_basketball":
             return self.basketball, "/teams", ({"season": season} if season else {})
+        if job == "venues_football":
+            return self.football, "/venues", {}
         if job in ("games_football", "lines_football"):
             query = {"year": season or season_for("ncaaf", self.clock()), "seasonType": "both"}
             if job == "games_football":
@@ -315,6 +359,7 @@ class CfbdSource(Source):
         parsers = {
             "teams_football": lambda: parse_football_teams(raw.body),
             "teams_basketball": lambda: parse_basketball_teams(raw.body),
+            "venues_football": lambda: _validate(TypeAdapter(list[_Venue]), raw.body, "/venues"),
             "games_football": lambda: cfbd_games.parse_football_games(raw.body, raw.fetched_at),
             "lines_football": lambda: cfbd_games.parse_football_lines(raw.body, raw.fetched_at),
             "games_basketball": lambda: cfbd_games.parse_basketball_games(raw.body, raw.fetched_at),
@@ -323,6 +368,11 @@ class CfbdSource(Source):
         return parsers[job]()
 
     def load(self, conn, job: str, batch, *, run_id, raw_id) -> tuple[int, int]:
+        if job == "venues_football":
+            for v in batch:
+                if v.id is not None:
+                    upsert_venue(conn, source=NAME, source_venue_id=str(v.id), **v.fields())
+            return len(batch), len(batch)
         if job.startswith("teams_"):
             stats = load_teams(conn, batch)
             return stats.aliases_added, stats.teams

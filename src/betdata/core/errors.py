@@ -26,3 +26,7 @@ class ConfigError(IngestError):
 
 class NotConfigured(IngestError):
     """The job needs configuration that isn't filled in yet; it is skipped, not failed."""
+
+
+class NothingToDo(IngestError):
+    """No work for this run (e.g. no games need weather); skipped without a request."""

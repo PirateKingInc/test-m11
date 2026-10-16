@@ -22,6 +22,7 @@ from betdata.core.matching import GameMatch, find_or_create_game, sport_id
 from betdata.core.models import ParsedOdds
 from betdata.core.normalize.catalog import BookResolver, MarketResolver
 from betdata.core.normalize.teams import TeamResolver
+from betdata.core.venues import upsert_venue
 from betdata.db.schema import game_source_ids, games, odds_snapshots, team_source_ids
 
 log = logging.getLogger(__name__)
@@ -113,6 +114,10 @@ def resolve_events(
             out[ev.source_game_id] = None
             continue
         _join_by_extra_id(conn, source, ev, home, away)
+        venue_id = None
+        if ev.venue_source_id and authoritative:
+            venue_id = upsert_venue(conn, source=source, source_venue_id=ev.venue_source_id,
+                                    fill_only=True, name=ev.venue_name)  # fmt: skip
         out[ev.source_game_id] = find_or_create_game(
             conn,
             source=source,
@@ -127,6 +132,8 @@ def resolve_events(
             season_type=ev.season_type,
             week=ev.week,
             status=ev.status,
+            venue_id=venue_id,
+            roof=ev.roof,
             authoritative=authoritative,
         )
         for other, other_id in ev.extra_ids.items():

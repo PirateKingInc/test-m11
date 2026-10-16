@@ -33,7 +33,6 @@ sources:
     base_url: https://github.com/sportsdataverse/sportsdataverse-data/releases/download
     # No quota: static files on GitHub releases. Unchanged files are not re-archived.
 
-  # Not implemented yet (M8). Listed so quotas are visible in one place.
   oddspapi:
     enabled: true
     api_key_env: ODDSPAPI_KEY
@@ -73,5 +72,9 @@ sources:
     quota: {limit: 1000, period: month, reset_day: 1, safety_margin: 0.10}
 
   open_meteo:
-    enabled: false
-    quota: {limit: 10000, period: day, safety_margin: 0.50}
+    enabled: true
+    forecast_url: https://api.open-meteo.com/v1
+    archive_url: https://archive-api.open-meteo.com/v1
+    min_interval_seconds: 1
+    # ~10,000/day free (non-commercial, CC BY 4.0). Weighted: locations x 2-week blocks.
+    quota: {limit: 10000, period: day, safety_margin: 0.5, burst: 1.0}

@@ -1,0 +1,18 @@
+[
+ {
+  "id": 3965,
+  "name": "Mercedes-Benz Stadium",
+  "city": "Atlanta",
+  "state": "GA",
+  "zip": "30313",
+  "countryCode": "US",
+  "timezone": "America/New_York",
+  "latitude": 33.755,
+  "longitude": -84.401,
+  "elevation": "300",
+  "capacity": 71000,
+  "constructionYear": 2017,
+  "grass": false,
+  "dome": true
+ }
+]

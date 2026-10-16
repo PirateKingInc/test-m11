@@ -291,3 +291,40 @@ jobs:
     cron: "20 8 * * *"
     misfire_grace_minutes: 720
     active_months: [11, 12, 1, 2, 3, 4]
+
+  # --- Weather (Open-Meteo, ~10,000 calls/day; we use a few hundred) -----------------------
+  # Forecasts every 3 hours for outdoor/retractable NFL and college football games in the next
+  # 7 days (each kept, so lead time is preserved); reanalysis "observed" weather once the
+  # archive has caught up (~6 days after the game).
+
+  - id: weather-forecast-nfl
+    source: open_meteo
+    job: forecast
+    params: {sport: nfl}
+    cron: "20 */3 * * *"
+    misfire_grace_minutes: 60
+    when: {sport: nfl, after_minutes: 0, before_minutes: 10080}
+
+  - id: weather-forecast-ncaaf
+    source: open_meteo
+    job: forecast
+    params: {sport: ncaaf}
+    cron: "25 */3 * * *"
+    misfire_grace_minutes: 60
+    when: {sport: ncaaf, after_minutes: 0, before_minutes: 10080}
+
+  - id: weather-observed-nfl
+    source: open_meteo
+    job: observed
+    params: {sport: nfl}
+    cron: "40 5 * * *"
+    misfire_grace_minutes: 720
+    active_months: [9, 10, 11, 12, 1, 2]
+
+  - id: weather-observed-ncaaf
+    source: open_meteo
+    job: observed
+    params: {sport: ncaaf}
+    cron: "45 5 * * *"
+    misfire_grace_minutes: 720
+    active_months: [8, 9, 10, 11, 12, 1, 2]

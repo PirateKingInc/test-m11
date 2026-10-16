@@ -131,6 +131,9 @@ def parse_schedules(body: bytes, *, fetched_at: datetime, seasons: set[int] | No
                     home_score=home_score,
                     away_score=away_score,
                     final=final,
+                    venue_source_id=_value(row, "stadium_id"),
+                    venue_name=_value(row, "stadium"),
+                    roof=_value(row, "roof"),
                 )
             )
             kind = "source_closing" if final else "poll"

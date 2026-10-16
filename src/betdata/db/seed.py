@@ -117,6 +117,21 @@ def seed(engine: Engine, seeds_dir: Path = SEEDS) -> dict[str, int]:
                             )
                         )
 
+        from betdata.core.venues import upsert_venue
+
+        counts["venues"] = 0
+        for path in sorted(seeds_dir.glob("venues_*.csv")):
+            for r in _rows(path):
+                id_col = next(c for c in r if c.endswith("_id"))
+                upsert_venue(
+                    conn,
+                    source=id_col.removesuffix("_id"),
+                    source_venue_id=r[id_col],
+                    **{k: (float(v) if k in ("lat", "lon") and v else v or None)
+                       for k, v in r.items() if k != id_col},
+                )  # fmt: skip
+                counts["venues"] += 1
+
         for r in _rows(seeds_dir / "markets.csv"):
             _get_or_insert(
                 conn, markets, markets.c.market_id, {"key": r["key"], "period": r["period"]}

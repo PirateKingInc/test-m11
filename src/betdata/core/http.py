@@ -143,9 +143,12 @@ class SourceClient:
         priority: str = "normal",
         run_id: int | None = None,
         dedupe: bool = False,
+        archive_meta: dict[str, Any] | None = None,
     ) -> ApiResponse:
         """`dedupe=True`: if the body equals the last stored response for this endpoint, do not
-        store it again (for large static files such as nflverse releases)."""
+        store it again (for large static files such as nflverse releases).
+        `archive_meta`: stored with the request params under "_meta" (never sent), so a replay
+        of the raw response knows what it was for."""
         self._check_breaker()
         last_error: str = ""
         last_status: int | None = None
@@ -197,7 +200,9 @@ class SourceClient:
                         conn,
                         source=self.source,
                         endpoint=self.label + endpoint,
-                        params=redact(params),
+                        params={**(redact(params) or {}), "_meta": archive_meta}
+                        if archive_meta
+                        else redact(params),
                         http_status=resp.status_code,
                         fetched_at=started,
                         body=resp.content,

@@ -60,6 +60,8 @@ class _FootballGame(BaseModel):
     startDate: datetime
     completed: bool = False
     neutralSite: bool = False
+    venueId: int | None = None
+    venue: str | None = None
     homeId: int
     homeTeam: str
     homeClassification: str | None = None
@@ -154,6 +156,8 @@ def parse_football_games(body: bytes, fetched_at: datetime) -> ParsedOdds:
                 status="final" if final else "scheduled",
                 home_source_team_id=str(g.homeId),
                 away_source_team_id=str(g.awayId),
+                venue_source_id=str(g.venueId) if g.venueId is not None else None,
+                venue_name=g.venue,
             )
         )
     return out
