@@ -76,6 +76,21 @@ scores still flow; when nba_cdn works, it takes the games over. All-Star exhibit
 placeholders are skipped. For college basketball, sportsdataverse attaches to CFBD's games by
 the ESPN game id CFBD records, giving a second, keyless source of scores.
 
+## NFL injuries and play-by-play
+
+```bash
+uv run betdata run nflverse injuries                 # current season's injury reports
+uv run betdata run nflverse pbp --seasons 2025       # one season's play-by-play parquet
+uv run betdata backfill --source nflverse --dataset injuries --seasons 2012-2025
+uv run betdata backfill --source nflverse --dataset pbp --seasons 2015-2025   # ~20 MB/season
+```
+
+Injuries are stored change-only per player and week (`injuries` table), so a Wednesday
+"Limited" and a Friday "Out" are both kept when the job runs daily. Play-by-play is too big for
+the database: each season's parquet file is saved under `data/pbp/nfl/` (or `BETDATA_DATA_DIR`)
+and each new version is recorded in `data_files`; only the latest file per season is kept. Read
+them with pandas, polars or duckdb.
+
 ## Venues and weather
 
 ```bash
@@ -141,6 +156,22 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 `data/logs/scheduler.log`. To keep it running, see `deploy/betdata-scheduler.service`
 (systemd); on macOS use a launchd agent or `tmux`.
 
+## Moving to Postgres
+
+Everything runs on Postgres unchanged: set `BETDATA_DB_URL`, install the driver and migrate.
+
+```bash
+uv add "psycopg[binary]"
+export BETDATA_DB_URL=postgresql+psycopg://user:pass@localhost/betdata
+uv run betdata db init
+```
+
+To check, the whole test suite runs against Postgres too (each test gets its own schema):
+
+```bash
+BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run pytest
+```
+
 ## How it works
 
 - **One module per source** in `src/betdata/sources/`, each implementing `fetch` / `parse` /
@@ -197,4 +228,4 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 - [x] **M6** SharpAPI (frequent DK/FD), OddsPapi (Pinnacle, archive-first), closing-line view
 - [x] **M7** NBA schedules/scores (cdn.nba.com + sportsdataverse fallback); backup NCAAB scores
 - [x] **M8** venues (NFL seed, CFBD) and Open-Meteo forecasts / observed weather
-- [ ] M9 injuries, PBP parquet, Postgres check
+- [x] **M9** NFL injuries (change-only), play-by-play parquet files, Postgres check

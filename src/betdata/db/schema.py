@@ -249,12 +249,34 @@ injuries = Table(
     Column("player_name", String(128), nullable=False),
     Column("source_player_id", String(64)),
     Column("position", String(16)),
-    Column("report_status", String(32)),
+    Column("report_status", String(32)),  # game status: Out, Doubtful, Questionable
     Column("practice_status", String(64)),
-    Column("detail", String(256)),
+    Column("detail", String(256)),  # game-report injury
+    Column("practice_detail", String(256)),  # practice-report injury
     Column("report_date", UTCDateTime),
     Column("source", String(32), nullable=False),
     Column("fetched_at", UTCDateTime, nullable=False, default=utcnow),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+    # Append-only like odds: a row per change in a player's weekly status, so Wednesday's
+    # "Limited" and Friday's "Out" are both kept.
+    Index("ix_injuries_player_week", "source", "season", "week", "source_player_id"),
+)
+
+# Large files kept outside the database (play-by-play parquet). One row per version seen; only
+# the latest file per season is kept on disk.
+data_files = Table(
+    "data_files",
+    metadata,
+    Column("file_id", Integer, primary_key=True),
+    Column("source", String(32), nullable=False),
+    Column("dataset", String(32), nullable=False),  # e.g. pbp
+    Column("season", Integer, nullable=False),
+    Column("path", String(512), nullable=False),  # relative to the data directory
+    Column("sha256", String(64), nullable=False),
+    Column("bytes", Integer, nullable=False),
+    Column("url", String(512), nullable=False),
+    Column("fetched_at", UTCDateTime, nullable=False),
+    Index("ix_data_files_lookup", "source", "dataset", "season", "fetched_at"),
 )
 
 # --- Operations (declared before odds/weather, which reference them) --------

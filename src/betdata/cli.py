@@ -87,11 +87,14 @@ def run(
 
 @app.command()
 def backfill(
-    sport: str = typer.Option(..., help="ncaaf, ncaab (cfbd) or nba, ncaab (sportsdataverse)"),
+    sport: str = typer.Option(
+        None, help="ncaaf/ncaab (cfbd), nba/ncaab (sportsdataverse), nfl/ncaaf (open_meteo)"
+    ),  # fmt: skip
     seasons: str = typer.Option(..., help="2025 | 2018-2025"),
     source_name: str = typer.Option(
-        "cfbd", "--source", help="cfbd, sportsdataverse, or open_meteo (weather)"
+        "cfbd", "--source", help="cfbd, sportsdataverse, open_meteo (weather) or nflverse"
     ),
+    dataset: str = typer.Option(None, help="nflverse only: injuries or pbp"),
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
 ):
@@ -102,6 +105,17 @@ def backfill(
     from betdata.sources.nflverse import parse_seasons
 
     years = sorted(parse_seasons(seasons) or [])
+    if source_name == "nflverse":
+        if dataset not in ("injuries", "pbp"):
+            raise typer.BadParameter("--dataset must be injuries or pbp (schedules: `run`)")
+        nfl = _source("nflverse")
+        for year in years:
+            result = nfl.run(dataset, seasons=str(year))
+            typer.echo(f"  {dataset} {year}: {result.status} inserted={result.rows_inserted} "
+                       f"{result.message}")  # fmt: skip
+            if result.status == "failed":
+                raise typer.Exit(1)
+        return
     if source_name == "open_meteo":
         if sport not in ("nfl", "ncaaf"):
             raise typer.BadParameter("weather backfill covers nfl and ncaaf")
@@ -126,7 +140,7 @@ def backfill(
                 raise typer.Exit(1)
         return
     if source_name != "cfbd":
-        raise typer.BadParameter("--source must be cfbd, sportsdataverse or open_meteo")
+        raise typer.BadParameter("--source must be cfbd, sportsdataverse, open_meteo or nflverse")
     if sport not in ("ncaaf", "ncaab"):
         raise typer.BadParameter("sport must be ncaaf or ncaab")
     source = _source("cfbd")

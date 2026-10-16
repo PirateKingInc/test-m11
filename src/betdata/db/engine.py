@@ -29,7 +29,8 @@ def make_engine(db_url: str) -> Engine:
 def alembic_config(db_url: str) -> Config:
     cfg = Config(str(PROJECT_ROOT / "alembic.ini"))
     cfg.set_main_option("script_location", str(PROJECT_ROOT / "migrations"))
-    cfg.set_main_option("sqlalchemy.url", db_url)
+    # configparser treats % as interpolation; URLs often contain %-escapes (passwords, options)
+    cfg.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
     return cfg
 
 

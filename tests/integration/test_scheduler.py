@@ -64,6 +64,12 @@ class Router:
             )
         if "/sports/" in path and "americanfootball_nfl" not in path:
             return httpx.Response(200, content=b"[]", headers={"x-requests-last": "0"})
+        if "/injuries/injuries_" in path:
+            return httpx.Response(200, content=fixture_bytes("nflverse", "injuries_2026.csv"))
+        if "/pbp/play_by_play_" in path:
+            return httpx.Response(
+                200, content=fixture_bytes("nflverse", "play_by_play_2025.parquet")
+            )
         if path.endswith("/schedules/games.csv"):
             return httpx.Response(200, content=SAMPLE)
         if path.endswith("/events"):
@@ -272,6 +278,7 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
     # NBA (October = in season): daily schedule from both sources, scoreboard twice a night
     assert by_job["nba-cdn-schedule"] == 7 and by_job["sdv-nba-schedule"] == 7
     assert by_job["nba-cdn-scoreboard"] == 14
+    assert by_job["nflverse-injuries"] == 7 and by_job["nflverse-pbp"] == 7
     # Weather: forecasts every 3 h while NFL games are within a week. The sample's last game
     # this season-week kicks off Sunday afternoon, after which the gate closes: Thu 00:20 ET to
     # Sun ~16:00 ET is ~3.6 days of 3-hourly runs. Nothing observed yet (too recent).

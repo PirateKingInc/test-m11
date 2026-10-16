@@ -46,7 +46,7 @@ class ApiResponse:
     headers: httpx.Headers
     body: bytes
     fetched_at: datetime
-    raw_id: int
+    raw_id: int | None  # None when store_raw=False
     usage: CostReport
     unchanged: bool = False  # body identical to the last stored response; raw_id points at it
 
@@ -144,6 +144,7 @@ class SourceClient:
         run_id: int | None = None,
         dedupe: bool = False,
         archive_meta: dict[str, Any] | None = None,
+        store_raw: bool = True,
     ) -> ApiResponse:
         """`dedupe=True`: if the body equals the last stored response for this endpoint, do not
         store it again (for large static files such as nflverse releases).
@@ -187,6 +188,11 @@ class SourceClient:
             if self.quota:
                 self.quota.reconcile(report.remaining, report.used)
 
+            if ok and not store_raw:  # large files the caller stores itself
+                self._record_success()
+                return ApiResponse(
+                    resp.status_code, resp.headers, resp.content, started, None, report
+                )
             if ok:
                 with self.engine.begin() as conn:
                     previous = (

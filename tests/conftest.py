@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os
+import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
 import pytest
+from sqlalchemy import create_engine, text
 
 from betdata.config import PROJECT_ROOT, load_settings
 from betdata.db.engine import make_engine, upgrade
@@ -63,6 +66,7 @@ def isolated_seeds(tmp_path, monkeypatch):
     copy = tmp_path / "seeds"
     shutil.copytree(seed_mod.SEEDS, copy)
     monkeypatch.setattr(seed_mod, "SEEDS", copy)
+    monkeypatch.setenv("BETDATA_DATA_DIR", str(tmp_path / "data"))  # files never land in data/
     return copy
 
 
@@ -73,12 +77,34 @@ def clock():
 
 @pytest.fixture
 def engine(tmp_path):
-    url = f"sqlite:///{tmp_path / 'test.sqlite'}"
-    upgrade(url)
-    eng = make_engine(url)
-    seed(eng)
-    yield eng
-    eng.dispose()
+    """SQLite by default. With BETDATA_TEST_PG_URL set (e.g.
+    postgresql+psycopg://betdata:betdata@localhost/betdata_test) every test gets its own
+    Postgres schema, built by the real migrations, and dropped afterwards."""
+    pg_url = os.environ.get("BETDATA_TEST_PG_URL")
+    if not pg_url:
+        url = f"sqlite:///{tmp_path / 'test.sqlite'}"
+        upgrade(url)
+        eng = make_engine(url)
+        seed(eng)
+        yield eng
+        eng.dispose()
+        return
+
+    schema = f"t_{uuid.uuid4().hex[:12]}"
+    admin = create_engine(pg_url)
+    with admin.begin() as conn:
+        conn.execute(text(f'CREATE SCHEMA "{schema}"'))
+    url = f"{pg_url}{'&' if '?' in pg_url else '?'}options=-csearch_path%3D{schema}"
+    try:
+        upgrade(url)
+        eng = make_engine(url)
+        seed(eng)
+        yield eng
+        eng.dispose()
+    finally:
+        with admin.begin() as conn:
+            conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+        admin.dispose()
 
 
 @pytest.fixture

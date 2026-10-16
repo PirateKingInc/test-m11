@@ -328,3 +328,19 @@ jobs:
     cron: "45 5 * * *"
     misfire_grace_minutes: 720
     active_months: [8, 9, 10, 11, 12, 1, 2]
+
+  # --- NFL injuries and play-by-play (nflverse, no quota) ----------------------------------
+
+  - id: nflverse-injuries  # after the day's practice/injury reports; change-only history
+    source: nflverse
+    job: injuries
+    cron: "20 18 * * *"
+    misfire_grace_minutes: 360
+    active_months: [9, 10, 11, 12, 1, 2]
+
+  - id: nflverse-pbp  # nightly rebuild of the current season's play-by-play file
+    source: nflverse
+    job: pbp
+    cron: "40 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [9, 10, 11, 12, 1, 2]
