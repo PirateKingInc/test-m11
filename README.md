@@ -60,6 +60,22 @@ odds for a game with an unmapped team are still stored, and accepting the alias 
 (`betdata relink` runs automatically). Accepted aliases are also appended to
 `seeds/team_aliases.csv`, so a rebuilt database gets them back — commit that file.
 
+## NBA schedules and scores
+
+```bash
+uv run betdata run nba-cdn schedule      # NBA's own feed: whole season (the NBA authority)
+uv run betdata run nba-cdn scoreboard    # today's games, same-night finals
+uv run betdata backfill --source sportsdataverse --sport nba --seasons 2015-2026   # ~40 s
+uv run betdata run sportsdataverse schedule --sport ncaab   # backup college scores (ESPN)
+```
+
+`nba_cdn` reads cdn.nba.com (the backend nba_api uses for live data) and owns NBA games.
+`sportsdataverse` reads ESPN-derived schedule files from GitHub releases (scores up to a day
+behind) and is the automatic fallback: if NBA's servers refuse this machine, its games and
+scores still flow; when nba_cdn works, it takes the games over. All-Star exhibitions and TBD
+placeholders are skipped. For college basketball, sportsdataverse attaches to CFBD's games by
+the ESPN game id CFBD records, giving a second, keyless source of scores.
+
 ## Sharp and frequent odds (SharpAPI, OddsPapi)
 
 ```bash
@@ -142,8 +158,8 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 | SharpAPI | 12 req/min, DK + FD, 60 s delay | every 10 min near tip/kickoff, hourly otherwise; capped at 6/min |
 | OddsPapi | ~250/mo (vendor figure) | one Pinnacle board per league before game time (~80/mo at peak) |
 | nflverse (`nflreadpy`) | none | schedules/closing lines/results daily, PBP nightly, injuries daily |
-| nba_api | unofficial | daily, 1 req/2 s, falls back to sportsdataverse |
-| sportsdataverse | none | NBA fallback; NCAAB/NCAAF results |
+| NBA (cdn.nba.com) | unofficial, no quota | season schedule daily, scoreboard twice nightly |
+| sportsdataverse | none (GitHub releases) | NBA fallback + history; backup NCAAB scores |
 | CFBD | 1,000/mo shared FB + BB | ~150/mo ongoing, ~300 for backfill, 900 hard cap |
 | Open-Meteo | 10k/day, non-commercial | outdoor games: forecasts at T-72/24/3 h, observed next day |
 
@@ -156,6 +172,6 @@ missed runs (machine asleep) run once on wake if within the job's grace period. 
 - [x] **M4** college team import, review queue and alias tools, relink; NBA/NCAAF/NCAAB odds
 - [x] **M5** CFBD college schedules, scores and lines; budgeted backfill
 - [x] **M6** SharpAPI (frequent DK/FD), OddsPapi (Pinnacle, archive-first), closing-line view
-- [ ] M7 NBA (nba_api + sportsdataverse fallback), NCAAB results
+- [x] **M7** NBA schedules/scores (cdn.nba.com + sportsdataverse fallback); backup NCAAB scores
 - [ ] M8 Open-Meteo + venues
 - [ ] M9 injuries, PBP parquet, Postgres check

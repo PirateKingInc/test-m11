@@ -1,0 +1,249 @@
+{
+ "meta": {
+  "version": 1,
+  "request": "",
+  "time": ""
+ },
+ "leagueSchedule": {
+  "seasonYear": "2026-27",
+  "leagueId": "00",
+  "weeks": [],
+  "gameDates": [
+   {
+    "gameDate": "10/10/2026 00:00:00",
+    "games": [
+     {
+      "gameId": "0012600005",
+      "gameCode": "",
+      "gameStatus": 3,
+      "gameStatusText": "Final",
+      "gameSequence": 1,
+      "gameDateEst": "",
+      "gameTimeEst": "",
+      "gameDateTimeEst": "",
+      "gameDateUTC": "2026-10-10",
+      "gameTimeUTC": "2026-10-10T23:30:00Z",
+      "gameDateTimeUTC": "2026-10-10T23:30:00Z",
+      "weekNumber": 1,
+      "gameLabel": "",
+      "gameSubLabel": "",
+      "isNeutral": false,
+      "postponedStatus": "A",
+      "arenaName": "",
+      "homeTeam": {
+       "teamId": 1610612738,
+       "teamName": "Celtics",
+       "teamCity": "Boston",
+       "teamTricode": "BOS",
+       "teamSlug": "celtics",
+       "wins": 0,
+       "losses": 0,
+       "score": 99,
+       "seed": null
+      },
+      "awayTeam": {
+       "teamId": 1610612752,
+       "teamName": "Knicks",
+       "teamCity": "New York",
+       "teamTricode": "NYK",
+       "teamSlug": "knicks",
+       "wins": 0,
+       "losses": 0,
+       "score": 101,
+       "seed": null
+      },
+      "pointsLeaders": [],
+      "broadcasters": {}
+     }
+    ]
+   },
+   {
+    "gameDate": "10/20/2026 00:00:00",
+    "games": [
+     {
+      "gameId": "0022600001",
+      "gameCode": "",
+      "gameStatus": 1,
+      "gameStatusText": "3:00 pm ET",
+      "gameSequence": 1,
+      "gameDateEst": "",
+      "gameTimeEst": "",
+      "gameDateTimeEst": "",
+      "gameDateUTC": "2026-10-20",
+      "gameTimeUTC": "2026-10-20T19:00:00Z",
+      "gameDateTimeUTC": "2026-10-20T19:00:00Z",
+      "weekNumber": 1,
+      "gameLabel": "",
+      "gameSubLabel": "",
+      "isNeutral": false,
+      "postponedStatus": "A",
+      "arenaName": "",
+      "homeTeam": {
+       "teamId": 1610612765,
+       "teamName": "Pistons",
+       "teamCity": "Detroit",
+       "teamTricode": "DET",
+       "teamSlug": "pistons",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "awayTeam": {
+       "teamId": 1610612738,
+       "teamName": "Celtics",
+       "teamCity": "Boston",
+       "teamTricode": "BOS",
+       "teamSlug": "celtics",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "pointsLeaders": [],
+      "broadcasters": {}
+     }
+    ]
+   },
+   {
+    "gameDate": "01/15/2027 00:00:00",
+    "games": [
+     {
+      "gameId": "0022600640",
+      "gameCode": "",
+      "gameStatus": 1,
+      "gameStatusText": "PPD",
+      "gameSequence": 1,
+      "gameDateEst": "",
+      "gameTimeEst": "",
+      "gameDateTimeEst": "",
+      "gameDateUTC": "2027-01-15",
+      "gameTimeUTC": "2027-01-15T20:00:00Z",
+      "gameDateTimeUTC": "2027-01-15T20:00:00Z",
+      "weekNumber": 1,
+      "gameLabel": "",
+      "gameSubLabel": "",
+      "isNeutral": false,
+      "postponedStatus": "A",
+      "arenaName": "",
+      "homeTeam": {
+       "teamId": 1610612746,
+       "teamName": "Clippers",
+       "teamCity": "LA",
+       "teamTricode": "LAC",
+       "teamSlug": "clippers",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "awayTeam": {
+       "teamId": 1610612744,
+       "teamName": "Warriors",
+       "teamCity": "Golden State",
+       "teamTricode": "GSW",
+       "teamSlug": "warriors",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "pointsLeaders": [],
+      "broadcasters": {}
+     },
+     {
+      "gameId": "0022600641",
+      "gameCode": "",
+      "gameStatus": 1,
+      "gameStatusText": "2:00 pm ET",
+      "gameSequence": 1,
+      "gameDateEst": "",
+      "gameTimeEst": "",
+      "gameDateTimeEst": "",
+      "gameDateUTC": "2027-01-15",
+      "gameTimeUTC": "2027-01-15T19:00:00Z",
+      "gameDateTimeUTC": "2027-01-15T19:00:00Z",
+      "weekNumber": 1,
+      "gameLabel": "",
+      "gameSubLabel": "",
+      "isNeutral": true,
+      "postponedStatus": "A",
+      "arenaName": "",
+      "homeTeam": {
+       "teamId": 1610612753,
+       "teamName": "Magic",
+       "teamCity": "Orlando",
+       "teamTricode": "ORL",
+       "teamSlug": "magic",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "awayTeam": {
+       "teamId": 1610612763,
+       "teamName": "Grizzlies",
+       "teamCity": "Memphis",
+       "teamTricode": "MEM",
+       "teamSlug": "grizzlies",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "pointsLeaders": [],
+      "broadcasters": {}
+     }
+    ]
+   },
+   {
+    "gameDate": "02/14/2027 00:00:00",
+    "games": [
+     {
+      "gameId": "0032600001",
+      "gameCode": "",
+      "gameStatus": 1,
+      "gameStatusText": "8:00 pm ET",
+      "gameSequence": 1,
+      "gameDateEst": "",
+      "gameTimeEst": "",
+      "gameDateTimeEst": "",
+      "gameDateUTC": "2027-02-15",
+      "gameTimeUTC": "2027-02-15T01:00:00Z",
+      "gameDateTimeUTC": "2027-02-15T01:00:00Z",
+      "weekNumber": 1,
+      "gameLabel": "",
+      "gameSubLabel": "",
+      "isNeutral": false,
+      "postponedStatus": "A",
+      "arenaName": "",
+      "homeTeam": {
+       "teamId": 1610616847,
+       "teamName": "Team A",
+       "teamCity": "",
+       "teamTricode": "TMA",
+       "teamSlug": "team a",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "awayTeam": {
+       "teamId": 1610616848,
+       "teamName": "Team B",
+       "teamCity": "",
+       "teamTricode": "TMB",
+       "teamSlug": "team b",
+       "wins": 0,
+       "losses": 0,
+       "score": 0,
+       "seed": null
+      },
+      "pointsLeaders": [],
+      "broadcasters": {}
+     }
+    ]
+   }
+  ]
+ }
+}

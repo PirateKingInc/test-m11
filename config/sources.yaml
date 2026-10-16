@@ -22,7 +22,18 @@ sources:
     base_url: https://github.com/nflverse/nflverse-data/releases/download
     # No quota: static files on GitHub releases. Unchanged files are not re-archived.
 
-  # Not implemented yet (later milestones). Listed so quotas are visible in one place.
+  nba_cdn:
+    enabled: true
+    base_url: https://cdn.nba.com/static/json
+    # No quota. nba.com's servers expect a browser-like referer; nba_api sends these too.
+    headers: {Referer: "https://www.nba.com/", Origin: "https://www.nba.com", Accept: "application/json"}
+
+  sportsdataverse:
+    enabled: true
+    base_url: https://github.com/sportsdataverse/sportsdataverse-data/releases/download
+    # No quota: static files on GitHub releases. Unchanged files are not re-archived.
+
+  # Not implemented yet (M8). Listed so quotas are visible in one place.
   oddspapi:
     enabled: true
     api_key_env: ODDSPAPI_KEY

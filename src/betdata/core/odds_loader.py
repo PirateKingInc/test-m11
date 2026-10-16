@@ -22,7 +22,7 @@ from betdata.core.matching import GameMatch, find_or_create_game, sport_id
 from betdata.core.models import ParsedOdds
 from betdata.core.normalize.catalog import BookResolver, MarketResolver
 from betdata.core.normalize.teams import TeamResolver
-from betdata.db.schema import game_source_ids, odds_snapshots, team_source_ids
+from betdata.db.schema import game_source_ids, games, odds_snapshots, team_source_ids
 
 log = logging.getLogger(__name__)
 _CHUNK = 500  # stay under SQLite's bound-parameter limit
@@ -76,10 +76,14 @@ def resolve_events(
     events,
     authoritative: bool = False,
     record: bool = True,
+    team_id_source: str | None = None,
 ) -> dict[str, GameMatch | None]:
     """Map each event to a game (creating games as needed). None = a team is unmatched.
 
     `record=True` stores the events in source_events and unmatched names in the review queue.
+    `team_id_source`: whose team ids the events carry (default: `source` itself), e.g. "espn".
+    An event whose `extra_ids` are already linked to a game (e.g. the ESPN game id CFBD
+    recorded) joins that game directly, before any team/time matching.
     """
     from betdata.core.teams_admin import record_events
 
@@ -89,7 +93,8 @@ def resolve_events(
     by_id = dict(
         conn.execute(
             select(team_source_ids.c.source_team_id, team_source_ids.c.team_id).where(
-                team_source_ids.c.source == source, team_source_ids.c.sport_id == sid
+                team_source_ids.c.source == (team_id_source or source),
+                team_source_ids.c.sport_id == sid,
             )
         ).all()
     )
@@ -107,6 +112,7 @@ def resolve_events(
         if home is None or away is None:
             out[ev.source_game_id] = None
             continue
+        _join_by_extra_id(conn, source, ev, home, away)
         out[ev.source_game_id] = find_or_create_game(
             conn,
             source=source,
@@ -126,6 +132,41 @@ def resolve_events(
         for other, other_id in ev.extra_ids.items():
             _link_extra_id(conn, other, other_id, out[ev.source_game_id].game_id)
     return out
+
+
+def _join_by_extra_id(conn, source: str, ev, home: int, away: int) -> None:
+    """If another id of this event already names a game, map this source's id to that game."""
+    if not ev.extra_ids:
+        return
+    known = conn.execute(
+        select(game_source_ids.c.game_id).where(
+            game_source_ids.c.source == source,
+            game_source_ids.c.source_game_id == ev.source_game_id,
+        )
+    ).first()
+    if known:
+        return
+    for other, other_id in ev.extra_ids.items():
+        game = conn.execute(
+            select(games.c.game_id, games.c.home_team_id, games.c.away_team_id)
+            .join(game_source_ids, game_source_ids.c.game_id == games.c.game_id)
+            .where(game_source_ids.c.source == other, game_source_ids.c.source_game_id == other_id)
+        ).first()
+        if game is None:
+            continue
+        if {game.home_team_id, game.away_team_id} != {home, away}:
+            log.warning("%s %s: %s id %s points at a game with other teams; not joined",
+                        source, ev.source_game_id, other, other_id)  # fmt: skip
+            return
+        conn.execute(
+            insert(game_source_ids).values(
+                source=source,
+                source_game_id=ev.source_game_id,
+                game_id=game.game_id,
+                home_away_swapped=game.home_team_id != home,
+            )
+        )
+        return
 
 
 def _link_extra_id(conn, source: str, source_game_id: str, game_id: int) -> None:
@@ -156,6 +197,7 @@ def load_odds(
         sport=batch.sport,
         events=batch.events,
         authoritative=batch.schedule_authority,
+        team_id_source=batch.team_id_source,
     )
     stats.matches = matches
     stats.events_unmatched = sum(1 for m in matches.values() if m is None)

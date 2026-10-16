@@ -60,3 +60,5 @@ class ParsedOdds:
     requested_books: tuple[str, ...] | None = None
     # True when this source owns game schedule fields and home/away orientation.
     schedule_authority: bool = False
+    # Whose team ids the events' *_source_team_id fields are (default: the loading source).
+    team_id_source: str | None = None

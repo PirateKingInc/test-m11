@@ -1,0 +1,52 @@
+{
+ "meta": {
+  "version": 1,
+  "request": "",
+  "time": "",
+  "code": 200
+ },
+ "scoreboard": {
+  "gameDate": "2026-10-20",
+  "leagueId": "00",
+  "leagueName": "National Basketball Association",
+  "games": [
+   {
+    "gameId": "0022600001",
+    "gameCode": "",
+    "gameStatus": 3,
+    "gameStatusText": "Final",
+    "period": 4,
+    "gameClock": "",
+    "gameTimeUTC": "2026-10-20T19:00:00Z",
+    "gameEt": "",
+    "regulationPeriods": 4,
+    "seriesGameNumber": "",
+    "seriesText": "",
+    "homeTeam": {
+     "teamId": 1610612765,
+     "teamName": "Pistons",
+     "teamCity": "Detroit",
+     "teamTricode": "DET",
+     "teamSlug": "pistons",
+     "wins": 0,
+     "losses": 0,
+     "score": 108,
+     "seed": null
+    },
+    "awayTeam": {
+     "teamId": 1610612738,
+     "teamName": "Celtics",
+     "teamCity": "Boston",
+     "teamTricode": "BOS",
+     "teamSlug": "celtics",
+     "wins": 0,
+     "losses": 0,
+     "score": 112,
+     "seed": null
+    },
+    "gameLeaders": {},
+    "pbOdds": {}
+   }
+  ]
+ }
+}

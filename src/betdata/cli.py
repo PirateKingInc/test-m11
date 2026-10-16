@@ -87,20 +87,36 @@ def run(
 
 @app.command()
 def backfill(
-    sport: str = typer.Option(..., help="ncaaf or ncaab (NFL: `run nflverse schedules`)"),
+    sport: str = typer.Option(..., help="ncaaf, ncaab (cfbd) or nba, ncaab (sportsdataverse)"),
     seasons: str = typer.Option(..., help="2025 | 2018-2025"),
+    source_name: str = typer.Option("cfbd", "--source", help="cfbd or sportsdataverse"),
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
 ):
-    """Load past college seasons from CFBD: 2 calls per football season, 12 per basketball
-    season. Shows the cost against the remaining budget and asks first."""
+    """Load past seasons. CFBD: 2 calls per football season, 12 per basketball season, shown
+    against the remaining budget first. sportsdataverse (no quota): one file per season.
+    NFL history: `betdata run nflverse schedules --seasons all`."""
     from betdata.sources.cfbd import backfill_plan
     from betdata.sources.nflverse import parse_seasons
 
+    years = sorted(parse_seasons(seasons) or [])
+    if source_name == "sportsdataverse":
+        if sport not in ("nba", "ncaab"):
+            raise typer.BadParameter("sportsdataverse backfill covers nba and ncaab")
+        sdv = _source("sportsdataverse")
+        for year in years:
+            result = sdv.run("schedule", sport=sport, seasons=str(year))
+            typer.echo(f"  {sport} {year}: {result.status} games={result.rows_seen} "
+                       f"results_changed={result.rows_inserted} {result.message}")  # fmt: skip
+            if result.status == "failed":
+                raise typer.Exit(1)
+        return
+    if source_name != "cfbd":
+        raise typer.BadParameter("--source must be cfbd or sportsdataverse")
     if sport not in ("ncaaf", "ncaab"):
         raise typer.BadParameter("sport must be ncaaf or ncaab")
     source = _source("cfbd")
-    plan = backfill_plan(sport, sorted(parse_seasons(seasons) or []))
+    plan = backfill_plan(sport, years)
     cached = [] if refetch else [(j, p) for j, p in plan if source.already_fetched(j, p)]
     plan = [item for item in plan if item not in cached]
     if cached:

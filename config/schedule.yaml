@@ -47,8 +47,8 @@ jobs:
     when: {sport: nfl, after_minutes: 0, before_minutes: 60}
 
   # --- NBA, college basketball, college football ------------------------------------------
-  # NCAAF/NCAAB schedules come from CFBD (below); NBA's from these free /events lists until
-  # M7. Event lists are gated by month rather than by known games.
+  # Schedules come from CFBD (college) and nba_cdn / sportsdataverse (NBA); these free /events
+  # lists add The Odds API's own event ids. Gated by month rather than by known games.
   # Worst-case month (Nov: all four sports, NBA weekend matinees every weekend): ~330 of
   # 450 usable credits. `betdata scheduler plan` gives the real projection once games load.
 
@@ -257,3 +257,37 @@ jobs:
     params: {sport: ncaaf}
     cron: "0 11 * * 6"
     when: {sport: ncaaf, after_minutes: 0, before_minutes: 600}
+
+  # --- NBA schedule and scores (no quota) --------------------------------------------------
+  # nba_cdn (NBA's own feed) is the authority; sportsdataverse (ESPN data, up to a day behind)
+  # keeps schedules and scores flowing if NBA's servers refuse this machine.
+
+  - id: nba-cdn-schedule
+    source: nba_cdn
+    job: schedule
+    cron: "10 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+
+  - id: nba-cdn-scoreboard  # same-night finals, before and after the late West Coast games
+    source: nba_cdn
+    job: scoreboard
+    cron: "50 23,1 * * *"
+    misfire_grace_minutes: 60
+    active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+
+  - id: sdv-nba-schedule
+    source: sportsdataverse
+    job: schedule
+    params: {sport: nba}
+    cron: "15 8 * * *"
+    misfire_grace_minutes: 720
+    active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+
+  - id: sdv-ncaab-schedule  # backup for CFBD's college basketball scores; joins by ESPN id
+    source: sportsdataverse
+    job: schedule
+    params: {sport: ncaab}
+    cron: "20 8 * * *"
+    misfire_grace_minutes: 720
+    active_months: [11, 12, 1, 2, 3, 4]
