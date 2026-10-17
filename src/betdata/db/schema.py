@@ -405,3 +405,24 @@ weather_observations = Table(
     Column("raw_id", ForeignKey("raw_responses.raw_id")),
     UniqueConstraint("game_id", "source", "kind", "fetched_at", "valid_time"),
 )
+
+# --- Model output (append-only) ---------------------------------------------
+
+# A model's view of a game before kickoff, with the market line it was compared against.
+# Change-only like odds: a new row only when the prediction or the market line moves.
+model_predictions = Table(
+    "model_predictions",
+    metadata,
+    Column("prediction_id", Integer, primary_key=True),
+    Column("model", String(32), nullable=False),  # e.g. elo
+    Column("model_version", String(128), nullable=False),  # model plus its parameters
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("predicted_at", UTCDateTime, nullable=False),
+    Column("pred_home_margin", Float, nullable=False),
+    Column("pred_home_win_prob", Float),
+    Column("market_spread_home", Float),  # closing/current line on the home side, if known
+    Column("market_source", String(32)),
+    Column("params", JSON),
+    UniqueConstraint("model_version", "game_id", "predicted_at"),
+    Index("ix_model_predictions_game", "game_id", "model_version", "predicted_at"),
+)

@@ -135,6 +135,38 @@ market map are skipped without spending a request.
 the source's own close (nflverse, CFBD) when it reports one, otherwise the last polled state at
 or before kickoff (`closing_basis` says which; check `fetched_at` for freshness).
 
+## Testing for an edge (NFL backtest)
+
+Is there an edge against NFL closing spreads? Load the history (no key, no quota), then run a
+walk-forward backtest:
+
+```bash
+betdata run nflverse schedules --seasons all       # every game since 1999 with closing lines
+betdata backtest nfl                                # Elo; train 2000-2014, test 2015-2025
+betdata backtest nfl --model market                 # harness check: must never bet
+```
+
+- **No look-ahead.** Games are fed to the model one day at a time: every game that day is
+  predicted before any of that day's results are learned. Tests prove that changing a later
+  result never changes an earlier prediction.
+- **Train / test split.** Elo settings (K, home field, season reversion, bye bonus) are chosen
+  by the smallest error on the final margin over the training seasons; the bet threshold by
+  training ROI (at least 200 bets). Test seasons are scored once with those choices.
+- **Bets** are graded at the closing line, at the price nflverse records or -110 where it has
+  none. The report shows record, win rate with a 95% range, ROI, the chance of doing that
+  well with no edge, a season-by-season split, and a verdict: EDGE (54%+ over 300+ test
+  bets), NO EDGE (at or below the 52.4% break-even) or INCONCLUSIVE. Every bet is written to
+  `data/reports/backtest_*.csv`.
+- **Live picks:** `betdata predict nfl --k .. --hfa .. --revert .. --bye ..` (the backtest
+  prints the exact command) rates games kicking off in the next 8 days and stores them in
+  `model_predictions` (a new row only when the prediction or the line moves), ready for
+  closing-line-value tracking.
+
+The Elo baseline is a yardstick: public ratings are already in the price. First run (Oct
+2026): the closing line missed the final margin by 9.81 points on average over 2015-2025, the
+model by 10.18; 990 test bets went 492-474-24 (50.9%, ROI -1.5%): no edge. New features are
+judged by whether they beat this.
+
 ## Running unattended
 
 ```bash
@@ -229,3 +261,4 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - [x] **M7** NBA schedules/scores (cdn.nba.com + sportsdataverse fallback); backup NCAAB scores
 - [x] **M8** venues (NFL seed, CFBD) and Open-Meteo forecasts / observed weather
 - [x] **M9** NFL injuries (change-only), play-by-play parquet files, Postgres check
+- [x] **M10** NFL walk-forward backtest against closing spreads; Elo baseline; stored predictions
