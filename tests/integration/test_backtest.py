@@ -30,7 +30,9 @@ def nflverse(engine, settings, fake_api, clock):
     )  # fmt: skip
 
 
-def synthetic_csv(seasons, upcoming_on: date | None = None, seed=3) -> bytes:
+def synthetic_csv(
+    seasons, upcoming_on: date | None = None, seed=3, upcoming_season: int | None = None
+) -> bytes:
     """A games.csv in nflverse's format: 8 teams, 10 weeks a season, random scores/lines."""
     rng = random.Random(seed)
     out = io.StringIO()
@@ -56,7 +58,8 @@ def synthetic_csv(seasons, upcoming_on: date | None = None, seed=3) -> bytes:
             for i in range(0, len(TEAMS), 2):
                 row(season, week, day, order[i], order[i + 1])
     if upcoming_on:
-        row(upcoming_on.year, 1, upcoming_on, "KC", "BUF", scores=False)
+        season = upcoming_season or upcoming_on.year
+        row(season, 11 if upcoming_season else 1, upcoming_on, "KC", "BUF", scores=False)
     return out.getvalue().encode()
 
 
@@ -104,7 +107,7 @@ def test_backtest_cli_end_to_end(nflverse, fake_api, engine, monkeypatch, tmp_pa
         assert out.exit_code == 0, out.output
         assert "NFL spread backtest · elo:" in out.output
         assert "Verdict: INCONCLUSIVE" in out.output  # 80 games a season is far too few
-        assert "Live picks with these settings: betdata predict nfl --k " in out.output
+        assert "Live picks with these settings: betdata predict nfl --model elo --k " in out.output
         [report] = (tmp_path / "data" / "reports").glob("backtest_nfl_elo_*.csv")
         rows = list(csv.DictReader(report.open()))
         assert {r["split"] for r in rows} <= {"train", "test"}
@@ -170,7 +173,10 @@ def test_predict_cli_smoke(nflverse, fake_api, engine, monkeypatch):
     monkeypatch.setenv("BETDATA_DB_URL", engine.url.render_as_string(hide_password=False))
     get_settings.cache_clear()
     try:
-        out = CliRunner().invoke(app, ["predict", "nfl"])
+        out = CliRunner().invoke(app, ["predict", "nfl", "--model", "elo"])
+        assert out.exit_code == 0, out.output
+        units = CliRunner().invoke(app, ["predict", "nfl"])  # no snap counts loaded
+        assert units.exit_code == 1 and "snap counts" in units.output
         assert out.exit_code == 0, out.output
         assert "KC @ BUF" in out.output and "lean" in out.output
     finally:

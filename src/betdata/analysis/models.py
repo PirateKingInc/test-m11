@@ -17,6 +17,7 @@ from betdata.analysis.dataset import GameRow
 class Prediction:
     home_margin: float  # expected home points minus away points
     home_win_prob: float | None = None
+    total: float | None = None  # expected combined points, for models that predict it
 
 
 class Model(Protocol):

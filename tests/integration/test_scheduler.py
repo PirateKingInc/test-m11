@@ -1,6 +1,8 @@
 """Scheduler: DST-safe triggers, gating, crash isolation, projection, status, and a simulated
 unattended week."""
 
+import csv
+import io
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -29,6 +31,23 @@ from tests.integration.test_weather_venues import FakeOpenMeteo
 
 NY = ZoneInfo("America/New_York")
 SAMPLE = fixture_bytes("nflverse", "games_sample.csv")
+
+
+CONTEXT_FILES = {
+    "/stats_team/stats_team_week_": "stats_team_week_2024.csv",
+    "/snap_counts/snap_counts_": "snap_counts_2024.csv",
+    "/weekly_rosters/roster_weekly_": "roster_weekly_2024.csv",
+}
+
+
+def as_season(name: str, season: int) -> bytes:
+    rows = list(csv.reader(io.StringIO(fixture_bytes("nflverse", name).decode())))
+    col = rows[0].index("season")
+    for r in rows[1:]:
+        r[col] = str(season)
+    out = io.StringIO()
+    csv.writer(out).writerows(rows)
+    return out.getvalue().encode()
 
 
 class Router:
@@ -66,6 +85,10 @@ class Router:
             return httpx.Response(200, content=b"[]", headers={"x-requests-last": "0"})
         if "/injuries/injuries_" in path:
             return httpx.Response(200, content=fixture_bytes("nflverse", "injuries_2026.csv"))
+        for prefix, name in CONTEXT_FILES.items():
+            if prefix in path:  # 2024 rows served as the requested season
+                season = int(path.rsplit("_", 1)[1].split(".")[0])
+                return httpx.Response(200, content=as_season(name, season))
         if "/pbp/play_by_play_" in path:
             return httpx.Response(
                 200, content=fixture_bytes("nflverse", "play_by_play_2025.parquet")
@@ -279,6 +302,8 @@ def test_simulated_week_unattended(engine, settings, kwargs, schedule, router, c
     assert by_job["nba-cdn-schedule"] == 7 and by_job["sdv-nba-schedule"] == 7
     assert by_job["nba-cdn-scoreboard"] == 14
     assert by_job["nflverse-injuries"] == 7 and by_job["nflverse-pbp"] == 7
+    assert by_job["nflverse-team-stats"] == 7 and by_job["nflverse-snaps"] == 7
+    assert by_job["nflverse-rosters"] == 7
     # Weather: forecasts every 3 h while NFL games are within a week. The sample's last game
     # this season-week kicks off Sunday afternoon, after which the gate closes: Thu 00:20 ET to
     # Sun ~16:00 ET is ~3.6 days of 3-hourly runs. Nothing observed yet (too recent).

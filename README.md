@@ -167,6 +167,45 @@ The Elo baseline is a yardstick: public ratings are already in the price. First 
 model by 10.18; 990 test bets went 492-474-24 (50.9%, ROI -1.5%): no edge. New features are
 judged by whether they beat this.
 
+## Unit model with missing starters (NFL)
+
+Rates every team as four units (pass offense, run offense, pass defense, run defense) in
+expected points added per play, and adjusts for starters who will miss the game:
+
+```bash
+betdata backfill --source nflverse --dataset team_stats --seasons 1999-2026
+betdata backfill --source nflverse --dataset snaps --seasons 2012-2026
+betdata backfill --source nflverse --dataset injuries --seasons 2009-2026
+betdata backfill --source nflverse --dataset rosters --seasons 2011-2026
+betdata backtest nfl --model units      # train 2013-2019, test 2020-2025; spreads and totals
+betdata predict nfl                     # upcoming games + each team's missing starters
+```
+
+- **Starters** come from snap counts of the team's last six games (half or more of the unit's
+  snaps in the games a player played). **Missing** comes from that week's injury report
+  (Out; Doubtful and Questionable weighted by how often such starters actually sat, learned on
+  training seasons: about 99% and 29%) and roster status (injured reserve, released or traded).
+  Game-day inactives are ignored: they are announced 90 minutes before kickoff.
+- **Position groups** (QB, OL, WR, TE, RB, DL, LB, CB, S) carry the snap-weighted number of
+  starters out. A squared term tests whether several defensive backs or linemen out together
+  hurt more than one each, and an interaction tests whether a depleted secondary matters more
+  against a strong passing offense.
+- What each of these is worth, in points of margin and of total, is fitted by ridge
+  regression on training seasons only; test seasons are scored once.
+
+First run (Oct 2026), 2020-2025 unseen, 1,693 games:
+
+| | Elo | Units | Units + missing starters | Closing line |
+|---|---|---|---|---|
+| Miss on the margin | 10.16 | 10.23 | **10.09** | 9.77 |
+| Miss on total points | - | 10.69 | **10.65** | 10.31 |
+| Spread bets (4+ pts) | | | 155-137-1, 53.1% | |
+| Total bets (4+ pts) | | | 238-210-7, 53.1% | |
+
+Missing starters make the model measurably more accurate, most clearly for totals (each
+cornerback out adds ~2.3 points to the game, each safety ~1.4), but the closing line is
+still more accurate and neither betting record is distinguishable from luck yet.
+
 ## Running unattended
 
 ```bash
@@ -262,3 +301,4 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - [x] **M8** venues (NFL seed, CFBD) and Open-Meteo forecasts / observed weather
 - [x] **M9** NFL injuries (change-only), play-by-play parquet files, Postgres check
 - [x] **M10** NFL walk-forward backtest against closing spreads; Elo baseline; stored predictions
+- [x] **M11** NFL team stats, snap counts, rosters; unit model with missing starters; totals

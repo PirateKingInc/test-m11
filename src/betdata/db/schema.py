@@ -420,9 +420,85 @@ model_predictions = Table(
     Column("predicted_at", UTCDateTime, nullable=False),
     Column("pred_home_margin", Float, nullable=False),
     Column("pred_home_win_prob", Float),
+    Column("pred_total", Float),  # combined points, for models that predict it
     Column("market_spread_home", Float),  # closing/current line on the home side, if known
+    Column("market_total", Float),
     Column("market_source", String(32)),
     Column("params", JSON),
     UniqueConstraint("model_version", "game_id", "predicted_at"),
     Index("ix_model_predictions_game", "game_id", "model_version", "predicted_at"),
+)
+
+# --- NFL team and player context (nflverse) -----------------------------------
+# Derived stats, not prices: a reload replaces a season's rows (stat corrections), so these
+# tables hold the latest version only; the raw files stay in raw_responses.
+
+# One row per team per game: volume and expected points added (EPA) on passes and runs.
+team_game_stats = Table(
+    "team_game_stats",
+    metadata,
+    Column("stat_id", Integer, primary_key=True),
+    Column("source", String(32), nullable=False),
+    Column("source_game_id", String(128), nullable=False),
+    Column("game_id", ForeignKey("games.game_id")),
+    Column("season", Integer, nullable=False),
+    Column("week", Integer, nullable=False),
+    Column("season_type", String(8)),
+    Column("team_id", ForeignKey("teams.team_id"), nullable=False),
+    Column("opponent_team_id", ForeignKey("teams.team_id")),
+    Column("pass_plays", Integer, nullable=False),  # attempts + sacks taken
+    Column("pass_epa", Float),
+    Column("pass_yards", Integer),
+    Column("rush_plays", Integer, nullable=False),
+    Column("rush_epa", Float),
+    Column("rush_yards", Integer),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+    UniqueConstraint("source", "source_game_id", "team_id"),
+    Index("ix_team_game_stats_season", "season", "week"),
+)
+
+# Snaps played per player per game (2012+): who the starters are and how much they play.
+player_game_snaps = Table(
+    "player_game_snaps",
+    metadata,
+    Column("snap_id", Integer, primary_key=True),
+    Column("source", String(32), nullable=False),
+    Column("source_game_id", String(128), nullable=False),
+    Column("game_id", ForeignKey("games.game_id")),
+    Column("season", Integer, nullable=False),
+    Column("week", Integer, nullable=False),
+    Column("team_id", ForeignKey("teams.team_id"), nullable=False),
+    Column("player_name", String(128), nullable=False),
+    Column("pfr_player_id", String(32), nullable=False),
+    Column("position", String(8)),
+    Column("offense_snaps", Integer),
+    Column("offense_pct", Float),
+    Column("defense_snaps", Integer),
+    Column("defense_pct", Float),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+    UniqueConstraint("source", "source_game_id", "team_id", "pfr_player_id"),
+    Index("ix_player_game_snaps_team", "season", "team_id", "week"),
+)
+
+# Weekly roster status (ACT active, RES injured reserve/PUP/suspended, INA game-day inactive,
+# ...). Practice squad (DEV) rows are not kept. INA is only known 90 minutes before kickoff.
+roster_weeks = Table(
+    "roster_weeks",
+    metadata,
+    Column("roster_id", Integer, primary_key=True),
+    Column("source", String(32), nullable=False),
+    Column("season", Integer, nullable=False),
+    Column("week", Integer, nullable=False),
+    Column("game_type", String(8)),
+    Column("team_id", ForeignKey("teams.team_id"), nullable=False),
+    Column("gsis_id", String(32)),
+    Column("pfr_id", String(32)),
+    Column("player_name", String(128), nullable=False),
+    Column("football_name", String(64)),
+    Column("last_name", String(64)),
+    Column("position", String(8)),
+    Column("depth_chart_position", String(8)),
+    Column("status", String(8), nullable=False),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+    Index("ix_roster_weeks_team", "season", "team_id", "week"),
 )

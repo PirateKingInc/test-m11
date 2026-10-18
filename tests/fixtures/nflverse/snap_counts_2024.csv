@@ -1,0 +1,13 @@
+game_id,pfr_game_id,season,game_type,week,player,pfr_player_id,position,team,opponent,offense_snaps,offense_pct,defense_snaps,defense_pct,st_snaps,st_pct
+2024_22_KC_PHI,202502090phi,2024,SB,22,Landon Dickerson,DickLa00,G,PHI,KC,74,1,0,0,8,0.28
+2024_22_KC_PHI,202502090phi,2024,SB,22,Jordan Mailata,MailJo00,T,PHI,KC,74,1,0,0,8,0.28
+2024_22_KC_PHI,202502090phi,2024,SB,22,Cam Jurgens,JurgCa01,G,PHI,KC,67,0.91,0,0,1,0.03
+2024_22_KC_PHI,202502090phi,2024,SB,22,Lane Johnson,JohnLa01,T,PHI,KC,67,0.91,0,0,0,0
+2024_22_KC_PHI,202502090phi,2024,SB,22,Jalen Hurts,HurtJa00,QB,PHI,KC,67,0.91,0,0,0,0
+2024_22_KC_PHI,202502090phi,2024,SB,22,A.J. Brown,BrowAJ00,WR,PHI,KC,65,0.88,0,0,0,0
+2024_22_KC_PHI,202502090phi,2024,SB,22,Dallas Goedert,GoedDa00,TE,PHI,KC,62,0.84,0,0,2,0.07
+2024_22_KC_PHI,202502090phi,2024,SB,22,Mekhi Becton,BectMe00,T,PHI,KC,61,0.82,0,0,7,0.24
+2024_22_KC_PHI,202502090phi,2024,SB,22,Saquon Barkley,BarkSa00,RB,PHI,KC,60,0.81,0,0,0,0
+2024_22_KC_PHI,202502090phi,2024,SB,22,DeVonta Smith,SmitDe07,WR,PHI,KC,57,0.77,0,0,2,0.07
+2024_22_KC_PHI,202502090phi,2024,SB,22,Jahan Dotson,DotsJa00,WR,PHI,KC,44,0.59,0,0,0,0
+2024_22_KC_PHI,202502090phi,2024,SB,22,Grant Calcaterra,CalcGr00,TE,PHI,KC,32,0.43,0,0,2,0.07

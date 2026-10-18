@@ -94,7 +94,9 @@ def backfill(
     source_name: str = typer.Option(
         "cfbd", "--source", help="cfbd, sportsdataverse, open_meteo (weather) or nflverse"
     ),
-    dataset: str = typer.Option(None, help="nflverse only: injuries or pbp"),
+    dataset: str = typer.Option(
+        None, help="nflverse only: injuries, pbp, team_stats, snaps or rosters"
+    ),
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
 ):
@@ -106,8 +108,11 @@ def backfill(
 
     years = sorted(parse_seasons(seasons) or [])
     if source_name == "nflverse":
-        if dataset not in ("injuries", "pbp"):
-            raise typer.BadParameter("--dataset must be injuries or pbp (schedules: `run`)")
+        datasets = ("injuries", "pbp", "team_stats", "snaps", "rosters")
+        if dataset not in datasets:
+            raise typer.BadParameter(
+                f"--dataset must be one of {', '.join(datasets)} (schedules: `run`)"
+            )
         nfl = _source("nflverse")
         for year in years:
             result = nfl.run(dataset, seasons=str(year))
@@ -375,9 +380,15 @@ def teams_list(sport: str, search: str = typer.Option(None, help="Substring filt
 @app.command()
 def backtest(
     sport: str = typer.Argument("nfl", help="nfl (the only sport with free historical lines)"),
-    model: str = typer.Option("elo", help="elo, or market (harness check: never bets)"),
-    train: str = typer.Option("2000-2014", help="Seasons that choose parameters and threshold."),
-    test: str = typer.Option("2015-2025", help="Unseen seasons, scored once."),
+    model: str = typer.Option(
+        "elo", help="elo; units (unit ratings + missing starters); market (never bets)"
+    ),
+    train: str = typer.Option(
+        None, help="Seasons that choose parameters and threshold (elo 2000-2014, units 2013-2019)."
+    ),
+    test: str = typer.Option(
+        None, help="Unseen seasons, scored once (elo 2015-2025, units 2020-2025)."
+    ),
     threshold: float = typer.Option(None, help="Bet when model and close differ by >= this."),
     k: float = typer.Option(None, help="Elo: fix K instead of choosing it on training seasons."),
     hfa: float = typer.Option(None, help="Elo: home-field advantage in Elo points."),
@@ -386,8 +397,9 @@ def backtest(
     regular_only: bool = typer.Option(False, help="Bet regular-season games only."),
     lines_source: str = typer.Option("nflverse", help="Source of closing lines."),
 ):
-    """Walk-forward backtest against closing spreads. Load history first:
-    `betdata run nflverse schedules --seasons all`."""
+    """Walk-forward backtest against closing lines. Load history first:
+    `betdata run nflverse schedules --seasons all`; for --model units also team_stats
+    (1999+), snaps (2012+), injuries (2009+) and rosters (2011+) via `betdata backfill`."""
     import os
     from pathlib import Path
 
@@ -399,13 +411,15 @@ def backtest(
 
     if sport != "nfl":
         raise typer.BadParameter("only nfl has free historical closing lines so far")
-    if model not in MODELS:
-        raise typer.BadParameter(f"model must be one of {sorted(MODELS)}")
+    if model not in (*MODELS, "units"):
+        raise typer.BadParameter(f"model must be one of {sorted((*MODELS, 'units'))}")
     fixed = {k_: v for k_, v in dict(k=k, hfa=hfa, revert=revert, bye=bye).items() if v is not None}
     if fixed and model != "elo":
         raise typer.BadParameter("--k/--hfa/--revert/--bye apply to the elo model")
     if fixed and len(fixed) < 4:
         raise typer.BadParameter("give all of --k --hfa --revert --bye, or none to choose them")
+    train = train or ("2013-2019" if model == "units" else "2000-2014")
+    test = test or ("2020-2025" if model == "units" else "2015-2025")
     with _engine().connect() as conn:
         games = load_games(conn, sport, lines_source=lines_source)
     train_s, test_s = sorted(parse_seasons(train) or []), sorted(parse_seasons(test) or [])
@@ -414,6 +428,30 @@ def backtest(
         typer.echo("no games with scores and closing lines in those seasons; load them with "
                    "`betdata run nflverse schedules --seasons all`")  # fmt: skip
         raise typer.Exit(1)
+    data_dir = Path(os.environ.get("BETDATA_DATA_DIR") or PROJECT_ROOT / "data")
+    stamp = f"{utcnow():%Y%m%dT%H%M%S}"
+    if model == "units":
+        from betdata.analysis.context import load_context
+        from betdata.analysis.units_backtest import run_units_backtest, write_units_csv
+
+        with _engine().connect() as conn:
+            ctx = load_context(conn)
+        if not ctx.stats or not ctx.snaps:
+            typer.echo("no team stats or snap counts; load them with `betdata backfill --source "
+                       "nflverse --dataset team_stats --seasons 1999-2026` (and snaps, injuries, "
+                       "rosters)")  # fmt: skip
+            raise typer.Exit(1)
+        try:
+            result = run_units_backtest(games, ctx, train_s, test_s, regular_only=regular_only)
+        except ValueError as e:
+            raise typer.BadParameter(str(e)) from None
+        typer.echo("\n".join(result.lines))
+        path = write_units_csv(result, data_dir / "reports" / f"backtest_{sport}_units_{stamp}.csv")
+        typer.echo(f"Bets written to {path}")
+        f = result.fits["units+missing"]
+        typer.echo(f"Live picks with these settings: betdata predict {sport} --model units "
+                   f"--alpha {f.alpha:g} --revert {f.revert:g}")  # fmt: skip
+        return
     try:
         result = run_backtest(
             games, model, train_s, test_s, params=fixed or None, threshold=threshold,
@@ -422,43 +460,100 @@ def backtest(
     except ValueError as e:
         raise typer.BadParameter(str(e)) from None
     typer.echo("\n".join(result.lines))
-    data_dir = Path(os.environ.get("BETDATA_DATA_DIR") or PROJECT_ROOT / "data")
-    path = write_csv(
-        result, data_dir / "reports" / f"backtest_{sport}_{model}_{utcnow():%Y%m%dT%H%M%S}.csv"
-    )
+    path = write_csv(result, data_dir / "reports" / f"backtest_{sport}_{model}_{stamp}.csv")
     typer.echo(f"Bets written to {path}")
     if model == "elo":
         p = result.model.params()
-        typer.echo(f"Live picks with these settings: betdata predict {sport} --k {p['k']:g} "
-                   f"--hfa {p['hfa']:g} --revert {p['revert']:g} --bye {p['bye']:g}")  # fmt: skip
+        typer.echo(f"Live picks with these settings: betdata predict {sport} --model elo "
+                   f"--k {p['k']:g} --hfa {p['hfa']:g} --revert {p['revert']:g} "
+                   f"--bye {p['bye']:g}")  # fmt: skip
+
+
+def _absence_text(team: str, out) -> str:
+    if not out:
+        return f"{team}: no starters missing"
+    parts = []
+    for a in sorted(out, key=lambda a: (-a.out_prob * a.starter.share, a.starter.name)):
+        chance = "" if a.out_prob >= 0.99 else f" {100 * a.out_prob:.0f}%"
+        parts.append(f"{a.starter.group} {a.starter.name} ({a.reason}{chance})")
+    return f"{team}: " + ", ".join(parts)
 
 
 @app.command()
 def predict(
     sport: str = typer.Argument("nfl"),
-    k: float = typer.Option(20.0, help="Elo K (use the values `betdata backtest` prints)."),
-    hfa: float = typer.Option(48.0),
-    revert: float = typer.Option(0.33),
-    bye: float = typer.Option(0.0),
+    model: str = typer.Option("units", help="units (unit ratings + missing starters) or elo"),
     days: int = typer.Option(8, help="Predict games kicking off within this many days."),
+    alpha: float = typer.Option(0.05, help="Units: rating speed (use what `backtest` prints)."),
+    revert: float = typer.Option(None, help="Season carry-over (units 0.5, elo 0.33)."),
+    train: str = typer.Option(None, help="Units: seasons to fit on (default 2013-last season)."),
+    k: float = typer.Option(20.0, help="Elo K (use the values `betdata backtest` prints)."),
+    hfa: float = typer.Option(48.0, help="Elo home field."),
+    bye: float = typer.Option(0.0, help="Elo bye bonus."),
     lines_source: str = typer.Option("nflverse", help="Source of the market line shown."),
 ):
-    """Predict upcoming games with the Elo model and store them in model_predictions (a new row
-    only when the prediction or market line changed)."""
+    """Predict upcoming games and store them in model_predictions (a new row only when the
+    prediction or the market line changed). The units model also lists missing starters."""
     from datetime import timedelta
 
     from betdata.analysis.dataset import load_games
-    from betdata.analysis.models import EloModel
-    from betdata.analysis.report import predict_upcoming
+    from betdata.core.matching import season_for
 
     if sport != "nfl":
         raise typer.BadParameter("only nfl so far")
     now = utcnow()
+    until = now + timedelta(days=days)
+    if model == "units":
+        from betdata.analysis.context import load_context
+        from betdata.analysis.units_backtest import predict_units_upcoming
+        from betdata.sources.nflverse import parse_seasons
+
+        seasons = sorted(parse_seasons(train) or []) if train else list(
+            range(2013, season_for(sport, now))
+        )  # fmt: skip
+        try:
+            with _engine().begin() as conn:
+                games = load_games(conn, sport, lines_source=lines_source)
+                ctx = load_context(conn)
+                fitted, rows = predict_units_upcoming(
+                    conn, games, ctx, now=now, until=until, train=seasons, alpha=alpha,
+                    revert=0.5 if revert is None else revert, lines_source=lines_source,
+                )  # fmt: skip
+        except ValueError as e:
+            typer.echo(f"{e}; load team_stats, snaps, injuries and rosters with `betdata "
+                       "backfill --source nflverse --dataset ...`, or use --model elo")  # fmt: skip
+            raise typer.Exit(1) from None
+        if not rows:
+            typer.echo("no upcoming games in that window (or no snap counts loaded)")
+            return
+        typer.echo(f"{fitted.version}; spreads are the home side (negative = home favoured)")
+        for r in rows:
+            g = r.game
+            line = (f"{g.start:%a %m-%d %H:%M}Z {g.away:>4} @ {g.home:<4} "
+                    f"spread model {-r.home_margin:+5.1f}")  # fmt: skip
+            if g.spread_home is not None:
+                edge = r.home_margin + g.spread_home
+                line += (f" market {g.spread_home:+5.1f} lean {g.home if edge > 0 else g.away:<4}"
+                         f" {abs(edge):4.1f}")  # fmt: skip
+            line += f" | total model {r.total:5.1f}"
+            if g.total is not None:
+                edge = r.total - g.total
+                side = "over" if edge > 0 else "under"
+                line += f" market {g.total:5.1f} lean {side:<5} {abs(edge):4.1f}"
+            typer.echo(line + ("" if r.stored else "  (unchanged)"))
+            typer.echo("    " + _absence_text(g.away, r.away_out))
+            typer.echo("    " + _absence_text(g.home, r.home_out))
+        return
+    if model != "elo":
+        raise typer.BadParameter("model must be units or elo")
+    from betdata.analysis.models import EloModel
+    from betdata.analysis.report import predict_upcoming
+
     with _engine().begin() as conn:
         games = load_games(conn, sport, lines_source=lines_source)
         rows = predict_upcoming(
-            conn, games, EloModel(k=k, hfa=hfa, revert=revert, bye=bye), now=now,
-            until=now + timedelta(days=days), lines_source=lines_source,
+            conn, games, EloModel(k=k, hfa=hfa, revert=0.33 if revert is None else revert, bye=bye),
+            now=now, until=until, lines_source=lines_source,
         )  # fmt: skip
     if not rows:
         typer.echo("no upcoming games in that window")

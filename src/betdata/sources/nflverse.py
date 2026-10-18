@@ -37,7 +37,7 @@ from betdata.core.odds_loader import load_odds
 from betdata.core.results_loader import load_results
 from betdata.core.source import JobSpec, RawInput, Source
 from betdata.db.schema import utcnow
-from betdata.sources import nflverse_data
+from betdata.sources import nflverse_context, nflverse_data
 
 NAME = "nflverse"
 BOOK_KEY = "nflverse"
@@ -165,6 +165,11 @@ def parse_schedules(body: bytes, *, fetched_at: datetime, seasons: set[int] | No
     return out
 
 
+def _season_from_endpoint(endpoint: str) -> int:
+    """'/snap_counts/snap_counts_2024.csv' -> 2024 (replays of stored files)."""
+    return int(endpoint.rsplit("_", 1)[1].split(".")[0])
+
+
 class NflverseSource(Source):
     name = NAME
 
@@ -199,6 +204,9 @@ class NflverseSource(Source):
             ),
             "injuries": JobSpec("injuries", "Injury reports for one season (default: current)."),
             "pbp": JobSpec("pbp", "Play-by-play parquet for one season, saved under data/pbp."),
+            "team_stats": JobSpec("team_stats", "Team pass/rush volume and EPA per game (1999+)."),
+            "snaps": JobSpec("snaps", "Snaps per player per game (2012+)."),
+            "rosters": JobSpec("rosters", "Weekly roster status per player (2002+)."),
         }
 
     def _one_season(self, params) -> int:
@@ -221,6 +229,11 @@ class NflverseSource(Source):
             path = f"/pbp/play_by_play_{season}.parquet"
             resp = self.client.get(path, est_cost=0, run_id=run_id, store_raw=False)
             return RawInput(path, {"season": season}, resp.body, resp.fetched_at, None)
+        if job in nflverse_context.DATASETS:
+            season = self._one_season(params)
+            path = nflverse_context.DATASETS[job][0].format(season=season)
+            resp = self.client.get(path, est_cost=0, run_id=run_id, dedupe=True)
+            return RawInput(path, {"season": season}, resp.body, resp.fetched_at, resp.raw_id)
         resp = self.client.get(SCHEDULES_ENDPOINT, est_cost=0, run_id=run_id, dedupe=True)
         # The season filter is applied when parsing; the stored raw file is always complete.
         return RawInput(
@@ -234,11 +247,17 @@ class NflverseSource(Source):
     def job_for_endpoint(self, endpoint: str) -> str:
         if endpoint.startswith("/injuries/"):
             return "injuries"
+        for job, (template, _) in nflverse_context.DATASETS.items():
+            if endpoint.startswith(template.split("{")[0]):
+                return job
         return "schedules"
 
     def parse(self, job: str, raw: RawInput):
         if job == "injuries":
             return nflverse_data.parse_injuries(raw.body, fetched_at=raw.fetched_at)
+        if job in nflverse_context.DATASETS:
+            season = (raw.params or {}).get("season") or _season_from_endpoint(raw.endpoint)
+            return nflverse_context.parse(job, raw.body, season=season, fetched_at=raw.fetched_at)
         if job == "pbp":
             url = str(self.client._http.base_url).rstrip("/") + raw.endpoint
             return nflverse_data.PbpFile(raw.params["season"], url, raw.body, raw.fetched_at)
@@ -250,6 +269,8 @@ class NflverseSource(Source):
     def load(self, conn, job: str, batch, *, run_id, raw_id) -> tuple[int, int]:
         if job == "injuries":
             return nflverse_data.load_injuries(conn, batch, raw_id=raw_id)
+        if job in nflverse_context.DATASETS:
+            return nflverse_context.load(conn, batch, raw_id=raw_id)
         if job == "pbp":
             data_dir = Path(
                 self.config.options.get("data_dir")

@@ -344,3 +344,26 @@ jobs:
     cron: "40 7 * * *"
     misfire_grace_minutes: 720
     active_months: [9, 10, 11, 12, 1, 2]
+
+  # --- NFL team stats, snap counts, rosters (unit model inputs; nflverse, no quota) ---------
+
+  - id: nflverse-team-stats  # team pass/run EPA per game, rebuilt nightly
+    source: nflverse
+    job: team_stats
+    cron: "50 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [9, 10, 11, 12, 1, 2]
+
+  - id: nflverse-snaps  # snaps per player per game: who the starters are
+    source: nflverse
+    job: snaps
+    cron: "55 7 * * *"
+    misfire_grace_minutes: 720
+    active_months: [9, 10, 11, 12, 1, 2]
+
+  - id: nflverse-rosters  # weekly roster status: injured reserve, released; before kickoffs
+    source: nflverse
+    job: rosters
+    cron: "30 18 * * *"
+    misfire_grace_minutes: 360
+    active_months: [9, 10, 11, 12, 1, 2]

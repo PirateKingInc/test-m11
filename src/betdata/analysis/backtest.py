@@ -38,10 +38,10 @@ def walk_forward(games: Sequence[GameRow], model: Model) -> list[tuple[GameRow, 
 @dataclass(frozen=True)
 class Pick:
     game: GameRow
-    pred_margin: float
-    edge: float  # model margin minus market margin, in points, from the home side
-    side: str  # home or away
-    line: float  # the side's spread
+    pred_margin: float  # the model's number: home margin (spreads) or total points (totals)
+    edge: float  # model minus market, in points: from the home side, or over the total
+    side: str  # home or away; over or under
+    line: float  # the side's spread, or the total
     price: int
     result: str  # win, loss, push
     profit: float  # per 1 unit staked
@@ -84,6 +84,36 @@ def picks(
         price = (g.spread_home_price if side == "home" else g.spread_away_price) or DEFAULT_PRICE
         line, result = grade(g, side)
         out.append(Pick(g, p.home_margin, edge, side, line, price, result, profit(result, price)))
+    return out
+
+
+def grade_total(game: GameRow, side: str) -> str:
+    points = game.home_score + game.away_score
+    diff = points - game.total if side == "over" else game.total - points
+    return "win" if diff > 0 else "loss" if diff < 0 else "push"
+
+
+def total_picks(
+    preds: Iterable[tuple[GameRow, Prediction | None]],
+    threshold: float,
+    seasons: Iterable[int] | None = None,
+    regular_only: bool = False,
+) -> list[Pick]:
+    """Bet over/under wherever the model's total differs from the closing total by >= threshold."""
+    keep = set(seasons) if seasons is not None else None
+    out = []
+    for g, p in preds:
+        if p is None or p.total is None or not g.final or g.total is None:
+            continue
+        if (keep is not None and g.season not in keep) or (regular_only and g.season_type != "REG"):
+            continue
+        edge = p.total - g.total
+        if threshold <= 0 or abs(edge) < threshold:
+            continue
+        side = "over" if edge > 0 else "under"
+        price = (g.over_price if side == "over" else g.under_price) or DEFAULT_PRICE
+        result = grade_total(g, side)
+        out.append(Pick(g, p.total, edge, side, g.total, price, result, profit(result, price)))
     return out
 
 
@@ -207,13 +237,22 @@ def tune(
     if best is None:
         raise ValueError("no training games with a closing line and a final score")
     err, params, preds = best
-    by_threshold = [(t, summarize(picks(preds, t, train, regular_only))) for t in thresholds]
-    eligible = [(t, s) for t, s in by_threshold if s.bets >= MIN_TRAIN_BETS]
-    if eligible:
-        threshold = max(eligible, key=lambda ts: (ts[1].roi, -ts[0]))[0]
-    else:
-        threshold = min(thresholds)
+    threshold, by_threshold = choose_threshold(
+        lambda p, t, s: picks(p, t, s, regular_only), preds, sorted(train), thresholds
+    )
     return Tuned(params, err, threshold, by_threshold)
+
+
+def choose_threshold(
+    pick_fn, preds, train: Iterable[int], thresholds: Sequence[float] = THRESHOLDS
+) -> tuple[float, list[tuple[float, Summary]]]:
+    """Best training ROI among thresholds with at least MIN_TRAIN_BETS bets (else the lowest)."""
+    train = list(train)
+    by = [(t, summarize(pick_fn(preds, t, train))) for t in thresholds]
+    eligible = [(t, s) for t, s in by if s.bets >= MIN_TRAIN_BETS]
+    if not eligible:
+        return min(thresholds), by
+    return max(eligible, key=lambda ts: (ts[1].roi, -ts[0]))[0], by
 
 
 def verdict(test: Summary) -> str:
