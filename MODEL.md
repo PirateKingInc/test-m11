@@ -128,6 +128,14 @@ penalties per game, points per game and home-minus-away penalty split come from 
 games over three seasons only, shrunk with 16 games of league average. Only the margin half
 survives (by 0.002, within noise): crew effects on totals didn't hold up on 2020-2022.
 
+### Group 6: coaching (`features/coaching.py`)
+
+Full build: for the head coach named for the game (known by the final report), from every
+earlier game he coached for any team: fourth-down go rate in 4th-and-1-to-3 between the 40s
+(win probability 5-95%), shrunk with 15 chances of league average; early-down neutral-situation
+pass rate over expected (nflfastR `pass_oe`), shrunk with 150 plays. A clear margin gain
+(-0.031): aggressive, pass-first coaches win by more than their ratings say. No help for totals.
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -181,3 +189,4 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 | + 3 Schedule and travel | 9.854 | 10.832 | KEEP / drop | margin -0.001 (within noise; kept by the rule); total worse |
 | + 4 Environment | 9.854 | **10.734** | - / KEEP | total -0.092: roof and surface. No forecast history, so weather can't be fitted yet |
 | + 5 Officials | 9.852 | 10.746 | KEEP / drop | margin -0.002 (within noise); totals worse |
+| + 6 Coaching | **9.821** | 10.757 | KEEP / drop | margin -0.031; totals worse |
