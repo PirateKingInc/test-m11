@@ -109,6 +109,17 @@ All schedule facts, known in advance. Venue time zones and elevations were added
 `seeds/venues_nfl.csv`. Elo already carries the bye-week bonus and home field, so the margin
 gain is tiny and the total half didn't help; no adjustment was worth trying beyond the rule.
 
+### Group 4: environment (`features/environment.py`)
+
+Full build: dome / retractable roof (open or closed known only at prekick, half indoor before
+that), artificial turf, and forecast wind above 10 km/h, cold below 5 C and rain from the
+latest Open-Meteo forecast fetched by the prediction point. The forecast part has nothing to
+learn from: no historical forecasts are stored, and Open-Meteo (including its historical-forecast
+and previous-runs APIs) is refused by this machine's proxy (BACKLOG.md). Every weather feature
+is zero in 2013-2022, so its fitted coefficient is zero. The model ignores weather until
+forecasts have accumulated and the group is refitted. Observed weather (nflverse temp/wind,
+Open-Meteo archive) is never used. Roof and surface alone cut total error by 0.09 points.
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -160,3 +171,4 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 | + 1 Player availability | **9.874** | **10.849** | KEEP / KEEP | -0.21 margin, -0.33 total. Prekick (inactives known) beats the final report: 9.843 vs 9.905 margin. |
 | + 2 Team strength | 9.855 | 10.826 | KEEP / KEEP | ridge penalty rises to 1000 (margin) / 300 (total) |
 | + 3 Schedule and travel | 9.854 | 10.832 | KEEP / drop | margin -0.001 (within noise; kept by the rule); total worse |
+| + 4 Environment | 9.854 | **10.734** | - / KEEP | total -0.092: roof and surface. No forecast history, so weather can't be fitted yet |
