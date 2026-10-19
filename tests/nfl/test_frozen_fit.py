@@ -62,3 +62,16 @@ def test_missed_points(synth, engine):
         now = prekick_time(k) + timedelta(minutes=10)
         assert live.missed_points(conn, store, "v", [gid], now) == [(gid, FINAL_REPORT)]
     assert PREKICK != FINAL_REPORT
+
+
+def test_committed_m12_fit_is_used_without_data(monkeypatch, tmp_path):
+    """The 2013-2025 fit M12 went live with is in config/fits: no refit, no data needed, and
+    the version string is the one M12's live picks carry."""
+    from datetime import UTC, datetime
+
+    monkeypatch.setenv("BETDATA_DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(live, "live_model", lambda *a: pytest.fail("refitted"))
+    design = Design.load()
+    fits, seasons = live.frozen_model(None, design, datetime(2026, 10, 20, tzinfo=UTC))
+    assert seasons == tuple(range(2013, 2026))
+    assert version_of(design, fits) == "m12:22460361b5"
