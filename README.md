@@ -195,9 +195,10 @@ betdata predict nfl                     # upcoming games + each team's missing s
 - What each of these is worth, in points of margin and of total, is fitted by ridge
   regression on training seasons only; test seasons are scored once.
 
-First run (Oct 2026), 2020-2025 unseen, 1,693 games. These figures had a small look-ahead
-(game-day roster at the final-report point); after the M12 fix the margin miss is 10.11, the
-total 10.65, and spread bets go 405-403-13 at a 2-point threshold (REVIEW.md, "Fix results"):
+First run (Oct 2026), 2020-2025 unseen, 1,693 games. These figures had small look-aheads (the
+game-day roster at the final-report point, and nflverse's 2013-2015 "weekly" rosters, which
+are end-of-season snapshots); with both fixed in M12 the margin miss is 10.15, the total
+10.66, spreads go 495-511-17 and totals 214-199-7 (REVIEW.md, "Fix results"):
 
 | | Elo | Units | Units + missing starters | Closing line |
 |---|---|---|---|---|

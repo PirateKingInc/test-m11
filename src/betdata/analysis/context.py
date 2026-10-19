@@ -39,7 +39,11 @@ POSITION_GROUP = {
     "LB": "LB", "OLB": "LB", "ILB": "LB", "MLB": "LB",
     "CB": "CB", "DB": "CB", "FS": "S", "SS": "S", "S": "S", "SAF": "S",
 }  # fmt: skip
-PRESENT_ROSTER_STATUSES = {"ACT", "INA"}  # INA = present that week; not used as an absence
+PRESENT_ROSTER_STATUSES = {"ACT", "INA"}
+# nflverse's weekly rosters before 2016 are one end-of-season snapshot copied into every week
+# (a player who went on IR in week 12 is "RES" from week 1), so they leak the future and are
+# never read (REVIEW.md #19).
+FIRST_WEEKLY_ROSTER_SEASON = 2016  # INA = present that week; not used as an absence
 STARTER_SHARE = 0.5  # share of the unit's snaps that makes a player a starter
 WINDOW = 6  # team games looked back over for starters
 DEFAULT_OUT_PROB = {"Out": 1.0, "Doubtful": 0.9, "Questionable": 0.25}
@@ -116,6 +120,8 @@ def load_context(conn: Connection, *, first_season: int = 1999) -> Context:
             if r.football_name and r.last_name:
                 full = norm_name(f"{r.football_name} {r.last_name}")
                 by_name.setdefault((r.season, r.team_id, full), r.gsis_id)
+        if r.season < FIRST_WEEKLY_ROSTER_SEASON:
+            continue  # ids only: the statuses are an end-of-season snapshot
         ctx.rosters.setdefault((r.season, r.week, r.team_id), {})[key] = r.status
         first = ctx.rostered.setdefault((r.season, r.team_id), {})
         first[key] = min(first.get(key, r.week), r.week)
