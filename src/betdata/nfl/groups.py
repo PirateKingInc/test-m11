@@ -7,6 +7,7 @@ from betdata.nfl.features.base import Base
 from betdata.nfl.features.coaching import Coaching
 from betdata.nfl.features.context import GameContext
 from betdata.nfl.features.environment import Environment
+from betdata.nfl.features.market import Market
 from betdata.nfl.features.officials import Officials
 from betdata.nfl.features.schedule import Schedule
 from betdata.nfl.features.strength import Strength
@@ -23,6 +24,7 @@ GROUPS = {
         Officials(),
         Coaching(),
         GameContext(),
+        Market(),
     )
 }
 ORDER = list(GROUPS)

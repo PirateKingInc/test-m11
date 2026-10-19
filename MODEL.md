@@ -153,6 +153,19 @@ Why: division games and late-season stakes are already priced through team stren
 availability (resting starters show up as inactives at prekick). Record-based stakes are a
 crude proxy for playoff odds (BACKLOG.md).
 
+### Group 8: market at the prediction point (`features/market.py`)
+
+Full build: the latest polled spread and total fetched by the prediction point (nflverse's
+daily poll, The Odds API, SharpAPI, OddsPapi; never a `source_closing` row or
+`v_closing_lines`), and the move since the first line we stored. History has no such lines:
+nflverse keeps closing lines only, and the free opening-line archives are refused by this
+machine's proxy (BACKLOG.md). Every market feature is zero in 2013-2022, so the group has
+nothing to learn and is not in the fitted model (validation unchanged, 9.821 / 10.734).
+
+The market enters live predictions as a **blend** instead, w x model + (1 - w) x the line at
+the prediction point, with w chosen on validation (Model selection below). `betdata predict
+nfl` prints and stores both the model-only number and the blend.
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -208,3 +221,4 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 | + 5 Officials | 9.852 | 10.746 | KEEP / drop | margin -0.002 (within noise); totals worse |
 | + 6 Coaching | **9.821** | 10.757 | KEEP / drop | margin -0.031; totals worse |
 | + 7 Game context | 9.845 | 10.763 | drop / drop | worse on both after 2 adjustments |
+| + 8 Market | 9.821 | 10.734 | drop / drop | no prediction-time lines in history: nothing to fit. Used live as a blend |
