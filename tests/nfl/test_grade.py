@@ -135,3 +135,41 @@ def test_scheduler_job_grades(db, settings, clock):
     assert src.run("grade").rows_inserted == 0  # idempotent
     with db.connect() as conn:
         assert conn.execute(select(func.count()).select_from(ingest_runs)).scalar() >= 3
+
+
+def test_moneyline_grading(db):
+    from betdata.moneyline import no_vig
+    from betdata.nfl.grade import ml_threshold, moneyline_bet
+
+    t = ml_threshold()
+    assert moneyline_bet(0.5, -110, -110, t) is None  # no edge
+    assert moneyline_bet(None, -110, -110, t) is None and moneyline_bet(0.7, None, 120, t) is None
+    b = moneyline_bet(0.62, -110, -110, t)
+    assert (b.market, b.side, b.price, b.line, b.edge) == ("moneyline", "home", -110, None, 12.0)
+    assert result_of(b, 20, 20) == "push"
+
+    with db.begin() as conn:
+        phi = gid(conn, "2025_01_DAL_PHI")  # PHI 24-20; closed PHI -425 / DAL +330
+        lac = gid(conn, "2025_01_KC_LAC")  # LAC 27-21; closed LAC +145 / KC -175
+        p1 = predict(conn, phi, 0.0, None, None, None)
+        p2 = predict(conn, lac, 0.0, None, None, None)
+        conn.execute(update(model_predictions).where(model_predictions.c.prediction_id == p1)
+                     .values(pred_home_win_prob=0.30, market_ml_home=-400,
+                             market_ml_away=320))  # fmt: skip
+        conn.execute(update(model_predictions).where(model_predictions.c.prediction_id == p2)
+                     .values(pred_home_win_prob=0.70, market_ml_home=160,
+                             market_ml_away=-190))  # fmt: skip
+        grade_nfl(conn, NOW)
+        g = grades(conn)
+        recs = {(r.model_version, r.market): r for r in records(conn)}
+    dal = g[(p1, "moneyline")]  # backed DAL at +320; DAL lost
+    assert (dal.side, dal.price_american, dal.result, dal.profit) == ("away", 320, "loss", -1.0)
+    assert dal.close_price_american == 330 and dal.line is None
+    # DAL drifted from +320 to +330: the market liked DAL less at the close (negative CLV).
+    want = round(100 * (no_vig(-425, 330)[1] - no_vig(-400, 320)[1]), 2)
+    assert dal.clv == pytest.approx(want) and dal.clv < 0
+    lac_g = g[(p2, "moneyline")]  # backed LAC at +160; LAC won; closed +145 (beat the close)
+    assert (lac_g.side, lac_g.result, lac_g.profit) == ("home", "win", 1.6)
+    assert lac_g.clv > 0
+    rec = recs[("m12:test", "moneyline")]
+    assert (rec.wins, rec.losses) == (1, 1) and rec.beat_close == 0.5
