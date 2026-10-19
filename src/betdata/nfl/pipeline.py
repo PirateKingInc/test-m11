@@ -117,16 +117,20 @@ class Evaluation:
 
 def evaluate(rows: pd.DataFrame, out: pd.DataFrame, m_cols: list[str], t_cols: list[str],
              train: Sequence[int] = TRAIN, valid: Sequence[int] = VALIDATE,
-             lambdas: Sequence[float] = LAMBDAS) -> Evaluation:  # fmt: skip
+             lambdas: Sequence[float] = LAMBDAS,
+             lambdas_t: Sequence[float] | None = None) -> Evaluation:  # fmt: skip
     """Fit on `train` for each point; the ridge penalty is chosen by validation MAE (margin and
-    total separately, the same penalty for both points)."""
+    total separately, the same penalty for both points). `lambdas_t`: candidates for the total
+    model when they differ from the margin's."""
     best_m, best_t = None, None
     for lam in lambdas:
         fits = [fit_point(rows, out, p, train, m_cols, t_cols, lam, lam) for p in POINTS]
         em = np.mean([mae(rows, out, f, valid)[0] for f in fits])
-        et = np.mean([mae(rows, out, f, valid)[1] for f in fits])
         if best_m is None or em < best_m[0]:
             best_m = (em, lam)
+    for lam in lambdas if lambdas_t is None else lambdas_t:
+        fits = [fit_point(rows, out, p, train, m_cols, t_cols, lam, lam) for p in POINTS]
+        et = np.mean([mae(rows, out, f, valid)[1] for f in fits])
         if best_t is None or et < best_t[0]:
             best_t = (et, lam)
     lam_m, lam_t = best_m[1], best_t[1]

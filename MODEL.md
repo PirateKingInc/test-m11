@@ -222,3 +222,115 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 | + 6 Coaching | **9.821** | 10.757 | KEEP / drop | margin -0.031; totals worse |
 | + 7 Game context | 9.845 | 10.763 | drop / drop | worse on both after 2 adjustments |
 | + 8 Market | 9.821 | 10.734 | drop / drop | no prediction-time lines in history: nothing to fit. Used live as a blend |
+## Model selection (validation 2020-2022, `betdata nfl select`)
+
+Kept design (`config/nfl_model.json`): margin = base + availability + strength + schedule +
+officials + coaching (ridge penalty 1000); total = base + availability + strength +
+environment (penalty 300).
+
+| Prediction point | Ridge margin / total | Gradient boosting margin / total |
+|---|---|---|
+| final report | 9.850 / 10.745 | 10.125 / 10.851 |
+| prekick | 9.792 / 10.723 | 10.167 / 10.888 |
+
+Ridge wins both by a wide margin (boosting with absolute-error loss, 300 trees, 15 leaves,
+40 games per leaf), so the simpler model is kept. `scikit-learn` is a dependency only for this
+comparison.
+
+**Win probability**: P(home wins) = Phi(margin / 13.1), sigma from training residuals.
+Validation Brier score 0.217 (final report) / 0.216 (prekick), log loss 0.623 / 0.620 (834
+games without ties). Reliability bins, prekick:
+
+| Predicted | Games | Mean predicted | Home won |
+|---|---|---|---|
+| 0.1-0.2 | 6 | 0.168 | 0.333 |
+| 0.2-0.3 | 33 | 0.254 | 0.303 |
+| 0.3-0.4 | 91 | 0.354 | 0.231 |
+| 0.4-0.5 | 154 | 0.453 | 0.383 |
+| 0.5-0.6 | 193 | 0.551 | 0.508 |
+| 0.6-0.7 | 188 | 0.644 | 0.590 |
+| 0.7-0.8 | 130 | 0.741 | 0.792 |
+| 0.8-0.9 | 35 | 0.834 | 0.971 |
+| 0.9-1.0 | 4 | 0.918 | 0.750 |
+
+Roughly calibrated. The middle bins run 4-12 points high, the 0.7-0.9 bins low: home teams won
+a little less often than the model expected in close games during 2020-2022 (2020 had no
+crowds, which the training seasons can't know about).
+
+### Ablation
+
+Each group added in turn is the results log above. Each group removed from the final model
+(validation MAE, margin / total):
+
+| | Margin | Total |
+|---|---|---|
+| all kept | 9.821 | 10.734 |
+| without availability | 10.009 (+0.188) | 10.811 (+0.077) |
+| without strength | 9.862 (+0.041) | 10.772 (+0.038) |
+| without schedule | 9.824 (+0.003) | (not in total model) |
+| without officials | 9.823 (+0.002) | (not in total model) |
+| without coaching | 9.852 (+0.031) | (not in total model) |
+| without environment | (not in margin model) | 10.826 (+0.092) |
+
+Player availability is by far the most important group. Schedule and officials are within
+noise.
+
+### Model + market blend
+
+History has no lines from before kickoff, so the blend weight is chosen on validation with
+the closing line standing in for the prediction-time line. This picks one number per market
+and is never a model input. Validation MAE, prekick:
+
+| | Model alone | Market (close) alone | Best blend |
+|---|---|---|---|
+| Margin | 9.792 | 9.747 | **9.706** at 0.40 model / 0.60 market |
+| Total | 10.723 | 10.507 | **10.490** at 0.15 model / 0.85 market |
+
+The model adds information the closing line doesn't fully have on the margin (the blend beats
+both), and very little on totals. Live, the blend uses the line known at the prediction point,
+which is less informed than the close, so the true live benefit of blending is probably larger
+than this measure suggests.
+
+## Final test: 2023-2025, scored once (`betdata nfl final-test`)
+
+The frozen design was refitted on 2013-2022 and scored on the 855 test games with M12, Elo,
+M11 and both closing lines (2026-10-19, `data/reports/m12_final_test.json`). Nothing was
+changed afterwards. Elo uses M10's settings; M11 is units+missing fitted on 2013-2019 (as
+M11 was), with the REVIEW.md fixes.
+
+| Miss on the final margin | final report | prekick |
+|---|---|---|
+| M12 | 10.062 | **9.996** |
+| Elo (M10) | 10.259 | 10.259 |
+| M11 units+missing | 10.314 | 10.314 |
+| Closing line | 9.786 | 9.786 |
+
+| Miss on total points | final report | prekick |
+|---|---|---|
+| M12 | 10.379 | **10.375** |
+| M11 units+missing | 10.459 | 10.459 |
+| Closing total | 10.120 | 10.120 |
+
+Win probability on test: Brier 0.218 (final report) / 0.217 (prekick), log loss 0.626 / 0.623,
+close to validation. Reliability (prekick): predicted 0.26 → won 0.29, 0.36 → 0.31,
+0.45 → 0.36, 0.55 → 0.61, 0.65 → 0.65, 0.75 → 0.76, 0.84 → 0.82.
+
+Bets against the closing line at the existing thresholds (3 pts spread, 4 pts total), -110:
+
+| | Record | Win % | 95% range | ROI |
+|---|---|---|---|---|
+| M12 spread, prekick | 107-88-3 | 54.9% | 47.9-61.7% | +4.7% |
+| M12 spread, final report | 113-98-4 | 53.6% | 46.8-60.2% | +2.2% |
+| M12 total, prekick | 58-66-1 | 46.8% | 38.2-55.5% | -10.6% |
+| M12 total, final report | 81-70-2 | 53.6% | 45.7-61.4% | +2.4% |
+| Elo spread | 135-138-4 | 49.5% | 43.6-55.3% | -5.5% |
+| M11 spread | 127-138-7 | 47.9% | 42.0-53.9% | -8.3% |
+| M11 total | 109-95-2 | 53.4% | 46.6-60.1% | +2.0% |
+
+**Reading**: M12 is the most accurate model so far: 0.26 points of margin error better than
+Elo and 0.32 better than M11, with totals 0.08 better than M11. It is still 0.21 (margin) and
+0.26 (total) points *worse* than the closing line. Every betting record's 95% range includes
+the 52.4% break-even. The spread records lean positive, but 200 bets can't tell that from luck.
+These bets are graded at the close, where the market has already absorbed the news the model
+uses. The live test is whether a prediction-time bet beats the line it is placed at, and that
+is what `betdata grade nfl` now measures (CLV).
