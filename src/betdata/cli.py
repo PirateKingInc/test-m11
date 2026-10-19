@@ -11,6 +11,7 @@ from betdata.db import seed as seed_mod
 from betdata.db.engine import make_engine, upgrade
 from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
 from betdata.nfl.cli import nfl_app
+from betdata.runner.cli import page_app, runner_app
 from betdata.sources import REGISTRY
 
 app = typer.Typer(help="Sports data ingestion.", no_args_is_help=True)
@@ -23,6 +24,8 @@ app.add_typer(teams_app, name="teams")
 alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=True)
 app.add_typer(alias_app, name="alias")
 app.add_typer(nfl_app, name="nfl")
+app.add_typer(runner_app, name="runner")
+app.add_typer(page_app, name="page")
 
 
 @app.callback()
@@ -660,13 +663,26 @@ def scheduler_list():
 
 
 @sched_app.command("plan")
-def scheduler_plan(days: int = typer.Option(30, help="How many days ahead to project.")):
+def scheduler_plan(
+    days: int = typer.Option(30, help="How many days ahead to project."),
+    runner: bool = typer.Option(False, help="Project the hourly runner's jobs "
+                                            "(config/sports.yaml) instead of the daemon's."),
+    start: str = typer.Option(None, help="Start of the projection (ISO, UTC; default now)."),
+):
     """Project quota spend from the schedule and the games already in the database."""
+    from datetime import datetime
+
     from betdata.scheduler.jobs import load_schedule
     from betdata.scheduler.runner import project, projection_report
 
     settings, engine = get_settings(), _engine()
-    projections = project(engine, settings, REGISTRY, load_schedule(), utcnow(), days)
+    schedule = load_schedule()
+    if runner:
+        from betdata.runner.hourly import runner_schedule
+
+        schedule = runner_schedule()
+    t0 = datetime.fromisoformat(start) if start else utcnow()
+    projections = project(engine, settings, REGISTRY, schedule, t0, days)
     typer.echo("\n".join(projection_report(engine, settings, projections, days)))
 
 
