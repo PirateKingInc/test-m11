@@ -5,6 +5,7 @@ from __future__ import annotations
 from betdata.nfl.features.availability import Availability
 from betdata.nfl.features.base import Base
 from betdata.nfl.features.coaching import Coaching
+from betdata.nfl.features.context import GameContext
 from betdata.nfl.features.environment import Environment
 from betdata.nfl.features.officials import Officials
 from betdata.nfl.features.schedule import Schedule
@@ -21,6 +22,7 @@ GROUPS = {
         Environment(),
         Officials(),
         Coaching(),
+        GameContext(),
     )
 }
 ORDER = list(GROUPS)
