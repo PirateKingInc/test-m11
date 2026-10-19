@@ -1,0 +1,100 @@
+# Sports on the page and in the hourly runner (M13). Order = tab order.
+#
+# An active sport names its plugin (betdata.sports.Sport) and the data jobs the hourly runner
+# runs for it. Jobs use the scheduler's format (config/schedule.yaml): `cron` is US Eastern and
+# on the hour, since the runner wakes once an hour from 7am to 10pm ET; a job runs on the hourly
+# run whose time matches its cron. `when` gates on this sport's games (after/before minutes),
+# and the QuotaManager has the final say on spend. Sources whose key is not set are skipped.
+#
+# Check projected spend before changing anything:  betdata scheduler plan --runner --days 30
+#
+# Adding a sport: an entry here (status coming_soon gives it a tab), then a plugin and jobs.
+
+job_defaults:
+  priority: normal
+  misfire_grace_minutes: 60
+
+sports:
+  - key: nfl
+    name: NFL
+    status: active
+    plugin: betdata.sports.nfl:NflSport
+    jobs:
+      # --- every hourly run: schedule, scores and current lines; injuries; rosters ----------
+      - id: nfl-schedules  # nflverse games.csv: free; also final scores for grading
+        source: nflverse
+        job: schedules
+        cron: "0 7-22 * * *"
+      - id: nfl-injuries
+        source: nflverse
+        job: injuries
+        cron: "0 7-22 * * *"
+        active_months: [8, 9, 10, 11, 12, 1, 2]
+      - id: nfl-rosters  # weekly status incl. game-day inactives once nflverse publishes them
+        source: nflverse
+        job: rosters
+        cron: "0 7-22 * * *"
+        active_months: [8, 9, 10, 11, 12, 1, 2]
+      - id: nfl-sharp  # DraftKings + FanDuel (needs SHARPAPI_KEY); 1 call per run
+        source: sharpapi
+        job: odds
+        params: {sport: nfl}
+        cron: "0 7-22 * * *"
+        when: {after_minutes: 0, before_minutes: 11520}
+      # The Odds API (500 credits/month): its pre-kickoff snapshot, once per kickoff window, on
+      # the run 0-60 minutes before kickoff (needs ODDS_API_KEY).
+      - id: nfl-odds-prekick
+        source: the_odds_api
+        job: odds
+        params: {sport: nfl}
+        cron: "0 7-22 * * *"
+        when: {after_minutes: 0, before_minutes: 60}
+      - id: nfl-odds-events  # free call; keeps The Odds API's event ids current
+        source: the_odds_api
+        job: events
+        params: {sport: nfl}
+        cron: "0 7 * * *"
+        when: {after_minutes: 0, before_minutes: 14400}
+      - id: nfl-papi  # one Pinnacle board before the Sunday early games (needs ODDSPAPI_KEY)
+        source: oddspapi
+        job: odds
+        params: {sport: nfl}
+        cron: "0 11 * * 0"
+        when: {after_minutes: 0, before_minutes: 150}
+      - id: nfl-papi-primetime
+        source: oddspapi
+        job: odds
+        params: {sport: nfl}
+        cron: "0 19 * * 1,4"
+        when: {after_minutes: 0, before_minutes: 150}
+      - id: nfl-weather  # Open-Meteo forecasts for outdoor games (totals only; CLI)
+        source: open_meteo
+        job: forecast
+        params: {sport: nfl}
+        cron: "0 7-22/3 * * *"
+        when: {after_minutes: 0, before_minutes: 10080}
+      # --- the first run of the day (7am): last week's play-by-play, stats, snaps, derive ----
+      - id: nfl-pbp
+        source: nflverse
+        job: pbp
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-team-stats
+        source: nflverse
+        job: team_stats
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-snaps
+        source: nflverse
+        job: snaps
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-derive  # local: derived tables from the files above (no network)
+        source: nfl_model
+        job: derive
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+
+  - key: nba
+    name: NBA
+    status: coming_soon
