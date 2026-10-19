@@ -210,6 +210,18 @@ def _week_kickoffs(g: pd.DataFrame) -> dict[tuple[int, int, int], pd.Timestamp]:
     return out
 
 
+def _cached(fn):
+    """fn memoised on its one argument (player names repeat across ~1M roster rows)."""
+    memo: dict = {}
+
+    def call(x):
+        if x not in memo:
+            memo[x] = fn(x)
+        return memo[x]
+
+    return call
+
+
 def _rosters(conn: Connection, g: pd.DataFrame, first_season: int):
     """Weekly roster rows. Week N is the game-day snapshot: known at the team's week-N
     prekick. Exception: week 1 membership and reserve statuses are set at the final 53-man
@@ -222,8 +234,8 @@ def _rosters(conn: Connection, g: pd.DataFrame, first_season: int):
                roster_weeks.c.football_name, roster_weeks.c.last_name, roster_weeks.c.position,
                roster_weeks.c.status)
         .where(roster_weeks.c.season >= first_season)
-    ).mappings().all()  # fmt: skip
-    df = pd.DataFrame(rows)
+    )  # fmt: skip
+    df = pd.DataFrame(rows.all(), columns=list(rows.keys()))
     pfr_to_key: dict[str, str] = {}
     by_name: dict[tuple[int, int, str], str] = {}
     if df.empty:
@@ -231,29 +243,34 @@ def _rosters(conn: Connection, g: pd.DataFrame, first_season: int):
                                      "known_at"]), pfr_to_key, by_name  # fmt: skip
     df["key"] = df.gsis_id.where(df.gsis_id.notna(), "pfr:" + df.pfr_id.fillna(""))
     df = df[df.gsis_id.notna() | df.pfr_id.notna()]
-    for r in df[df.gsis_id.notna()].itertuples(index=False):
-        if r.pfr_id:
-            pfr_to_key[r.pfr_id] = r.gsis_id
-        by_name[(r.season, r.team, norm_name(r.player_name))] = r.gsis_id
-        if r.football_name and r.last_name:
-            by_name.setdefault((r.season, r.team, norm_name(f"{r.football_name} {r.last_name}")),
-                               r.gsis_id)  # fmt: skip
+    norm = _cached(norm_name)
+    ids = df[df.gsis_id.notna()]
+    cols = ("gsis_id", "pfr_id", "season", "team", "player_name", "football_name", "last_name")
+    for gsis, pfr, season, team, name, football, last in zip(
+        *(ids[c].tolist() for c in cols), strict=True
+    ):
+        if pfr:
+            pfr_to_key[pfr] = gsis
+        by_name[(season, team, norm(name))] = gsis
+        if football and last:
+            by_name.setdefault((season, team, norm(f"{football} {last}")), gsis)
     # Before 2016 the "weekly" files are one end-of-season snapshot (REVIEW.md #19): ids only.
     df = df[df.season >= FIRST_WEEKLY_ROSTER_SEASON]
     df["group"] = df.position.fillna("").str.upper().map(POSITION_GROUP)
     kicks = _week_kickoffs(g)
     week_end = g.groupby(["season", "week"])["kickoff"].max() + timedelta(hours=12)
-    known = []
-    for r in df[["season", "week", "team", "status"]].itertuples(index=False):
-        k = kicks.get((r.season, r.week, r.team))
+    def known_at(season, week, team, week1_cut):
+        k = kicks.get((season, week, team))
         if k is None:
-            end = week_end.get((r.season, r.week))
-            known.append(end if end is not None else pd.Timestamp.max.tz_localize("UTC"))
-        elif r.week == 1 and r.status != "INA":
-            known.append(final_report_time(k))
-        else:
-            known.append(prekick_time(k))
-    df["known_at"] = known
+            end = week_end.get((season, week))
+            return end if end is not None else pd.Timestamp.max.tz_localize("UTC")
+        return final_report_time(k) if week1_cut else prekick_time(k)
+
+    # One computation per (season, week, team, week-1 cut rule), not per player row.
+    keys = list(zip(df.season.tolist(), df.week.tolist(), df.team.tolist(),
+                    ((df.week == 1) & (df.status != "INA")).tolist(), strict=True))  # fmt: skip
+    memo = {k: known_at(*k) for k in set(keys)}
+    df["known_at"] = [memo[k] for k in keys]
     df["known_at"] = _utc(df["known_at"])
     cols = ["season", "week", "team", "key", "status", "group", "position", "known_at"]
     return df[cols], pfr_to_key, by_name
@@ -267,8 +284,8 @@ def _snaps(conn, g, first_season, pfr_to_key, by_name) -> pd.DataFrame:
                player_game_snaps.c.offense_pct, player_game_snaps.c.defense_pct)
         .where(player_game_snaps.c.game_id.is_not(None),
                player_game_snaps.c.season >= first_season)
-    ).mappings().all()  # fmt: skip
-    df = pd.DataFrame(rows)
+    )  # fmt: skip
+    df = pd.DataFrame(rows.all(), columns=list(rows.keys()))
     cols = ["game_id", "season", "week", "team", "key", "group", "share", "kickoff", "known_at"]
     if df.empty:
         return pd.DataFrame(columns=cols)
@@ -276,10 +293,12 @@ def _snaps(conn, g, first_season, pfr_to_key, by_name) -> pd.DataFrame:
     df["group"] = df.position.fillna("").str.upper().map(POSITION_GROUP)
     df = df[df.group.notna()]
     keys = []
-    for r in df[["pfr_player_id", "season", "team", "player_name"]].itertuples(index=False):
-        keys.append(pfr_to_key.get(r.pfr_player_id)
-                    or by_name.get((r.season, r.team, norm_name(r.player_name)))
-                    or f"pfr:{r.pfr_player_id}")  # fmt: skip
+    norm = _cached(norm_name)
+    for pfr, season, team, name in zip(
+        *(df[c].tolist() for c in ("pfr_player_id", "season", "team", "player_name")), strict=True
+    ):
+        keys.append(pfr_to_key.get(pfr) or by_name.get((season, team, norm(name)))
+                    or f"pfr:{pfr}")  # fmt: skip
     df["key"] = keys
     offense = df.group.isin(["QB", "OL", "WR", "TE", "RB"])
     df["share"] = np.where(offense, df.offense_pct.fillna(0.0), df.defense_pct.fillna(0.0))
