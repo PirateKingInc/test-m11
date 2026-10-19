@@ -26,12 +26,12 @@ jobs:
           grep -o 'Last updated: <span id="updated">[^<]*' proof/index.html || true
       - name: Screenshot at 390 px
         run: |
-          pip install --quiet playwright==1.55.0
-          python -m playwright install --with-deps chromium > /dev/null
+          # The runner image ships Google Chrome; drive it rather than installing a browser.
+          pip install --quiet playwright
           python - <<'PY'
           from playwright.sync_api import sync_playwright
           with sync_playwright() as p:
-              b = p.chromium.launch()
+              b = p.chromium.launch(channel="chrome")
               pg = b.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
               pg.goto("https://piratekinginc.github.io/test-m11/", wait_until="networkidle")
               pg.screenshot(path="proof/phone.png")
