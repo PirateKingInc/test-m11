@@ -28,6 +28,7 @@ Every look-ahead leak is a bug and is fixed before any M12 feature is built.
 | 15 | `src/betdata/analysis/units.py:121-122` | ok (checked) | Walk-forward groups by US-Eastern date; that day's results are learned only after all of that day's predictions. Not a leak (conservative). | No change. |
 | 16 | `src/betdata/analysis/units.py:183-190` | ok (checked) | Questionable/Doubtful play rates use only training seasons. | No change. |
 | 17 | `migrations/versions/0005_closing_lines_view.py` | ok (checked) | `v_closing_lines` prefers a source's own close and falls back to the last poll at or before kickoff. Correct as the close; **must not be used as a model input** (M12 rule). | No change. |
+| 19 | `src/betdata/analysis/context.py:105-127` (data, found while building M12 group 1) | **bug (look-ahead)** | nflverse's weekly rosters for 2013-2015 are one end-of-season snapshot copied into every week: only ~7% of players ever change status, and starters marked RES (IR) or TRD (traded) still logged snaps in those weeks. M11 trains on these, so a player's future IR stint counts as "missing" months early. From 2016 the files really are weekly (INA game-day inactives appear from 2019). | **Fixed (issue #2 follow-up)**: statuses before 2016 are never read (the files are still used to map player ids). M12 applies the same rule. |
 | 18 | Open-Meteo, aussportsbetting.com, sportsbookreviewsonline.com | risk (environment) | All three hosts are refused by this machine's network proxy. Stored weather forecasts and historical opening lines can't be collected from here. | Logged in BACKLOG.md. Weather and market features are built and tested on fixtures, then used live where data exists. |
 
 ## Fix results (issue #2)
@@ -53,5 +54,19 @@ M11 `betdata backtest nfl --model units` (train 2013-2019, test 2020-2025, 1,693
 | Total bets, test (4 pts) | 238-210-7 (53.1%) | 235-207-7 (53.2%) |
 | QB out, margin points | -2.80 | -3.26 |
 
-The leak was worth about 0.02-0.03 points of margin error. M11's "53.1% on spreads" partly
+**Second fix (REVIEW.md #19, pre-2016 roster snapshots)**, same backtest:
+
+| | after #1-#3 | after #19 too |
+|---|---|---|
+| Margin MAE, units+missing, test | 10.11 | 10.15 |
+| Margin MAE, units+missing, train | 10.28 | 10.31 |
+| Total MAE, units+missing, test | 10.65 | 10.66 |
+| Spread bets, test | 405-403-13 at 2 pts | 495-511-17 at 1.5 pts (49.2%) |
+| Total bets, test (4 pts) | 235-207-7 (53.2%) | 214-199-7 (51.8%, -0.4% ROI) |
+| QB out, margin points | -3.26 | -3.57 |
+
+Together the two roster leaks were worth about 0.06 points of M11's margin error. With both
+fixed, neither of M11's betting records beats break-even on the test seasons.
+
+The first leak alone was worth about 0.02-0.03 points of margin error. M11's "53.1% on spreads" partly
 came from it: with the leak removed, training chooses a 2-point threshold that loses on test.
