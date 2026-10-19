@@ -432,6 +432,9 @@ model_predictions = Table(
     Column("blend_total", Float),
     Column("features", JSON),
     Column("factors", JSON),
+    # M13: the market moneyline seen with the prediction (home and away American odds).
+    Column("market_ml_home", Integer),
+    Column("market_ml_away", Integer),
     UniqueConstraint("model_version", "game_id", "predicted_at"),
     Index("ix_model_predictions_game", "game_id", "model_version", "predicted_at"),
 )
@@ -572,13 +575,16 @@ nfl_bet_grades = Table(
     Column("prediction_id", ForeignKey("model_predictions.prediction_id"), nullable=False),
     Column("model_version", String(128), nullable=False),
     Column("game_id", ForeignKey("games.game_id"), nullable=False),
-    Column("market", String(8), nullable=False),  # spread, total
+    Column("market", String(16), nullable=False),  # spread, total, moneyline
     Column("side", String(8), nullable=False),  # home, away, over, under
-    Column("line", Float, nullable=False),  # the side's line when the prediction was made
+    Column("line", Float),  # the side's line when the prediction was made; null for moneyline
     Column("price_american", Integer, nullable=False),
-    Column("edge", Float, nullable=False),
+    Column("edge", Float, nullable=False),  # points; moneyline: % points of win probability
     Column("close_line", Float),  # the same side's closing line; null if none known
-    Column("clv", Float),  # points better (+) or worse (-) than the close
+    # Spreads/totals: points better (+) or worse (-) than the close. Moneyline: the side's
+    # no-vig probability at the close minus at the bet, in % points (+ = beat the close).
+    Column("clv", Float),
+    Column("close_price_american", Integer),  # moneyline: the side's closing price
     Column("result", String(8), nullable=False),  # win, loss, push, void (postponed/cancelled)
     Column("profit", Float, nullable=False),  # per unit staked
     Column("graded_at", UTCDateTime, nullable=False),

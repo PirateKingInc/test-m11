@@ -124,6 +124,8 @@ class LivePick:
     total_factors: list[tuple[str, float]] = field(default_factory=list)
     missing: dict[str, list[str]] = field(default_factory=dict)
     stored: bool = False
+    ml_home: int | None = None  # market moneyline seen with the prediction (M13)
+    ml_away: int | None = None
 
 
 def version_of(design: Design, fits: dict[str, Fit]) -> str:
@@ -186,17 +188,18 @@ def _r(x: float | None) -> float | None:
 
 
 def store_picks(conn: Connection, picks: list[LivePick], version: str, now: datetime) -> None:
-    """A new row per game and point whenever the prediction, blend or market moved."""
+    """A new row per game and point whenever the prediction, blend or market (spread, total or
+    moneyline) moved."""
     mp = model_predictions
     for p in picks:
         last = conn.execute(
             select(mp.c.pred_home_margin, mp.c.pred_total, mp.c.market_spread_home,
-                   mp.c.market_total)
+                   mp.c.market_total, mp.c.market_ml_home, mp.c.market_ml_away)
             .where(mp.c.model_version == version, mp.c.game_id == p.game_id,
                    mp.c.prediction_point == p.point)
             .order_by(desc(mp.c.predicted_at)).limit(1)
         ).first()  # fmt: skip
-        now_vals = (p.margin, p.total, p.market_spread, p.market_total)
+        now_vals = (p.margin, p.total, p.market_spread, p.market_total, p.ml_home, p.ml_away)
         if last is not None and tuple(last) == now_vals:
             continue
         conn.execute(insert(mp).values(
@@ -209,6 +212,7 @@ def store_picks(conn: Connection, picks: list[LivePick], version: str, now: date
             factors={"margin": p.margin_factors[:8], "total": p.total_factors[:8],
                      "missing": p.missing},
             params={"design": "config/nfl_model.json"},
+            market_ml_home=p.ml_home, market_ml_away=p.ml_away,
         ))  # fmt: skip
         p.stored = True
 

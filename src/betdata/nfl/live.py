@@ -61,8 +61,20 @@ def run_predict(engine: Engine, now: datetime, days: int) -> tuple[str, list[Liv
     groups = [GROUPS[n] for n in design.groups]
     picks = predict_games(store, design, fits, groups, upcoming, now, market_weights(design))
     with engine.begin() as conn:
+        attach_moneylines(conn, picks, now)
         store_picks(conn, picks, version, now)
     return version, picks
+
+
+def attach_moneylines(conn, picks: list[LivePick], now: datetime) -> None:
+    """The latest polled moneyline (both sides, one book) known at `now`, for each pick."""
+    from betdata.quotes import current_quotes
+
+    quotes = current_quotes(conn, [p.game_id for p in picks], now)
+    for p in picks:
+        q = quotes.get(p.game_id, {})
+        if "ml_home" in q:
+            p.ml_home, p.ml_away = q["ml_home"].price, q["ml_away"].price
 
 
 def replay(engine: Engine, csv_paths: list[Path], now: datetime) -> list[dict]:
