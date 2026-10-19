@@ -155,6 +155,41 @@ def load_observed(conn: Connection, last_season: int = OBSERVED_LAST_SEASON) -> 
     return insert_new(conn, rows)
 
 
+def forecast_vs_observed(conn: Connection, first_season: int = FORECAST_FIRST_SEASON) -> dict:
+    """Diagnostic: for games from 2022 with both an Open-Meteo forecast (prekick, previous
+    run) and nflverse's reported game-day temp/wind, the mean forecast minus observed. Shows
+    whether the observed stand-in the model trained on is on the same scale as forecasts."""
+    raw = conn.execute(
+        select(raw_responses.c.body_gz)
+        .where(raw_responses.c.source == "nflverse",
+               raw_responses.c.endpoint == "/schedules/games.csv")
+        .order_by(raw_responses.c.fetched_at.desc()).limit(1)
+    ).first()  # fmt: skip
+    if raw is None:
+        return {}
+    df = pd.read_csv(io.BytesIO(gzip.decompress(raw.body_gz)), low_memory=False)
+    df = df[(df.season >= first_season) & df.temp.notna() & df.wind.notna()]
+    ids = dict(conn.execute(
+        select(game_source_ids.c.source_game_id, game_source_ids.c.game_id)
+        .where(game_source_ids.c.source == "nflverse")).all())  # fmt: skip
+    obs = {ids[g]: ((t - 32) * 5 / 9, w * 1.609344)
+           for g, t, w in zip(df.game_id, df.temp, df.wind, strict=True) if g in ids}
+    fc = conn.execute(
+        select(nfl_weather_asof.c.game_id, nfl_weather_asof.c.temp_c, nfl_weather_asof.c.wind_kph)
+        .where(nfl_weather_asof.c.source == "open_meteo_prev",
+               nfl_weather_asof.c.point == "prekick")
+    ).all()  # fmt: skip
+    pairs = [(f.temp_c - obs[f.game_id][0], f.wind_kph - obs[f.game_id][1])
+             for f in fc if f.game_id in obs and f.temp_c is not None and f.wind_kph is not None]
+    if not pairs:
+        return {"games": 0}
+    d = np.array(pairs)
+    return {"games": len(pairs), "temp_c_bias": float(d[:, 0].mean()),
+            "wind_kph_bias": float(d[:, 1].mean()),
+            "temp_c_mae": float(np.abs(d[:, 0]).mean()),
+            "wind_kph_mae": float(np.abs(d[:, 1]).mean())}  # fmt: skip
+
+
 # --- evaluation (validation 2020-2022) and the single final test ------------------------------
 
 

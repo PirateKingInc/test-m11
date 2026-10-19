@@ -502,6 +502,39 @@ Both points pooled: 457-670-1, ROI -9.2%, with a 95% win-rate range of 37.7-43.4
 - The page still shows the model's fair moneyline and edge, and flags games past the 3-point threshold as *paper* picks. The flag is not evidence of an edge.
 - `betdata grade nfl` tracks those picks live, including CLV.
 
+## M13 weather (`betdata nfl weather`, `betdata nfl weather-final-test`; workflow `weather`)
+
+M12 had no weather history, so its forecast features were zero in every fitted season. M13 builds that history and tests a weather group, `wx` (`nfl/features/weather.py`), as a **new model version (`m13w`) beside the frozen M12 version**.
+
+**Data.** Table `nfl_weather_asof` has one row per game, prediction point and source. Each row covers the kickoff hour plus the next three. Rows loaded on 2026-10-19 (both points; see the as-of table above for each source's `known_at`):
+
+| Seasons | Source | Rows |
+|---|---|---|
+| 1999-2021 (2010-2021 used) | nflverse game-day `temp`/`wind` (observed; the stand-in) | 352-402 a season |
+| 2022-2026 | Open-Meteo previous-runs forecast, issued before the point (1 day ahead for prekick, 2-3 for the final report) | 396-470 a season |
+| 2022-2026 | Open-Meteo historical-forecast archive (short-lead fallback) | 448-470 a season |
+
+The two Open-Meteo APIs answered from GitHub's runners; this development machine cannot reach them. One request hit Open-Meteo's per-minute limit (HTTP 429), so a few 2023-2024 games have only the fallback row.
+
+**Features** (outdoor share as in group 4; zero indoors):
+- wind above 10 and above 25 km/h;
+- cold below 5 °C;
+- heat above 27 °C;
+- rain.
+
+The margin model gets wind and cold. There is no "weather known" flag: in a local check it only encoded which seasons had data, and it biased every outdoor total in a season without coverage.
+
+**Validation** (fit 2013-2019, score 2020-2022, M12's penalties kept, `wx` added to M12's design):
+
+| Mean of both points | M12 design | + `wx` | Kept? |
+|---|---|---|---|
+| Margin MAE | 9.820 | 9.819 | yes (-0.001) |
+| Total MAE | 10.736 | 10.786 | **no** (+0.050) |
+
+By M12's rule, a group joins a model only where it lowers validation error. The weather version is therefore **M12 + `wx` in the margin model only** (`config/nfl_model_wx.json`). Its gain is negligible.
+
+Weather made totals *worse*. The likely reason is a scale gap: the model learns weather effects from the observed stand-in (2013-2019), while 2022 onward uses forecasts. `betdata nfl weather` prints the mean forecast-minus-observed gap on 2022+ games that have both; see "Final test" below for the number. Per the stop rule, nothing was re-fitted to close it; it is logged in BACKLOG.md.
+
 ## Live-week replay (`betdata nfl replay`)
 
 What M12 (the live fit, 2013-2025) would have said at each prediction point for the games in

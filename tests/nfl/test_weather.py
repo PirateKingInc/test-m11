@@ -174,3 +174,17 @@ def test_evaluation_keeps_wx_only_where_it_helps():
     assert ("wx" in new.margin_groups) == report["keep_margin"]
     assert ("wx" in new.total_groups) == report["keep_total"]
     assert new.lam_margin == design.lam_margin and new.blend_total == design.blend_total
+
+
+def test_forecast_vs_observed_diagnostic(engine, loaded):
+    with engine.begin() as conn:
+        assert nw.forecast_vs_observed(conn, first_season=2025) == {"games": 0}
+        kick = datetime(2025, 9, 5, 0, 20, tzinfo=UTC)
+        nw.insert_new(conn, [dict(game_id=loaded, point=PREKICK, source="open_meteo_prev",
+                                  lead_days=1, temp_c=25.0, wind_kph=20.0, gust_kph=None,
+                                  precip_mm=0.0, known_at=prekick_time(kick),
+                                  fetched_at=kick, raw_id=None)])  # fmt: skip
+        d = nw.forecast_vs_observed(conn, first_season=2025)
+    assert d["games"] == 1  # DAL @ PHI 2025: reported 75 F, 11 mph
+    assert d["temp_c_bias"] == pytest.approx(25.0 - (75 - 32) * 5 / 9)
+    assert d["wind_kph_bias"] == pytest.approx(20.0 - 11 * 1.609344)
