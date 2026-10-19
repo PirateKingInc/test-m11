@@ -287,6 +287,86 @@ def final_test_cmd(force: bool = typer.Option(False, help="Score the test season
     typer.echo(f"report: {path}")
 
 
+def _ml_inputs():
+    from betdata.nfl.data import load_store
+    from betdata.nfl.moneyline import closing_moneylines
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE, outcomes
+    from betdata.nfl.selection import Design
+
+    design = Design.load()
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+        closes = closing_moneylines(conn)
+    rows = design_rows(store, design, (*TRAIN, *VALIDATE, *TEST))
+    return rows, outcomes(store), design, closes
+
+
+def _ml_lines(res: dict) -> list[str]:
+    out = [f"  {res['games']} games: Brier model {res['brier_model']:.4f}"
+           f" (calibrated {res['brier_model_calibrated']:.4f}), no-vig market "
+           f"{res['brier_market']:.4f}"]  # fmt: skip
+    out += [f"    {lo:.1f}-{hi:.1f}  n={n:4}  model {p:.2f} -> won {y:.2f}"
+            for lo, hi, n, p, y in res["bins_model"]]  # fmt: skip
+    return out
+
+
+def _ml_bet_line(label: str, b: dict) -> str:
+    ci = b["ci95"]
+    rng = "-" if ci is None else f"{100 * ci[0]:.1f}-{100 * ci[1]:.1f}%"
+    roi = "-" if b["roi"] is None else f"{100 * b['roi']:+.1f}%"
+    return f"  {label:22} {b['record']:>12}  {100 * b['win_rate']:.1f}%  95% {rng}  ROI {roi}"
+
+
+@nfl_app.command("moneyline")
+def moneyline_cmd(write: bool = typer.Option(False, help="Write config/nfl_moneyline.json.")):
+    """Moneyline on validation (2020-2022): reliability, Brier vs the no-vig market, the one
+    calibration (only if overconfident) and the bet threshold."""
+    import json
+
+    from betdata.nfl.moneyline import ML_PATH, validate
+
+    rows, out, design, closes = _ml_inputs()
+    report, cfg = validate(rows, out, design, closes)
+    pl = report["platt"]
+    typer.echo(f"Platt fit on validation: slope {pl['slope']:.3f}, intercept "
+               f"{pl['intercept']:+.3f} -> " + ("overconfident: calibration applied"
+                                               if pl["overconfident"] else
+                                               "not overconfident: no calibration"))  # fmt: skip
+    for point, res in report["points"].items():
+        typer.echo(point)
+        typer.echo("\n".join(_ml_lines(res)))
+    typer.echo("Bets at the closing moneyline, both points (threshold = edge in % points):")
+    for t, b in report["thresholds"].items():
+        typer.echo(_ml_bet_line(f">= {float(t):g} pts", b))
+    typer.echo(f"Chosen threshold: {cfg.threshold_pts:g} pts")
+    path = data_dir() / "reports" / "m13_moneyline_validation.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=1, default=float))
+    if write:
+        cfg.save(ML_PATH)
+        typer.echo(f"wrote {ML_PATH}")
+
+
+@nfl_app.command("moneyline-final-test")
+def moneyline_final_test_cmd(force: bool = typer.Option(False, help="Score again.")):
+    """Score the moneyline on 2023-2025 once with the validated calibration and threshold."""
+    from betdata.moneyline import MoneylineConfig
+    from betdata.nfl.moneyline import ML_PATH, final_test
+
+    path = data_dir() / "reports" / "m13_moneyline_final_test.json"
+    if path.exists() and not force:
+        typer.echo(f"test seasons already scored: {path} (they are scored once)")
+        raise typer.Exit(1)
+    rows, out, design, closes = _ml_inputs()
+    report = final_test(rows, out, design, closes, MoneylineConfig.load(ML_PATH), path, force)
+    for point, res in report["points"].items():
+        typer.echo(point)
+        typer.echo("\n".join(_ml_lines(res)))
+        typer.echo(_ml_bet_line(f"bets >= {report['threshold_pts']:g} pts", res["bets"]))
+    typer.echo(_ml_bet_line("bets, both points", report["bets_pooled"]))
+    typer.echo(f"report: {path}")
+
+
 @nfl_app.command("replay")
 def replay_cmd():
     """Replay the live weeks in live/*.csv: what M12 would have said at each prediction point,

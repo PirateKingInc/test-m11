@@ -85,3 +85,28 @@ def test_final_test_is_scored_once(setup, tmp_path):
     with pytest.raises(RuntimeError, match="scored once"):
         final_test(rows, out, DESIGN, games, units, path, fit_seasons=(2018, 2019),
                    test_seasons=(2020,))  # fmt: skip
+
+
+def test_moneyline_validation_and_single_final_test(setup, tmp_path):
+    import numpy as np
+
+    from betdata.nfl import moneyline as nml
+
+    store, rows, out = setup
+    rng = np.random.default_rng(1)
+    # A market that knows the result a little: favourites mostly win.
+    closes = {}
+    for gid in out.index:
+        fav_home = (out.at[gid, "margin"] > 0) == (rng.random() < 0.7)
+        closes[int(gid)] = (-150, 130) if fav_home else (130, -150)
+    report, cfg = nml.validate(rows, out, DESIGN, closes, train=[2018, 2019], valid=[2020])
+    assert report["threshold_pts"] == cfg.threshold_pts in nml.ML_THRESHOLDS
+    assert cfg.calibration.applied == report["platt"]["overconfident"]
+    for res in report["points"].values():
+        assert 0 < res["brier_model"] < 0.5 and 0 < res["brier_market"] < 0.5
+    path = tmp_path / "ml_final.json"
+    rep = nml.final_test(rows, out, DESIGN, closes, cfg, path, fit_seasons=[2018, 2019],
+                         test_seasons=[2020])  # fmt: skip
+    assert path.exists() and rep["bets_pooled"]["bets"] >= 0
+    with pytest.raises(RuntimeError, match="scored once"):
+        nml.final_test(rows, out, DESIGN, closes, cfg, path)

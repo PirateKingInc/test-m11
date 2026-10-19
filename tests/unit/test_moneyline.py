@@ -1,4 +1,7 @@
+import math
+
 import numpy as np
+import pandas as pd
 import pytest
 
 from betdata.moneyline import (
@@ -12,6 +15,7 @@ from betdata.moneyline import (
     no_vig,
     profit,
 )
+from betdata.nfl import moneyline as nml
 
 
 def test_fair_odds_round_trip():
@@ -62,3 +66,36 @@ def test_config_round_trip(tmp_path):
     back = MoneylineConfig.load(tmp_path / "ml.json")
     assert back.threshold_pts == 4.0 and back.calibration.applied
     assert back.calibration(0.7) == pytest.approx(cfg.calibration(0.7))
+
+
+def _frame():
+    pred = pd.DataFrame({
+        "game_id": [1, 2, 3, 4], "point": "prekick", "margin": 0.0, "total": 0.0,
+        "win_prob": [0.70, 0.40, 0.52, 0.60],
+    })  # fmt: skip
+    out = pd.DataFrame({"margin": [7, -3, 3, 0], "total": [40] * 4}, index=[1, 2, 3, 4])
+    closes = {1: (-150, 130), 2: (-120, 100), 3: (-110, -110), 4: (-110, -110)}
+    return nml.frame(pred, out, closes)
+
+
+def test_moneyline_bets_against_no_vig_close():
+    d = _frame()
+    assert math.isnan(d.home_won.iloc[3])  # a tie
+    bl = nml.bets(d, 5.0, Calibration())
+    by = {b["game_id"]: b for b in bl}
+    # Game 1: model 0.70 vs no-vig ~0.58 -> back home at -150, won.
+    assert by[1]["side"] == "home" and by[1]["result"] == "win"
+    assert by[1]["profit"] == pytest.approx(100 / 150)
+    # Game 2: model 0.40 vs ~0.52 -> back away at +100, home lost so away won.
+    assert by[2]["side"] == "away" and by[2]["result"] == "win" and by[2]["profit"] == 1.0
+    assert 3 not in by  # 0.52 vs 0.50: below the threshold
+    assert by[4]["result"] == "push"  # tie
+    s = nml.summary(bl)
+    assert s["record"] == "2-0-1" and s["bets"] == 3
+
+
+def test_scores_compare_model_and_market():
+    res = nml.scores(_frame(), Calibration())
+    assert res["games"] == 3  # the tie is dropped
+    assert res["brier_market"] > 0 and res["brier_model"] > 0
+    assert sum(b[2] for b in res["bins_model"]) == 3

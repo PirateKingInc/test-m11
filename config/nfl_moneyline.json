@@ -1,0 +1,10 @@
+{
+  "calibration": {
+    "slope": 1.3118220008523336,
+    "intercept": -0.22047024644887803,
+    "fitted_on": "2020-2022 validation, both points",
+    "applied": false
+  },
+  "threshold_pts": 3.0,
+  "chosen_on": "validation 2020-2022, both points pooled"
+}
