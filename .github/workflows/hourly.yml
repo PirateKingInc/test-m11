@@ -1,0 +1,122 @@
+# M13 hourly runner: refresh, predict, grade, publish the page (GitHub Pages).
+#
+# Every hour on the hour from 7am to 10pm America/New_York, 16 runs a day. Cron is UTC only,
+# so this fires every hour of 11:00-03:00 UTC (7am-10pm in both EDT and EST); the `gate` job
+# exits at once for the hour that is outside 7am-10pm Eastern (src/betdata/runner/window.py).
+#
+# State (the SQLite database, the frozen model fit, cached features, the last good page) lives
+# in the Actions cache: restored at the start, saved as a new entry at the end. If it is gone
+# (evicted, or `drop_state` below), the run rebuilds the history from free nflverse files and
+# the page says so. A failed run republishes the last good page with a failure warning.
+#
+# Manual runs (Actions -> hourly -> Run workflow) ignore the clock.
+
+name: hourly
+
+on:
+  schedule:
+    - cron: "0 0-3,11-23 * * *"
+  workflow_dispatch:
+    inputs:
+      drop_state:
+        description: "Ignore the saved state, as if it were lost (lost-state test)"
+        type: boolean
+        default: false
+      force_fail:
+        description: "Fail the run on purpose with this message (failure test)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: src/betdata/runner/window.py
+          sparse-checkout-cone-mode: false
+      - id: gate
+        run: python3 src/betdata/runner/window.py
+
+  run:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      # Keys only from GitHub Secrets; a missing one means that source is skipped (and listed
+      # on the page). ODDS_API_KEY is the name .env.example uses; THE_ODDS_API_KEY also works.
+      ODDS_API_KEY: ${{ secrets.ODDS_API_KEY || secrets.THE_ODDS_API_KEY }}
+      SHARPAPI_KEY: ${{ secrets.SHARPAPI_KEY }}
+      ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+      CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+      FORCE_FAIL: ${{ inputs.force_fail }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked --no-dev
+      - name: Restore state
+        id: restore
+        if: ${{ !inputs.drop_state }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Run
+        id: run
+        continue-on-error: true
+        run: |
+          args=(--trigger "${{ github.event_name }}")
+          if [ -n "$FORCE_FAIL" ]; then args+=(--fail "$FORCE_FAIL"); fi
+          uv run --no-dev betdata runner run "${args[@]}" 2>&1 | tee run.log
+          exit "${PIPESTATUS[0]}"
+      - name: Save state
+        if: ${{ always() && hashFiles('data/betdata.sqlite') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+          key: betdata-state-v1-${{ github.run_id }}
+      - name: Failure page
+        if: steps.run.outcome == 'failure'
+        run: |
+          msg=$(grep -m1 '^run failed:' run.log | cut -c13- || true)
+          uv run --no-dev betdata runner failed-page --message "${msg:-the hourly run failed}" \
+            --url "$RUN_URL"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
+      - name: Report the failed run
+        if: steps.run.outcome == 'failure'
+        run: |
+          echo "::error::the hourly run failed; the last good page was republished with a warning"
+          exit 1
