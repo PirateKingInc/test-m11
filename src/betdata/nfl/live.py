@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -10,7 +12,8 @@ from sqlalchemy import Engine
 from betdata.core.matching import season_for
 from betdata.nfl.data import load_store
 from betdata.nfl.groups import GROUPS
-from betdata.nfl.pipeline import outcomes
+from betdata.nfl.model import Ridge
+from betdata.nfl.pipeline import Fit, outcomes
 from betdata.nfl.points import POINTS, point_time
 from betdata.nfl.predict import (
     LivePick,
@@ -49,21 +52,84 @@ def live_model(store, design: Design, now: datetime):
     return fits, seasons
 
 
-def run_predict(engine: Engine, now: datetime, days: int) -> tuple[str, list[LivePick]]:
+def fit_path(design: Design, seasons) -> Path:
+    from betdata.nfl.workflow import data_dir
+
+    tag = hashlib.sha1(json.dumps(design.__dict__, sort_keys=True).encode()).hexdigest()[:10]
+    return data_dir() / "derived" / f"live_fit_{tag}_{min(seasons)}_{max(seasons)}.json"
+
+
+def frozen_model(store, design: Design, now: datetime):
+    """The live model without refitting: the fit on every completed season is computed once
+    (the first prediction of a season, or after the data directory is rebuilt) and read back
+    from data/derived afterwards, so hourly runs never refit. The completed seasons only change
+    once a year, so this is the same fit `live_model` would return."""
+    last = season_for("nfl", now) - 1
+    seasons = tuple(range(2013, last + 1))
+    path = fit_path(design, seasons)
+    if path.exists():
+        raw = json.loads(path.read_text())
+        fits = {p: Fit(p, Ridge.from_dict(f["margin"]), Ridge.from_dict(f["total"]), f["sigma"])
+                for p, f in raw["fits"].items()}  # fmt: skip
+        return fits, seasons
+    fits, seasons = live_model(store, design, now)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"seasons": list(seasons), "fits": {
+        p: {"margin": f.margin.to_dict(), "total": f.total.to_dict(), "sigma": f.sigma}
+        for p, f in fits.items()}}))  # fmt: skip
+    return fits, seasons
+
+
+def run_predict(engine: Engine, now: datetime, days: int,
+                refit: bool = False) -> tuple[str, list[LivePick]]:  # fmt: skip
+    """Predict every scheduled game in the next `days` as of now, and store it (change-only).
+    A game whose final-report or prekick time has passed with no stored prediction at that
+    point (the runner was down, or the data was rebuilt) also gets one as of that time, from
+    what was known then."""
     design = Design.load()
     store = loaded_store(engine)
-    fits, _ = live_model(store, design, now)
+    fits, _ = (live_model if refit else frozen_model)(store, design, now)
     version = version_of(design, fits)
     g = store.games
     upcoming = [i for i in g.index
                 if now < g.at[i, "kickoff"] <= now + timedelta(days=days)
                 and g.at[i, "status"] == "scheduled"]  # fmt: skip
     groups = [GROUPS[n] for n in design.groups]
-    picks = predict_games(store, design, fits, groups, upcoming, now, market_weights(design))
+    weights = market_weights(design)
+    with engine.begin() as conn:
+        for gid, point in missed_points(conn, store, version, upcoming, now):
+            t = point_time(point, g.at[gid, "kickoff"])
+            back = predict_games(store, design, fits, groups, [gid], t, weights)
+            attach_moneylines(conn, back, t)
+            store_picks(conn, back, version, t)
+    picks = predict_games(store, design, fits, groups, upcoming, now, weights)
     with engine.begin() as conn:
         attach_moneylines(conn, picks, now)
         store_picks(conn, picks, version, now)
     return version, picks
+
+
+def missed_points(conn, store, version: str, game_ids, now: datetime) -> list[tuple[int, str]]:
+    """(game, point) pairs whose time has passed, other than the current point, with no stored
+    prediction of this model version at that point."""
+    from sqlalchemy import select
+
+    from betdata.db.schema import model_predictions as mp
+    from betdata.nfl.predict import point_now
+
+    if not game_ids:
+        return []
+    have = set(conn.execute(
+        select(mp.c.game_id, mp.c.prediction_point)
+        .where(mp.c.model_version == version, mp.c.game_id.in_([int(i) for i in game_ids]))
+    ).all())  # fmt: skip
+    out = []
+    for gid in game_ids:
+        kick = store.games.at[gid, "kickoff"]
+        for p in POINTS:
+            if now >= point_time(p, kick) and p != point_now(kick, now) and (gid, p) not in have:
+                out.append((int(gid), p))
+    return out
 
 
 def attach_moneylines(conn, picks: list[LivePick], now: datetime) -> None:
