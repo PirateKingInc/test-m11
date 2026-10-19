@@ -86,33 +86,47 @@ def frozen_model(store, design: Design, now: datetime):
     return fits, seasons
 
 
-def run_predict(engine: Engine, now: datetime, days: int,
-                refit: bool = False) -> tuple[str, list[LivePick]]:  # fmt: skip
-    """Predict every scheduled game in the next `days` as of now, and store it (change-only).
-    A game whose final-report or prekick time has passed with no stored prediction at that
-    point (the runner was down, or the data was rebuilt) also gets one as of that time, from
-    what was known then."""
-    design = Design.load()
+def live_models() -> list[tuple[str, Design]]:
+    """The model versions predicted live: frozen M12, and M13's weather version once validation
+    accepted it (config/nfl_model_wx.json)."""
+    from betdata.nfl.weather import WX_DESIGN_PATH
+
+    out = [("m12", Design.load())]
+    if WX_DESIGN_PATH.exists():
+        out.append(("m13w", Design.load(WX_DESIGN_PATH)))
+    return out
+
+
+def run_predict(engine: Engine, now: datetime, days: int, refit: bool = False,
+                models: list[tuple[str, Design]] | None = None) -> tuple[str, list[LivePick]]:
+    # fmt: skip
+    """Predict every scheduled game in the next `days` as of now with each live model version,
+    and store it (change-only). A game whose final-report or prekick time has passed with no
+    stored prediction at that point (the runner was down, or the data was rebuilt) also gets
+    one as of that time, from what was known then. Returns the first model's (M12's) picks."""
     store = loaded_store(engine)
-    fits, _ = (live_model if refit else frozen_model)(store, design, now)
-    version = version_of(design, fits)
     g = store.games
     upcoming = [i for i in g.index
                 if now < g.at[i, "kickoff"] <= now + timedelta(days=days)
                 and g.at[i, "status"] == "scheduled"]  # fmt: skip
-    groups = [GROUPS[n] for n in design.groups]
-    weights = market_weights(design)
-    with engine.begin() as conn:
-        for gid, point in missed_points(conn, store, version, upcoming, now):
-            t = point_time(point, g.at[gid, "kickoff"])
-            back = predict_games(store, design, fits, groups, [gid], t, weights)
-            attach_moneylines(conn, back, t)
-            store_picks(conn, back, version, t)
-    picks = predict_games(store, design, fits, groups, upcoming, now, weights)
-    with engine.begin() as conn:
-        attach_moneylines(conn, picks, now)
-        store_picks(conn, picks, version, now)
-    return version, picks
+    results = []
+    for name, design in models or live_models():
+        fits, _ = (live_model if refit else frozen_model)(store, design, now)
+        version = version_of(design, fits, name)
+        groups = [GROUPS[n] for n in design.groups]
+        weights = market_weights(design)
+        with engine.begin() as conn:
+            for gid, point in missed_points(conn, store, version, upcoming, now):
+                t = point_time(point, g.at[gid, "kickoff"])
+                back = predict_games(store, design, fits, groups, [gid], t, weights)
+                attach_moneylines(conn, back, t)
+                store_picks(conn, back, version, t, model=name)
+        picks = predict_games(store, design, fits, groups, upcoming, now, weights)
+        with engine.begin() as conn:
+            attach_moneylines(conn, picks, now)
+            store_picks(conn, picks, version, now, model=name)
+        results.append((version, picks))
+    return results[0]
 
 
 def missed_points(conn, store, version: str, game_ids, now: datetime) -> list[tuple[int, str]]:

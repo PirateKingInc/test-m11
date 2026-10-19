@@ -21,16 +21,20 @@ from __future__ import annotations
 
 import gzip
 import io
+import json
 import math
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sqlalchemy import Connection, insert, select
 
+from betdata.config import PROJECT_ROOT
 from betdata.db.schema import game_source_ids, games, nfl_weather_asof, raw_responses
 from betdata.nfl.points import POINTS, point_time
 
+WX_DESIGN_PATH = PROJECT_ROOT / "config" / "nfl_model_wx.json"  # the weather model version
 GAME_HOURS = 4
 MODEL_LATENCY = timedelta(hours=6)  # a run is published a few hours after its start time
 MAX_LEAD_DAYS = 3
@@ -149,3 +153,98 @@ def load_observed(conn: Connection, last_season: int = OBSERVED_LAST_SEASON) -> 
                 known_at=point_time(point, kicks[gid]), fetched_at=raw.fetched_at,
                 raw_id=raw.raw_id))  # fmt: skip
     return insert_new(conn, rows)
+
+
+# --- evaluation (validation 2020-2022) and the single final test ------------------------------
+
+
+def wx_rows(store, design, seasons, refresh: bool = True):
+    """The design's cached rows plus the weather group (rebuilt: its data grows with backfills)."""
+    from betdata.nfl.groups import GROUPS
+    from betdata.nfl.workflow import design_rows, feature_rows, model_games
+
+    rows = design_rows(store, design, seasons)
+    wx = feature_rows(store, GROUPS["wx"], model_games(store, seasons), refresh=refresh)
+    return rows.merge(wx.drop(columns=["season", "week"]), on=["game_id", "point"])
+
+
+def coverage(store) -> dict:
+    """Weather rows per season and source (both points)."""
+    df = store.frame("weather_asof").df
+    if df.empty:
+        return {}
+    df = df.merge(store.games[["season"]], left_on="game_id", right_index=True)
+    return {f"{s}:{src}": int(n) for (s, src), n in df.groupby(["season", "source"]).size().items()}
+
+
+def evaluate_weather(rows, out, design) -> tuple[dict, object]:
+    """The M12 design with and without the weather group, M12's penalties kept (nothing is
+    re-tuned). The group joins the margin and/or total model only where it lowers the
+    validation error, as every M12 group did."""
+    from betdata.nfl.groups import columns
+    from betdata.nfl.pipeline import evaluate
+    from betdata.nfl.selection import Design
+
+    m, t = design.columns(rows.columns)
+    wm, wt = columns(rows.columns, "wx")
+    lam = dict(lambdas=(design.lam_margin,), lambdas_t=(design.lam_total,))
+    base = evaluate(rows, out, m, t, **lam)
+    with_m = evaluate(rows, out, m + wm, t, **lam)
+    with_t = evaluate(rows, out, m, t + wt, **lam)
+    keep_m, keep_t = with_m.margin < base.margin, with_t.total < base.total
+    new = Design(design.margin_groups + (["wx"] if keep_m else []),
+                 design.total_groups + (["wx"] if keep_t else []), design.lam_margin,
+                 design.lam_total, design.model, design.blend_margin,
+                 design.blend_total)  # fmt: skip
+    report = {
+        "m12": {"margin": base.margin, "total": base.total, "valid": base.valid},
+        "with_wx_margin": {"margin": with_m.margin, "valid": with_m.valid},
+        "with_wx_total": {"total": with_t.total, "valid": with_t.valid},
+        "keep_margin": bool(keep_m), "keep_total": bool(keep_t),
+        "design": new.__dict__,
+    }  # fmt: skip
+    return report, new
+
+
+def final_test_weather(rows, out, design_m12, design_wx, games_by_id: dict,
+                       report_path: Path, force: bool = False) -> dict:  # fmt: skip
+    """Both designs refitted on 2013-2022 and scored once on 2023-2025: margin and total error,
+    and totals bets against the close at 4 points (all games, and outdoor games with weather)."""
+    from betdata.nfl.final import bets_at_close, tally
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE
+    from betdata.nfl.selection import fit_design, predict_rows
+
+    if report_path.exists() and not force:
+        raise RuntimeError(f"test seasons already scored ({report_path}); they are scored once")
+    test = rows[rows.season.isin(TEST)]
+    wx_cols = [c for c in test.columns if c.startswith("t_wx_")]
+    have_wx = set(test.loc[(test[wx_cols] != 0).any(axis=1), "game_id"]) if wx_cols else set()
+    report: dict = {"seasons": list(TEST), "designs": {"m12": design_m12.__dict__,
+                                                       "wx": design_wx.__dict__}, "points": {}}
+    preds = {name: predict_rows(test, fit_design(rows, out, d, (*TRAIN, *VALIDATE)))
+             for name, d in (("m12", design_m12), ("wx", design_wx))}  # fmt: skip
+    for point in POINTS:
+        res = {}
+        for name, pred in preds.items():
+            p = pred[pred.point == point].merge(
+                out.rename(columns={"margin": "am", "total": "at"}), left_on="game_id",
+                right_index=True)  # fmt: skip
+            sub = p[p.game_id.isin(have_wx)]
+            bets_all = [bets_at_close(None, r.total, None, games_by_id[r.game_id].total,
+                                      games_by_id[r.game_id].home_score,
+                                      games_by_id[r.game_id].away_score)["total"]
+                        for r in p.itertuples() if games_by_id[r.game_id].total is not None]
+            # fmt: skip
+            res[name] = {
+                "games": int(len(p)),
+                "margin_mae": float((p.margin - p.am).abs().mean()),
+                "total_mae": float((p.total - p["at"]).abs().mean()),
+                "weather_games": int(len(sub)),
+                "total_mae_weather_games": float((sub.total - sub["at"]).abs().mean())
+                if len(sub) else None,
+                "total_bets": tally(f"{name} total", bets_all).as_dict(),
+            }  # fmt: skip
+        report["points"][point] = res
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(report, indent=1, default=float))
+    return report

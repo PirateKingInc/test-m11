@@ -1,0 +1,88 @@
+# M13 weather backfill and evaluation (manual). Open-Meteo is reachable from GitHub's runners,
+# not from every machine, so this runs here, on the same saved state as the hourly runner
+# (same cache, same concurrency group: never at the same time as an hourly run).
+#
+#   1. nflverse observed game-day weather, 1999-2021 (stand-in; no network)
+#   2. Open-Meteo archived forecasts for finished outdoor games from 2022 (as of each point)
+#   3. `betdata nfl weather --write`: validation (2020-2022) with and without the weather group;
+#      prints the resulting design, to be committed as config/nfl_model_wx.json
+#   4. with final_test: score the weather version and M12 on 2023-2025, once
+#
+# Reports are uploaded as an artifact and printed to the log.
+
+name: weather
+
+on:
+  workflow_dispatch:
+    inputs:
+      final_test:
+        description: "Also score 2023-2025 once (needs config/nfl_model_wx.json on main)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly
+  cancel-in-progress: false
+
+jobs:
+  weather:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked --no-dev
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Make sure the history is there
+        run: uv run --no-dev betdata runner ensure-state --trigger weather
+      - name: Observed weather (nflverse, 1999-2021)
+        run: uv run --no-dev betdata nfl weather-observed
+      - name: Archived forecasts (Open-Meteo, 2022+)
+        run: |
+          for i in 1 2 3; do
+            uv run --no-dev betdata run open-meteo hist_forecast --seasons 2022-2026 \
+              --priority high --param max_requests=150 || true
+          done
+      - name: Validation
+        run: |
+          uv run --no-dev betdata nfl weather --write
+          if [ -f config/nfl_model_wx.json ]; then cat config/nfl_model_wx.json; fi
+          cat data/reports/m13_weather_validation.json
+      - name: Final test (once)
+        if: ${{ inputs.final_test }}
+        run: |
+          uv run --no-dev betdata nfl weather-final-test
+          cat data/reports/m13_weather_final_test.json
+      - name: Save state
+        if: ${{ always() && hashFiles('data/betdata.sqlite') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weather-reports
+          path: |
+            data/reports/m13_weather_*.json
+            config/nfl_model_wx.json
+          if-no-files-found: ignore
