@@ -591,3 +591,23 @@ nfl_bet_grades = Table(
     UniqueConstraint("prediction_id", "market"),
     Index("ix_nfl_bet_grades_version", "model_version"),
 )
+
+# --- M13 hourly runner -----------------------------------------------------------
+
+# One row per hourly run (GitHub Actions or local): what it did and whether it worked. The
+# page's "last updated", failure warning and line movement read from here.
+runner_runs = Table(
+    "runner_runs",
+    metadata,
+    Column("run_id", Integer, primary_key=True),
+    Column("slot_at", UTCDateTime, nullable=False),  # the hour the run was due
+    Column("started_at", UTCDateTime, nullable=False),
+    Column("finished_at", UTCDateTime),
+    Column("trigger", String(32), nullable=False),  # schedule, workflow_dispatch, local
+    Column("status", String(16), nullable=False),  # running, ok, failed
+    Column("rebuilt", Boolean, nullable=False, default=False),  # state was rebuilt this run
+    Column("message", Text),
+    Column("details", JSON),  # per-job outcomes, games predicted, grades, timings
+    Index("ix_runner_runs_started", "started_at"),
+)
+
