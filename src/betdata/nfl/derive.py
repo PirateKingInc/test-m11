@@ -250,7 +250,11 @@ def derive_pbp(conn: Connection, data_dir: Path, seasons: list[int] | None = Non
         if not path.exists():
             log.warning("pbp file for %s missing at %s; skipped", season, path)
             continue
-        pbp = pd.read_parquet(path, columns=PBP_COLUMNS)
+        try:
+            pbp = pd.read_parquet(path, columns=PBP_COLUMNS)
+        except Exception as e:  # noqa: BLE001 - a damaged or partial file must not stop the rest
+            log.warning("pbp file for %s unreadable (%s); skipped", season, e)
+            continue
         game_rows = conn.execute(
             select(game_source_ids.c.source_game_id, games.c.game_id, games.c.start_time_utc,
                    games.c.home_team_id, games.c.away_team_id)

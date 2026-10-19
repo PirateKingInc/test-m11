@@ -1,5 +1,6 @@
 from betdata.sources.cfbd import CfbdSource
 from betdata.sources.nba_cdn import NbaCdnSource
+from betdata.sources.nfl_model import NflModelSource
 from betdata.sources.nflverse import NflverseSource
 from betdata.sources.oddspapi import OddsPapiSource
 from betdata.sources.open_meteo import OpenMeteoSource
@@ -12,6 +13,7 @@ REGISTRY = {
     for cls in (
         TheOddsApiSource,
         NflverseSource,
+        NflModelSource,
         CfbdSource,
         SharpApiSource,
         OddsPapiSource,
