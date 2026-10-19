@@ -502,3 +502,54 @@ roster_weeks = Table(
     Column("raw_id", ForeignKey("raw_responses.raw_id")),
     Index("ix_roster_weeks_team", "season", "team_id", "week"),
 )
+
+# --- M12 derived NFL data (rebuilt from archived files; every row says when it was known) ----
+
+# Per-game schedule facts from nflverse games.csv that are known before kickoff. Post-game
+# columns (temp, wind, starting QBs, result) are deliberately not stored.
+nfl_game_info = Table(
+    "nfl_game_info",
+    metadata,
+    Column("game_id", ForeignKey("games.game_id"), primary_key=True),
+    Column("source_game_id", String(128), nullable=False),
+    Column("div_game", Boolean),
+    Column("surface", String(32)),
+    Column("roof", String(16)),  # outdoors, dome, open, closed (open/closed: game-day state)
+    Column("home_coach", String(64)),
+    Column("away_coach", String(64)),
+    Column("referee", String(64)),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+)
+
+# Play-by-play aggregates per team per game (the team on offense), as a JSON dict of counts and
+# sums (see nfl/derive.py). known_at = when the game's numbers count as published.
+nfl_team_game_pbp = Table(
+    "nfl_team_game_pbp",
+    metadata,
+    Column("row_id", Integer, primary_key=True),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("season", Integer, nullable=False),
+    Column("team_id", ForeignKey("teams.team_id"), nullable=False),
+    Column("opponent_team_id", ForeignKey("teams.team_id"), nullable=False),
+    Column("stats", JSON, nullable=False),
+    Column("known_at", UTCDateTime, nullable=False),
+    Column("file_id", ForeignKey("data_files.file_id")),
+    UniqueConstraint("game_id", "team_id"),
+    Index("ix_nfl_team_game_pbp_season", "season"),
+)
+
+# Play-by-play aggregates per player per game: dropbacks, designed runs, targets and their EPA.
+nfl_player_game_pbp = Table(
+    "nfl_player_game_pbp",
+    metadata,
+    Column("row_id", Integer, primary_key=True),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("season", Integer, nullable=False),
+    Column("team_id", ForeignKey("teams.team_id"), nullable=False),
+    Column("gsis_id", String(32), nullable=False),
+    Column("stats", JSON, nullable=False),
+    Column("known_at", UTCDateTime, nullable=False),
+    Column("file_id", ForeignKey("data_files.file_id")),
+    UniqueConstraint("game_id", "team_id", "gsis_id"),
+    Index("ix_nfl_player_game_pbp_season", "season"),
+)

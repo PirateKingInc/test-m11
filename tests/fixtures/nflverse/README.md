@@ -12,3 +12,7 @@ start/end markers; the pipeline only stores and versions these files, it never r
 `weekly_rosters/` (downloaded 2026-10-18), header unchanged. The 2024 roster rows are the
 Eagles in the Super Bowl week, including RES/RET and one practice-squad (DEV) row; the 2015
 rows use the older team codes (BLT, CLV, HST, ARZ, SL).
+
+`pbp_2025_sample.parquet`: real play-by-play rows (the columns `nfl/derive.py` reads) for two
+2025 games in `games_sample.csv` (2025_01_DAL_PHI, 2025_01_KC_LAC), cut from nflverse's
+`play_by_play_2025.parquet` (downloaded 2026-10-19).
