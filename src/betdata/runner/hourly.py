@@ -24,7 +24,7 @@ from typing import Any
 from sqlalchemy import Engine, func, insert, select, update
 
 from betdata.config import Settings
-from betdata.db.schema import games, runner_runs, sports
+from betdata.db.schema import games, runner_runs, sports, utcnow
 from betdata.runner.window import EASTERN, slot
 from betdata.scheduler.jobs import JobDef, gate_open, in_season
 from betdata.sports import Sport
@@ -43,6 +43,7 @@ class RunReport:
     sports: dict[str, dict[str, Any]] = field(default_factory=dict)
     seconds: float = 0.0
     message: str = ""
+    as_of: datetime | None = None  # the instant predictions, grades and the page are as of
 
 
 def runner_schedule(active: list[Sport] | None = None):
@@ -114,16 +115,20 @@ def run_hourly(engine: Engine, settings: Settings, registry: dict, active: list[
                 sport.bootstrap(engine, now, source_kwargs)
                 report.rebuilt = True
         for sport in active:
-            st: dict[str, Any] = {}
             for job in sport.jobs:
                 if due(job, slot_at):
                     report.jobs.append({"sport": sport.key, **run_job(
                         engine, settings, registry, job, now, source_kwargs)})  # fmt: skip
+        # Data fetched during this run is stamped with the time it arrived, after `now`;
+        # predict, grade and publish as of the end of the refresh so it is all used.
+        report.as_of = as_of = max(now, utcnow())
+        for sport in active:
+            st: dict[str, Any] = {}
             t = clock.monotonic()
-            st["predicted"] = sport.predict(engine, now)
+            st["predicted"] = sport.predict(engine, as_of)
             st["predict_seconds"] = round(clock.monotonic() - t, 1)
             with engine.begin() as conn:
-                st["graded"] = sport.grade(conn, now)
+                st["graded"] = sport.grade(conn, as_of)
             report.sports[sport.key] = st
         report.status = "ok"
     except Exception as e:
@@ -133,7 +138,8 @@ def run_hourly(engine: Engine, settings: Settings, registry: dict, active: list[
         report.seconds = round(clock.monotonic() - t0, 1)
         with engine.begin() as conn:
             conn.execute(update(runner_runs).where(runner_runs.c.run_id == run_id).values(
-                status=report.status, finished_at=now + timedelta(seconds=report.seconds),
+                status=report.status,
+                finished_at=max(report.as_of or now, now + timedelta(seconds=report.seconds)),
                 rebuilt=report.rebuilt, message=report.message or None,
                 details={"jobs": report.jobs, "sports": report.sports,
                          "seconds": report.seconds},

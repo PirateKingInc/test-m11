@@ -54,7 +54,8 @@ def run_cmd(
         typer.echo(f"run failed: {type(e).__name__}: {e}", err=True)
         raise typer.Exit(1) from None
     with engine.connect() as conn:
-        status = build_site(conn, settings, entries, active, site, now)
+        status = build_site(conn, settings, entries, active, site,
+                            max(report.as_of or now, _now(at)))  # fmt: skip
     good = last_good or data_dir() / "site_last_good"
     if good.exists():
         shutil.rmtree(good)
