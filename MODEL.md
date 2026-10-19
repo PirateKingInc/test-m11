@@ -418,6 +418,85 @@ While checking this, I found and fixed a bug: `betdata backtest nfl --model unit
 X` silently ignored `--threshold` and always used the threshold chosen on training. It now
 fixes the spread threshold, which is how the "held at 4 pts" row above was produced.
 
+## M13 moneyline (`betdata nfl moneyline`, `betdata nfl moneyline-final-test`)
+
+**How the moneyline is built.**
+- **Win probability:** the frozen M12 fit gives Φ(margin / σ), with σ the training residual standard deviation of the margin, about 13.1 points.
+- **Fair moneyline:** that probability converted to American odds with no margin. For example, 60% → -150 and 40% → +150. Code is in `betdata/moneyline.py`.
+- **Market probability:** nflverse's moneyline with the vig removed proportionally, so the two sides sum to 100%.
+- **Edge:** the model's probability minus the no-vig market's, in percentage points.
+
+The win probability uses the model margin, not the model+market spread blend, so the edge measures the model's own view.
+
+### Calibration on validation (2020-2022)
+
+The fit is the frozen design on 2013-2019 and 834 decided games, scored against the closing no-vig moneyline.
+
+| Brier (lower is better) | final report | prekick |
+|---|---|---|
+| M12 model | 0.2172 | 0.2156 |
+| No-vig closing market | 0.2098 | 0.2098 |
+
+Reliability, shown as model predicted → home team won:
+
+| Bin | n (fr / pk) | final report | prekick |
+|---|---|---|---|
+| 0.1-0.2 | 7 / 6 | 0.18 → 0.43 | 0.17 → 0.33 |
+| 0.2-0.3 | 29 / 33 | 0.26 → 0.28 | 0.25 → 0.30 |
+| 0.3-0.4 | 88 / 91 | 0.35 → 0.23 | 0.35 → 0.23 |
+| 0.4-0.5 | 142 / 154 | 0.45 → 0.42 | 0.45 → 0.38 |
+| 0.5-0.6 | 222 / 193 | 0.55 → 0.49 | 0.55 → 0.51 |
+| 0.6-0.7 | 184 / 188 | 0.65 → 0.59 | 0.64 → 0.59 |
+| 0.7-0.8 | 127 / 130 | 0.74 → 0.80 | 0.74 → 0.79 |
+| 0.8-0.9 | 30 / 35 | 0.84 → 0.97 | 0.83 → 0.97 |
+
+The 0.0-0.1 and 0.9-1.0 bins have 1-4 games each and are left out.
+
+**One calibration fit.**
+- I fitted a Platt fit (a logistic regression of the outcome on logit(p)) once, on the validation predictions with both points pooled. It gives **slope 1.31, intercept -0.22**.
+- A slope above 1 means the model is **not overconfident**. Its extreme bins are, if anything, too timid: 0.84 → 0.97.
+- The bins from 0.35 to 0.65 run 3-10 points *high* for the home team. That is the negative intercept: 2020 had no crowds and validation-era home field was weaker than in 2013-2019.
+- The rule was "calibrate only if overconfident", so **no calibration is applied**. The fit is recorded in `config/nfl_moneyline.json` with `applied: false`.
+- Per the stop rule, I did not try anything else, such as a home-field-only correction.
+
+**Bet threshold**, chosen on validation:
+- Back the side whose model probability beats the no-vig closing probability by at least the threshold, at the closing price.
+- Both points are pooled, and a threshold needs at least 100 bets to be eligible.
+- The rule is the same shape as M11's: the best ROI among the eligible thresholds.
+
+| Edge ≥ | Record | Win % | ROI |
+|---|---|---|---|
+| 2 pts | 527-823-7 | 39.0% | -1.7% |
+| **3 pts** | **468-732-6** | **39.0%** | **-0.0%** |
+| 4 pts | 405-657-5 | 38.1% | -1.3% |
+| 5 pts | 331-564-4 | 37.0% | -3.9% |
+| 6 pts | 272-477-3 | 36.3% | -3.1% |
+| 8 pts | 176-339-2 | 34.2% | -0.7% |
+| 10 pts | 110-240-2 | 31.4% | -8.9% |
+
+- The chosen threshold is **3 points**.
+- Every threshold loses or breaks even on validation, so this is the least-bad option, not a found edge.
+- The model mostly backs underdogs: the average price at 3 points is +164.
+
+### Final test (2023-2025), scored once
+
+The frozen design is refitted on 2013-2022 with the validation threshold and no calibration. The report is `data/reports/m13_moneyline_final_test.json`.
+
+| | final report | prekick |
+|---|---|---|
+| Games (decided, with a closing moneyline) | 854 | 854 |
+| Brier, M12 | 0.2179 | 0.2166 |
+| Brier, no-vig closing market | 0.2102 | 0.2102 |
+| Bets ≥ 3 pts at the closing price | 233-336-0 (40.9%), ROI **-8.9%** | 224-334-1 (40.1%), ROI **-9.4%** |
+
+Both points pooled: 457-670-1, ROI -9.2%, with a 95% win-rate range of 37.7-43.4%.
+
+**Reading.**
+- The market's win probabilities beat the model's on every split: 0.007-0.008 Brier on both validation and test.
+- Moneyline bets on the model's edge lose about 9% at the close on the test seasons.
+- The page still shows the model's fair moneyline and edge, and flags games past the 3-point threshold as *paper* picks. The flag is not evidence of an edge.
+- `betdata grade nfl` tracks those picks live, including CLV.
+
 ## Live-week replay (`betdata nfl replay`)
 
 What M12 (the live fit, 2013-2025) would have said at each prediction point for the games in
