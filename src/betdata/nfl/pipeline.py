@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 TRAIN = tuple(range(2013, 2020))
 VALIDATE = (2020, 2021, 2022)
 TEST = (2023, 2024, 2025)
-LAMBDAS = (1.0, 3.0, 10.0, 30.0, 100.0, 300.0)
+LAMBDAS = (1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0)
 
 
 def game_features(store: Store, groups, game_id: int, point: str, t=None) -> dict[str, float]:

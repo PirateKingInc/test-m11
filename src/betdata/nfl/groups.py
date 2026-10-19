@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from betdata.nfl.features.availability import Availability
 from betdata.nfl.features.base import Base
 
-GROUPS = {g.name: g for g in (Base(),)}
+# MODEL.md order: base, then groups 1-8.
+GROUPS = {g.name: g for g in (Base(), Availability())}
 ORDER = list(GROUPS)
 
 

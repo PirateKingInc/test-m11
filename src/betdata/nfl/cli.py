@@ -70,7 +70,7 @@ def asof_check(
     from betdata.nfl.data import load_store
 
     with _engine().connect() as conn:
-        store = load_store(conn)
+        store = fitted_params(load_store(conn))
     ids = [i for i in store.games.index if store.games.at[i, "season"] >= 2013]
     rng = random.Random(seed)
     picked = sorted(rng.sample(ids, min(sample, len(ids))))
@@ -118,6 +118,25 @@ def close_mae(close, out, game_ids):
     return float(np.mean(m)), float(np.mean(t))
 
 
+def fitted_params(store, seasons=None):
+    """Store params learned on training seasons only (play probabilities, replacement QB),
+    cached under data/derived."""
+    import json
+
+    from betdata.nfl.features.availability import learn_play_prob
+    from betdata.nfl.pipeline import TRAIN
+
+    seasons = tuple(seasons or TRAIN)
+    path = _data_dir() / "derived" / f"params_{min(seasons)}_{max(seasons)}.json"
+    if path.exists():
+        params = json.loads(path.read_text())
+    else:
+        params = learn_play_prob(store, seasons)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(params, indent=1, sort_keys=True))
+    return store.with_params(**params)
+
+
 def model_games(store, seasons):
     g = store.games
     return [i for i in g.index if g.at[i, "season"] in set(seasons)
@@ -142,6 +161,7 @@ def evaluate_cmd(
     with _engine().connect() as conn:
         store = load_store(conn)
         close = closing_lines(conn)
+    store = fitted_params(store)
     ids = model_games(store, (*TRAIN, *VALIDATE))
     out = outcomes(store)
     vids = [i for i in ids if store.games.at[i, "season"] in VALIDATE]
@@ -149,24 +169,30 @@ def evaluate_cmd(
     typer.echo(f"{'closing line (reference)':28} {cm:8.3f} {ct:8.3f}  (validation games)")
     rows = None
     kept_m, kept_t = [], []
-    best = None
-    typer.echo(f"{'step':28} {'margin':>8} {'total':>8}  {'lam':>9}  decision")
+    best_m = best_t = None
+    typer.echo(f"{'step':28} {'margin':>8} {'total':>8}  {'lam':>9}  decision (margin / total)")
     for name in names:
         r = feature_rows(store, ALL[name], ids, refresh)
         rows = r if rows is None else rows.merge(
             r.drop(columns=["season", "week"]), on=["game_id", "point"])  # fmt: skip
         m, t = columns(rows.columns, name)
         ev = evaluate(rows, out, kept_m + m or ["m_base_hfa"], kept_t + t or ["t_base_league"])
-        if best is None:
+        if best_m is None:
+            keep_m = keep_t = True
             decision = "base"
-            keep = True
         else:
-            keep = ev.margin < best.margin or ev.total < best.total
-            decision = "KEEP" if keep else "drop"
+            keep_m = bool(m) and ev.margin < best_m
+            keep_t = bool(t) and ev.total < best_t
+            decision = (f"{'KEEP' if keep_m else 'drop' if m else '-'} / "
+                        f"{'KEEP' if keep_t else 'drop' if t else '-'}")  # fmt: skip
         typer.echo(f"{'+ ' + name:28} {ev.margin:8.3f} {ev.total:8.3f}  "
                    f"{ev.lam_m:4g}/{ev.lam_t:<4g}  {decision}")  # fmt: skip
         for p, (em, et, n) in ev.valid.items():
             typer.echo(f"    {p:14} valid {em:6.3f} {et:6.3f} ({n} games)   "
                        f"train {ev.train[p][0]:6.3f} {ev.train[p][1]:6.3f}")  # fmt: skip
-        if keep:
-            kept_m, kept_t, best = kept_m + m, kept_t + t, ev
+        if keep_m:
+            kept_m, best_m = kept_m + m, ev.margin
+        if keep_t:
+            kept_t, best_t = kept_t + t, ev.total
+    typer.echo(f"kept: margin {len(kept_m)} features, total {len(kept_t)} features "
+               f"(validation MAE {best_m:.3f} / {best_t:.3f})")
