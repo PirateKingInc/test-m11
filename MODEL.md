@@ -120,6 +120,14 @@ is zero in 2013-2022, so its fitted coefficient is zero. The model ignores weath
 forecasts have accumulated and the group is refitted. Observed weather (nflverse temp/wind,
 Open-Meteo archive) is never used. Roof and surface alone cut total error by 0.09 points.
 
+### Group 5: officials (`features/officials.py`)
+
+Full build: the referee (crew chief) from games.csv, known at prekick (assignments aren't
+officially published in advance), so at the final report every crew counts as average. A crew's
+penalties per game, points per game and home-minus-away penalty split come from its earlier
+games over three seasons only, shrunk with 16 games of league average. Only the margin half
+survives (by 0.002, within noise): crew effects on totals didn't hold up on 2020-2022.
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -172,3 +180,4 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 | + 2 Team strength | 9.855 | 10.826 | KEEP / KEEP | ridge penalty rises to 1000 (margin) / 300 (total) |
 | + 3 Schedule and travel | 9.854 | 10.832 | KEEP / drop | margin -0.001 (within noise; kept by the rule); total worse |
 | + 4 Environment | 9.854 | **10.734** | - / KEEP | total -0.092: roof and surface. No forecast history, so weather can't be fitted yet |
+| + 5 Officials | 9.852 | 10.746 | KEEP / drop | margin -0.002 (within noise); totals worse |
