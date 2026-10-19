@@ -396,11 +396,23 @@ def weather_cmd(write: bool = typer.Option(False, help="Write config/nfl_model_w
     source, and validation error of the M12 design with and without it."""
     import json
 
-    from betdata.nfl.weather import WX_DESIGN_PATH, coverage, evaluate_weather
+    from betdata.nfl.weather import (
+        WX_DESIGN_PATH,
+        coverage,
+        evaluate_weather,
+        forecast_vs_observed,
+    )
 
     store, design, rows, out = _wx_inputs()
     for k, n in sorted(coverage(store).items()):
         typer.echo(f"  weather rows {k:24} {n}")
+    with _engine().connect() as conn:
+        diag = forecast_vs_observed(conn)
+    if diag.get("games"):
+        typer.echo(f"forecast (prekick, previous run) minus nflverse game-day report, "
+                   f"{diag['games']} games from 2022: temp {diag['temp_c_bias']:+.1f} C "
+                   f"(MAE {diag['temp_c_mae']:.1f}), wind {diag['wind_kph_bias']:+.1f} km/h "
+                   f"(MAE {diag['wind_kph_mae']:.1f})")  # fmt: skip
     report, new = evaluate_weather(rows, out, design)
     m12 = report["m12"]
     typer.echo(f"validation MAE, M12 design: margin {m12['margin']:.3f}, total {m12['total']:.3f}")
@@ -413,6 +425,7 @@ def weather_cmd(write: bool = typer.Option(False, help="Write config/nfl_model_w
     path = data_dir() / "reports" / "m13_weather_validation.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     report["coverage"] = coverage(store)
+    report["forecast_vs_observed"] = diag
     path.write_text(json.dumps(report, indent=1, default=float))
     if write and (report["keep_margin"] or report["keep_total"]):
         new.save(WX_DESIGN_PATH)

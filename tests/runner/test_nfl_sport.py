@@ -21,7 +21,7 @@ def test_nfl_cards_from_stored_predictions_and_quotes(engine, settings, fake_api
         gid = conn.execute(select(game_source_ids.c.game_id).where(
             game_source_ids.c.source_game_id == "2026_06_HOU_JAX")).scalar()  # fmt: skip
         conn.execute(insert(model_predictions).values(
-            model="m12", model_version="m12:test", game_id=gid,
+            model=sport.page_model, model_version="m12:test", game_id=gid,
             predicted_at=clock.now - timedelta(minutes=5), pred_home_margin=7.0,
             pred_home_win_prob=0.70, pred_total=44.0, market_spread_home=-2.5,
             prediction_point="early", market_ml_home=-142, market_ml_away=120,
@@ -58,3 +58,8 @@ def test_sports_config(tmp_path):
     bad.write_text("sports: [{key: x, status: active}]")
     with pytest.raises(ValueError, match="names no plugin"):
         load_entries(bad)
+
+
+def test_page_shows_the_weather_version_once_accepted():
+    [sport] = active_sports()
+    assert sport.page_model == "m13w"  # config/nfl_model_wx.json is committed

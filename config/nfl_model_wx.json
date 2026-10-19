@@ -1,0 +1,22 @@
+{
+  "margin_groups": [
+    "base",
+    "avail",
+    "str",
+    "sched",
+    "ref",
+    "coach",
+    "wx"
+  ],
+  "total_groups": [
+    "base",
+    "avail",
+    "str",
+    "env"
+  ],
+  "lam_margin": 1000.0,
+  "lam_total": 300.0,
+  "model": "ridge",
+  "blend_margin": 0.4,
+  "blend_total": 0.15
+}
