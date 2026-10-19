@@ -153,3 +153,22 @@ def test_nfl_bootstrap_loads_history_from_nflverse(engine, settings, fake_api, c
     with engine.connect() as conn:
         for table in (games, team_game_stats, roster_weeks, data_files):
             assert conn.execute(select(func.count()).select_from(table)).scalar() > 0, table
+
+
+def test_predict_and_grade_see_data_fetched_during_the_run(engine, settings, tmp_path,
+                                                           monkeypatch):  # fmt: skip
+    """Rows a job stores are stamped when they arrive, after the run's start; predictions and
+    grades must be as of the end of the refresh, or a fresh line would wait an hour."""
+    from betdata.runner import hourly
+
+    seen = []
+    entries = _dummy_entries(tmp_path)
+    [sport] = active_sports(entries)
+    monkeypatch.setattr(type(sport), "predict", lambda self, eng, t: seen.append(t) or 1)
+    later = NOW + timedelta(minutes=2)
+    monkeypatch.setattr(hourly, "utcnow", lambda: later)
+    report = run_hourly(engine, settings, {}, [sport], NOW)
+    assert seen == [later] and report.as_of == later
+    with engine.connect() as conn:
+        row = conn.execute(select(runner_runs)).mappings().one()
+    assert row["finished_at"] >= later
