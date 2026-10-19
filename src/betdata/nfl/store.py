@@ -31,6 +31,7 @@ FRAMES = (
     "gameday",  # game_id, roof_state, referee
     "odds",  # game_id, market (spreads/totals), line (home spread / total), source
     "weather",  # game_id, fetched_at, temp_c, wind_kph, precip_mm (forecasts only)
+    "weather_asof",  # game_id, point, source, temp_c, wind_kph, gust_kph, precip_mm (M13)
 )
 
 

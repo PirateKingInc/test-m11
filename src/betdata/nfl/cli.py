@@ -367,6 +367,17 @@ def moneyline_final_test_cmd(force: bool = typer.Option(False, help="Score again
     typer.echo(f"report: {path}")
 
 
+@nfl_app.command("weather-observed")
+def weather_observed_cmd():
+    """Load nflverse's observed game-day temp/wind (1999-2021) from the archived games.csv as
+    the stand-in for forecasts where none were archived. No network call."""
+    from betdata.nfl.weather import load_observed
+
+    with _engine().begin() as conn:
+        n = load_observed(conn)
+    typer.echo(f"nflverse observed weather: {n} new rows (both prediction points)")
+
+
 @nfl_app.command("replay")
 def replay_cmd():
     """Replay the live weeks in live/*.csv: what M12 would have said at each prediction point,

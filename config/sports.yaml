@@ -73,6 +73,12 @@ sports:
         params: {sport: nfl}
         cron: "0 7-22/4 * * *"
         when: {after_minutes: 0, before_minutes: 10080}
+      - id: nfl-weather-archive  # archived forecasts for finished games (weather model history)
+        source: open_meteo
+        job: hist_forecast
+        params: {sport: nfl}
+        cron: "0 7 * * 2"
+        active_months: [9, 10, 11, 12, 1, 2]
       # --- the first run of the day (7am): last week's play-by-play, stats, snaps, derive ----
       - id: nfl-pbp
         source: nflverse

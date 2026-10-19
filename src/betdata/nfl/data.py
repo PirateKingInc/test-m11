@@ -22,6 +22,7 @@ from betdata.db.schema import (
     nfl_game_info,
     nfl_player_game_pbp,
     nfl_team_game_pbp,
+    nfl_weather_asof,
     player_game_snaps,
     results,
     roster_weeks,
@@ -144,6 +145,7 @@ def load_store(conn: Connection, *, first_season: int = 2010) -> Store:
     frames["injuries"] = Frame(_injuries(conn, g, first_season))
     frames["odds"] = Frame(_odds(conn, g))
     frames["weather"] = Frame(_weather(conn, g))
+    frames["weather_asof"] = Frame(_weather_asof(conn, g))
     assert set(frames) == set(FRAMES)
     return Store(g, frames, names=_names(conn, first_season))
 
@@ -351,6 +353,19 @@ def _odds(conn: Connection, g: pd.DataFrame) -> pd.DataFrame:
     df = df[df.game_id.isin(g.index) & df.line.notna()]
     df["known_at"] = _utc(df["known_at"])
     return df.drop(columns=["game_outcome"])
+
+
+def _weather_asof(conn: Connection, g: pd.DataFrame) -> pd.DataFrame:
+    """M13: weather per game and prediction point, as it could be known then (nfl/weather.py).
+    Read only by the weather group, so M12's features are unaffected."""
+    w = nfl_weather_asof
+    cols = ["game_id", "point", "source", "temp_c", "wind_kph", "gust_kph", "precip_mm",
+            "known_at"]  # fmt: skip
+    rows = conn.execute(select(*(w.c[c] for c in cols))).all()
+    df = pd.DataFrame(rows, columns=cols)
+    df = df[df.game_id.isin(g.index)]
+    df["known_at"] = _utc(df["known_at"])
+    return df
 
 
 def _weather(conn: Connection, g: pd.DataFrame) -> pd.DataFrame:
