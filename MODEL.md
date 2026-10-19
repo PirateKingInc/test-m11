@@ -343,15 +343,6 @@ Spreads are the home side; "result" is minus the home margin, on the same scale.
 the lines logged with the live picks: no line history for those days is stored.
 
 ```
-
-## Live-week replay (`betdata nfl replay`)
-
-What M12 (the live fit, 2013-2025) would have said at each prediction point for the games in
-`live/*.csv` (2026 weeks 6-7), next to what M10 (Elo) and M11 (units) logged and what happened.
-Spreads are the home side; "result" is minus the home margin, on the same scale. Markets are
-the lines logged with the live picks: no line history for those days is stored.
-
-```
 kickoff (UTC)    game           M10    M11  M12 fr  M12 pk    mkt  result | M11 tot M12 tot mkt tot actual
 2026-10-18 13:30 HOU@JAX       -4.1      -    -2.4    -2.6   -2.5    +3.0 |       -    42.3       -   65.0
 2026-10-18 17:00 CHI@ATL       -0.4   -3.2    -2.7    -2.3   +1.5    +8.0 |    49.2    48.2    52.5   54.0
