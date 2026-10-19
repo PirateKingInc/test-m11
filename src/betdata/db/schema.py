@@ -611,3 +611,32 @@ runner_runs = Table(
     Index("ix_runner_runs_started", "started_at"),
 )
 
+# --- M13 weather as of each prediction point ---------------------------------------
+
+# One row per game, prediction point and source: the weather over kickoff hour + 3 as it could
+# be known at that point (mean temp/wind/gust, total precipitation). Sources:
+#   open_meteo_prev  Open-Meteo previous-runs forecast issued `lead_days` before (always before
+#                    the point)
+#   open_meteo_hf    Open-Meteo historical-forecast archive (short lead; may be issued after
+#                    the point, a fallback)
+#   nflverse_obs     nflverse's observed game-day temp/wind, a stand-in for a forecast in
+#                    seasons with no archived forecasts (1999-2021); `known_at` is the point by
+#                    convention, see MODEL.md
+nfl_weather_asof = Table(
+    "nfl_weather_asof",
+    metadata,
+    Column("weather_asof_id", Integer, primary_key=True),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("point", String(16), nullable=False),
+    Column("source", String(32), nullable=False),
+    Column("lead_days", Integer),
+    Column("temp_c", Float),
+    Column("wind_kph", Float),
+    Column("gust_kph", Float),
+    Column("precip_mm", Float),
+    Column("known_at", UTCDateTime, nullable=False),
+    Column("fetched_at", UTCDateTime, nullable=False),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+    UniqueConstraint("game_id", "point", "source"),
+)
+
