@@ -118,3 +118,37 @@ def test_one_season_per_run(nfl, fake_api):
     result = nfl.run("pbp", seasons="2020-2021")
     assert result.status == "failed" and "one season per run" in result.message
     assert fake_api.requests == []
+
+
+def _with_date_modified(body: bytes, stamp: str) -> bytes:
+    lines = body.decode().splitlines()
+    return ("\n".join([lines[0] + ",date_modified"] + [f"{ln},{stamp}" for ln in lines[1:]])
+            + "\n").encode()  # fmt: skip
+
+
+def test_injury_publish_time_is_stored(nfl, engine, fake_api):
+    fake_api.add(body=_with_date_modified(INJURIES, "2026-10-09T20:15:00Z"))
+    assert nfl.run("injuries").status == "ok"
+    dates = {r["report_date"] for r in injury_rows(engine)}
+    assert [d.isoformat() for d in dates] == ["2026-10-09T20:15:00+00:00"]
+
+
+def test_publish_times_filled_from_the_raw_archive(nfl, engine, fake_api):
+    """Rows loaded before date_modified was parsed get it from the file they came from."""
+    from sqlalchemy import update
+
+    from betdata.sources.nflverse_data import fill_report_dates
+
+    fake_api.add(body=_with_date_modified(INJURIES, "2026-10-09T20:15:00Z"))
+    nfl.run("injuries")
+    with engine.begin() as conn:
+        conn.execute(update(injuries).values(report_date=None))  # as loaded by M9-M11
+        assert fill_report_dates(conn) == (6, 1)
+        assert fill_report_dates(conn) == (0, 0)  # idempotent
+    assert all(r["report_date"] is not None for r in injury_rows(engine))
+
+
+def test_files_without_date_modified_still_load(nfl, engine, fake_api):
+    fake_api.add(body=INJURIES)  # the 2025+ files have no date_modified column
+    assert nfl.run("injuries").rows_inserted == 6
+    assert all(r["report_date"] is None for r in injury_rows(engine))

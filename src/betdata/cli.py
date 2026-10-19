@@ -10,6 +10,7 @@ from betdata.core.quota import QuotaManager
 from betdata.db import seed as seed_mod
 from betdata.db.engine import make_engine, upgrade
 from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
+from betdata.nfl.cli import nfl_app
 from betdata.sources import REGISTRY
 
 app = typer.Typer(help="Sports data ingestion.", no_args_is_help=True)
@@ -21,6 +22,7 @@ teams_app = typer.Typer(help="Team registry.", no_args_is_help=True)
 app.add_typer(teams_app, name="teams")
 alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=True)
 app.add_typer(alias_app, name="alias")
+app.add_typer(nfl_app, name="nfl")
 
 
 @app.callback()

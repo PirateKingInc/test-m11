@@ -185,7 +185,9 @@ betdata predict nfl                     # upcoming games + each team's missing s
   snaps in the games a player played). **Missing** comes from that week's injury report
   (Out; Doubtful and Questionable weighted by how often such starters actually sat, learned on
   training seasons: about 99% and 29%) and roster status (injured reserve, released or traded).
-  Game-day inactives are ignored: they are announced 90 minutes before kickoff.
+  Only report rows published by the final injury report count, and roster status comes from the
+  team's previous roster. Game-day inactives are ignored: they are announced 90 minutes before
+  kickoff.
 - **Position groups** (QB, OL, WR, TE, RB, DL, LB, CB, S) carry the snap-weighted number of
   starters out. A squared term tests whether several defensive backs or linemen out together
   hurt more than one each, and an interaction tests whether a depleted secondary matters more
@@ -193,7 +195,9 @@ betdata predict nfl                     # upcoming games + each team's missing s
 - What each of these is worth, in points of margin and of total, is fitted by ridge
   regression on training seasons only; test seasons are scored once.
 
-First run (Oct 2026), 2020-2025 unseen, 1,693 games:
+First run (Oct 2026), 2020-2025 unseen, 1,693 games. These figures had a small look-ahead
+(game-day roster at the final-report point); after the M12 fix the margin miss is 10.11, the
+total 10.65, and spread bets go 405-403-13 at a 2-point threshold (REVIEW.md, "Fix results"):
 
 | | Elo | Units | Units + missing starters | Closing line |
 |---|---|---|---|---|

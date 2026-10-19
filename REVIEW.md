@@ -30,6 +30,28 @@ Every look-ahead leak is a bug and is fixed before any M12 feature is built.
 | 17 | `migrations/versions/0005_closing_lines_view.py` | ok (checked) | `v_closing_lines` prefers a source's own close and falls back to the last poll at or before kickoff. Correct as the close; **must not be used as a model input** (M12 rule). | No change. |
 | 18 | Open-Meteo, aussportsbetting.com, sportsbookreviewsonline.com | risk (environment) | All three hosts are refused by this machine's network proxy. Stored weather forecasts and historical opening lines can't be collected from here. | Logged in BACKLOG.md. Weather and market features are built and tested on fixtures, then used live where data exists. |
 
-## Fix results
+## Fix results (issue #2)
 
-Filled in by the review-fix PR (issue "Review fixes").
+#1-#3 fixed: injury rows carry nflverse's publish time (`report_date`); at M11's prediction
+point (the final injury report, `nfl/points.py`) only rows published by then count, and roster
+status comes from the team's latest roster before the game week. Existing rows were filled
+with `betdata nfl backfill-report-dates` (79,818 rows from 18 archived files). The 2025-2026
+files have no `date_modified` column, so those backfilled rows follow the documented rule:
+assumed to be the final report.
+
+Elo (M10) doesn't use injuries or rosters: unchanged (10.18 vs 9.81, 990 bets 492-474-24).
+
+M11 `betdata backtest nfl --model units` (train 2013-2019, test 2020-2025, 1,693 test games):
+
+| | before (leaky) | after |
+|---|---|---|
+| Margin MAE, units+missing, test | 10.09 | 10.11 |
+| Margin MAE, units+missing, train | 10.25 | 10.28 |
+| Total MAE, units+missing, test | 10.65 | 10.65 |
+| Spread threshold chosen on train | 4 pts | 2 pts |
+| Spread bets, test | 155-137-1 (53.1%, +2.2% ROI) | 405-403-13 (50.1%, -3.3% ROI) |
+| Total bets, test (4 pts) | 238-210-7 (53.1%) | 235-207-7 (53.2%) |
+| QB out, margin points | -2.80 | -3.26 |
+
+The leak was worth about 0.02-0.03 points of margin error. M11's "53.1% on spreads" partly
+came from it: with the leak removed, training chooses a 2-point threshold that loses on test.
