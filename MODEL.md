@@ -89,6 +89,21 @@ Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
 8. **Market**: line and total at the prediction point and movement from open to then. Never the
    closing line.
 
+### Data caveats found while loading
+
+* nflverse's 2012 snap-count file is empty, so snap history starts in 2013 (the first
+  training season); the first weeks of 2013 have no snap-based roles.
+* The 2025 and 2026 injury files have no `date_modified`; their backfilled rows are assumed to
+  be the final report (the documented fallback in `injury_known_at`).
+* No historical forecasts or prediction-time lines are stored (BACKLOG.md), so the weather
+  features and group 8 have no history to learn from.
+
 ## Results log
 
-(Filled in as each group is built. Validation = 2020-2022; MAE in points.)
+Validation = 2020-2022 (838 games with scores), fitted on 2013-2019; MAE in points, averaged
+over the two prediction points. Reference: the closing line misses validation games by
+**9.747** (margin) and **10.507** (total). `betdata nfl evaluate` reproduces every row.
+
+| Step | Margin MAE | Total MAE | Decision | Notes |
+|---|---|---|---|---|
+| Base (home field + M10 Elo; league scoring level) | 10.086 | 11.175 | base | ridge penalty 100 / 1 |
