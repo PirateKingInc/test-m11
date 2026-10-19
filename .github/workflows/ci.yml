@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: tests (${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: betdata
+          POSTGRES_PASSWORD: betdata
+          POSTGRES_DB: betdata_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U betdata" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      BETDATA_TEST_PG_URL: ${{ matrix.db == 'postgres' && 'postgresql+psycopg://betdata:betdata@localhost:5432/betdata_test' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked
+      - name: Lint
+        run: uv run ruff check .
+      - name: Tests
+        run: uv run pytest -q
