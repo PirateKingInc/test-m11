@@ -62,6 +62,64 @@ and from all data with every row known after `t` scrambled. It fails if any valu
   residuals. Calibration is checked on validation (bins, Brier score).
 * **Blend**: model + market = w x model + (1 - w) x market line at the prediction point.
 
+## Feature groups
+
+Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
+
+1. **Player availability** (replaces M11's head counts): a value for each player (QB and
+   skill players from play-by-play EPA; linemen and defenders from snap share and role), each
+   relative to a positional replacement level. Separate QB term: the quality gap between
+   starter and backup, and the backup's career starts. Practice trend and game status, with
+   play probabilities learned on training seasons. Inactives at `prekick`. Clusters (2+ OL,
+   DB or WR out). Players returning from absence, and players new to the team.
+2. **Team strength**: opponent-adjusted pass/run offense and defense (recency-weighted), success
+   rate, early-down EPA, explosive-play rate, turnover-luck regression (fumble recovery and
+   interception rates vs expectation), pace and neutral-situation pass rate, preseason priors
+   (prior season, QB change, head coach change) decaying as games are played.
+3. **Schedule and travel**: rest difference, short week, post-bye, miles travelled, time zones
+   crossed, body clock (West Coast team in an early Eastern kickoff), international game,
+   consecutive road games, altitude.
+4. **Environment**: forecast wind, temperature and precipitation at the prediction point; roof
+   state; playing surface.
+5. **Officials**: referee crew penalty and scoring tendencies from that crew's earlier games only.
+6. **Coaching**: fourth-down aggressiveness, play-calling tendencies (early-down pass rate over
+   expected).
+7. **Game context**: divisional game, late-season playoff stakes, likely resting of starters in
+   week 18.
+8. **Market**: line and total at the prediction point and movement from open to then. Never the
+   closing line.
+
+### Data caveats found while loading
+
+* nflverse's 2012 snap-count file is empty, so snap history starts in 2013 (the first
+  training season); the first weeks of 2013 have no snap-based roles.
+* The 2025 and 2026 injury files have no `date_modified`; their backfilled rows are assumed to
+  be the final report (the documented fallback in `injury_known_at`).
+* No historical forecasts or prediction-time lines are stored (BACKLOG.md), so the weather
+  features and group 8 have no history to learn from.
+
+## Results log
+
+Validation = 2020-2022 (838 games with scores), fitted on 2013-2019; MAE in points, averaged
+over the two prediction points. Each group's margin features and total features are judged
+separately: the margin half is kept if it lowers margin MAE, the total half if it lowers total
+MAE (a group can help one and not the other). The ridge penalty is chosen on validation from
+1-3000. Reference: the closing line misses validation games by
+**9.747** (margin) and **10.507** (total). `betdata nfl evaluate` reproduces every row.
+
+| Step | Margin MAE | Total MAE | Decision | Notes |
+|---|---|---|---|---|
+| Base (home field + M10 Elo; league scoring level) | 10.086 | 11.175 | base | ridge penalty 100 / 1 |
+| + 1 Player availability | **9.874** | **10.849** | KEEP / KEEP | -0.21 margin, -0.33 total. Prekick (inactives known) beats the final report: 9.843 vs 9.905 margin. |
+| + 2 Team strength | 9.855 | 10.826 | KEEP / KEEP | ridge penalty rises to 1000 (margin) / 300 (total) |
+| + 3 Schedule and travel | 9.854 | 10.832 | KEEP / drop | margin -0.001 (within noise; kept by the rule); total worse |
+| + 4 Environment | 9.854 | **10.734** | - / KEEP | total -0.092: roof and surface. No forecast history, so weather can't be fitted yet |
+| + 5 Officials | 9.852 | 10.746 | KEEP / drop | margin -0.002 (within noise); totals worse |
+| + 6 Coaching | **9.821** | 10.757 | KEEP / drop | margin -0.031; totals worse |
+| + 7 Game context | 9.845 | 10.763 | drop / drop | worse on both after 2 adjustments |
+| + 8 Market | 9.821 | 10.734 | drop / drop | no prediction-time lines in history: nothing to fit. Used live as a blend |
+## Group details
+
 ### Group 1: player availability (`features/availability.py`)
 
 Full build: valued players vs replacement (QB EPA per dropback, shrunk, scaled to a game; other
@@ -166,62 +224,6 @@ The market enters live predictions as a **blend** instead, w x model + (1 - w) x
 the prediction point, with w chosen on validation (Model selection below). `betdata predict
 nfl` prints and stores both the model-only number and the blend.
 
-## Feature groups
-
-Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
-
-1. **Player availability** (replaces M11's head counts): a value for each player (QB and
-   skill players from play-by-play EPA; linemen and defenders from snap share and role), each
-   relative to a positional replacement level. Separate QB term: the quality gap between
-   starter and backup, and the backup's career starts. Practice trend and game status, with
-   play probabilities learned on training seasons. Inactives at `prekick`. Clusters (2+ OL,
-   DB or WR out). Players returning from absence, and players new to the team.
-2. **Team strength**: opponent-adjusted pass/run offense and defense (recency-weighted), success
-   rate, early-down EPA, explosive-play rate, turnover-luck regression (fumble recovery and
-   interception rates vs expectation), pace and neutral-situation pass rate, preseason priors
-   (prior season, QB change, head coach change) decaying as games are played.
-3. **Schedule and travel**: rest difference, short week, post-bye, miles travelled, time zones
-   crossed, body clock (West Coast team in an early Eastern kickoff), international game,
-   consecutive road games, altitude.
-4. **Environment**: forecast wind, temperature and precipitation at the prediction point; roof
-   state; playing surface.
-5. **Officials**: referee crew penalty and scoring tendencies from that crew's earlier games only.
-6. **Coaching**: fourth-down aggressiveness, play-calling tendencies (early-down pass rate over
-   expected).
-7. **Game context**: divisional game, late-season playoff stakes, likely resting of starters in
-   week 18.
-8. **Market**: line and total at the prediction point and movement from open to then. Never the
-   closing line.
-
-### Data caveats found while loading
-
-* nflverse's 2012 snap-count file is empty, so snap history starts in 2013 (the first
-  training season); the first weeks of 2013 have no snap-based roles.
-* The 2025 and 2026 injury files have no `date_modified`; their backfilled rows are assumed to
-  be the final report (the documented fallback in `injury_known_at`).
-* No historical forecasts or prediction-time lines are stored (BACKLOG.md), so the weather
-  features and group 8 have no history to learn from.
-
-## Results log
-
-Validation = 2020-2022 (838 games with scores), fitted on 2013-2019; MAE in points, averaged
-over the two prediction points. Each group's margin features and total features are judged
-separately: the margin half is kept if it lowers margin MAE, the total half if it lowers total
-MAE (a group can help one and not the other). The ridge penalty is chosen on validation from
-1-3000. Reference: the closing line misses validation games by
-**9.747** (margin) and **10.507** (total). `betdata nfl evaluate` reproduces every row.
-
-| Step | Margin MAE | Total MAE | Decision | Notes |
-|---|---|---|---|---|
-| Base (home field + M10 Elo; league scoring level) | 10.086 | 11.175 | base | ridge penalty 100 / 1 |
-| + 1 Player availability | **9.874** | **10.849** | KEEP / KEEP | -0.21 margin, -0.33 total. Prekick (inactives known) beats the final report: 9.843 vs 9.905 margin. |
-| + 2 Team strength | 9.855 | 10.826 | KEEP / KEEP | ridge penalty rises to 1000 (margin) / 300 (total) |
-| + 3 Schedule and travel | 9.854 | 10.832 | KEEP / drop | margin -0.001 (within noise; kept by the rule); total worse |
-| + 4 Environment | 9.854 | **10.734** | - / KEEP | total -0.092: roof and surface. No forecast history, so weather can't be fitted yet |
-| + 5 Officials | 9.852 | 10.746 | KEEP / drop | margin -0.002 (within noise); totals worse |
-| + 6 Coaching | **9.821** | 10.757 | KEEP / drop | margin -0.031; totals worse |
-| + 7 Game context | 9.845 | 10.763 | drop / drop | worse on both after 2 adjustments |
-| + 8 Market | 9.821 | 10.734 | drop / drop | no prediction-time lines in history: nothing to fit. Used live as a blend |
 ## Model selection (validation 2020-2022, `betdata nfl select`)
 
 Kept design (`config/nfl_model.json`): margin = base + availability + strength + schedule +
@@ -400,3 +402,16 @@ Sun 10-25 13:30Z  PIT @ NO   [early]  line: model PIT -0.9 (blend PIT -1.9), mar
     PIT likely out: WR Michael Pittman (2%)
     NO likely out: OL Kelvin Banks Jr. (2%)
 ```
+
+## Verification (Step 3)
+
+| Check | Result |
+|---|---|
+| a) Full regression | 266 tests pass on SQLite and on Postgres 16 (locally and in CI on every PR). Elo reproduces exactly (10.18 vs close 9.81, 990 bets 492-474-24). M11 changes only through the documented REVIEW.md fixes (10.09 → 10.15 margin). |
+| b) As-of harness, every group | Synthetic league: every group passes at both points (`tests/nfl/test_asof_harness.py`, plus a deliberate leak that it catches). Real database: `betdata nfl asof-check --sample 16` over all eight groups: 0 violations in 16 games × 2 points (truncated and scrambled copies). |
+| c) Later results never change a prediction | `tests/nfl/test_lookahead.py`: rewriting every result known after a prediction point leaves that prediction unchanged; rewriting earlier ones moves it. |
+| d) Ablation | Results log (each group added in turn) and Model selection (each removed from the final model). |
+| e) Final test | Above: 2023-2025 scored once. |
+| f) Live-week replay | Above. |
+| g) Grading fixtures | `tests/nfl/test_grade.py`: win, loss, push, positive and negative CLV, no closing line, postponed, idempotent re-runs, score corrections. |
+| Fresh clone | `uv sync && uv run betdata db init && uv run pytest` in a clean directory. |

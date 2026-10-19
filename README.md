@@ -211,6 +211,36 @@ Missing starters make the model measurably more accurate, most clearly for total
 cornerback out adds ~2.3 points to the game, each safety ~1.4), but the closing line is
 still more accurate and neither betting record is distinguishable from luck yet.
 
+## M12 NFL model: every variable, as of the moment of the prediction
+
+```bash
+betdata nfl backfill-report-dates     # once: injury publish times from the raw archive
+betdata nfl derive                    # game info + play-by-play aggregates (no network)
+betdata nfl evaluate --write-design   # add feature groups one at a time on 2020-2022
+betdata nfl select --write            # ridge vs boosting, calibration, ablation, blend weight
+betdata nfl asof-check                # rebuild features with later data removed/scrambled
+betdata nfl final-test                # score 2023-2025 once
+betdata predict nfl                   # live picks with factor breakdowns (stored)
+betdata grade nfl                     # grade final games: record, ROI, CLV (idempotent)
+betdata nfl replay                    # what M12 would have said in the live weeks
+```
+
+- **Two prediction points per game**: `final_report` (17:00 ET on the final injury report
+  day) and `prekick` (75 minutes before kickoff, after inactives). Every input row carries
+  the time it became known, and a feature reads only rows known by its point (MODEL.md lists
+  every rule). `betdata nfl asof-check` and the tests prove it: features rebuilt with all
+  later data removed or scrambled are identical.
+- **Feature groups**, each kept only if it lowered validation error (2020-2022, fitted on
+  2013-2019): player availability (player values, QB starter/backup, play probabilities from
+  report and practice status, inactives, clusters, returns and new arrivals), team strength,
+  schedule and travel, environment (roof, surface; forecast weather once forecasts exist),
+  officials and coaching. Game context was dropped; the market enters as a blend, never as a
+  closing line. Results, the ablation table and the final test are in MODEL.md.
+- **Live picks** print the predicted line and total next to the market, the model+market
+  blend, win probability and the top factors behind each number, and store every prediction
+  with its feature snapshot, point and model version. `betdata grade nfl` grades them daily
+  (scheduler job `nfl-model-grade`).
+
 ## Running unattended
 
 ```bash
@@ -307,3 +337,5 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - [x] **M9** NFL injuries (change-only), play-by-play parquet files, Postgres check
 - [x] **M10** NFL walk-forward backtest against closing spreads; Elo baseline; stored predictions
 - [x] **M11** NFL team stats, snap counts, rosters; unit model with missing starters; totals
+- [x] **M12** NFL as-of feature store and look-ahead harness; availability, strength, schedule,
+  environment, officials, coaching; explainable live picks, grading, CI
