@@ -337,6 +337,87 @@ These bets are graded at the close, where the market has already absorbed the ne
 uses. The live test is whether a prediction-time bet beats the line it is placed at, and that
 is what `betdata grade nfl` now measures (CLV).
 
+## M13 Part A: two open questions from M12
+
+### 1. Final test (2023-2025) at the final_report point
+
+Read from the frozen M12 run (`data/reports/m12_final_test.json`, 2013-2022 fit, 855 test
+games). Nothing was refitted. The tables are laid out like the prekick results so the two
+points can be compared row by row.
+
+| Miss on the final margin | final report | prekick |
+|---|---|---|
+| M12 | 10.062 | 9.996 |
+| Elo (M10) | 10.259 | 10.259 |
+| M11 units+missing | 10.314 | 10.314 |
+| Closing line | 9.786 | 9.786 |
+
+| Miss on total points | final report | prekick |
+|---|---|---|
+| M12 | 10.379 | 10.375 |
+| M11 units+missing | 10.459 | 10.459 |
+| Closing total | 10.120 | 10.120 |
+
+| Win probability | final report | prekick |
+|---|---|---|
+| Brier | 0.2179 | 0.2166 |
+| Log loss | 0.626 | 0.623 |
+| Games | 854 | 854 |
+
+Reliability, shown as predicted → won (games):
+
+| Bin | final report | prekick |
+|---|---|---|
+| 0.1-0.2 | 0.17 → 0.33 (12) | 0.16 → 0.33 (9) |
+| 0.2-0.3 | 0.25 → 0.29 (41) | 0.26 → 0.29 (48) |
+| 0.3-0.4 | 0.35 → 0.30 (105) | 0.36 → 0.31 (106) |
+| 0.4-0.5 | 0.45 → 0.40 (179) | 0.45 → 0.36 (171) |
+| 0.5-0.6 | 0.55 → 0.60 (163) | 0.55 → 0.61 (157) |
+| 0.6-0.7 | 0.65 → 0.64 (167) | 0.65 → 0.65 (177) |
+| 0.7-0.8 | 0.74 → 0.78 (118) | 0.75 → 0.76 (120) |
+| 0.8-0.9 | 0.84 → 0.76 (63) | 0.84 → 0.82 (61) |
+| 0.9-1.0 | 0.92 → 1.00 (6) | 0.93 → 1.00 (5) |
+
+Bets against the closing line at the existing thresholds (3 pts spread, 4 pts total), -110:
+
+| | final report | prekick |
+|---|---|---|
+| M12 spread | 113-98-4, 53.6% (46.8-60.2%), ROI +2.2% | 107-88-3, 54.9% (47.9-61.7%), ROI +4.7% |
+| M12 total | 81-70-2, 53.6% (45.7-61.4%), ROI +2.4% | 58-66-1, 46.8% (38.2-55.5%), ROI -10.6% |
+
+The final_report point is 0.07 points worse on margin than prekick and about the same on
+totals, which is what the 1-2 days of extra news between the two points would suggest. Both
+points' bet records have 95% ranges that include the 52.4% break-even.
+
+### 2. Why M11's spread bet count went from 293 to 1,023
+
+**No threshold or bet rule changed in code.** M11's rule (`analysis/backtest.choose_threshold`)
+picks the spread threshold with the best *training* ROI among 1, 1.5, 2, 2.5, 3, 4 and 5 points,
+counting only thresholds that bet at least 200 times on training. The rule ran again after each
+leak fix and chose a different threshold each time, because removing the leaks moved
+training ROI:
+
+| M11 units+missing, test 2020-2025 | threshold (chosen on train) | spread bets | record | ROI |
+|---|---|---|---|---|
+| Before the fixes (leaky) | 4 pts | **293** | 155-137-1 (53.1%) | +2.2% |
+| After REVIEW #1-#3 | 2 pts | 821 | 405-403-13 (50.1%) | -3.3% |
+| After #19 too (current) | 1.5 pts | **1,023** | 495-511-17 (49.2%) | -4.9% |
+| Current, threshold held at 4 pts | 4 pts (fixed) | 304 | 156-145-3 (51.8%) | -0.1% |
+
+With the leaks in place, the 4-point threshold looked best on training. With them removed,
+it loses on training (-3.3% ROI over 307 bets), and the rule moves down to the threshold that
+loses least. The jump in bet count is therefore the documented rule doing what it was built
+to do; it was not an accidental change. Held at the original 4 points, the corrected M11
+makes about the same number of bets (304 vs 293) and breaks even (-0.1%) instead of winning
+(+2.2%). Either way the conclusion holds: once the leaks are gone, M11 has no spread edge.
+
+I kept the rule as it is. Picking a threshold after looking at test results would be tuning on
+the test seasons. The table in REVIEW.md now shows both numbers.
+
+While checking this, I found and fixed a bug: `betdata backtest nfl --model units --threshold
+X` silently ignored `--threshold` and always used the threshold chosen on training. It now
+fixes the spread threshold, which is how the "held at 4 pts" row above was produced.
+
 ## Live-week replay (`betdata nfl replay`)
 
 What M12 (the live fit, 2013-2025) would have said at each prediction point for the games in

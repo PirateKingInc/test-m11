@@ -70,3 +70,8 @@ fixed, neither of M11's betting records beats break-even on the test seasons.
 
 The first leak alone was worth about 0.02-0.03 points of margin error. M11's "53.1% on spreads" partly
 came from it: with the leak removed, training chooses a 2-point threshold that loses on test.
+
+Bet count (M13 Part A): the spread threshold is re-chosen on training ROI after every fix
+(4 → 2 → 1.5 pts), which is why spread bets went from 293 to 1,023. The rule is M11's,
+unchanged. With the threshold held at 4 pts, the corrected M11 makes 304 test bets,
+156-145-3 (51.8%, -0.1% ROI). See MODEL.md, "M13 Part A".

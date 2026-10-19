@@ -80,7 +80,10 @@ def run_units_backtest(
     *,
     regular_only: bool = False,
     grid: dict[str, Sequence[float]] = UNIT_GRID,
+    spread_threshold: float | None = None,
 ) -> UnitsResult:
+    """spread_threshold fixes the spread bet threshold; by default it is chosen on training ROI
+    (`choose_threshold`), as are total thresholds."""
     train, test = sorted(train), sorted(test)
     if set(train) & set(test):
         raise ValueError("training and test seasons overlap")
@@ -128,7 +131,9 @@ def run_units_backtest(
     for name, ps in preds.items():
         sp = lambda p, t, s: picks(p, t, s, regular_only)  # noqa: E731
         tp = lambda p, t, s: total_picks(p, t, s, regular_only)  # noqa: E731
-        t_spread, _ = choose_threshold(sp, ps, train)
+        t_spread = spread_threshold
+        if t_spread is None:
+            t_spread, _ = choose_threshold(sp, ps, train)
         t_total, _ = choose_threshold(tp, ps, train)
         spread_res[name] = (t_spread, sp(ps, t_spread, train), sp(ps, t_spread, test))
         total_res[name] = (t_total, tp(ps, t_total, train), tp(ps, t_total, test))
