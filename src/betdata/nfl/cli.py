@@ -286,3 +286,46 @@ def final_test_cmd(force: bool = typer.Option(False, help="Score the test season
                        f"95% {rng}  ROI {roi}")
     typer.echo(f"report: {path}")
 
+
+@nfl_app.command("replay")
+def replay_cmd():
+    """Replay the live weeks in live/*.csv: what M12 would have said at each prediction point,
+    next to what M10 (Elo) and M11 (units) logged and what happened."""
+    from betdata.config import PROJECT_ROOT
+    from betdata.db.schema import utcnow
+    from betdata.nfl.live import replay
+
+    paths = sorted((PROJECT_ROOT / "live").glob("*.csv"))
+    rows = replay(_engine(), paths, utcnow())
+    head = (f"{'kickoff (UTC)':16} {'game':11} {'M10':>6} {'M11':>6} {'M12 fr':>7} "
+            f"{'M12 pk':>7} {'mkt':>6} {'result':>7} | {'M11 tot':>7} {'M12 tot':>7} "
+            f"{'mkt tot':>7} {'actual':>6}")  # fmt: skip
+    lines = [head]
+
+    def f(x):
+        return "-" if x is None else f"{x:+.1f}"
+
+    def g(x):
+        return "-" if x is None else f"{x:.1f}"
+
+    for r in rows:
+        res = r.get("result_margin")
+        lines.append(
+            f"{r['kickoff']:16} {r['away'] + '@' + r['home']:11} {f(r.get('elo_spread')):>6} "
+            f"{f(r.get('m11_spread')):>6} {f(r['final_report_spread']):>7} "
+            f"{f(r['prekick_spread']):>7} {f(r.get('m11_market', r.get('elo_market'))):>6} "
+            f"{f(None if res is None else -res):>7} | {g(r.get('m11_total')):>7} "
+            f"{g(r['prekick_total']):>7} {g(r.get('m11_market_total')):>7} "
+            f"{g(r.get('result_total')):>6}"
+        )  # fmt: skip
+    lines.append("Spreads are the home side (negative = home favoured); result = minus the home "
+                 "margin, on the same scale. mkt = the line logged with the live picks.")
+    for r in rows:
+        if r.get("prekick_missing") and any(r["prekick_missing"].values()):
+            miss = "; ".join(f"{k}: {', '.join(v)}" for k, v in r["prekick_missing"].items() if v)
+            lines.append(f"  {r['away']}@{r['home']} out at prekick: {miss}")
+    typer.echo("\n".join(lines))
+    path = data_dir() / "reports" / "m12_replay.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n")
+    typer.echo(f"written to {path}")

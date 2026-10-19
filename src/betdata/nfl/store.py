@@ -70,6 +70,8 @@ class Store:
     frames: dict[str, Frame]
     params: dict[str, Any] = field(default_factory=dict)  # fitted on training seasons only
     cache: dict = field(default_factory=dict, repr=False)
+    # Display names for reports: player key -> name, "team:<id>" -> abbreviation. Not features.
+    names: dict[str, str] = field(default_factory=dict, repr=False)
 
     def frame(self, name: str) -> Frame:
         return self.frames[name]
@@ -81,6 +83,7 @@ class Store:
             self.games,
             {k: Frame(f.upto(t_ns).copy()) for k, f in self.frames.items()},
             self.params,
+            names=self.names,
         )
 
     def scrambled(self, t: datetime, seed: int = 0) -> Store:
@@ -106,10 +109,10 @@ class Store:
                 extra = after.sample(n=min(len(after), 25), random_state=seed)
                 after = pd.concat([after, extra], ignore_index=True)
             out[name] = Frame(pd.concat([before, after], ignore_index=True))
-        return Store(self.games, out, self.params)
+        return Store(self.games, out, self.params, names=self.names)
 
     def with_params(self, **params) -> Store:
-        return Store(self.games, self.frames, {**self.params, **params})
+        return Store(self.games, self.frames, {**self.params, **params}, names=self.names)
 
 
 class AsOf:

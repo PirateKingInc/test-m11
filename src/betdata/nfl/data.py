@@ -25,6 +25,7 @@ from betdata.db.schema import (
     player_game_snaps,
     results,
     roster_weeks,
+    teams,
     venues,
     weather_observations,
 )
@@ -144,7 +145,24 @@ def load_store(conn: Connection, *, first_season: int = 2010) -> Store:
     frames["odds"] = Frame(_odds(conn, g))
     frames["weather"] = Frame(_weather(conn, g))
     assert set(frames) == set(FRAMES)
-    return Store(g, frames)
+    return Store(g, frames, names=_names(conn, first_season))
+
+
+def _names(conn: Connection, first_season: int) -> dict[str, str]:
+    """Display names for reports only (player key -> name, "team:<id>" -> abbreviation)."""
+    out = {f"team:{t}": a or n for t, a, n in conn.execute(
+        select(teams.c.team_id, teams.c.abbrev, teams.c.canonical_name))}  # fmt: skip
+    for key, name in conn.execute(
+        select(roster_weeks.c.gsis_id, roster_weeks.c.player_name)
+        .where(roster_weeks.c.season >= first_season, roster_weeks.c.gsis_id.is_not(None))
+    ):  # fmt: skip
+        out[key] = name
+    for key, name in conn.execute(
+        select(injuries.c.source_player_id, injuries.c.player_name)
+        .where(injuries.c.season >= first_season, injuries.c.source_player_id.is_not(None))
+    ):  # fmt: skip
+        out.setdefault(key, name)
+    return out
 
 
 def _expand(rows, g: pd.DataFrame, keys: list[str]) -> pd.DataFrame:

@@ -334,3 +334,69 @@ the 52.4% break-even. The spread records lean positive, but 200 bets can't tell 
 These bets are graded at the close, where the market has already absorbed the news the model
 uses. The live test is whether a prediction-time bet beats the line it is placed at, and that
 is what `betdata grade nfl` now measures (CLV).
+
+## Live-week replay (`betdata nfl replay`)
+
+What M12 (the live fit, 2013-2025) would have said at each prediction point for the games in
+`live/*.csv` (2026 weeks 6-7), next to what M10 (Elo) and M11 (units) logged and what happened.
+Spreads are the home side; "result" is minus the home margin, on the same scale. Markets are
+the lines logged with the live picks: no line history for those days is stored.
+
+```
+kickoff (UTC)    game           M10    M11  M12 fr  M12 pk    mkt  result | M11 tot M12 tot mkt tot actual
+2026-10-18 13:30 HOU@JAX       -4.1      -    -2.4    -2.6   -2.5    +3.0 |       -    42.3       -   65.0
+2026-10-18 17:00 CHI@ATL       -0.4   -3.2    -2.7    -2.3   +1.5    +8.0 |    49.2    48.2    52.5   54.0
+2026-10-18 17:00 BAL@CLE       +1.8   +1.9    +2.4    +1.2   +3.0    -3.0 |    42.0    42.8    39.5   23.0
+2026-10-18 17:00 TEN@IND       -8.1   -5.4    -7.6    -6.1   -6.5    +6.0 |    46.3    42.0    44.5   46.0
+2026-10-18 17:00 NYJ@NE        -9.5   -9.5    -8.6    -7.4   -7.5    -7.0 |    44.9    42.5    43.5   45.0
+2026-10-18 17:00 NO@NYG        -5.2   -1.8    -1.8    -1.2   +1.5    +7.0 |    45.8    42.7    46.5   61.0
+2026-10-18 17:00 CAR@PHI       -2.2   -1.2    +3.3    +4.3   +3.0   +11.0 |    44.4    41.6    39.5   39.0
+2026-10-18 17:00 PIT@TB        +0.6   -0.4    -0.2    +0.4   +2.5    +7.0 |    43.6    42.2    38.5   45.0
+2026-10-18 20:05 ARI@LA        -9.1  -12.6   -10.9   -11.9  -12.5    +2.0 |    49.8    48.1    51.5   34.0
+2026-10-18 20:25 LAC@KC        -9.4   -8.4   -10.1   -10.1   -7.5   -16.0 |    40.3    42.5    41.5   28.0
+2026-10-18 20:25 BUF@LV        +4.0   +5.7    +7.1    +6.8   +5.5    +3.0 |    48.9    52.0    53.5   63.0
+2026-10-19 00:20 DAL@GB        -4.8   -5.4    -5.1    -4.7   -1.5       - |    53.5    50.0    53.5      -
+2026-10-20 00:15 WAS@SF       -10.9   -7.2   -11.7   -11.9   -7.5       - |    49.6    45.4    52.5      -
+2026-10-23 00:15 NE@CHI        +0.1      -    -0.2    -0.6   -1.5       - |       -    47.0       -      -
+Spreads are the home side (negative = home favoured); result = minus the home margin, on the same scale. mkt = the line logged with the live picks.
+  HOU@JAX out at prekick: home: OL Anton Harrison (0%); away: OL Braden Smith (0%), S Jalen Pitre (0%), WR Tank Dell (0%)
+  CHI@ATL out at prekick: home: CB A.J. Terrell (0%), CB C.J. Henderson (1%); away: DL Montez Sweat (0%), LB T.J. Edwards (1%)
+  BAL@CLE out at prekick: home: OL Teven Jenkins (1%); away: OL Cam Jurgens (1%), OL Ethan Pocic (0%), OL Jovaughn Gwyn (0%), QB Lamar Jackson (1%)
+  TEN@IND out at prekick: home: DL Arden Key (0%), LB Jaylon Carlies (1%), WR Alec Pierce (0%), WR Darius Slayton (0%); away: OL Fernando Carmona (0%), OL Jackson Slater (0%), S Kevin Winston Jr. (1%)
+  NYJ@NE out at prekick: home: CB Carlton Davis III (1%), OL Mike Onwenu (0%), WR Mack Hollins (0%); away: OL Dylan Parham (1%), WR Adonai Mitchell (1%)
+  NO@NYG out at prekick: home: CB Colton Hood (1%), LB Brian Burns (0%), QB Jaxson Dart (0%), S Tyler Nubin (1%); away: LB Kaden Elliss (1%), OL Kelvin Banks Jr. (0%)
+  CAR@PHI out at prekick: home: LB Jalyx Hunt (1%), OL Cam Jurgens (6%), OL Landon Dickerson (0%), QB Jalen Hurts (0%); away: CB Jaycee Horn (0%), CB Mike Jackson (0%), OL Monroe Freeling (5%)
+  PIT@TB out at prekick: home: CB Benjamin Morrison (5%), QB Baker Mayfield (1%), S Antoine Winfield Jr. (1%); away: S DeShon Elliott (0%), WR Michael Pittman (0%)
+  ARI@LA out at prekick: home: OL Alaric Jackson (0%); away: CB Will Johnson (0%), OL Isaiah Adams (0%), OL Paris Johnson Jr. (0%), S Andrew Wingard (1%), WR Marvin Harrison Jr. (6%)
+  LAC@KC out at prekick: home: OL Josh Simmons (1%), WR Rashee Rice (1%); away: OL Joe Alt (1%), OL Kayode Awosika (1%), OL Rashawn Slater (0%), S Derwin James (1%), WR Tre Harris (1%)
+  DAL@GB out at prekick: home: LB Edgerrin Cooper (0%), OL Zach Bako-Bewele (0%); away: CB Cobie Durant (1%), S Jalen Thompson (0%)
+  WAS@SF out at prekick: home: LB Dre Greenlaw (0%), S Marques Sigle (1%), WR Deebo Samuel Sr. (1%); away: CB Trey Amos (0%)
+  NE@CHI out at prekick: home: DL Montez Sweat (2%); away: OL Mike Onwenu (2%), WR Mack Hollins (2%)
+```
+
+Over the 11 finished games, mean miss on the margin: M12 prekick **7.06**, M12 final report
+7.57, Elo 7.95, M11 8.33 (10 games), logged market line 6.77. On totals M12 missed by 10.74,
+M11 8.84 and the market 8.30 (10 games). Eleven games prove nothing either way. The spread
+gains come from the information M10/M11 lacked: starting QBs out at prekick (Hurts, Lamar
+Jackson, Mayfield, Dart). CAR@PHI is the clearest case: M12 PHI +4.3 vs M10 -2.2 / M11 -1.2;
+PHI lost by 11.
+
+## Sample `betdata predict nfl` (2026-10-19)
+
+```
+m12:22460361b5: model line and total next to the market (blend = model and market combined); factors in points, largest first
+Tue 10-20 00:15Z  WAS @ SF   [final_report]  line: model SF -11.2 (blend SF -9.0), market SF -7.5  |  total: model 45.3 (blend 51.4), market 52.5  |  SF win 81%
+    line factors (points for SF): QB quality +3.4, Elo ratings +2.2, success rate +1.4, pass offense/defense +1.2
+    total factors: success rate +1.2, explosive plays -0.9, pass offense/defense +0.7, roof -0.6
+    SF likely out: S Marques Sigle (0%), WR Deebo Samuel Sr. (0%)
+Fri 10-23 00:15Z   NE @ CHI  [early]  line: model NE -1.2 (blend CHI -1.0), market CHI -2.5  |  total: model 46.4 (blend 49.0), market 49.5  |  CHI win 46%
+    line factors (points for CHI): pass offense/defense -0.8, DL availability -0.7, Elo ratings -0.7, early-down EPA -0.6
+    total factors: explosive plays +1.8, QB quality +0.8, roof -0.6, INTs thrown -0.5
+    NE likely out: OL Mike Onwenu (2%), WR Mack Hollins (2%)
+    CHI likely out: DL Montez Sweat (2%)
+Sun 10-25 13:30Z  PIT @ NO   [early]  line: model PIT -0.9 (blend PIT -1.9), market PIT -2.5  |  total: model 45.9 (blend 44.7), market 44.5  |  NO win 47%
+    line factors (points for NO): international game -1.5, Elo ratings -1.2, CB availability +1.1, LB availability +0.9
+    total factors: roof +2.2, explosive plays -1.1, inexperienced backup QB +0.5, LB availability -0.5
+    PIT likely out: WR Michael Pittman (2%)
+    NO likely out: OL Kelvin Banks Jr. (2%)
+```

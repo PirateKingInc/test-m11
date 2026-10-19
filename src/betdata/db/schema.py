@@ -425,6 +425,13 @@ model_predictions = Table(
     Column("market_total", Float),
     Column("market_source", String(32)),
     Column("params", JSON),
+    # M12: which prediction point (final_report, prekick, or early = before the final report),
+    # the model+market blend, and the feature snapshot and factor breakdown behind the numbers.
+    Column("prediction_point", String(16)),
+    Column("blend_home_margin", Float),
+    Column("blend_total", Float),
+    Column("features", JSON),
+    Column("factors", JSON),
     UniqueConstraint("model_version", "game_id", "predicted_at"),
     Index("ix_model_predictions_game", "game_id", "model_version", "predicted_at"),
 )
@@ -552,4 +559,29 @@ nfl_player_game_pbp = Table(
     Column("file_id", ForeignKey("data_files.file_id")),
     UniqueConstraint("game_id", "team_id", "gsis_id"),
     Index("ix_nfl_player_game_pbp_season", "season"),
+)
+
+# --- M12 live picks and grading -----------------------------------------------------------------
+
+# One graded bet per stored prediction and market: the side the model took against the line it
+# saw, graded at that line, with closing-line value. Rebuilt idempotently by `betdata grade nfl`.
+nfl_bet_grades = Table(
+    "nfl_bet_grades",
+    metadata,
+    Column("grade_id", Integer, primary_key=True),
+    Column("prediction_id", ForeignKey("model_predictions.prediction_id"), nullable=False),
+    Column("model_version", String(128), nullable=False),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("market", String(8), nullable=False),  # spread, total
+    Column("side", String(8), nullable=False),  # home, away, over, under
+    Column("line", Float, nullable=False),  # the side's line when the prediction was made
+    Column("price_american", Integer, nullable=False),
+    Column("edge", Float, nullable=False),
+    Column("close_line", Float),  # the same side's closing line; null if none known
+    Column("clv", Float),  # points better (+) or worse (-) than the close
+    Column("result", String(8), nullable=False),  # win, loss, push, void (postponed/cancelled)
+    Column("profit", Float, nullable=False),  # per unit staked
+    Column("graded_at", UTCDateTime, nullable=False),
+    UniqueConstraint("prediction_id", "market"),
+    Index("ix_nfl_bet_grades_version", "model_version"),
 )

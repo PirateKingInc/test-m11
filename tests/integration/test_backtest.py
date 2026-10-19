@@ -175,8 +175,10 @@ def test_predict_cli_smoke(nflverse, fake_api, engine, monkeypatch):
     try:
         out = CliRunner().invoke(app, ["predict", "nfl", "--model", "elo"])
         assert out.exit_code == 0, out.output
-        units = CliRunner().invoke(app, ["predict", "nfl"])  # no snap counts loaded
+        units = CliRunner().invoke(app, ["predict", "nfl", "--model", "units"])  # no snap counts
         assert units.exit_code == 1 and "snap counts" in units.output
+        m12 = CliRunner().invoke(app, ["predict", "nfl"])  # M12 is the default: no history yet
+        assert m12.exit_code == 1 and "betdata nfl derive" in m12.output
         assert out.exit_code == 0, out.output
         assert "KC @ BUF" in out.output and "lean" in out.output
     finally:

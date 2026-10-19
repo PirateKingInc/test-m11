@@ -484,7 +484,9 @@ def _absence_text(team: str, out) -> str:
 @app.command()
 def predict(
     sport: str = typer.Argument("nfl"),
-    model: str = typer.Option("units", help="units (unit ratings + missing starters) or elo"),
+    model: str = typer.Option(
+        "m12", help="m12 (default), units (M11: unit ratings + missing starters) or elo (M10)"
+    ),
     days: int = typer.Option(8, help="Predict games kicking off within this many days."),
     alpha: float = typer.Option(0.05, help="Units: rating speed (use what `backtest` prints)."),
     revert: float = typer.Option(None, help="Season carry-over (units 0.5, elo 0.33)."),
@@ -505,6 +507,23 @@ def predict(
         raise typer.BadParameter("only nfl so far")
     now = utcnow()
     until = now + timedelta(days=days)
+    if model == "m12":
+        from betdata.nfl.live import run_predict
+        from betdata.nfl.predict import fmt_pick
+
+        try:
+            version, picks = run_predict(_engine(), now, days)
+        except ValueError as e:
+            typer.echo(str(e))
+            raise typer.Exit(1) from None
+        if not picks:
+            typer.echo("no upcoming games in that window")
+            return
+        typer.echo(f"{version}: model line and total next to the market (blend = model and "
+                   "market combined); factors in points, largest first")  # fmt: skip
+        for p in picks:
+            typer.echo("\n".join(fmt_pick(p)))
+        return
     if model == "units":
         from betdata.analysis.context import load_context
         from betdata.analysis.units_backtest import predict_units_upcoming
@@ -547,7 +566,7 @@ def predict(
             typer.echo("    " + _absence_text(g.home, r.home_out))
         return
     if model != "elo":
-        raise typer.BadParameter("model must be units or elo")
+        raise typer.BadParameter("model must be m12, units or elo")
     from betdata.analysis.models import EloModel
     from betdata.analysis.report import predict_upcoming
 
