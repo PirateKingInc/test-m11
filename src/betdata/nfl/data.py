@@ -8,7 +8,12 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import Connection, column, select, table
 
-from betdata.analysis.context import POSITION_GROUP, injury_known_at, norm_name
+from betdata.analysis.context import (
+    FIRST_WEEKLY_ROSTER_SEASON,
+    POSITION_GROUP,
+    injury_known_at,
+    norm_name,
+)
 from betdata.core.matching import sport_id
 from betdata.db.schema import (
     games,
@@ -215,6 +220,8 @@ def _rosters(conn: Connection, g: pd.DataFrame, first_season: int):
         if r.football_name and r.last_name:
             by_name.setdefault((r.season, r.team, norm_name(f"{r.football_name} {r.last_name}")),
                                r.gsis_id)  # fmt: skip
+    # Before 2016 the "weekly" files are one end-of-season snapshot (REVIEW.md #19): ids only.
+    df = df[df.season >= FIRST_WEEKLY_ROSTER_SEASON]
     df["group"] = df.position.fillna("").str.upper().map(POSITION_GROUP)
     kicks = _week_kickoffs(g)
     week_end = g.groupby(["season", "week"])["kickoff"].max() + timedelta(hours=12)

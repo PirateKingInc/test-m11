@@ -62,6 +62,28 @@ and from all data with every row known after `t` scrambled. It fails if any valu
   residuals. Calibration is checked on validation (bins, Brier score).
 * **Blend**: model + market = w x model + (1 - w) x market line at the prediction point.
 
+### Group 1: player availability (`features/availability.py`)
+
+Full build: valued players vs replacement (QB EPA per dropback, shrunk, scaled to a game; other
+positions by snap role), the change against the players of the team's last four games per
+position group, QB starter/backup gap and backup inexperience, OL/DB/WR clusters, returning
+and newly acquired starters. Play probabilities learned on 2013-2019 (status buckets, e.g. at
+the final report Questionable + limited practice 69%, Questionable + no practice 36%, Out 0.3%;
+at prekick an active Questionable player 72%, an inactive one 0.3%). Replacement QB: -0.226
+EPA per dropback (QBs who were not their team's main passer).
+
+Found while building it: nflverse's 2013-2015 weekly rosters are end-of-season snapshots
+(REVIEW.md #19), so roster statuses before 2016 are never used; before 2016 a player's status
+comes from the injury report only. Game-day inactives (INA) exist from 2019.
+
+| Adjustment | Margin | Total | Result |
+|---|---|---|---|
+| 1. Skill players valued by EPA per target/carry above replacement x workload | 9.924 | 10.891 | worse: reverted |
+
+Practice participation by day: nflverse's history keeps only the last practice status of the
+week, so the trend can't be learned; live runs store every daily change (`injuries` is
+change-only) and the latest status is what the model uses.
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -101,9 +123,13 @@ Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
 ## Results log
 
 Validation = 2020-2022 (838 games with scores), fitted on 2013-2019; MAE in points, averaged
-over the two prediction points. Reference: the closing line misses validation games by
+over the two prediction points. Each group's margin features and total features are judged
+separately: the margin half is kept if it lowers margin MAE, the total half if it lowers total
+MAE (a group can help one and not the other). The ridge penalty is chosen on validation from
+1-3000. Reference: the closing line misses validation games by
 **9.747** (margin) and **10.507** (total). `betdata nfl evaluate` reproduces every row.
 
 | Step | Margin MAE | Total MAE | Decision | Notes |
 |---|---|---|---|---|
 | Base (home field + M10 Elo; league scoring level) | 10.086 | 11.175 | base | ridge penalty 100 / 1 |
+| + 1 Player availability | **9.874** | **10.849** | KEEP / KEEP | -0.21 margin, -0.33 total. Prekick (inactives known) beats the final report: 9.843 vs 9.905 margin. |
