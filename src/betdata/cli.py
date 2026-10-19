@@ -444,7 +444,8 @@ def backtest(
                        "rosters)")  # fmt: skip
             raise typer.Exit(1)
         try:
-            result = run_units_backtest(games, ctx, train_s, test_s, regular_only=regular_only)
+            result = run_units_backtest(games, ctx, train_s, test_s, regular_only=regular_only,
+                                        spread_threshold=threshold)
         except ValueError as e:
             raise typer.BadParameter(str(e)) from None
         typer.echo("\n".join(result.lines))

@@ -184,6 +184,12 @@ def test_units_backtest_and_predict_cli(nflverse, fake_api, engine, monkeypatch,
             assert text in out.output, text
         assert list((tmp_path / "data" / "reports").glob("backtest_nfl_units_*.csv"))
 
+        # --threshold fixes the spread threshold instead of letting training choose it.
+        out = runner.invoke(app, ["backtest", "nfl", "--model", "units", "--train", "2013-2015",
+                                  "--test", "2016", "--threshold", "4.5"])  # fmt: skip
+        assert out.exit_code == 0, out.output
+        assert "units+missing >= 4.5 pts" in out.output
+
         out = runner.invoke(app, ["predict", "nfl", "--model", "units", "--train", "2013-2016"])
         assert out.exit_code == 0, out.output
         assert "KC @ BUF" in out.output and "total model" in out.output
