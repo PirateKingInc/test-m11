@@ -1,11 +1,13 @@
 """Who is missing: each team's recent starters, and the chance each one sits out a game.
 
-Everything here uses only what is known before kickoff:
+Everything here uses only what is known at the final injury report (see nfl/points.py):
   * starters come from snap counts of the team's earlier games;
-  * absence comes from that week's injury report (Out, Doubtful, Questionable) and roster
-    status (injured reserve, PUP, suspended, or no longer on the team).
-Game-day inactives (roster status INA, announced 90 minutes before kickoff) are deliberately
-ignored, and so is whether the player actually played.
+  * absence comes from that week's injury report (Out, Doubtful, Questionable), counting only
+    rows published by the final-report instant, and from roster status (injured reserve, PUP,
+    suspended, or no longer on the team) on the team's latest roster *before* this week. The
+    week's own roster is the game-day snapshot (it lists inactives and Saturday moves), so it
+    is not known yet (REVIEW.md #1, #2).
+Game-day inactives and whether the player actually played are not used.
 """
 
 from __future__ import annotations
@@ -13,15 +15,19 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from sqlalchemy import Connection, select
 
+from betdata.core.matching import sport_id
 from betdata.db.schema import (
+    games,
     injuries,
     player_game_snaps,
     roster_weeks,
     team_game_stats,
 )
+from betdata.nfl.points import final_report_time
 
 GROUPS = ("QB", "OL", "WR", "TE", "RB", "DL", "LB", "CB", "S")
 OFFENSE_GROUPS = ("QB", "OL", "WR", "TE", "RB")
@@ -68,8 +74,10 @@ class Context:
     snaps: dict[int, dict[int, list[tuple[str, str, str, float, float]]]] = field(
         default_factory=dict
     )
-    # (season, week, team_id) -> player key -> roster status
+    # (season, week, team_id) -> player key -> roster status (game-day snapshot of that week)
     rosters: dict[tuple[int, int, int], dict[str, str]] = field(default_factory=dict)
+    # (season, team_id) -> weeks with a roster, ascending
+    roster_weeks: dict[tuple[int, int], list[int]] = field(default_factory=dict)
     # (season, week, team_id) -> player key -> latest report status
     reports: dict[tuple[int, int, int], dict[str, str]] = field(default_factory=dict)
     # (season, team_id) -> player key -> first week he was on the team's roster
@@ -111,6 +119,7 @@ def load_context(conn: Connection, *, first_season: int = 1999) -> Context:
         ctx.rosters.setdefault((r.season, r.week, r.team_id), {})[key] = r.status
         first = ctx.rostered.setdefault((r.season, r.team_id), {})
         first[key] = min(first.get(key, r.week), r.week)
+    index_roster_weeks(ctx)
 
     for r in conn.execute(
         select(
@@ -134,16 +143,33 @@ def load_context(conn: Connection, *, first_season: int = 1999) -> Context:
             (key, r.player_name, group, r.offense_pct or 0.0, r.defense_pct or 0.0)
         )
 
+    # Kickoff of each team's game per week: injury rows count only if published by that
+    # game's final-report instant.
+    kickoffs: dict[tuple[int, int, int], datetime] = {}
+    for g in conn.execute(
+        select(games.c.season, games.c.week, games.c.home_team_id, games.c.away_team_id,
+               games.c.start_time_utc)
+        .where(games.c.sport_id == sport_id(conn, "nfl"), games.c.season >= first_season)
+    ):  # fmt: skip
+        for team in (g.home_team_id, g.away_team_id):
+            kickoffs[(g.season, g.week, team)] = g.start_time_utc
+
     latest: dict[tuple, tuple] = {}
     for r in conn.execute(
         select(
             injuries.c.season, injuries.c.week, injuries.c.team_id, injuries.c.source_player_id,
             injuries.c.report_status, injuries.c.fetched_at, injuries.c.injury_id,
+            injuries.c.report_date,
         ).where(
             injuries.c.source == "nflverse", injuries.c.season >= first_season,
             injuries.c.team_id.is_not(None), injuries.c.source_player_id.is_not(None),
         )
     ):  # fmt: skip
+        kickoff = kickoffs.get((r.season, r.week, r.team_id))
+        if kickoff is not None and injury_known_at(r.fetched_at, r.report_date, kickoff) > (
+            final_report_time(kickoff)
+        ):
+            continue
         k = (r.season, r.week, r.team_id, r.source_player_id)
         if k not in latest or (r.fetched_at, r.injury_id) > latest[k][0]:
             latest[k] = ((r.fetched_at, r.injury_id), r.report_status)
@@ -151,6 +177,35 @@ def load_context(conn: Connection, *, first_season: int = 1999) -> Context:
         if status:
             ctx.reports.setdefault((season, week, team_id), {})[pid] = status
     return ctx
+
+
+def injury_known_at(
+    fetched_at: datetime, report_date: datetime | None, kickoff: datetime
+) -> datetime:
+    """When an injury row became known: the time we fetched it, unless it was loaded after
+    the game (a backfill), in which case nflverse's own publish time (`date_modified`). A
+    backfilled row without a publish time is assumed to be the final report."""
+    if fetched_at < kickoff:
+        return fetched_at
+    if report_date is not None:
+        return report_date
+    return final_report_time(kickoff)
+
+
+def index_roster_weeks(ctx: Context) -> None:
+    ctx.roster_weeks = {}
+    for season, week, team_id in ctx.rosters:
+        ctx.roster_weeks.setdefault((season, team_id), []).append(week)
+    for weeks in ctx.roster_weeks.values():
+        weeks.sort()
+
+
+def roster_before(ctx: Context, season: int, week: int, team_id: int) -> dict[str, str] | None:
+    """The team's latest roster from an earlier week this season (bye weeks have none)."""
+    if ctx.rosters and not ctx.roster_weeks:
+        index_roster_weeks(ctx)
+    earlier = [w for w in ctx.roster_weeks.get((season, team_id), ()) if w < week]
+    return ctx.rosters.get((season, earlier[-1], team_id)) if earlier else None
 
 
 class StarterTracker:
@@ -200,19 +255,21 @@ def absences(
     team_id: int,
     out_prob: dict[str, float] = DEFAULT_OUT_PROB,
 ) -> list[Absence]:
-    """Starters expected to miss this game, with the chance each one sits out."""
-    roster = ctx.rosters.get((season, week, team_id))
+    """Starters expected to miss this game, with the chance each one sits out, as known at
+    the final injury report."""
+    roster = roster_before(ctx, season, week, team_id)
     first_week = ctx.rostered.get((season, team_id), {})
     report = ctx.reports.get((season, week, team_id), {})
     out = []
     for s in starters:
-        if roster is not None:
+        # A player on this week's injury report is with the team; his report status governs.
+        if roster is not None and s.key not in report:
             status = roster.get(s.key)
             if status is not None and status not in PRESENT_ROSTER_STATUSES:
                 out.append(Absence(s, 1.0, "IR/reserve" if status == "RES" else status))
                 continue
             if status is None and first_week.get(s.key, week) < week:
-                # On this team earlier this season but not on this week's roster: released,
+                # On this team earlier this season but not on its latest roster: released,
                 # traded or otherwise gone. (Last season's starters who left in the offseason
                 # never count: the new roster is the team now.)
                 out.append(Absence(s, 1.0, "not on roster"))

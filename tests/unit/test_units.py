@@ -75,16 +75,52 @@ def test_absences_from_reports_and_rosters():
     keys = [("qb", "QB"), ("cb", "CB"), ("s", "S"), ("lt", "OL"), ("wr", "WR"), ("rb", "RB")]
     s = {k: Starter(k, k.upper(), g, 1.0) for k, g in keys}
     ctx.reports[(2024, 5, 1)] = {"qb": "Questionable", "cb": "Out", "s": "Doubtful"}
-    ctx.rosters[(2024, 5, 1)] = {"qb": "ACT", "cb": "ACT", "s": "ACT", "lt": "RES", "rb": "INA"}
+    # Week 4's roster (week 3 was a bye) is what is known at week 5's final injury report.
+    ctx.rosters[(2024, 4, 1)] = {"qb": "ACT", "cb": "ACT", "s": "ACT", "lt": "RES", "rb": "INA"}
     ctx.rostered[(2024, 1)] = {"qb": 1, "cb": 1, "s": 1, "lt": 1, "wr": 2, "rb": 1}
     out = {a.starter.key: a for a in absences(ctx, list(s.values()), 2024, 5, 1)}
     assert out["qb"].out_prob == 0.25 and out["qb"].reason == "Questionable"
     assert out["cb"].out_prob == 1.0 and out["s"].out_prob == 0.9
     assert out["lt"].reason == "IR/reserve"
-    assert out["wr"].reason == "not on roster"  # was on the team in week 2, gone by week 5
-    assert "rb" not in out  # INA is game-day information: ignored
+    assert out["wr"].reason == "not on roster"  # was on the team in week 2, gone by week 4
+    assert "rb" not in out  # inactive for last week's game: not an absence this week
     groups = missing_by_group(list(out.values()))
     assert groups["CB"] == 1.0 and groups["S"] == 0.9 and groups["QB"] == 0.25
+
+
+def test_game_week_roster_is_not_known_at_the_final_report():
+    """REVIEW.md #1: the week's own roster is the game-day snapshot (Saturday IR moves,
+    inactives), so it must not count at the final-report point."""
+    ctx = Context()
+    lt = Starter("lt", "LT", "OL", 1.0)
+    ctx.rostered[(2024, 1)] = {"lt": 1}
+    ctx.rosters[(2024, 4, 1)] = {"lt": "ACT"}
+    ctx.rosters[(2024, 5, 1)] = {"lt": "RES"}  # placed on IR the day before the game
+    assert absences(ctx, [lt], 2024, 5, 1) == []
+    assert [a.reason for a in absences(ctx, [lt], 2024, 6, 1)] == ["IR/reserve"]
+
+
+def test_injury_report_overrides_an_earlier_reserve_status():
+    ctx = Context()
+    wr = Starter("wr", "WR", "WR", 1.0)
+    ctx.rostered[(2024, 1)] = {"wr": 1}
+    ctx.rosters[(2024, 4, 1)] = {"wr": "RES"}
+    ctx.reports[(2024, 5, 1)] = {"wr": "Questionable"}  # designated to return
+    [a] = absences(ctx, [wr], 2024, 5, 1)
+    assert a.reason == "Questionable"
+
+
+def test_injury_known_at():
+    from betdata.analysis.context import injury_known_at
+    from betdata.nfl.points import final_report_time
+
+    kickoff = datetime(2024, 10, 6, 17, 0, tzinfo=UTC)  # Sunday 1 pm ET
+    live = datetime(2024, 10, 3, 20, 0, tzinfo=UTC)
+    published = datetime(2024, 10, 4, 18, 0, tzinfo=UTC)
+    backfill = datetime(2026, 10, 1, tzinfo=UTC)
+    assert injury_known_at(live, published, kickoff) == live  # fetched before the game
+    assert injury_known_at(backfill, published, kickoff) == published
+    assert injury_known_at(backfill, None, kickoff) == final_report_time(kickoff)
 
 
 def test_offseason_departures_are_not_missing_starters():

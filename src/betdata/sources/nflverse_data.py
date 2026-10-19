@@ -17,7 +17,7 @@ import hashlib
 import io
 import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import Connection, desc, insert, select
@@ -41,6 +41,17 @@ INJURY_COLUMNS = {
     "practice_primary_injury",
 }
 TRACKED = ("team_id", "report_status", "practice_status", "detail", "practice_detail")
+
+
+def _modified(value: str | None) -> datetime | None:
+    """nflverse `date_modified` ('2019-09-06T13:36:21Z'): when the report row was published."""
+    if not value or value in ("NA", "\\N"):
+        return None
+    try:
+        t = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
 def _injury_text(primary: str, secondary: str) -> str | None:
@@ -79,6 +90,7 @@ def parse_injuries(body: bytes, *, fetched_at: datetime) -> ParsedInjuries:
                 practice_detail=_injury_text(
                     r["practice_primary_injury"], r.get("practice_secondary_injury", "")
                 ),
+                report_date=_modified(r.get("date_modified")),
             )
         )
     if len(seasons) > 1:
@@ -168,3 +180,51 @@ def store_pbp(conn: Connection, f: PbpFile, data_dir: Path) -> tuple[int, int]:
         )  # fmt: skip
     )
     return 1, 1
+
+
+# --- publish times for rows loaded before report_date was parsed ---------------------------
+
+
+def fill_report_dates(conn: Connection) -> tuple[int, int]:
+    """Fill `injuries.report_date` (nflverse `date_modified`) on rows loaded before it was
+    parsed, from the archived raw file each row came from. No network call. Returns
+    (rows updated, archived files read)."""
+    from sqlalchemy import bindparam, update
+
+    from betdata.core import raw_store
+
+    raw_ids = conn.execute(
+        select(injuries.c.raw_id)
+        .where(injuries.c.source == NAME, injuries.c.report_date.is_(None),
+               injuries.c.raw_id.is_not(None))  # fmt: skip
+        .distinct()
+    ).scalars().all()
+    updated = 0
+    for raw_id in raw_ids:
+        row = raw_store.load(conn, raw_id)
+        if row["source"] != NAME or not row["endpoint"].startswith("/injuries/"):
+            continue
+        times = {
+            (r["week"], r["source_player_id"], r["player_name"]): r["report_date"]
+            for r in parse_injuries(row["body"], fetched_at=row["fetched_at"]).rows
+            if r["report_date"] is not None
+        }
+        pending = conn.execute(
+            select(injuries.c.injury_id, injuries.c.week, injuries.c.source_player_id,
+                   injuries.c.player_name)
+            .where(injuries.c.raw_id == raw_id, injuries.c.report_date.is_(None))
+        ).all()  # fmt: skip
+        values = [
+            {"b_id": p.injury_id, "b_date": times[(p.week, p.source_player_id, p.player_name)]}
+            for p in pending
+            if (p.week, p.source_player_id, p.player_name) in times
+        ]
+        if values:
+            conn.execute(
+                update(injuries)
+                .where(injuries.c.injury_id == bindparam("b_id"))
+                .values(report_date=bindparam("b_date")),
+                values,
+            )
+            updated += len(values)
+    return updated, len(raw_ids)
