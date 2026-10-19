@@ -9,6 +9,7 @@ from pathlib import Path
 
 from sqlalchemy import Engine
 
+from betdata.config import PROJECT_ROOT
 from betdata.core.matching import season_for
 from betdata.nfl.data import load_store
 from betdata.nfl.groups import GROUPS
@@ -63,10 +64,15 @@ def frozen_model(store, design: Design, now: datetime):
     """The live model without refitting: the fit on every completed season is computed once
     (the first prediction of a season, or after the data directory is rebuilt) and read back
     from data/derived afterwards, so hourly runs never refit. The completed seasons only change
-    once a year, so this is the same fit `live_model` would return."""
+    once a year, so this is the same fit `live_model` would return. A fit committed under
+    config/fits/ (the 2013-2025 fit M12 went live with) takes precedence, so a rebuilt data
+    directory keeps exactly the same coefficients."""
     last = season_for("nfl", now) - 1
     seasons = tuple(range(2013, last + 1))
     path = fit_path(design, seasons)
+    committed = PROJECT_ROOT / "config" / "fits" / path.name
+    if committed.exists():  # the fit M12 shipped with: identical whatever data was rebuilt
+        path = committed
     if path.exists():
         raw = json.loads(path.read_text())
         fits = {p: Fit(p, Ridge.from_dict(f["margin"]), Ridge.from_dict(f["total"]), f["sigma"])
