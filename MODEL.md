@@ -100,6 +100,15 @@ last season, fading over the first 8 games. The gain over availability + Elo is 
 | 2. Half-life 240 days | 9.866 | 10.830 | worse |
 | 3. Prior 600 plays (more shrinkage) | 9.857 | 10.825 | margin worse, total +0.001: kept the full build |
 
+### Group 3: schedule and travel (`features/schedule.py`)
+
+Full build: rest days (difference, short week <= 5 days, off a bye >= 13), miles from the
+team's home stadium, time zones crossed, body clock (kickoff before 11:00 on the team's home
+clock), consecutive road games, a sea-level team at altitude (>= 1,000 m), international venue.
+All schedule facts, known in advance. Venue time zones and elevations were added to
+`seeds/venues_nfl.csv`. Elo already carries the bye-week bonus and home field, so the margin
+gain is tiny and the total half didn't help; no adjustment was worth trying beyond the rule.
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -150,3 +159,4 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 | Base (home field + M10 Elo; league scoring level) | 10.086 | 11.175 | base | ridge penalty 100 / 1 |
 | + 1 Player availability | **9.874** | **10.849** | KEEP / KEEP | -0.21 margin, -0.33 total. Prekick (inactives known) beats the final report: 9.843 vs 9.905 margin. |
 | + 2 Team strength | 9.855 | 10.826 | KEEP / KEEP | ridge penalty rises to 1000 (margin) / 300 (total) |
+| + 3 Schedule and travel | 9.854 | 10.832 | KEEP / drop | margin -0.001 (within noise; kept by the rule); total worse |

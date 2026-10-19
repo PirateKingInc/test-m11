@@ -127,7 +127,7 @@ def seed(engine: Engine, seeds_dir: Path = SEEDS) -> dict[str, int]:
                     conn,
                     source=id_col.removesuffix("_id"),
                     source_venue_id=r[id_col],
-                    **{k: (float(v) if k in ("lat", "lon") and v else v or None)
+                    **{k: (float(v) if k in ("lat", "lon", "elevation_m") and v else v or None)
                        for k, v in r.items() if k != id_col},
                 )  # fmt: skip
                 counts["venues"] += 1
