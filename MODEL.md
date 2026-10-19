@@ -84,6 +84,22 @@ Practice participation by day: nflverse's history keeps only the last practice s
 week, so the trend can't be learned; live runs store every daily change (`injuries` is
 change-only) and the latest status is what the model uses.
 
+### Group 2: team strength (`features/strength.py`)
+
+Full build: opponent-adjusted offense and defense ratings (weighted ridge on every known
+team-game, plays x recency weights, half-life 120 days, 250-play prior, 30% shrink between
+seasons) for pass EPA, rush EPA, success rate, early-down EPA and explosive-play rate; turnover
+luck (fumble recoveries vs 50%, INT rates thrown and caught vs league); pace (seconds per
+neutral-situation play) and neutral pass rate for totals; new head coach and new primary QB vs
+last season, fading over the first 8 games. The gain over availability + Elo is small
+(-0.019 margin, -0.023 total): Elo already carries most of the team-level signal.
+
+| Adjustment | Margin | Total | Result |
+|---|---|---|---|
+| 1. Half-life 60 days | 9.889 | 10.826 | worse |
+| 2. Half-life 240 days | 9.866 | 10.830 | worse |
+| 3. Prior 600 plays (more shrinkage) | 9.857 | 10.825 | margin worse, total +0.001: kept the full build |
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -133,3 +149,4 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 |---|---|---|---|---|
 | Base (home field + M10 Elo; league scoring level) | 10.086 | 11.175 | base | ridge penalty 100 / 1 |
 | + 1 Player availability | **9.874** | **10.849** | KEEP / KEEP | -0.21 margin, -0.33 total. Prekick (inactives known) beats the final report: 9.843 vs 9.905 margin. |
+| + 2 Team strength | 9.855 | 10.826 | KEEP / KEEP | ridge penalty rises to 1000 (margin) / 300 (total) |
