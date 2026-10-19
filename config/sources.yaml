@@ -22,6 +22,10 @@ sources:
     base_url: https://github.com/nflverse/nflverse-data/releases/download
     # No quota: static files on GitHub releases. Unchanged files are not re-archived.
 
+  nfl_model:
+    enabled: true
+    # Local M12 jobs (derive / predict / grade); no network, no quota.
+
   nba_cdn:
     enabled: true
     base_url: https://cdn.nba.com/static/json

@@ -591,6 +591,33 @@ def predict(
 
 
 @app.command()
+def grade(sport: str = typer.Argument("nfl")):
+    """Grade stored predictions on final games (idempotent): result, closing-line value, and
+    per model version the record, ROI, average CLV and share of bets that beat the close."""
+    from betdata.nfl.grade import THRESHOLDS, grade_nfl, records
+
+    if sport != "nfl":
+        raise typer.BadParameter("only nfl so far")
+    with _engine().begin() as conn:
+        run = grade_nfl(conn, utcnow())
+        recs = records(conn)
+    typer.echo(f"graded: {run.inserted} new, {run.updated} updated, {run.pending} waiting for a "
+               f"final score (bets at >= {THRESHOLDS['spread']:g} pts spread, "
+               f">= {THRESHOLDS['total']:g} pts total, -110)")  # fmt: skip
+    if not recs:
+        typer.echo("no graded bets yet")
+        return
+    typer.echo(f"{'model version':42} {'market':7} {'W-L-P':>10} {'void':>4} {'ROI':>7} "
+               f"{'avg CLV':>8} {'beat close':>10}")  # fmt: skip
+    for r in recs:
+        roi = "-" if r.roi is None else f"{100 * r.roi:+.1f}%"
+        avg = "-" if r.avg_clv is None else f"{r.avg_clv:+.2f}"
+        beat = "-" if r.beat_close is None else f"{100 * r.beat_close:.0f}%"
+        typer.echo(f"{r.model_version:42} {r.market:7} {f'{r.wins}-{r.losses}-{r.pushes}':>10} "
+                   f"{r.voids:4} {roi:>7} {avg:>8} {beat:>10}")
+
+
+@app.command()
 def status(
     check: bool = typer.Option(False, help="Exit 1 if there are problems (for monitoring)."),
 ):

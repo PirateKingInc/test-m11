@@ -367,3 +367,44 @@ jobs:
     cron: "30 18 * * *"
     misfire_grace_minutes: 360
     active_months: [9, 10, 11, 12, 1, 2]
+
+  # --- M12 NFL model (local jobs, no network: nfl_model) -------------------------------------
+  # Derived tables after the nightly nflverse refresh; grading once a day; predictions after the
+  # day's final injury reports and again 75 minutes before each kickoff window (prekick, after
+  # inactives), with a weekly-roster refresh just before so inactives are picked up when
+  # nflverse has published them.
+
+  - id: nfl-model-derive
+    source: nfl_model
+    job: derive
+    cron: "15 8 * * *"
+    misfire_grace_minutes: 720
+    active_months: [9, 10, 11, 12, 1, 2]
+
+  - id: nfl-model-grade
+    source: nfl_model
+    job: grade
+    cron: "30 9 * * *"
+    misfire_grace_minutes: 720
+    active_months: [9, 10, 11, 12, 1, 2]
+
+  - id: nfl-model-predict-report  # final reports are out by 16:00 ET (Wed, Fri, Sat)
+    source: nfl_model
+    job: predict
+    cron: "15 17 * * *"
+    misfire_grace_minutes: 180
+    when: {sport: nfl, after_minutes: 0, before_minutes: 11520}  # games in the next 8 days
+
+  - id: nflverse-rosters-gameday
+    source: nflverse
+    job: rosters
+    cron: "40 * * * *"
+    misfire_grace_minutes: 15
+    when: {sport: nfl, after_minutes: 75, before_minutes: 135}
+
+  - id: nfl-model-predict-prekick
+    source: nfl_model
+    job: predict
+    cron: "*/15 * * * *"
+    misfire_grace_minutes: 10
+    when: {sport: nfl, after_minutes: 0, before_minutes: 75}
