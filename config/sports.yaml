@@ -67,11 +67,11 @@ sports:
         params: {sport: nfl}
         cron: "0 19 * * 1,4"
         when: {after_minutes: 0, before_minutes: 150}
-      - id: nfl-weather  # Open-Meteo forecasts for outdoor games (totals only; CLI)
+      - id: nfl-weather  # Open-Meteo forecasts for outdoor games, every 4 hours 7am-7pm
         source: open_meteo
         job: forecast
         params: {sport: nfl}
-        cron: "0 7-22/3 * * *"
+        cron: "0 7-22/4 * * *"
         when: {after_minutes: 0, before_minutes: 10080}
       # --- the first run of the day (7am): last week's play-by-play, stats, snaps, derive ----
       - id: nfl-pbp
