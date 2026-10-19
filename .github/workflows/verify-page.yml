@@ -1,0 +1,52 @@
+# Checks the live page from outside (manual): fetches it, prints status.json, and takes a
+# phone-width (390 px) screenshot with Playwright. The screenshot and the fetched files are
+# pushed to the `proof` branch (one orphan commit, replaced each time) so they can be viewed
+# without access to the Pages host.
+
+name: verify-page
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fetch the page
+        run: |
+          mkdir -p proof
+          url="https://piratekinginc.github.io/test-m11/"
+          curl -sS -o proof/index.html -w "index.html HTTP %{http_code}\n" "$url"
+          curl -sS -o proof/status.json -w "status.json HTTP %{http_code}\n" "${url}status.json"
+          cat proof/status.json
+          grep -o 'Last updated: <span id="updated">[^<]*' proof/index.html || true
+      - name: Screenshot at 390 px
+        run: |
+          pip install --quiet playwright==1.55.0
+          python -m playwright install --with-deps chromium > /dev/null
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              pg = b.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
+              pg.goto("https://piratekinginc.github.io/test-m11/", wait_until="networkidle")
+              pg.screenshot(path="proof/phone.png")
+              pg.screenshot(path="proof/phone_full.png", full_page=True)
+              print("scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
+              print("warning:", pg.evaluate("document.getElementById('warn').hidden ? '(none)' : document.getElementById('warn').textContent"))
+              print("updated:", pg.evaluate("document.getElementById('updated').textContent"))
+              b.close()
+          PY
+      - name: Push to the proof branch
+        run: |
+          cd proof
+          git init -q -b proof
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Live page check $(date -u +%FT%TZ) (run ${{ github.run_id }})"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" proof
