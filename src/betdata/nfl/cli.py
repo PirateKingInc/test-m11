@@ -4,6 +4,16 @@ from __future__ import annotations
 
 import typer
 
+from betdata.nfl.workflow import (
+    close_mae,
+    closing_lines,
+    data_dir,
+    design_rows,
+    feature_rows,
+    fitted_params,
+    model_games,
+)
+
 nfl_app = typer.Typer(help="NFL model (M12): as-of data, checks.", no_args_is_help=True)
 
 
@@ -25,13 +35,6 @@ def backfill_report_dates():
     typer.echo(f"read {files} archived injury files; filled report_date on {updated} rows")
 
 
-def _data_dir():
-    import os
-    from pathlib import Path
-
-    from betdata.config import PROJECT_ROOT
-
-    return Path(os.environ.get("BETDATA_DATA_DIR") or PROJECT_ROOT / "data")
 
 
 @nfl_app.command("derive")
@@ -46,7 +49,7 @@ def derive(
     years = sorted(parse_seasons(seasons) or []) if seasons else None
     with _engine().begin() as conn:
         n_info = derive_game_info(conn)
-        n_pbp = derive_pbp(conn, _data_dir(), years)
+        n_pbp = derive_pbp(conn, data_dir(), years)
     typer.echo(f"game info: {n_info} games; play-by-play: {n_pbp} team/player rows")
 
 
@@ -82,71 +85,23 @@ def asof_check(
         raise typer.Exit(1)
 
 
-def feature_rows(store, group, game_ids, refresh: bool = False):
-    """One group's features for these games at both points, cached under data/derived."""
-    import hashlib
-
-    import pandas as pd
-
-    from betdata.nfl.pipeline import build
-
-    tag = hashlib.sha1(",".join(map(str, sorted(game_ids))).encode()).hexdigest()[:10]
-    version = getattr(group, "version", 1)
-    path = _data_dir() / "derived" / f"features_{group.name}_{version}_{tag}.parquet"
-    if path.exists() and not refresh:
-        return pd.read_parquet(path)
-    rows = build(store, [group], game_ids)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    rows.to_parquet(path)
-    return rows
 
 
-def closing_lines(conn):
-    """game_id -> (home spread, total) at the close. For scoring only, never a feature."""
-    from betdata.analysis.dataset import load_games
-
-    return {g.game_id: (g.spread_home, g.total) for g in load_games(conn, "nfl")}
 
 
-def close_mae(close, out, game_ids):
-    import numpy as np
-
-    m = [abs(-close[i][0] - out.at[i, "margin"]) for i in game_ids
-         if i in out.index and close.get(i, (None,))[0] is not None]  # fmt: skip
-    t = [abs(close[i][1] - out.at[i, "total"]) for i in game_ids
-         if i in out.index and close.get(i, (None, None))[1] is not None]  # fmt: skip
-    return float(np.mean(m)), float(np.mean(t))
 
 
-def fitted_params(store, seasons=None):
-    """Store params learned on training seasons only (play probabilities, replacement QB),
-    cached under data/derived."""
-    import json
-
-    from betdata.nfl.features.availability import learn_play_prob
-    from betdata.nfl.pipeline import TRAIN
-
-    seasons = tuple(seasons or TRAIN)
-    path = _data_dir() / "derived" / f"params_{min(seasons)}_{max(seasons)}.json"
-    if path.exists():
-        params = json.loads(path.read_text())
-    else:
-        params = learn_play_prob(store, seasons)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(params, indent=1, sort_keys=True))
-    return store.with_params(**params)
 
 
-def model_games(store, seasons):
-    g = store.games
-    return [i for i in g.index if g.at[i, "season"] in set(seasons)
-            and g.at[i, "season_type"] in ("REG", "POST")]  # fmt: skip
 
 
 @nfl_app.command("evaluate")
 def evaluate_cmd(
     groups: str = typer.Option(None, help="Groups to add in order (default: all built)."),
     refresh: bool = typer.Option(False, help="Recompute cached feature rows."),
+    write_design: bool = typer.Option(
+        False, help="Save the kept groups and penalties to config/nfl_model.json."
+    ),
 ):
     """Add feature groups one at a time on 2013-2019 (fit) / 2020-2022 (validate) and report
     validation MAE. Test seasons (2023-2025) are never touched here."""
@@ -169,6 +124,7 @@ def evaluate_cmd(
     typer.echo(f"{'closing line (reference)':28} {cm:8.3f} {ct:8.3f}  (validation games)")
     rows = None
     kept_m, kept_t = [], []
+    groups_m, groups_t = [], []
     best_m = best_t = None
     typer.echo(f"{'step':28} {'margin':>8} {'total':>8}  {'lam':>9}  decision (margin / total)")
     for name in names:
@@ -192,7 +148,141 @@ def evaluate_cmd(
                        f"train {ev.train[p][0]:6.3f} {ev.train[p][1]:6.3f}")  # fmt: skip
         if keep_m:
             kept_m, best_m = kept_m + m, ev.margin
+            groups_m.append(name)
         if keep_t:
             kept_t, best_t = kept_t + t, ev.total
-    typer.echo(f"kept: margin {len(kept_m)} features, total {len(kept_t)} features "
-               f"(validation MAE {best_m:.3f} / {best_t:.3f})")
+            groups_t.append(name)
+    final = evaluate(rows, out, kept_m, kept_t)
+    typer.echo(f"kept: margin {groups_m}, total {groups_t}; validation MAE "
+               f"{final.margin:.3f} / {final.total:.3f}, penalties {final.lam_m:g} / "
+               f"{final.lam_t:g}")  # fmt: skip
+    if write_design:
+        from betdata.nfl.selection import DESIGN_PATH, Design
+
+        Design(groups_m, groups_t, final.lam_m, final.lam_t).save()
+        typer.echo(f"design written to {DESIGN_PATH}")
+
+
+
+
+@nfl_app.command("select")
+def select_cmd(
+    write: bool = typer.Option(False, help="Save the model choice and blend weights."),
+):
+    """On validation seasons only: ridge vs gradient boosting, win-probability calibration,
+    the ablation table (each kept group removed in turn), and the model+market blend weight."""
+    import numpy as np
+
+    from betdata.nfl.data import load_store
+    from betdata.nfl.pipeline import TRAIN, VALIDATE, evaluate, outcomes
+    from betdata.nfl.points import POINTS
+    from betdata.nfl.selection import Design, calibration, fit_design, gbm_mae, predict_rows
+
+    design = Design.load()
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+        close = closing_lines(conn)
+    rows = design_rows(store, design, (*TRAIN, *VALIDATE))
+    out = outcomes(store)
+    m_cols, t_cols = design.columns(rows.columns)
+    ridge = evaluate(rows, out, m_cols, t_cols, lambdas=(design.lam_margin,),
+                     lambdas_t=(design.lam_total,))
+    gbm = gbm_mae(rows, out, design, TRAIN, VALIDATE)
+    typer.echo("Model choice (validation 2020-2022 MAE, margin / total):")
+    for p in POINTS:
+        typer.echo(f"  {p:14} ridge {ridge.valid[p][0]:.3f} / {ridge.valid[p][1]:.3f}   "
+                   f"gbm {gbm[p][0]:.3f} / {gbm[p][1]:.3f}")  # fmt: skip
+    g_m = float(np.mean([v[0] for v in gbm.values()]))
+    g_t = float(np.mean([v[1] for v in gbm.values()]))
+    clearly = g_m < ridge.margin - 0.05 and g_t < ridge.total - 0.05
+    design.model = "gbm" if clearly else "ridge"
+    typer.echo(f"  mean: ridge {ridge.margin:.3f} / {ridge.total:.3f}, gbm {g_m:.3f} / {g_t:.3f}"
+               f" -> {design.model} (gbm must win both by 0.05 to replace the simpler model)")
+
+    fits = fit_design(rows, out, design, TRAIN)
+    vrows = rows[rows.season.isin(VALIDATE)]
+    pred = predict_rows(vrows, fits)
+    typer.echo("Calibration of P(home wins) on validation:")
+    for p in POINTS:
+        c = calibration(pred[pred.point == p], out)
+        typer.echo(f"  {p:14} Brier {c['brier']:.4f}  log loss {c['logloss']:.4f}  "
+                   f"({c['n']} games, sigma {fits[p].sigma:.2f})")  # fmt: skip
+        for lo, hi, n, mp, obs in c["bins"]:
+            typer.echo(f"      {lo:.1f}-{hi:.1f}: {n:4} games, predicted {mp:.3f}, won {obs:.3f}")
+
+    typer.echo("Ablation (validation MAE with each kept group removed):")
+    typer.echo(f"  {'all kept':24} {ridge.margin:.3f} / {ridge.total:.3f}")
+    for g in design.groups:
+        if g == "base":
+            continue
+        d2 = Design([x for x in design.margin_groups if x != g],
+                    [x for x in design.total_groups if x != g], design.lam_margin,
+                    design.lam_total)  # fmt: skip
+        mc, tc = d2.columns(rows.columns)
+        e = evaluate(rows, out, mc, tc, lambdas=(design.lam_margin,),
+                     lambdas_t=(design.lam_total,))
+        typer.echo(f"  {'without ' + g:24} {e.margin:.3f} / {e.total:.3f}   "
+                   f"(+{e.margin - ridge.margin:.3f} / +{e.total - ridge.total:.3f})")
+
+    # Blend weight: the closing line stands in for the prediction-time line (history has no
+    # mid-week lines). It only picks one number per market; it is never a model input.
+    pv = pred[pred.point == "prekick"].set_index("game_id")
+    ids = [i for i in pv.index if close.get(i, (None, None))[0] is not None and i in out.index]
+    best = {}
+    for target, col, mk in (("margin", "margin", lambda i: -close[i][0]),
+                            ("total", "total", lambda i: close[i][1])):  # fmt: skip
+        y = out.loc[ids, target].to_numpy()
+        model = pv.loc[ids, col].to_numpy()
+        market = np.array([mk(i) for i in ids], dtype=float)
+        errs = {w: float(np.abs(w * model + (1 - w) * market - y).mean())
+                for w in np.round(np.arange(0, 1.01, 0.05), 2)}  # fmt: skip
+        w = min(errs, key=errs.get)
+        best[target] = float(w)
+        typer.echo(f"Blend {target}: model weight {w:.2f} (validation MAE {errs[w]:.3f}; "
+                   f"model alone {errs[1.0]:.3f}, market alone {errs[0.0]:.3f})")
+    design.blend_margin, design.blend_total = best["margin"], best["total"]
+    if write:
+        design.save()
+        typer.echo("design updated")
+
+
+@nfl_app.command("final-test")
+def final_test_cmd(force: bool = typer.Option(False, help="Score the test seasons again.")):
+    """Score 2023-2025 once: M12 (refitted on 2013-2022) vs Elo, M11 and the closing line."""
+    from betdata.analysis.context import load_context
+    from betdata.analysis.dataset import load_games
+    from betdata.analysis.units_backtest import run_units_backtest
+    from betdata.nfl.data import load_store
+    from betdata.nfl.final import final_test
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE, outcomes
+    from betdata.nfl.selection import Design
+
+    path = data_dir() / "reports" / "m12_final_test.json"
+    if path.exists() and not force:
+        typer.echo(f"test seasons already scored: {path} (they are scored once)")
+        raise typer.Exit(1)
+    design = Design.load()
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+        games = load_games(conn, "nfl")
+        ctx = load_context(conn)
+    units = run_units_backtest(games, ctx, list(TRAIN), [2020, 2021, 2022, *TEST])
+    units_preds = {g.game_id: p for g, p in units.preds["units+missing"]}
+    rows = design_rows(store, design, (*TRAIN, *VALIDATE, *TEST))
+    report = final_test(rows, outcomes(store), design, games, units_preds, path, force=force)
+    for point, res in report["points"].items():
+        typer.echo(f"{point} ({res['games']} games)")
+        typer.echo("  margin MAE: " + ", ".join(f"{k} {v:.3f}" for k, v in
+                                                res["margin_mae"].items()))  # fmt: skip
+        typer.echo("  total MAE:  " + ", ".join(f"{k} {v:.3f}" for k, v in
+                                                res["total_mae"].items()))  # fmt: skip
+        c = res["calibration"]
+        typer.echo(f"  calibration: Brier {c['brier']:.4f}, log loss {c['logloss']:.4f}")
+        for b in res["bets"].values():
+            ci = b["ci95"]
+            rng = "-" if ci is None else f"{100 * ci[0]:.1f}-{100 * ci[1]:.1f}%"
+            roi = "-" if b["roi"] is None else f"{100 * b['roi']:+.1f}%"
+            typer.echo(f"  bets {b['label']:12} {b['record']:>12}  {100 * b['win_rate']:.1f}%  "
+                       f"95% {rng}  ROI {roi}")
+    typer.echo(f"report: {path}")
+
