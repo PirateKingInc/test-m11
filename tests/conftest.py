@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ipaddress
 import os
+import socket
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -54,6 +56,53 @@ class FakeApi:
     @property
     def transport(self):
         return httpx.MockTransport(self.handler)
+
+
+def _is_local(address) -> bool:
+    """Unix sockets, loopback and private addresses (a Postgres service container) are fine."""
+    if not isinstance(address, tuple):
+        return True
+    host = address[0]
+    if host in ("localhost", ""):
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False  # a hostname: resolving it is already network access
+    return ip.is_loopback or ip.is_private
+
+
+class NetworkAccessError(RuntimeError):
+    pass
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """Fail any test that tries to reach a real host. Sources are tested through FakeApi
+    (httpx.MockTransport), which never opens a socket."""
+    real_connect = socket.socket.connect
+    real_connect_ex = socket.socket.connect_ex
+
+    def guard(fn):
+        def wrapper(self, address, *args, **kwargs):
+            if not _is_local(address):
+                raise NetworkAccessError(f"test tried to open a network connection to {address!r}")
+            return fn(self, address, *args, **kwargs)
+
+        return wrapper
+
+    def no_dns(host, *args, **kwargs):
+        if host in (None, "localhost") or _is_local((host, 0)):
+            return real_getaddrinfo(host, *args, **kwargs)
+        raise NetworkAccessError(f"test tried to resolve {host!r}")
+
+    real_getaddrinfo = socket.getaddrinfo
+    # A local HTTP proxy would otherwise carry a real request past the loopback exception.
+    for var in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(socket.socket, "connect", guard(real_connect))
+    monkeypatch.setattr(socket.socket, "connect_ex", guard(real_connect_ex))
+    monkeypatch.setattr(socket, "getaddrinfo", no_dns)
 
 
 @pytest.fixture(autouse=True)
