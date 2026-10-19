@@ -32,8 +32,13 @@ Every row used carries a `known_at` timestamp, and a feature at instant `t` read
 | Weather forecast (Open-Meteo) | the forecast row's `fetched_at` | Stored forecasts only; observed weather is never an input |
 | Market line and total | `fetched_at` of `poll` snapshots | `source_closing` rows and `v_closing_lines` are never inputs |
 
-Never inputs: games.csv `temp`, `wind`, `home_qb_id`/`away_qb_id`, `result`, `total`; observed
-weather; closing lines.
+| M13 weather group `wx`: Open-Meteo previous-runs forecast | the prediction point | The run is `lead_days` before the game's hours, chosen so it was out (6 h latency) before the point |
+| M13 `wx`: Open-Meteo historical-forecast archive | the prediction point | Fallback only: short lead, may have been issued after the point (flagged by its source) |
+| M13 `wx`: nflverse game-day `temp`/`wind`, 1999-2021 | the prediction point, **by convention** | Observed weather standing in for a forecast where none was archived (M13 spec). A declared exception: training sees the weather that happened, so it overstates how well a forecast predicts it |
+
+Never inputs to M12: games.csv `temp`, `wind`, `home_qb_id`/`away_qb_id`, `result`, `total`;
+observed weather; closing lines. M13's weather version uses `temp`/`wind` only as the stand-in
+above.
 
 The as-of harness (`src/betdata/nfl/asof.py`, `tests/nfl/test_asof_harness.py`) rebuilds every
 feature group as of an instant `t` three ways: from all data, from only the rows known at `t`,

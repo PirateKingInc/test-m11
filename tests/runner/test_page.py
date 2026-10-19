@@ -54,7 +54,7 @@ def test_page(engine, settings, tmp_path):
     assert status["rebuilt_at"].startswith("2026-10-20T15:05")
     assert not stale(status, NOW)
     assert json.loads((tmp_path / "s" / "status.json").read_text()) == status
-    assert "Open-Meteo" not in html  # no weather shown, so no attribution needed
+    assert "Weather data by" in html and "open-meteo.com" in html  # CC BY 4.0 attribution
 
 
 def test_failure_page_keeps_the_last_good_one(engine, settings, tmp_path):

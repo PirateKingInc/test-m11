@@ -22,6 +22,14 @@ FIRST_HISTORY_SEASON = 2010  # what the M12 store reads
 
 
 class NflSport(Sport):
+    @property
+    def page_model(self) -> str:
+        """The version the page shows: M13's weather version once validation accepted it,
+        otherwise frozen M12. Both are predicted, graded and listed in the season record."""
+        from betdata.nfl.weather import WX_DESIGN_PATH
+
+        return "m13w" if WX_DESIGN_PATH.exists() else "m12"
+
     def predict(self, engine: Engine, now: datetime) -> int:
         from betdata.nfl.live import run_predict
 
@@ -52,14 +60,14 @@ class NflSport(Sport):
             return []
         last = (
             select(mp.c.game_id, func.max(mp.c.predicted_at).label("at"))
-            .where(mp.c.model == "m12", mp.c.game_id.in_(ids), mp.c.predicted_at <= now)
+            .where(mp.c.model == self.page_model, mp.c.game_id.in_(ids), mp.c.predicted_at <= now)
             .group_by(mp.c.game_id)
             .subquery()
         )
         preds = {p.game_id: p for p in conn.execute(
             select(mp).join(last, and_(last.c.game_id == mp.c.game_id,
                                        last.c.at == mp.c.predicted_at))
-            .where(mp.c.model == "m12")
+            .where(mp.c.model == self.page_model)
         )}  # fmt: skip
         quotes = current_quotes(conn, ids, now)
         ml_t, calib = ml_threshold(), ml_calibration()

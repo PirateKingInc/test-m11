@@ -1,14 +1,18 @@
-"""M13 weather data: forecast lead per point, observed stand-in, archived-forecast job."""
+"""M13 weather: forecast lead per point, observed stand-in, archived-forecast job, the `wx`
+group's as-of reads, and the evaluation."""
 
 import json
 from datetime import UTC, datetime, timedelta
 
+import pandas as pd
 import pytest
 from sqlalchemy import select
 
 from betdata.db.schema import game_source_ids, nfl_weather_asof
 from betdata.nfl import weather as nw
-from betdata.nfl.points import FINAL_REPORT, PREKICK, prekick_time
+from betdata.nfl.features.weather import Weather
+from betdata.nfl.points import FINAL_REPORT, PREKICK, final_report_time, prekick_time
+from betdata.nfl.store import AsOf, Frame
 from betdata.sources.nflverse import NflverseSource
 from betdata.sources.open_meteo import OpenMeteoSource, hist_plans
 from tests.conftest import fixture_bytes
@@ -103,3 +107,70 @@ def test_archived_forecast_job(engine, settings, fake_api, clock, loaded):
     assert src.hist_targets({"seasons": "2025"}) == []  # done: not fetched again
     assert src.run("hist_forecast", seasons="2025").status == "skipped"
     assert plan.cost >= 1
+
+
+def _store_with(rows, kick):
+    from tests.nfl.synth import make_store
+
+    store = make_store()
+    gid = int(store.games.index[-1])
+    store.games.at[gid, "kickoff"] = kick
+    df = pd.DataFrame([{"game_id": gid, **r} for r in rows])
+    store.frames["weather_asof"] = Frame(df)
+    live = store.frames["weather"].df
+    store.frames["weather"] = Frame(live[live.game_id != gid])  # no live forecasts for it
+    return store, gid
+
+
+def test_wx_group_reads_only_what_was_known():
+    kick = pd.Timestamp("2025-12-07 18:00", tz="UTC")
+    fr, pk = final_report_time(kick), prekick_time(kick)
+    rows = [
+        dict(point=FINAL_REPORT, source="nflverse_obs", temp_c=-5.0, wind_kph=40.0, gust_kph=None,
+             precip_mm=None, known_at=fr),
+        dict(point=FINAL_REPORT, source="open_meteo_prev", temp_c=0.0, wind_kph=30.0,
+             gust_kph=40.0, precip_mm=1.0, known_at=fr),
+        dict(point=PREKICK, source="open_meteo_prev", temp_c=2.0, wind_kph=12.0, gust_kph=20.0,
+             precip_mm=0.0, known_at=pk),
+    ]  # fmt: skip
+    store, gid = _store_with(rows, kick)
+    g = store.games.loc[gid]
+    g = g.copy()
+    g["roof_type"], g["surface"] = "outdoors", "grass"
+    g["game_id"] = gid
+    wx = Weather()
+    early = wx.compute(AsOf(store, fr - timedelta(minutes=1)), g, FINAL_REPORT)
+    assert early["t_wx_wind"] == 0.0  # nothing known yet (synth has no live forecasts)
+    at_report = wx.compute(AsOf(store, fr), g, FINAL_REPORT)
+    assert at_report["t_wx_wind"] == pytest.approx(20.0)  # the forecast beats the stand-in
+    assert at_report["t_wx_strong"] == pytest.approx(5.0)
+    assert at_report["t_wx_cold"] == pytest.approx(5.0) and at_report["t_wx_rain"] == 1.0
+    at_kick = wx.compute(AsOf(store, pk), g, PREKICK)
+    assert at_kick["t_wx_wind"] == pytest.approx(2.0)  # the prekick row, not the report's
+    g["roof_type"] = "dome"
+    assert all(v == 0 for v in wx.compute(AsOf(store, pk), g, PREKICK).values())
+
+
+def test_wx_not_in_m12_groups():
+    from betdata.nfl.groups import GROUPS, ORDER
+    from betdata.nfl.selection import Design
+
+    assert "wx" in GROUPS and "wx" not in ORDER
+    assert "wx" not in Design.load().groups  # the frozen M12 design is untouched
+
+
+def test_evaluation_keeps_wx_only_where_it_helps():
+    from betdata.nfl.features.availability import learn_play_prob
+    from betdata.nfl.groups import GROUPS
+    from betdata.nfl.pipeline import build, outcomes
+    from betdata.nfl.selection import Design
+    from tests.nfl.synth import make_store
+
+    design = Design(["base", "avail", "str"], ["base", "avail", "env"], 100.0, 30.0)
+    store = make_store()
+    store = store.with_params(**learn_play_prob(store, [2018]))
+    rows = build(store, [GROUPS[g] for g in [*design.groups, "wx"]], list(store.games.index))
+    report, new = nw.evaluate_weather(rows, outcomes(store), design)
+    assert ("wx" in new.margin_groups) == report["keep_margin"]
+    assert ("wx" in new.total_groups) == report["keep_total"]
+    assert new.lam_margin == design.lam_margin and new.blend_total == design.blend_total

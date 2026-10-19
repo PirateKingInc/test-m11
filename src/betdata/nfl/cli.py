@@ -378,6 +378,75 @@ def weather_observed_cmd():
     typer.echo(f"nflverse observed weather: {n} new rows (both prediction points)")
 
 
+def _wx_inputs():
+    from betdata.nfl.data import load_store
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE, outcomes
+    from betdata.nfl.selection import Design
+    from betdata.nfl.weather import wx_rows
+
+    design = Design.load()
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+    return store, design, wx_rows(store, design, (*TRAIN, *VALIDATE, *TEST)), outcomes(store)
+
+
+@nfl_app.command("weather")
+def weather_cmd(write: bool = typer.Option(False, help="Write config/nfl_model_wx.json.")):
+    """Weather group on validation (2020-2022, fitted 2013-2019): coverage by season and
+    source, and validation error of the M12 design with and without it."""
+    import json
+
+    from betdata.nfl.weather import WX_DESIGN_PATH, coverage, evaluate_weather
+
+    store, design, rows, out = _wx_inputs()
+    for k, n in sorted(coverage(store).items()):
+        typer.echo(f"  weather rows {k:24} {n}")
+    report, new = evaluate_weather(rows, out, design)
+    m12 = report["m12"]
+    typer.echo(f"validation MAE, M12 design: margin {m12['margin']:.3f}, total {m12['total']:.3f}")
+    typer.echo(f"  + wx in margin: {report['with_wx_margin']['margin']:.3f} -> "
+               f"{'keep' if report['keep_margin'] else 'drop'}")  # fmt: skip
+    typer.echo(f"  + wx in total:  {report['with_wx_total']['total']:.3f} -> "
+               f"{'keep' if report['keep_total'] else 'drop'}")  # fmt: skip
+    for point, (_em, et, n) in report["with_wx_total"]["valid"].items():
+        typer.echo(f"    {point}: total MAE with wx {et:.3f} ({n} games)")
+    path = data_dir() / "reports" / "m13_weather_validation.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    report["coverage"] = coverage(store)
+    path.write_text(json.dumps(report, indent=1, default=float))
+    if write and (report["keep_margin"] or report["keep_total"]):
+        new.save(WX_DESIGN_PATH)
+        typer.echo(f"wrote {WX_DESIGN_PATH}")
+    elif write:
+        typer.echo("weather did not lower validation error: no new model version written")
+
+
+@nfl_app.command("weather-final-test")
+def weather_final_test_cmd(force: bool = typer.Option(False, help="Score again.")):
+    """Score the weather model version and M12 on 2023-2025 once (refit on 2013-2022)."""
+    from betdata.analysis.dataset import load_games
+    from betdata.nfl.selection import Design
+    from betdata.nfl.weather import WX_DESIGN_PATH, final_test_weather
+
+    path = data_dir() / "reports" / "m13_weather_final_test.json"
+    if path.exists() and not force:
+        typer.echo(f"test seasons already scored: {path} (they are scored once)")
+        raise typer.Exit(1)
+    store, design, rows, out = _wx_inputs()
+    with _engine().connect() as conn:
+        by_id = {g.game_id: g for g in load_games(conn, "nfl")}
+    report = final_test_weather(rows, out, design, Design.load(WX_DESIGN_PATH), by_id, path,
+                                force)  # fmt: skip
+    for point, res in report["points"].items():
+        for name, r in res.items():
+            b = r["total_bets"]
+            typer.echo(f"{point} {name:4} margin {r['margin_mae']:.3f} total {r['total_mae']:.3f}"
+                       f" | outdoor w/ weather ({r['weather_games']}): "
+                       f"{r['total_mae_weather_games'] or float('nan'):.3f} | totals bets "
+                       f"{b['record']} ROI {100 * (b['roi'] or 0):+.1f}%")  # fmt: skip
+    typer.echo(f"report: {path}")
+
+
 @nfl_app.command("replay")
 def replay_cmd():
     """Replay the live weeks in live/*.csv: what M12 would have said at each prediction point,

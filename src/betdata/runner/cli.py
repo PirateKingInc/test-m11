@@ -66,6 +66,29 @@ def run_cmd(
                           default=str))  # fmt: skip
 
 
+@runner_app.command("ensure-state")
+def ensure_state_cmd(trigger: str = typer.Option("ensure-state")):
+    """Make sure the database exists and has history (for workflows other than the hourly one,
+    such as the weather backfill): if it is empty, do one full run, which rebuilds it."""
+    from betdata.config import get_settings
+    from betdata.db import seed as seed_mod
+    from betdata.db.engine import make_engine, upgrade
+    from betdata.runner.hourly import has_history, run_hourly
+    from betdata.sources import REGISTRY
+    from betdata.sports import active_sports
+
+    settings = get_settings()
+    upgrade(settings.db_url)
+    engine = make_engine(settings.db_url)
+    seed_mod.seed(engine)
+    active = active_sports()
+    if all(has_history(engine, s.key) for s in active):
+        typer.echo("state present")
+        return
+    report = run_hourly(engine, settings, REGISTRY, active, _now(None), trigger=trigger)
+    typer.echo(f"state rebuilt (run {report.run_id}, {report.seconds:.0f} s)")
+
+
 @runner_app.command("failed-page")
 def failed_page_cmd(
     message: str = typer.Option(..., help="What failed."),

@@ -402,6 +402,8 @@ footer{{color:var(--mut);font-size:.8rem;padding:24px 16px 32px}}
 <div id="warn" hidden></div></header>
 <main><nav role="tablist">{tabs}</nav>{panels}</main>
 <footer><p><b>{footer}</b></p>{keys}
+<p>Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0), used
+non-commercially.</p>
 <p>Lines are paper picks from the M12 model; markets are the latest line each source had when
 the page was built. Spreads are listed with the favourite. Edges are from the home side's view.
 </p></footer>

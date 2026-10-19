@@ -11,8 +11,9 @@ from betdata.nfl.features.market import Market
 from betdata.nfl.features.officials import Officials
 from betdata.nfl.features.schedule import Schedule
 from betdata.nfl.features.strength import Strength
+from betdata.nfl.features.weather import Weather
 
-# MODEL.md order: base, then groups 1-8.
+# MODEL.md order: base, then groups 1-8; `wx` is M13's weather group (a separate model version).
 GROUPS = {
     g.name: g
     for g in (
@@ -25,9 +26,10 @@ GROUPS = {
         Coaching(),
         GameContext(),
         Market(),
+        Weather(),
     )
 }
-ORDER = list(GROUPS)
+ORDER = [n for n in GROUPS if n != "wx"]  # M12's groups; wx is evaluated by `nfl weather`
 
 
 def resolve(names: str) -> list:

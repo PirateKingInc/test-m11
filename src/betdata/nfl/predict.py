@@ -81,6 +81,11 @@ LABELS = {
     "coach_pass_oe": "early-down pass rate",
     "ctx_div": "division game",
     "mkt_line": "market line",
+    "wx_wind": "wind",
+    "wx_strong": "strong wind",
+    "wx_cold": "cold",
+    "wx_hot": "heat",
+    "wx_rain": "rain",
 }
 
 
@@ -128,10 +133,10 @@ class LivePick:
     ml_away: int | None = None
 
 
-def version_of(design: Design, fits: dict[str, Fit]) -> str:
+def version_of(design: Design, fits: dict[str, Fit], model: str = "m12") -> str:
     coef = {p: [list(f.margin.coef), list(f.total.coef)] for p, f in fits.items()}
     blob = json.dumps({"design": design.__dict__, "coef": coef}, default=float, sort_keys=True)
-    return f"m12:{hashlib.sha1(blob.encode()).hexdigest()[:10]}"
+    return f"{model}:{hashlib.sha1(blob.encode()).hexdigest()[:10]}"
 
 
 def blend(model: float, market: float | None, w: float) -> float | None:
@@ -187,7 +192,8 @@ def _r(x: float | None) -> float | None:
     return None if x is None else round(x, 2)
 
 
-def store_picks(conn: Connection, picks: list[LivePick], version: str, now: datetime) -> None:
+def store_picks(conn: Connection, picks: list[LivePick], version: str, now: datetime,
+                model: str = "m12") -> None:  # fmt: skip
     """A new row per game and point whenever the prediction, blend or market (spread, total or
     moneyline) moved."""
     mp = model_predictions
@@ -203,7 +209,7 @@ def store_picks(conn: Connection, picks: list[LivePick], version: str, now: date
         if last is not None and tuple(last) == now_vals:
             continue
         conn.execute(insert(mp).values(
-            model="m12", model_version=version, game_id=p.game_id, predicted_at=now,
+            model=model, model_version=version, game_id=p.game_id, predicted_at=now,
             pred_home_margin=p.margin, pred_total=p.total, pred_home_win_prob=p.win_prob,
             market_spread_home=p.market_spread, market_total=p.market_total,
             market_source="poll" if p.market_spread is not None else None,
@@ -211,7 +217,8 @@ def store_picks(conn: Connection, picks: list[LivePick], version: str, now: date
             blend_total=p.blend_total, features=getattr(p, "features", {}),
             factors={"margin": p.margin_factors[:8], "total": p.total_factors[:8],
                      "missing": p.missing},
-            params={"design": "config/nfl_model.json"},
+            params={"design": "config/nfl_model.json" if model == "m12"
+                    else "config/nfl_model_wx.json"},
             market_ml_home=p.ml_home, market_ml_away=p.ml_away,
         ))  # fmt: skip
         p.stored = True
