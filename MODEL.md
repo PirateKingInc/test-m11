@@ -136,6 +136,23 @@ earlier game he coached for any team: fourth-down go rate in 4th-and-1-to-3 betw
 pass rate over expected (nflfastR `pass_oe`), shrunk with 150 plays. A clear margin gain
 (-0.031): aggressive, pass-first coaches win by more than their ratings say. No help for totals.
 
+### Group 7: game context (`features/context.py`), dropped
+
+Full build: division game (home-field interaction for the margin), and from week 12, from
+the regular-season record known at the point: in the playoff race (.400-.650), out of it
+(< .350), and in the last regular-season week a likely-clinched team (>= .750) that may rest
+starters. Worse on both targets.
+
+| Adjustment | Margin | Total | Result |
+|---|---|---|---|
+| (full build) | 9.845 | 10.763 | worse than 9.821 / 10.734 without it |
+| 1. Division game and week-18 resting only | 9.846 | 10.781 | worse |
+| 2. Division game only | 9.834 | 10.761 | worse: dropped |
+
+Why: division games and late-season stakes are already priced through team strength and
+availability (resting starters show up as inactives at prekick). Record-based stakes are a
+crude proxy for playoff odds (BACKLOG.md).
+
 ## Feature groups
 
 Each group lives in `src/betdata/nfl/features/` and passes the as-of harness.
@@ -190,3 +207,4 @@ MAE (a group can help one and not the other). The ridge penalty is chosen on val
 | + 4 Environment | 9.854 | **10.734** | - / KEEP | total -0.092: roof and surface. No forecast history, so weather can't be fitted yet |
 | + 5 Officials | 9.852 | 10.746 | KEEP / drop | margin -0.002 (within noise); totals worse |
 | + 6 Coaching | **9.821** | 10.757 | KEEP / drop | margin -0.031; totals worse |
+| + 7 Game context | 9.845 | 10.763 | drop / drop | worse on both after 2 adjustments |
