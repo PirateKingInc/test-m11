@@ -1,0 +1,70 @@
+# M14: NBA history that only GitHub Actions can fetch (the league's injury-report PDFs, ESPN's
+# historical lines; MODEL.md "Data sources"). One job per season, in parallel; each builds a
+# throwaway database with that season's schedule, fetches, and exports gzipped CSV keyed by
+# ESPN game id. The last job publishes all files on the `nba-history` branch (one commit,
+# replaced each time). Load them anywhere with `betdata nba load-history <dir>`.
+#
+# Polite by design: ESPN at one request per 0.5 s and the injury server at one per second per
+# job (sources.yaml); a burst of ~2,000 requests was refused in the M14 probe.
+
+name: nba-history
+
+on:
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: "Seasons (start years) as a JSON list"
+        default: "[2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]"
+  push:
+    branches: ["m14-history-run"]
+
+permissions:
+  contents: write
+
+jobs:
+  season:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        season: ${{ fromJSON(inputs.seasons || '[2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Fetch
+        run: uv run --no-dev betdata nba history-fetch --season ${{ matrix.season }}
+      - name: Export
+        if: always()
+        run: uv run --no-dev betdata nba export-history --season ${{ matrix.season }} --out history
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nba-history-${{ matrix.season }}
+          path: history/
+          retention-days: 7
+
+  publish:
+    needs: season
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nba-history-*
+          path: history
+          merge-multiple: true
+      - name: Push to the nba-history branch
+        run: |
+          cd history
+          ls -la
+          git init -q -b nba-history
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "NBA history export $(date -u +%FT%TZ) (run ${{ github.run_id }})"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" nba-history

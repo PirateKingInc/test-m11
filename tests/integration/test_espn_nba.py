@@ -134,3 +134,34 @@ def test_odds_history_2015_has_opening_pseudo_book():
     assert all(p.snapshot_kind == "source_opening" for p in opening)
     assert {p.book_key for p in parsed.prices} >= {"bovada", "betonline", "5dimes"}
     assert "consensus" not in {p.book_key for p in parsed.prices}
+
+
+def test_history_export_and_load_round_trip(espn, engine, fake_api, clock, tmp_path):
+    from sqlalchemy import delete
+
+    from betdata.db.schema import nba_injury_reports
+    from betdata.nba.history import export, load
+    from betdata.sources.nba_injury import load_report
+
+    tip = datetime(2024, 3, 17, 0, 30, tzinfo=UTC)
+    clock.now = datetime(2024, 3, 20, tzinfo=UTC)
+    gid = _game(engine, "401585601", "Los Angeles Lakers", "Golden State Warriors", tip)
+    fake_api.add(body=fixture_bytes("espn_nba", "odds_401585601.json"))
+    espn.run("odds_history", season=2023)
+    at = datetime(2024, 3, 16, 17, 30, tzinfo=UTC)
+    with engine.begin() as conn:
+        load_report(conn, {"report_at": at, "known_at": at, "teams": [], "rows": [dict(
+            game_date="2024-03-16", matchup="GSW@LAL", team_name="Los Angeles Lakers",
+            player_name="James, LeBron", status="Questionable", reason="Ankle")]},
+            fetched_at=at, raw_id=None)  # fmt: skip
+    n_odds = count(engine, odds_snapshots)
+    out = export(engine, tmp_path / "h", 2023)
+    assert out == {"odds": n_odds, "injuries": 1}
+    with engine.begin() as conn:
+        conn.execute(delete(odds_snapshots))
+        conn.execute(delete(nba_injury_reports))
+    assert load(engine, tmp_path / "h") == {"odds": n_odds, "injuries": 1}
+    assert load(engine, tmp_path / "h") == {"odds": 0, "injuries": 0}  # idempotent
+    with engine.connect() as conn:
+        row = conn.execute(select(nba_injury_reports)).mappings().one()
+    assert row["game_id"] == gid and row["report_at"] == at

@@ -159,6 +159,7 @@ class NbaInjurySource(Source):
             tips = conn.execute(
                 select(games.c.start_time_utc).where(
                     games.c.sport_id == sport_id(conn, "nba"),
+                    games.c.season_type.is_distinct_from("PRE"),
                     games.c.start_time_utc >= datetime.combine(start, time(0), EASTERN),
                     games.c.start_time_utc < datetime.combine(end + timedelta(days=1), time(6),
                                                               EASTERN))).scalars()  # fmt: skip
