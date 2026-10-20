@@ -17,6 +17,7 @@ Decisions that change dependencies, data rules or scope, newest last.
 | 2026-10-19 | Weather version `m13w` (M12 + `wx` in the margin model) ships beside frozen M12. | Validation kept `wx` for the margin only (MODEL.md). |
 | 2026-10-19 | No new runtime dependencies in M13. Playwright is used only in the `verify-page` workflow (pip, on the runner) and for local screenshots (`uv run --with`). | The page is static HTML/CSS/JS written by Python. |
 | 2026-10-20 | Hourly workflow has a backup trigger at :30, and a slot that already ran successfully is skipped. | GitHub dropped 6 of 7 top-of-hour scheduled runs on the first evening. |
+| 2026-10-20 | Clock workflow: a self-redispatching job that starts each hourly run. | GitHub's cron kept dropping almost every tick, including the :30 backups. This stays inside "Actions + Pages only", at the cost of an idle runner, which is free on a public repository. |
 
 ## M13: the hourly page
 
@@ -28,6 +29,12 @@ Decisions that change dependencies, data rules or scope, newest last.
 - The page updates every hour on the hour, 7:00am-10:00pm America/New_York: 16 runs a day.
 - GitHub's cron is UTC, so the workflow fires at minute 0 of every hour from 11:00 to 03:00 UTC (`0 0-3,11-23 * * *`, 17 a day).
 - A backup trigger at :30 in the same hours (`30 0-3,11-23 * * *`) covers the scheduled runs GitHub drops under load: on the first evening it dropped 6 of 7. A slot that already has a successful scheduled run is skipped, so each slot runs once, at :00 when GitHub starts it and otherwise at :30.
+- **GitHub's cron proved unreliable here.** Between 21:00 UTC on Oct 19 and 13:00 UTC on Oct 20 it started 2 of about 40 ticks, :00 and :30 together, one of them two hours late. So the page also has a **clock** (`.github/workflows/clock.yml`):
+  - **How it works:** one job sleeps until just after each hour, dispatches the hourly run if that hour is 7am-10pm Eastern (recorded as trigger `clock`), then dispatches itself again. Dispatches made with the workflow token do start runs.
+  - **One clock at a time:** a newer clock cancels an older one.
+  - **Restart:** a 6-hourly cron restarts the chain if it ever breaks.
+  - **No doubles:** cron and clock share the per-slot dedupe, so a slot runs once.
+  - **Start it:** manually once, via Actions → clock → Run workflow.
 - 7am-10pm Eastern is 11:00-02:00 UTC in EDT and 12:00-03:00 UTC in EST. A tiny `gate` job (standard library only, about 10 s, no install) checks the Eastern hour and stops the one extra run a day.
 - A run belongs to the hour it was due in, because GitHub often starts scheduled runs minutes late.
 - `tests/runner/test_window.py` checks exactly 07:00 ... 22:00 Eastern on Oct 31, Nov 1 and Nov 2, 2026 (DST ends Nov 1) and around the March change.
@@ -94,7 +101,8 @@ On this machine's database, `plan --runner` charges the weekly archive job for e
 | First run after state loss (rebuild) | ~2 min 10 s | 4 min |
 
 - **Typical run:** about 50 s, well under the 3-minute budget.
-- **Monthly projection:**
+- **The clock** is one runner job sleeping about an hour per tick, so it bills about 60 minutes an hour, roughly **43,000 minutes a month**. That is free on a public repository, but if the repository goes private this far exceeds any free plan: remove `clock.yml` and rely on cron, accepting dropped hours.
+- **Monthly projection for the hourly runs themselves:**
   - 16 slots × 2 triggers × 2 min × 30 days = 1,920 min;
   - plus 2 off-hours ticks a day = 60 min;
   - about **1,980 billed minutes a month**.

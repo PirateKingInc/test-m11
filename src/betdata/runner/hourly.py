@@ -31,6 +31,7 @@ from betdata.sports import Sport
 
 log = logging.getLogger(__name__)
 MIN_HISTORY_GAMES = 500  # fewer final games than this for an active sport = state lost
+AUTOMATIC_TRIGGERS = ("schedule", "clock")  # GitHub's cron, or the clock workflow
 
 
 @dataclass
@@ -69,7 +70,8 @@ def slot_done(engine: Engine, now: datetime) -> bool:
     with engine.connect() as conn:
         n = conn.execute(
             select(func.count()).select_from(runner_runs)
-            .where(runner_runs.c.slot_at == slot(now), runner_runs.c.trigger == "schedule",
+            .where(runner_runs.c.slot_at == slot(now),
+                   runner_runs.c.trigger.in_(AUTOMATIC_TRIGGERS),
                    runner_runs.c.status == "ok")
         ).scalar()  # fmt: skip
     return n > 0

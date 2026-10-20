@@ -6,7 +6,9 @@ UTC-5 in winter (7am = 12:00 UTC, 10pm = 03:00 UTC), so the workflow fires every
 union, 11:00-03:00 UTC (17 times a day), and each run first asks `in_window` whether its hour is
 7am-10pm Eastern; the one extra hour a day exits at once. GitHub often starts scheduled runs late,
 so a run belongs to the hour it was due in (the UTC hour it started in), not its start minute.
-GitHub also drops some scheduled runs under load; a backup trigger at :30 covers those.
+GitHub also drops scheduled runs under load (on Oct 19-20 almost all of them), so a "clock"
+workflow (.github/workflows/clock.yml) sleeps to each hour and dispatches the hourly run itself;
+`--wait` does the sleeping. Slots are de-duplicated, so cron and clock never both run a slot.
 
 Standard library only: the workflow runs this before installing anything, so an off-hours run
 costs a few seconds:  python3 src/betdata/runner/window.py  ->  run=true|false
@@ -54,9 +56,29 @@ def runs_on(eastern_day: date) -> list[datetime]:
     return sorted(out)
 
 
+def next_slot(now: datetime) -> datetime:
+    """The next hourly slot after `now` (UTC, on the hour)."""
+    return slot(now) + timedelta(hours=1)
+
+
+def wait_for_next_slot(now: datetime | None = None, sleep=None) -> datetime:
+    """Sleep until just after the next hour (the clock workflow), and return that slot."""
+    import time as _time
+
+    now = now or datetime.now(UTC)
+    target = next_slot(now)
+    (sleep or _time.sleep)(max(0.0, (target - now).total_seconds() + 5))
+    return target
+
+
 def main(argv: list[str]) -> int:
-    now = datetime.fromisoformat(argv[1]) if len(argv) > 1 else datetime.now(UTC)
-    manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if len(argv) > 1 and argv[1] == "--wait":  # clock workflow: wait, then decide that hour
+        now = wait_for_next_slot()
+        argv = argv[:1]
+    else:
+        now = datetime.fromisoformat(argv[1]) if len(argv) > 1 else datetime.now(UTC)
+    manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+              and os.environ.get("RUN_TRIGGER", "") in ("", "manual"))  # fmt: skip
     run = manual or in_window(now)
     line = f"run={'true' if run else 'false'}"
     print(f"{line} (slot {slot(now):%Y-%m-%d %H:%M} UTC = "
