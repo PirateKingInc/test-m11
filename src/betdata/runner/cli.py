@@ -37,7 +37,8 @@ def run_cmd(
     from betdata.db.engine import make_engine, upgrade
     from betdata.nfl.workflow import data_dir
     from betdata.page.build import build_site
-    from betdata.runner.hourly import run_hourly
+    from betdata.runner.hourly import run_hourly, slot_done
+    from betdata.runner.window import slot
     from betdata.sources import REGISTRY
     from betdata.sports import active_sports, load_entries
 
@@ -48,6 +49,10 @@ def run_cmd(
     entries = load_entries()
     active = active_sports(entries)
     now = _now(at)
+    if trigger == "schedule" and slot_done(engine, now):
+        typer.echo(f"slot already done: a scheduled run for {slot(now):%Y-%m-%d %H:00} UTC "
+                   "succeeded; nothing to do")  # fmt: skip
+        return
     try:
         report = run_hourly(engine, settings, REGISTRY, active, now, trigger=trigger, fail=fail)
     except Exception as e:

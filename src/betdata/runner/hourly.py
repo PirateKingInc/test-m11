@@ -63,6 +63,18 @@ def due(job: JobDef, slot_at: datetime) -> bool:
     return nxt is not None and nxt == slot_at.astimezone(nxt.tzinfo)
 
 
+def slot_done(engine: Engine, now: datetime) -> bool:
+    """Whether a scheduled run for this hourly slot already succeeded (the backup trigger then
+    has nothing to do)."""
+    with engine.connect() as conn:
+        n = conn.execute(
+            select(func.count()).select_from(runner_runs)
+            .where(runner_runs.c.slot_at == slot(now), runner_runs.c.trigger == "schedule",
+                   runner_runs.c.status == "ok")
+        ).scalar()  # fmt: skip
+    return n > 0
+
+
 def has_history(engine: Engine, sport: str) -> bool:
     with engine.connect() as conn:
         n = conn.execute(

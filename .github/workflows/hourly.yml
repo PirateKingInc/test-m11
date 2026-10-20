@@ -16,6 +16,9 @@ name: hourly
 on:
   schedule:
     - cron: "0 0-3,11-23 * * *"
+    # Backup: GitHub drops some top-of-hour scheduled runs under load. A slot that already
+    # ran successfully is skipped, so this only runs when the :00 run did not.
+    - cron: "30 0-3,11-23 * * *"
   workflow_dispatch:
     inputs:
       drop_state:
@@ -95,9 +98,11 @@ jobs:
           args=(--trigger "${{ github.event_name }}")
           if [ -n "$FORCE_FAIL" ]; then args+=(--fail "$FORCE_FAIL"); fi
           uv run --no-dev betdata runner run "${args[@]}" 2>&1 | tee run.log
-          exit "${PIPESTATUS[0]}"
+          status="${PIPESTATUS[0]}"
+          if grep -q '^slot already done' run.log; then echo "skipped=true" >> "$GITHUB_OUTPUT"; fi
+          exit "$status"
       - name: Save state
-        if: ${{ always() && hashFiles('data/betdata.sqlite') != '' }}
+        if: ${{ always() && steps.run.outputs.skipped != 'true' && hashFiles('data/betdata.sqlite') != '' }}
         uses: actions/cache/save@v4
         with:
           path: |
@@ -113,9 +118,11 @@ jobs:
           uv run --no-dev betdata runner failed-page --message "${msg:-the hourly run failed}" \
             --url "$RUN_URL"
       - uses: actions/upload-pages-artifact@v3
+        if: steps.run.outputs.skipped != 'true'
         with:
           path: site
       - id: deploy
+        if: steps.run.outputs.skipped != 'true'
         uses: actions/deploy-pages@v4
       - name: Report the failed run
         if: steps.run.outcome == 'failure'
