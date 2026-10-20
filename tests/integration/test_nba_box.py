@@ -54,6 +54,8 @@ def test_season_box_scores(sdv, engine, fake_api):
     assert all(r["minutes"] is not None for r in played)
     assert abs(sum(r["minutes"] for r in played) - 480) <= 30  # 240 per team (+ overtime)
     assert all((r["known_at"] - tip).total_seconds() == 3 * 3600 for r in rows)
+    pts = sum(r["points"] for r in played)
+    assert pts == sum(2 * r["fgm"] + r["fg3m"] + r["ftm"] for r in played)  # full box line
     # Loading the same file again replaces, it does not duplicate.
     fake_api.add(body=fixture_bytes("sportsdataverse", "player_box_2016_sample.parquet"))
     sdv.run("player_box", seasons="2015")

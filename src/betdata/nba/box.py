@@ -14,8 +14,10 @@ from betdata.db.schema import game_source_ids, nba_player_games
 
 log = logging.getLogger(__name__)
 RESULT_DELAY = timedelta(hours=3)  # a box score is known this long after tip (history)
+STATS = ("fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov",
+         "pf")  # fmt: skip
 FIELDS = ("player_id", "player_name", "starter", "did_not_play", "reason", "minutes", "points",
-          "plus_minus")  # fmt: skip
+          "plus_minus", *STATS)  # fmt: skip
 
 
 def espn_games(conn: Connection, espn_ids) -> dict[str, int]:

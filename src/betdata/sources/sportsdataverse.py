@@ -45,9 +45,14 @@ FILES = {
     "ncaab": "/espn_mens_college_basketball_schedules/mbb_schedule_{label}.csv",
 }
 PLAYER_BOX = "/espn_nba_player_boxscores/player_box_{label}.parquet"
+BOX_STATS = {"fgm": "field_goals_made", "fga": "field_goals_attempted",
+             "fg3m": "three_point_field_goals_made", "fg3a": "three_point_field_goals_attempted",
+             "ftm": "free_throws_made", "fta": "free_throws_attempted",
+             "oreb": "offensive_rebounds", "dreb": "defensive_rebounds", "ast": "assists",
+             "stl": "steals", "blk": "blocks", "tov": "turnovers", "pf": "fouls"}  # fmt: skip
 BOX_COLUMNS = {"game_id", "game_date_time", "athlete_id", "athlete_display_name",
                "team_display_name", "starter", "did_not_play", "reason", "minutes", "points",
-               "plus_minus"}  # fmt: skip
+               "plus_minus", *BOX_STATS.values()}  # fmt: skip
 STATUS = {
     "STATUS_FINAL": "final",
     "STATUS_POSTPONED": "postponed",
@@ -255,11 +260,12 @@ def player_box_rows(body: bytes) -> list[dict]:
         "did_not_play": df["did_not_play"].fillna(False).astype(bool),
         "reason": df["reason"].where(df["reason"].notna(), None),
         "minutes": num("minutes"), "points": num("points"), "plus_minus": num("plus_minus"),
+        **{k: num(c) for k, c in BOX_STATS.items()},
     })  # fmt: skip
     out = out[out.player_id.str.fullmatch(r"\d+")]
     rows = out.to_dict("records")
     for r in rows:
-        for k in ("minutes", "points", "plus_minus"):
+        for k in ("minutes", "points", "plus_minus", *BOX_STATS):
             if r[k] != r[k]:  # NaN
                 r[k] = None
         if r["reason"] is not None:
