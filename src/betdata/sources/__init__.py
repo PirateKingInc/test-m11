@@ -1,4 +1,5 @@
 from betdata.sources.cfbd import CfbdSource
+from betdata.sources.espn_nba import EspnNbaSource
 from betdata.sources.nba_cdn import NbaCdnSource
 from betdata.sources.nfl_model import NflModelSource
 from betdata.sources.nflverse import NflverseSource
@@ -20,5 +21,6 @@ REGISTRY = {
         NbaCdnSource,
         SportsDataverseSource,
         OpenMeteoSource,
+        EspnNbaSource,
     )
 }

@@ -32,6 +32,12 @@ sources:
     # No quota. nba.com's servers expect a browser-like referer; nba_api sends these too.
     headers: {Referer: "https://www.nba.com/", Origin: "https://www.nba.com", Accept: "application/json"}
 
+  espn_nba:
+    enabled: true
+    # ESPN's public APIs: no key, no published quota. Kept polite: one request per 0.5 s. The
+    # hourly run makes 1 scoreboard call plus a summary per newly finished game (M14).
+    min_interval_seconds: 0.5
+
   sportsdataverse:
     enabled: true
     base_url: https://github.com/sportsdataverse/sportsdataverse-data/releases/download
