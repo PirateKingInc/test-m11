@@ -2,6 +2,17 @@
 
 Items deliberately left out of M12, with the reason. Newest first.
 
+## M13 additions (hourly page)
+- **Fresher free lines.** Without a SharpAPI key, the page's market lines come from nflverse's `games.csv`, which shows one line per game with no named book. It is updated a few times a day, not hourly. A SharpAPI key (DraftKings + FanDuel, free tier) makes hourly lines real. Other options are a free live feed, such as ESPN's public scoreboard odds, or The Odds API on more than its pre-kickoff schedule (the 500 credits can't support hourly: 16 x 3 x 30 = 1,440).
+- **Prediction and grade history survives only in the Actions cache.** If the cache is evicted, the next run rebuilds all data from nflverse, but stored predictions, grades and run history from before the loss are gone (the page says so). Back them up as a small JSON or SQLite asset (release asset or data branch) so a rebuild can restore them.
+- **Raw archive growth.** Every changed nflverse file is archived gzipped, about 0.5 MB per `games.csv` or `roster_weekly` version. Hourly polling adds a few MB a day to the database and the cached state. Prune superseded raw files older than a season, or move the archive out of the cache.
+- **Scheduled workflows stop after 60 days without repository activity** (GitHub's rule for public repos). Merges keep it alive in season. A monthly keep-alive (or re-enabling in the Actions tab) is needed across a quiet off-season.
+- **Moneyline calibration:** validation showed the model overrating home teams in 2020-2022 (Platt intercept -0.22; 2020 had no crowds). Per the M13 stop rule, nothing was applied. A home-field term refitted on recent seasons is the candidate fix.
+- **Weather does not help totals.** With archived forecasts from 2022 on, adding `wx` to the total model raised validation MAE (10.736 → 10.786), and forecasts match the observed stand-in in scale (bias -0.5 °C, +0.2 km/h). Candidates: a wind-direction term against stadium orientation, and kicking-game splits, i.e. effects on field goals rather than on the total.
+- **Open-Meteo per-minute limit:** the backfill hit HTTP 429 once. Add a short back-off on 429s (it is retried by the next weekly run).
+- **Actions minutes if the repository goes private:** about 1,980 billed minutes a month with the :30 backup trigger, at the free plan's 2,000. Drop the backup trigger, or check the slot inside the gate job, before going private.
+- **Game-day inactives** arrive only when nflverse republishes weekly rosters (unchanged from M12). The hourly runner refreshes them every hour, so prekick picks pick them up within the hour once published.
+
 ## Other sports (out of M12 scope)
 - NCAAF, NBA, NCAAB models: M12 is NFL only. The ingestion for all three is in place (CFBD,
   nba_cdn, sportsdataverse, SharpAPI, OddsPapi); the NFL as-of framework (`src/betdata/nfl/`)

@@ -241,6 +241,35 @@ betdata nfl replay                    # what M12 would have said in the live wee
   with its feature snapshot, point and model version. `betdata grade nfl` grades them daily
   (scheduler job `nfl-model-grade`).
 
+## M13 hourly page (GitHub Actions + Pages)
+
+**https://piratekinginc.github.io/test-m11/** shows current NFL spread and moneyline predictions, updated every hour on the hour from 7am to 10pm Eastern. It is unlisted, not private: see PROJECT.md.
+
+```bash
+betdata runner run --site site          # one hourly run: refresh, predict, grade, build the page
+betdata page build --site site          # rebuild the page from the database only
+betdata scheduler plan --runner --days 30   # 30-day quota projection of the runner's jobs
+betdata nfl moneyline [--write]         # moneyline calibration + threshold on 2020-2022
+betdata nfl weather [--write]           # weather group on validation (needs the backfill)
+```
+
+- **Workflows:**
+  - `.github/workflows/hourly.yml` runs the page, on schedule and manually; `drop_state` and `force_fail` exist for testing.
+  - `weather.yml` backfills Open-Meteo archived forecasts and evaluates the weather version.
+  - `verify-page.yml` screenshots the live page at phone width to the `proof` branch.
+- **Sports come from `config/sports.yaml`:** NFL is active, NBA is "coming soon". The runner, page and grading call a small interface (`betdata/sports/__init__.py`); NFL is its only plugin. Adding NBA means an entry there plus a plugin with `predict`, `cards`, `grade` and `records`.
+- **Per game, the page shows:**
+  - kickoff in Eastern time;
+  - model vs market spread and edge;
+  - moneyline per team: fair odds and win % vs the market price and no-vig %, plus the edge in percentage points;
+  - the source, book and age of every market number;
+  - top 3 factors and players likely out;
+  - the prediction point;
+  - flags on picks past the validated thresholds;
+  - today's line movement.
+- **Season record** per market and model version: record, ROI, average CLV and share beating the close.
+- **Warnings:** shown in the browser when data is more than 2 hours old, the last run failed, or state was rebuilt.
+
 ## Running unattended
 
 ```bash
@@ -339,3 +368,6 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - [x] **M11** NFL team stats, snap counts, rosters; unit model with missing starters; totals
 - [x] **M12** NFL as-of feature store and look-ahead harness; availability, strength, schedule,
   environment, officials, coaching; explainable live picks, grading, CI
+- [x] **M13** hourly page on GitHub Actions + Pages (7am-10pm ET), moneyline (fair odds, no-vig
+  edge, calibration check, grading), weather history and a weather model version, sport
+  interface for a second sport

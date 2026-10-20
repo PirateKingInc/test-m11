@@ -533,7 +533,23 @@ The margin model gets wind and cold. There is no "weather known" flag: in a loca
 
 By M12's rule, a group joins a model only where it lowers validation error. The weather version is therefore **M12 + `wx` in the margin model only** (`config/nfl_model_wx.json`). Its gain is negligible.
 
-Weather made totals *worse*. The likely reason is a scale gap: the model learns weather effects from the observed stand-in (2013-2019), while 2022 onward uses forecasts. `betdata nfl weather` prints the mean forecast-minus-observed gap on 2022+ games that have both; see "Final test" below for the number. Per the stop rule, nothing was re-fitted to close it; it is logged in BACKLOG.md.
+Weather made totals *worse*. One possibility was a scale gap between the observed stand-in, which the model learns from in 2013-2019, and the forecasts used from 2022 onward. The diagnostic in `betdata nfl weather` rules that out. On 421 games from 2022 onward that have both, the prekick forecast minus nflverse's reported game-day weather averages -0.5 °C and +0.2 km/h, with mean absolute differences of 1.8 °C and 3.7 km/h. So the stand-in and the forecasts are on the same scale.
+
+The plain reading is that, given everything else the model knows, weather adds no usable signal for totals. Per the stop rule, I tried nothing further.
+
+### Final test of the weather version (2023-2025, scored once)
+
+Both designs were refitted on 2013-2022 and scored on the same 855 games. Run: GitHub Actions `weather` #2; report `data/reports/m13_weather_final_test.json` in the runner state.
+
+| Margin MAE | M12 | m13w (weather) |
+|---|---|---|
+| final report | 10.061 | **10.057** |
+| prekick | 9.996 | **9.992** |
+
+- **Totals** are identical because `wx` is not in the total model: MAE 10.377 at the final report and 10.374 at prekick, and 10.115 / 10.093 on the 467 outdoor games with weather.
+- **Totals bets** are therefore the same for both versions: 81-67-2 at the final report and 57-66-1 at prekick.
+
+**Reading.** The weather version is 0.004 points better on margin, which is noise-level. It is shipped as a separate version per the M13 spec, and the page shows it because validation kept it. M12 stays frozen beside it. Both are predicted, stored and graded every hour, and the season record lists them side by side.
 
 ## Live-week replay (`betdata nfl replay`)
 
