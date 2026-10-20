@@ -160,3 +160,23 @@ def test_report_without_games(engine):
     with engine.begin() as conn:
         assert load_report(conn, {"report_at": at, "known_at": at, "rows": [], "teams": []},
                            fetched_at=at, raw_id=None) == 0  # fmt: skip
+
+
+def test_wrapped_team_name_and_title_lines():
+    """'Minnesota' over 'Timberwolves' in the Team column is one team; a page title that falls
+    inside the table is not a team."""
+    lines = [[0, 300, 600, "Injury Report: 02/11/26 05:00 PM"],
+             *[[0, x, 500, h] for x, h in ((20, "Game Date"), (120, "Game Time"),
+                                           (200, "Matchup"), (265, "Team"),
+                                           (425, "Player Name"), (585, "Current Status"),
+                                           (666, "Reason"))],
+             [0, 21, 480, "02/11/2026"], [0, 121, 480, "07:00 (ET)"], [0, 201, 480, "MIN@CHI"],
+             [0, 266, 484, "Minnesota"], [0, 266, 476, "Timberwolves"],
+             [0, 426, 480, "Edwards, Anthony"], [0, 586, 480, "Questionable"],
+             [0, 667, 480, "Injury/Illness - Ankle"],
+             [0, 266, 450, "Injury Report: 02/11/26 05:00 PM"],
+             [0, 426, 452, "Gobert, Rudy"], [0, 586, 452, "Out"]]  # fmt: skip
+    r = parse_lines(lines)
+    assert [(x["team_name"], x["player_name"]) for x in r.rows] == [
+        ("Minnesota Timberwolves", "Edwards, Anthony"),
+        ("Minnesota Timberwolves", "Gobert, Rudy")]

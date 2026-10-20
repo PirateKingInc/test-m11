@@ -75,6 +75,8 @@ def load(engine: Engine, src: Path) -> dict[str, int]:
             have = set(conn.execute(select(odds_snapshots.c.game_id).where(
                 odds_snapshots.c.snapshot_kind != "poll",
                 odds_snapshots.c.source == "espn_nba").distinct()).scalars())  # fmt: skip
+            df = df.drop_duplicates(["espn_game_id", "book", "market", "outcome",
+                                     "snapshot_kind", "fetched_at"])  # one row per key
             df = df[df.espn_game_id.map(ids).notna()]
             df = df[~df.espn_game_id.map(ids).isin(have)]
             bk, mk = BookResolver(conn, "espn_nba"), MarketResolver(conn)
