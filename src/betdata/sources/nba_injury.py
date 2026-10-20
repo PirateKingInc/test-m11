@@ -181,6 +181,8 @@ class NbaInjurySource(Source):
 
 def _games_index(conn: Connection, dates: set[str]) -> dict[tuple[str, str], int]:
     """(Eastern date, AWAY@HOME) -> game_id."""
+    if not dates:  # a report with no games on it (e.g. during the All-Star break)
+        return {}
     sid = sport_id(conn, "nba")
     h, a = teams.alias("h"), teams.alias("a")
     lo = min(date.fromisoformat(d) for d in dates)

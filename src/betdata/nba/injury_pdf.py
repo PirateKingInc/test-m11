@@ -29,6 +29,32 @@ MATCHUP = re.compile(r"^[A-Z]{2,4}@[A-Z]{2,4}$")
 ROW_TOL = 6.0  # points: cells of one row sit within this of the player's line
 WRAP = 12.0  # a wrapped reason is centred on its row: its lines sit up to this far away
 NOT_SUBMITTED = "NOT YET SUBMITTED"
+TEAMS = {
+    "Atlanta Hawks", "Boston Celtics", "Brooklyn Nets", "Charlotte Hornets", "Chicago Bulls",
+    "Cleveland Cavaliers", "Dallas Mavericks", "Denver Nuggets", "Detroit Pistons",
+    "Golden State Warriors", "Houston Rockets", "Indiana Pacers", "LA Clippers",
+    "Los Angeles Clippers", "Los Angeles Lakers", "Memphis Grizzlies", "Miami Heat",
+    "Milwaukee Bucks", "Minnesota Timberwolves", "New Orleans Pelicans", "New York Knicks",
+    "Oklahoma City Thunder", "Orlando Magic", "Philadelphia 76ers", "Phoenix Suns",
+    "Portland Trail Blazers", "Sacramento Kings", "San Antonio Spurs", "Toronto Raptors",
+    "Utah Jazz", "Washington Wizards",
+}
+
+
+def _merge_wrapped_teams(cells: list) -> list:
+    """A long team name can wrap onto two lines of the Team column ("Minnesota" over
+    "Timberwolves"); join such pairs into one cell at the upper line's height."""
+    teams = sorted((c for c in cells if c[3] == "team"), key=lambda c: -c[1])
+    drop, out = set(), []
+    for i, c in enumerate(teams):
+        if id(c) in drop or c[2] in TEAMS:
+            continue
+        for d in teams[i + 1:i + 3]:
+            if c[1] - d[1] <= 2 * WRAP and f"{c[2]} {d[2]}" in TEAMS:
+                out.append((c[0], c[1], f"{c[2]} {d[2]}", "team"))
+                drop.update((id(c), id(d)))
+                break
+    return [c for c in cells if id(c) not in drop] + out
 
 
 def pdf_lines(pdf: bytes) -> list[list]:
@@ -97,7 +123,8 @@ def parse_lines(lines: list[list]) -> Report:
         if cols is None:
             continue
         body = [i for i in items if header_y is None or i[1] < header_y - 1.0]
-        cells = [(x, y, t, _column(x, cols)) for x, y, t in body]
+        cells = [(x, y, t, _column(x, cols)) for x, y, t in body if not TITLE.search(t)]
+        cells = _merge_wrapped_teams(cells)
         players = [c for c in cells if c[3] == "player" and not c[2].startswith("Page ")]
         # Carried cells (date, time, matchup, team) apply from their line downwards.
         carried = sorted((c for c in cells if c[3] in carry), key=lambda c: -c[1])
