@@ -236,6 +236,14 @@ def select_fetched(raw_id: int):
     return select(raw_responses.c.fetched_at).where(raw_responses.c.raw_id == raw_id)
 
 
+def _ids(col):
+    """ESPN athlete ids as text: integers in most files, floats in some (2025-26)."""
+    import pandas as pd
+
+    n = pd.to_numeric(col, errors="coerce")
+    return n.map(lambda v: None if v != v else str(int(v)))
+
+
 def player_box_rows(body: bytes) -> list[dict]:
     """The season parquet as compact rows (ESPN game id, team name, tip, player fields)."""
     import pandas as pd
@@ -254,7 +262,7 @@ def player_box_rows(body: bytes) -> list[dict]:
 
     out = pd.DataFrame({
         "espn_game_id": df["game_id"].astype(str), "team": df["team_display_name"].astype(str),
-        "tip": tip.map(lambda t: t.isoformat()), "player_id": df["athlete_id"].astype(str),
+        "tip": tip.map(lambda t: t.isoformat()), "player_id": _ids(df["athlete_id"]),
         "player_name": df["athlete_display_name"].astype(str),
         "starter": df["starter"].fillna(False).astype(bool),
         "did_not_play": df["did_not_play"].fillna(False).astype(bool),
@@ -262,7 +270,7 @@ def player_box_rows(body: bytes) -> list[dict]:
         "minutes": num("minutes"), "points": num("points"), "plus_minus": num("plus_minus"),
         **{k: num(c) for k, c in BOX_STATS.items()},
     })  # fmt: skip
-    out = out[out.player_id.str.fullmatch(r"\d+")]
+    out = out[out.player_id.notna()]
     rows = out.to_dict("records")
     for r in rows:
         for k in ("minutes", "points", "plus_minus", *BOX_STATS):
