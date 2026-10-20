@@ -6,5 +6,6 @@
     "applied": false
   },
   "threshold_pts": 3.0,
-  "chosen_on": "validation 2020-2022, both points pooled"
+  "chosen_on": "validation 2020-2022, both points pooled",
+  "final_test_roi": -0.092
 }

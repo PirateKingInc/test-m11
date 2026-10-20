@@ -116,6 +116,12 @@ class NflSport(Sport):
                 "moneyline": f"model win chance beats the no-vig market by ≥ {ml_threshold():g} "
                              "% pts"}  # fmt: skip
 
+    def moneyline_final_roi(self) -> float | None:
+        from betdata.moneyline import MoneylineConfig
+        from betdata.nfl.moneyline import ML_PATH
+
+        return MoneylineConfig.load(ML_PATH).final_test_roi
+
     def bootstrap(self, engine: Engine, now: datetime, source_kwargs: dict | None = None) -> None:
         """Load NFL history from nflverse (free) into an empty database and derive the model's
         tables: what the M12 build did, season by season."""

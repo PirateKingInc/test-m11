@@ -32,6 +32,7 @@ from betdata.sports import Sport
 log = logging.getLogger(__name__)
 MIN_HISTORY_GAMES = 500  # fewer final games than this for an active sport = state lost
 AUTOMATIC_TRIGGERS = ("schedule", "clock")  # GitHub's cron, or the clock workflow
+LIVE_SLACK = timedelta(minutes=30)  # a run whose `now` is this close to the wall clock is live
 
 
 @dataclass
@@ -134,8 +135,12 @@ def run_hourly(engine: Engine, settings: Settings, registry: dict, active: list[
                     report.jobs.append({"sport": sport.key, **run_job(
                         engine, settings, registry, job, now, source_kwargs)})  # fmt: skip
         # Data fetched during this run is stamped with the time it arrived, after `now`;
-        # predict, grade and publish as of the end of the refresh so it is all used.
-        report.as_of = as_of = max(now, utcnow())
+        # predict, grade and publish as of the end of the refresh so it is all used. A run for
+        # a past instant (`--at`, tests) moves on by the elapsed time only, not to today.
+        wall = utcnow()
+        live = wall - now < LIVE_SLACK
+        report.as_of = as_of = (max(now, wall) if live
+                                else now + timedelta(seconds=clock.monotonic() - t0))  # fmt: skip
         for sport in active:
             st: dict[str, Any] = {}
             t = clock.monotonic()

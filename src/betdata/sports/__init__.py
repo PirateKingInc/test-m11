@@ -130,6 +130,11 @@ class Sport(ABC):
         """Bet thresholds, for the page's legend."""
         return {}
 
+    def moneyline_final_roi(self) -> float | None:
+        """The final test's moneyline ROI (None: not scored). The page flags moneyline bets only
+        when it is positive; otherwise moneyline edges are information only."""
+        return None
+
     def bootstrap(self, engine: Engine, now: datetime,  # noqa: B027
                   source_kwargs: dict | None = None) -> None:  # fmt: skip
         """Rebuild this sport's history from free sources into an empty database."""
