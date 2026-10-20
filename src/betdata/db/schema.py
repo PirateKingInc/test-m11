@@ -640,3 +640,71 @@ nfl_weather_asof = Table(
     UniqueConstraint("game_id", "point", "source"),
 )
 
+
+# --- M14 NBA -------------------------------------------------------------------------
+
+# One row per player per game from a box score (sportsdataverse files for past seasons, ESPN's
+# game summary for the current one). Post-game facts: `known_at` is when the box score could be
+# known (tip + 3 h for history, the fetch time live). A box score that is loaded again replaces
+# the game's rows (stat corrections).
+nba_player_games = Table(
+    "nba_player_games",
+    metadata,
+    Column("player_game_id", Integer, primary_key=True),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("team_id", ForeignKey("teams.team_id"), nullable=False),
+    Column("player_id", String(32), nullable=False),  # ESPN athlete id
+    Column("player_name", String(128), nullable=False),
+    Column("starter", Boolean, nullable=False, default=False),
+    Column("did_not_play", Boolean, nullable=False, default=False),
+    Column("reason", String(128)),  # did-not-play reason, as ESPN gives it
+    Column("minutes", Float),
+    Column("points", Float),
+    Column("plus_minus", Float),
+    # The rest of the box line: field goals, threes, free throws, rebounds, assists, steals,
+    # blocks, turnovers, fouls (possessions and a box-score player value are built from these).
+    Column("fgm", Float),
+    Column("fga", Float),
+    Column("fg3m", Float),
+    Column("fg3a", Float),
+    Column("ftm", Float),
+    Column("fta", Float),
+    Column("oreb", Float),
+    Column("dreb", Float),
+    Column("ast", Float),
+    Column("stl", Float),
+    Column("blk", Float),
+    Column("tov", Float),
+    Column("pf", Float),
+    Column("source", String(32), nullable=False),
+    Column("known_at", UTCDateTime, nullable=False),
+    Column("fetched_at", UTCDateTime, nullable=False),
+    UniqueConstraint("game_id", "player_id"),
+    Index("ix_nba_player_games_player", "player_id", "known_at"),
+)
+
+# The official NBA injury report, every version, change-only: a row is added when a player's
+# status or reason for a game differs from his previous row for that game, and a `Removed` row
+# when a player listed earlier is no longer on a later report that still covers his team's game.
+# `report_at` is the report's stated time; `known_at` when it could be read (stated time + 15
+# minutes for history, the fetch time live).
+nba_injury_reports = Table(
+    "nba_injury_reports",
+    metadata,
+    Column("injury_report_id", Integer, primary_key=True),
+    Column("game_date", String(10), nullable=False),  # the game's date as the report gives it
+    Column("matchup", String(16), nullable=False),  # AWAY@HOME tricodes
+    Column("game_id", ForeignKey("games.game_id")),  # null until matched
+    Column("team_id", ForeignKey("teams.team_id")),
+    Column("team_name", String(64), nullable=False),
+    Column("player_name", String(128), nullable=False),  # "Last, First" as published
+    Column("status", String(16), nullable=False),  # Out ... Available, or Removed
+    Column("reason", String(256)),
+    Column("report_at", UTCDateTime, nullable=False),
+    Column("known_at", UTCDateTime, nullable=False),
+    Column("source", String(32), nullable=False),
+    Column("fetched_at", UTCDateTime, nullable=False),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+    UniqueConstraint("game_date", "matchup", "player_name", "report_at"),
+    Index("ix_nba_injury_game", "game_id", "known_at"),
+)
