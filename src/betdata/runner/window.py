@@ -6,6 +6,7 @@ UTC-5 in winter (7am = 12:00 UTC, 10pm = 03:00 UTC), so the workflow fires every
 union, 11:00-03:00 UTC (17 times a day), and each run first asks `in_window` whether its hour is
 7am-10pm Eastern; the one extra hour a day exits at once. GitHub often starts scheduled runs late,
 so a run belongs to the hour it was due in (the UTC hour it started in), not its start minute.
+GitHub also drops some scheduled runs under load; a backup trigger at :30 covers those.
 
 Standard library only: the workflow runs this before installing anything, so an off-hours run
 costs a few seconds:  python3 src/betdata/runner/window.py  ->  run=true|false
@@ -22,6 +23,10 @@ EASTERN = ZoneInfo("America/New_York")
 FIRST_HOUR, LAST_HOUR = 7, 22  # Eastern, inclusive: 7am ... 10pm
 CRON_UTC_HOURS = (0, 1, 2, 3, *range(11, 24))  # .github/workflows/hourly.yml
 CRON = "0 0-3,11-23 * * *"
+# GitHub drops scheduled runs under load, most often at the top of the hour; a second trigger
+# half an hour later covers a dropped one. A slot that already has a successful scheduled run
+# is skipped (`betdata runner run`), so a slot never runs twice.
+BACKUP_CRON = "30 0-3,11-23 * * *"
 
 
 def slot(now: datetime) -> datetime:

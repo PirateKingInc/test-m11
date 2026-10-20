@@ -13,7 +13,8 @@ from betdata.runner import window
 def test_workflow_cron_matches_the_window():
     wf = yaml.safe_load((PROJECT_ROOT / ".github" / "workflows" / "hourly.yml").read_text())
     on = wf.get("on", wf.get(True))  # YAML 1.1 reads a bare `on` as True
-    assert [s["cron"] for s in on["schedule"]] == [window.CRON]
+    assert [s["cron"] for s in on["schedule"]] == [window.CRON, window.BACKUP_CRON]
+    assert window.BACKUP_CRON.split()[1:] == window.CRON.split()[1:]  # same hours
     assert "workflow_dispatch" in on
     hours = re.match(r"0 (\S+) \* \* \*", window.CRON).group(1)
     listed = set()
@@ -46,5 +47,34 @@ def test_cli_failed_run_then_failure_page(engine, tmp_path, monkeypatch):
         assert out.exit_code == 0, out.output
         assert '"status": "failed"' in (site / "status.json").read_text()
         assert (site / "index.html").exists()
+    finally:
+        get_settings.cache_clear()
+
+
+def test_backup_trigger_skips_a_slot_that_already_ran(engine, tmp_path, monkeypatch):
+    from sqlalchemy import insert
+
+    from betdata.cli import app
+    from betdata.config import get_settings
+    from betdata.db.schema import runner_runs
+    from betdata.runner.hourly import slot_done
+
+    t = datetime(2026, 10, 20, 16, 2, tzinfo=UTC)
+    assert not slot_done(engine, t)
+    with engine.begin() as conn:
+        conn.execute(insert(runner_runs).values(
+            slot_at=window.slot(t), started_at=t, finished_at=t, trigger="schedule",
+            status="ok", rebuilt=False))  # fmt: skip
+    assert slot_done(engine, t.replace(minute=31))  # the :30 backup in the same hour
+    assert not slot_done(engine, t.replace(hour=17))
+    monkeypatch.setenv("BETDATA_DB_URL", engine.url.render_as_string(hide_password=False))
+    monkeypatch.setenv("BETDATA_DATA_DIR", str(tmp_path / "data"))
+    get_settings.cache_clear()
+    try:
+        out = CliRunner().invoke(app, ["runner", "run", "--site", str(tmp_path / "site"),
+                                       "--trigger", "schedule",
+                                       "--at", t.replace(minute=31).isoformat()])  # fmt: skip
+        assert out.exit_code == 0 and "slot already done" in out.output
+        assert not (tmp_path / "site").exists()  # nothing rebuilt or republished
     finally:
         get_settings.cache_clear()
