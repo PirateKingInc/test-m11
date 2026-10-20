@@ -26,7 +26,7 @@ from betdata.runner.window import EASTERN
 from betdata.sports import ACTIVE, Card, RecordRow, Sport, SportEntry
 
 STALE_HOURS = 2
-REBUILT_NOTICE_DAYS = 7
+REBUILT_NOTICE_HOURS = 48  # the rebuilt-from-scratch notice clears this long after
 FOOTER = "Paper picks for research. Not betting advice."
 POINT_LABELS = {
     "early": "early (before the final injury report)",
@@ -101,7 +101,8 @@ def status_payload(info: RunInfo, now: datetime, missing_keys: list[str]) -> dic
         "last_run": None if last is None else {
             "status": last["status"], "at": iso(last["finished_at"]),
             "message": last["message"]},
-        "rebuilt_at": iso(info.rebuilt_at),
+        "rebuilt_at": iso(info.rebuilt_at) if info.rebuilt_at is not None
+        and now - info.rebuilt_at < timedelta(hours=REBUILT_NOTICE_HOURS) else None,
         "stale_hours": STALE_HOURS,
         "missing_keys": missing_keys,
     }  # fmt: skip
@@ -123,7 +124,8 @@ def _edge(x: float | None, unit: str) -> str:
     return "-" if x is None else f"{x:+.1f} {unit}"
 
 
-def card_html(c: Card, book_names: dict[str, str], movement: list[dict]) -> str:
+def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
+              ml_flags: bool = True) -> str:  # fmt: skip
     e = escape
     bets = []
     if c.spread_pick:
@@ -132,7 +134,7 @@ def card_html(c: Card, book_names: dict[str, str], movement: list[dict]) -> str:
             home_line = c.market_spread.line
             line = f" {home_line if c.spread_pick == c.home else -home_line:+g}"
         bets.append(f"Spread: {e(c.spread_pick)}{line}")
-    if c.ml_pick:
+    if c.ml_pick and ml_flags:
         q = c.ml_home if c.ml_pick == c.home else c.ml_away
         bets.append(f"Moneyline: {e(c.ml_pick)}{' ' + american(q.price) if q else ''}")
     flag = "".join(f'<span class="flag">{b}</span>' for b in bets)
@@ -250,10 +252,18 @@ def jobs_html(last: dict | None, sport: str) -> str:
 
 def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[RecordRow],
                 book_names: dict, info: RunInfo) -> str:  # fmt: skip
-    games = "".join(card_html(c, book_names, movement.get(c.game_id, [])) for c in cards)
+    roi = sport.moneyline_final_roi()
+    ml_flags = roi is not None and roi > 0
+    games = "".join(card_html(c, book_names, movement.get(c.game_id, []), ml_flags)
+                    for c in cards)  # fmt: skip
     if not games:
         games = "<p class='meta'>No games in the next 8 days.</p>"
-    legend = "".join(f"<li>{escape(k)}: {escape(v)}</li>" for k, v in sport.thresholds().items())
+    legend_items = dict(sport.thresholds())
+    if "moneyline" in legend_items and not ml_flags:
+        legend_items["moneyline"] = (
+            "edges shown for information only, never flagged: moneyline flags need a positive "
+            "final-test ROI" + ("" if roi is None else f" (it was {100 * roi:+.1f}%)"))
+    legend = "".join(f"<li>{escape(k)}: {escape(v)}</li>" for k, v in legend_items.items())
     return f"""
 <section class="games">{games}</section>
 <section class="legend"><h2>Flags</h2><p>A pick is flagged when it clears the threshold chosen
@@ -427,7 +437,7 @@ the page was built. Spreads are listed with the favourite. Edges are from the ho
     }} else msg.push('No successful update yet.');
     if(s.last_run&&s.last_run.status==='failed')msg.push('The last update failed ('+
       fmt(s.last_run.at)+'): '+(s.last_run.message||'error')+'. Showing the last good data.');
-    if(s.rebuilt_at&&(Date.now()-new Date(s.rebuilt_at))<{rebuilt_days}*864e5)msg.push(
+    if(s.rebuilt_at&&(Date.now()-new Date(s.rebuilt_at))<{rebuilt_hours}*36e5)msg.push(
       'Saved data was lost and rebuilt from free sources on '+fmt(s.rebuilt_at)+
       '; predictions and graded picks from before then are gone.');
     w.hidden=!msg.length; w.textContent=msg.join(' ');
@@ -438,4 +448,4 @@ the page was built. Spreads are listed with the favourite. Edges are from the ho
 }})();
 </script>
 </body></html>
-""".replace("{rebuilt_days}", str(REBUILT_NOTICE_DAYS))
+""".replace("{rebuilt_hours}", str(REBUILT_NOTICE_HOURS))

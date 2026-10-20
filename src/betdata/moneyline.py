@@ -104,19 +104,27 @@ def fit_platt(probs, outcomes, iters: int = 50) -> tuple[float, float]:
 @dataclass
 class MoneylineConfig:
     """What the page and the grader need: the calibration and the validated bet threshold (in
-    percentage points of win probability). Written once by the validation step."""
+    percentage points of win probability). Written once by the validation step; the final
+    test's ROI at that threshold is added once it is scored."""
 
     calibration: Calibration
     threshold_pts: float
     chosen_on: str = ""
+    final_test_roi: float | None = None  # both points pooled, at the closing price
+
+    @property
+    def flags_earned(self) -> bool:
+        """Moneyline bets are flagged on the page only if the final test made money (M14);
+        otherwise moneyline edges are shown as information only."""
+        return self.final_test_roi is not None and self.final_test_roi > 0
 
     def save(self, path: Path) -> None:
         d = {"calibration": asdict(self.calibration), "threshold_pts": self.threshold_pts,
-             "chosen_on": self.chosen_on}  # fmt: skip
+             "chosen_on": self.chosen_on, "final_test_roi": self.final_test_roi}  # fmt: skip
         path.write_text(json.dumps(d, indent=2) + "\n")
 
     @classmethod
     def load(cls, path: Path) -> MoneylineConfig:
         d = json.loads(path.read_text())
         return cls(Calibration(**d["calibration"]), float(d["threshold_pts"]),
-                   d.get("chosen_on", ""))  # fmt: skip
+                   d.get("chosen_on", ""), d.get("final_test_roi"))  # fmt: skip

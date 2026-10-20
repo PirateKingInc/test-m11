@@ -57,6 +57,45 @@ def test_page(engine, settings, tmp_path):
     assert "Weather data by" in html and "open-meteo.com" in html  # CC BY 4.0 attribution
 
 
+def test_rebuilt_notice_clears_after_48_hours(engine, settings, tmp_path):
+    ens = entries(tmp_path)
+    rebuilt = NOW - timedelta(hours=47)
+    runs(engine, (rebuilt, "ok", True), (NOW, "ok", False))
+    with engine.connect() as conn:
+        assert build_site(conn, settings, ens, active_sports(ens), tmp_path / "a", NOW)[
+            "rebuilt_at"].startswith("2026-10-18T17:05")
+        later = NOW + timedelta(hours=1, minutes=1)  # 48 h 1 min after the rebuild
+        assert build_site(conn, settings, ens, active_sports(ens), tmp_path / "b",
+                          later)["rebuilt_at"] is None  # fmt: skip
+    assert "<48*36e5" in (tmp_path / "b" / "index.html").read_text()  # and in the browser
+
+
+def test_moneyline_flags_only_when_the_final_test_made_money(engine, settings, tmp_path,
+                                                            monkeypatch):  # fmt: skip
+    from tests.runner.dummy_sport import DummySport
+
+    ens = entries(tmp_path)
+    runs(engine, (NOW, "ok", False))
+    for roi, flagged in ((None, False), (-0.092, False), (0.03, True)):
+        monkeypatch.setattr(DummySport, "ML_ROI", roi)
+        with engine.connect() as conn:
+            build_site(conn, settings, ens, active_sports(ens), tmp_path / "s", NOW)
+        html = (tmp_path / "s" / "index.html").read_text()
+        assert ("Moneyline: HOMEX" in html) == flagged, roi
+        assert "Spread: HOMEX" in html  # spread flags unchanged
+        assert "+5.0 pp" in html  # the edge is shown either way
+        assert ("information only" in html) == (not flagged)
+    monkeypatch.setattr(DummySport, "ML_ROI", -0.092)
+    with engine.connect() as conn:
+        build_site(conn, settings, ens, active_sports(ens), tmp_path / "s", NOW)
+    assert "(it was -9.2%)" in (tmp_path / "s" / "index.html").read_text()
+
+
+def test_nfl_moneyline_flags_are_off():
+    [nfl] = active_sports()
+    assert nfl.moneyline_final_roi() == -0.092  # MODEL.md: NFL moneyline final test
+
+
 def test_failure_page_keeps_the_last_good_one(engine, settings, tmp_path):
     ens = entries(tmp_path)
     runs(engine, (NOW, "ok", False))

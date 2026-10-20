@@ -12,6 +12,8 @@ CALLS: list[str] = []
 
 
 class DummySport(Sport):
+    ML_ROI: float | None = None  # final-test moneyline ROI the page sees
+
     def predict(self, engine, now):
         CALLS.append("predict")
         return 1
@@ -19,7 +21,8 @@ class DummySport(Sport):
     def cards(self, conn, now):
         return [Card(10_001, now + timedelta(hours=5), "HOMEX", "AWAYX", "stub", now,
                      model_spread_home=-2.5, spread_edge=4.0, spread_pick="HOMEX",
-                     model_win_home=0.6, factors=[("stub factor", 1.5)],
+                     model_win_home=0.6, ml_edge=5.0, ml_pick="HOMEX",
+                     factors=[("stub factor", 1.5)],
                      missing={"HOMEX": ["Player Zed"]})]  # fmt: skip
 
     def grade(self, conn, now):
@@ -30,7 +33,10 @@ class DummySport(Sport):
         return [RecordRow("spread", "dummy:v1", 7, 3, 0, 0, 3.6, 0.8, 0.6, "pts")]
 
     def thresholds(self):
-        return {"spread": "stub threshold"}
+        return {"spread": "stub threshold", "moneyline": "stub ml threshold"}
+
+    def moneyline_final_roi(self):
+        return self.ML_ROI
 
     def bootstrap(self, engine, now, source_kwargs=None):
         """Pretend history: enough final games of this sport for the runner."""
