@@ -629,3 +629,99 @@ Sun 10-25 13:30Z  PIT @ NO   [early]  line: model PIT -0.9 (blend PIT -1.9), mar
 | f) Live-week replay | Above. |
 | g) Grading fixtures | `tests/nfl/test_grade.py`: win, loss, push, positive and negative CLV, no closing line, postponed, idempotent re-runs, score corrections. |
 | Fresh clone | `uv sync && uv run betdata db init && uv run pytest` in a clean directory. |
+
+# M14 NBA model: design, as-of rules and results log
+
+M14 adds an NBA spread and moneyline model to the hourly page under the M12 rules: no
+look-ahead, every decision on validation seasons, test seasons scored once. Code lives in
+`src/betdata/nba/` (data, points, features, pipeline) and `src/betdata/sports/nba.py` (the
+plugin). Seasons are labelled by the year they start (2026 = 2026-27).
+
+## Data sources (all free; each checked from a GitHub Actions runner on 2026-10-20)
+
+| Data | Source | Reachable from Actions | History used |
+|---|---|---|---|
+| Schedule, tip times, final scores | sportsdataverse ESPN schedule files (`espn_nba_schedules`, GitHub releases); live: ESPN scoreboard API (`site.api.espn.com`) | yes / yes | 2015-16 on |
+| Player box scores: minutes, points, plus/minus, starter, did-not-play | sportsdataverse `espn_nba_player_boxscores` (one parquet per season); the current season, which has no file yet: ESPN game summary API, per finished game | yes / yes | 2015-16 on |
+| Official NBA injury report (Out, Doubtful, Questionable, Probable, Available) | the league's PDFs on `ak-static.cms.nba.com/referee/injury/` | yes, at about one request a second (a burst of ~2,000 was refused) | see "Injury reports" below |
+| Market lines (current) | ESPN scoreboard (DraftKings line, free); SharpAPI DK/FD, The Odds API, OddsPapi when their keys are set | yes | from M14 on |
+| Market lines (history: opening and closing) | ESPN core odds API, one call per game (several books) | yes | see "Historical lines" below |
+| stats.nba.com, cdn.nba.com | league APIs | **no**: cdn.nba.com answers 403, stats.nba.com does not answer | not used |
+
+### Injury reports
+
+Published report times, sampled on 12 dates (`probe` workflow, 2026-10-20):
+
+| Era | Reports per day | File name | Stated time |
+|---|---|---|---|
+| 2018-19 to 2020-21 | 3: 1:30, 5:30, 8:30 PM ET (bubble: 11:30 AM, 2:30, 5:30 PM) | `Injury-Report_2019-01-10_05PM.pdf` | 30 minutes after the hour in the name |
+| 2021-22 to mid 2025-26 | hourly | `_05PM` | same |
+| since early 2026 | every 15 minutes | `_05_15PM` | the time in the name |
+
+How far back the loaded history goes, and how much of each season it covers, is recorded in
+"Results log" once the backfill has run.
+
+### Historical lines
+
+ESPN keeps, per game, each book's opening and last line (and, for 2015-2019, an "Opening"
+pseudo-book). The last line is the closing line. Coverage per season is recorded in the
+results log. If a season has no lines, its backtest is scored on prediction error only.
+
+## Prediction points (`src/betdata/nba/points.py`)
+
+| Point | When (US Eastern) | What is new |
+|---|---|---|
+| `morning` | 14:00 on game day: the first hourly run after the first official report of game day (1:30 PM in the three-a-day era; teams submit game-day statuses between 11 a.m. and 1 p.m. local). For a tip before 15:00, three hours before tip (not before 07:00). | Game-day injury statuses |
+| `pretip` | the last hourly run (on the hour, 07:00-22:00) strictly before tip | The latest injury report, the latest line |
+
+How often a player's status changes between the two points is measured and recorded.
+
+## As-of rules
+
+| Data | `known_at` | Basis |
+|---|---|---|
+| Schedule: teams, tip time, site | always known | Published before the season |
+| Final score, player box score | tip + 3 h (history); the fetch time (live) | Rule: a game is over about 2.5 h after tip |
+| Availability inferred from a box score (a rotation player with zero minutes) | the same game's box score `known_at` | Known only after the game; never a pre-game input for that game |
+| Injury report row | the report's stated time + 15 minutes (history); the fetch time (live) | Real publish time plus a posting margin |
+| Opening line (history) | 07:00 ET on game day | Rule: NBA openers are posted the evening before |
+| Market line (live) | `fetched_at` of the poll snapshot | Closing lines are never inputs |
+
+The as-of harness (`src/betdata/nba/asof.py`) is M12's: every feature group is rebuilt at a
+point from all data, from only the rows known then, and from all data with every later row
+scrambled, and must give identical values.
+
+## Seasons and acceptance rule
+
+* **Train** 2015-16 to 2020-21 (seasons 2015-2020). **Validate** 2021-22 and 2022-23. **Test**
+  2023-24 to 2025-26, scored once at the end after refitting on 2015-2022.
+* **Base model**: home court plus an Elo rating difference for the margin; the league's
+  rolling scoring level for the total.
+* Groups are added one at a time in the order below. A group is **kept** if, added to the kept
+  set, it lowers validation margin MAE (total MAE for the pace group), averaged over both
+  points. One build plus at most 3 targeted adjustments per group; every result is logged.
+* Ridge regression on standardised features, as NFL. The simpler model wins unless another is
+  clearly better on validation.
+* Win probability Phi(margin / sigma). Calibration is checked on validation; one Platt fit is
+  applied only if the model is overconfident.
+* Final test: margin and total MAE against an Elo baseline and against the closing line where
+  lines exist; spread and moneyline bet records with 95% ranges and ROI at thresholds chosen on
+  validation; Brier score against the no-vig market.
+
+## Feature groups
+
+1. **Player availability**: player value from box scores (minutes-weighted plus/minus and
+   scoring, shrunk to a replacement level); play probability per report status learned on
+   training seasons; stars separately; several rotation players out together; players
+   returning from long absences.
+2. **Team strength**: opponent-adjusted offensive and defensive ratings with recency weights,
+   and ratings rebuilt from the players expected to play.
+3. **Rest and schedule**: back-to-backs (which leg), games in the last N days, rest
+   difference, 3-in-4 and 4-in-6, travel miles, time zones crossed, altitude (DEN, UTA), long
+   road trips, first home game after a trip.
+4. **Pace** (totals; kept in the CLI).
+5. **Home court** per season, including the 2019-20 bubble and 2020-21 limited crowds.
+6. **Context**: early-season priors decaying with games played; late-season tanking and resting
+   (clinched or eliminated teams); In-Season Tournament games.
+7. **Market**: the line at the prediction point and its movement since the open. Model-only and
+   model + market blend are both reported. The closing line is never an input.
