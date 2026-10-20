@@ -109,3 +109,11 @@ On this machine's database, `plan --runner` charges the weekly archive job for e
 - **Cost:** standard runners are free and unmetered on a public repository. If the repository goes private again, the free plan's 2,000 minutes a month would be used up. Drop the backup trigger first (about 1,020 minutes a month), since it only matters when GitHub drops the :00 run.
 - **Scheduled workflows stop after 60 days without repository activity.** GitHub's rule for public repositories. Re-enable them in the Actions tab, or push a commit.
 
+
+## M14: NBA
+
+### Dependencies
+
+* **pdfminer.six** (MIT; pulls `cryptography` and `charset-normalizer`): reads the official NBA
+  injury report PDFs with each text line's position, which the report's table layout needs
+  (`src/betdata/nba/injury_pdf.py`). It is the only new runtime dependency of M14.

@@ -10,6 +10,7 @@ dependencies = [
     "httpx>=0.27",
     "numpy>=2.5.4",
     "pandas>=3.0.6",
+    "pdfminer-six>=20250506",
     "pyarrow>=26.0.0",
     "pydantic>=2.7",
     "python-dotenv>=1.0",

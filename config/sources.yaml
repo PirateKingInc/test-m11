@@ -38,6 +38,13 @@ sources:
     # hourly run makes 1 scoreboard call plus a summary per newly finished game (M14).
     min_interval_seconds: 0.5
 
+  nba_injury:
+    enabled: true
+    base_url: https://ak-static.cms.nba.com/referee/injury
+    # The league's PDFs. No quota, but the server refused a burst of ~2,000 requests from one
+    # runner (M14 probe); one request a second is accepted.
+    min_interval_seconds: 1.0
+
   sportsdataverse:
     enabled: true
     base_url: https://github.com/sportsdataverse/sportsdataverse-data/releases/download
