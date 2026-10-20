@@ -70,3 +70,20 @@ def test_bubble_games_keep_their_season():
     body = (",".join(cols) + "\n" + ",".join(row[c] for c in cols) + "\n").encode()
     [ev] = parse_schedule(body, sport="nba", fetched_at=datetime(2026, 1, 1, tzinfo=UTC)).events
     assert ev.season == 2019  # 2019-20, not 2020-21 as the calendar would say
+
+
+def test_float_athlete_ids():
+    """The 2025-26 file stores athlete ids as floats; they must still load as ESPN ids."""
+    import io
+
+    import pandas as pd
+
+    from betdata.sources.sportsdataverse import player_box_rows
+
+    df = pd.read_parquet(io.BytesIO(fixture_bytes("sportsdataverse",
+                                                  "player_box_2016_sample.parquet")))
+    want = sorted(str(int(i)) for i in df.athlete_id)
+    df["athlete_id"] = df.athlete_id.astype(float)
+    buf = io.BytesIO()
+    df.to_parquet(buf, index=False)
+    assert sorted(r["player_id"] for r in player_box_rows(buf.getvalue())) == want
