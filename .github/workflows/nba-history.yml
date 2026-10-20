@@ -58,8 +58,12 @@ jobs:
           pattern: nba-history-*
           path: history
           merge-multiple: true
-      - name: Push to the nba-history branch
+      - name: Push to the nba-history branch (files of seasons not re-fetched are kept)
         run: |
+          git clone -q --depth 1 --branch nba-history \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" old \
+            || mkdir old
+          cp -n old/*.csv.gz history/ 2>/dev/null || true
           cd history
           ls -la
           git init -q -b nba-history

@@ -152,3 +152,11 @@ def test_latest_report(inj, engine, fake_api, clock):
     with engine.connect() as conn:
         known = set(conn.execute(select(nba_injury_reports.c.known_at)).scalars())
     assert known == {clock.now}  # live: known when fetched
+
+
+def test_report_without_games(engine):
+    """A report listing no games (All-Star break) loads nothing and does not fail."""
+    at = datetime(2025, 2, 14, 17, 30, tzinfo=ET)
+    with engine.begin() as conn:
+        assert load_report(conn, {"report_at": at, "known_at": at, "rows": [], "teams": []},
+                           fetched_at=at, raw_id=None) == 0  # fmt: skip

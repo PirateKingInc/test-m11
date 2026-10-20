@@ -54,8 +54,11 @@ def history_fetch(season: int = typer.Option(..., help="Season (start year), e.g
         while day <= end:
             last = min(end, (day.replace(day=1) + timedelta(days=32)).replace(day=1)
                        - timedelta(days=1))  # fmt: skip
-            _run(settings, engine, "nba_injury", "history", start=day.isoformat(),
-                 end=last.isoformat())  # fmt: skip
+            try:
+                _run(settings, engine, "nba_injury", "history", start=day.isoformat(),
+                     end=last.isoformat())  # fmt: skip
+            except Exception as e:  # keep the other months; the run is logged as failed
+                typer.echo(f"nba_injury history {day}..{last}: crashed: {e!r}")
             day = last + timedelta(days=1)
 
 
