@@ -94,6 +94,9 @@ def test_box_scores_from_game_summary(espn, engine, fake_api, clock):
     assert len(rows) >= 20 and sum(r["starter"] for r in rows) == 10
     assert all(r["known_at"] == clock.now for r in rows)  # live: known when fetched
     assert any(r["plus_minus"] not in (None, 0) for r in rows)
+    played = [r for r in rows if r["minutes"]]
+    assert sum(r["points"] for r in played) == sum(2 * r["fgm"] + r["fg3m"] + r["ftm"]
+                                                   for r in played)  # fmt: skip
     # Nothing left to fetch: the next run makes no request.
     before = len(fake_api.requests)
     espn.run("boxscores", days=2)

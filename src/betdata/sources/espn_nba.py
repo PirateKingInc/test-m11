@@ -181,12 +181,25 @@ def summary_box(espn_id: str, data: dict) -> dict:
                 except (TypeError, ValueError):
                     return None
 
+            def pair(k, vals=vals):
+                try:
+                    made, att = str(vals.get(k)).split("-")
+                    return float(made), float(att)
+                except (TypeError, ValueError):
+                    return None, None
+
+            fgm, fga = pair("fieldGoalsMade-fieldGoalsAttempted")
+            fg3m, fg3a = pair("threePointFieldGoalsMade-threePointFieldGoalsAttempted")
+            ftm, fta = pair("freeThrowsMade-freeThrowsAttempted")
             out["players"].append(dict(
                 team=name, player_id=str(a["athlete"]["id"]),
                 player_name=a["athlete"]["displayName"], starter=bool(a.get("starter")),
                 did_not_play=bool(a.get("didNotPlay")), reason=(a.get("reason") or None),
-                minutes=num("minutes"), points=num("points"), plus_minus=num("plusMinus")))
-            # fmt: skip
+                minutes=num("minutes"), points=num("points"), plus_minus=num("plusMinus"),
+                fgm=fgm, fga=fga, fg3m=fg3m, fg3a=fg3a, ftm=ftm, fta=fta,
+                oreb=num("offensiveRebounds"), dreb=num("defensiveRebounds"),
+                ast=num("assists"), stl=num("steals"), blk=num("blocks"), tov=num("turnovers"),
+                pf=num("fouls")))  # fmt: skip
     return out
 
 
