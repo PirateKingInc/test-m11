@@ -1,6 +1,7 @@
 from betdata.sources.cfbd import CfbdSource
 from betdata.sources.espn_nba import EspnNbaSource
 from betdata.sources.nba_cdn import NbaCdnSource
+from betdata.sources.nba_injury import NbaInjurySource
 from betdata.sources.nfl_model import NflModelSource
 from betdata.sources.nflverse import NflverseSource
 from betdata.sources.oddspapi import OddsPapiSource
@@ -22,5 +23,6 @@ REGISTRY = {
         SportsDataverseSource,
         OpenMeteoSource,
         EspnNbaSource,
+        NbaInjurySource,
     )
 }
