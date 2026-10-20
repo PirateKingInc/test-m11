@@ -25,6 +25,10 @@ on:
         description: "Ignore the saved state, as if it were lost (lost-state test)"
         type: boolean
         default: false
+      trigger:
+        description: "Who started this run (the clock workflow passes 'clock'; leave empty)"
+        type: string
+        default: ""
       force_fail:
         description: "Fail the run on purpose with this message (failure test)"
         type: string
@@ -49,6 +53,8 @@ jobs:
           sparse-checkout: src/betdata/runner/window.py
           sparse-checkout-cone-mode: false
       - id: gate
+        env:
+          RUN_TRIGGER: ${{ inputs.trigger }}
         run: python3 src/betdata/runner/window.py
 
   run:
@@ -95,7 +101,7 @@ jobs:
         id: run
         continue-on-error: true
         run: |
-          args=(--trigger "${{ github.event_name }}")
+          args=(--trigger "${{ inputs.trigger || github.event_name }}")
           if [ -n "$FORCE_FAIL" ]; then args+=(--fail "$FORCE_FAIL"); fi
           uv run --no-dev betdata runner run "${args[@]}" 2>&1 | tee run.log
           status="${PIPESTATUS[0]}"

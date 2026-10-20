@@ -1,0 +1,47 @@
+# The hourly page's clock. GitHub's own cron drops scheduled runs under load (on Oct 19-20 it
+# started 2 of ~20 hourly ticks), so this workflow keeps time itself: it sleeps until just after
+# the next hour, dispatches the hourly run if that hour is 7am-10pm Eastern, then dispatches
+# itself again. Dispatches made with the workflow token do start runs (GitHub's exception for
+# workflow_dispatch). Only one clock runs at a time (a newer one cancels an older one), and the
+# cron below restarts the chain if it ever breaks. Hourly runs it starts are recorded with
+# trigger "clock"; a slot already run by cron or clock is skipped, so they never double up.
+
+name: clock
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: clock
+  cancel-in-progress: true
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: src/betdata/runner/window.py
+          sparse-checkout-cone-mode: false
+      - id: wait
+        name: Wait for the next hour
+        env:
+          RUN_TRIGGER: clock
+        run: python3 src/betdata/runner/window.py --wait
+      - name: Start the hourly run
+        if: steps.wait.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run hourly.yml --repo "${{ github.repository }}" --ref main -f trigger=clock
+      - name: Keep the clock going
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run clock.yml --repo "${{ github.repository }}" --ref main
