@@ -1,0 +1,29 @@
+# Throwaway (M14): read-only diagnostics on the hourly runner's saved state. Not merged.
+name: probe
+on:
+  push:
+    branches: ["probe/**"]
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --no-dev
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - run: mkdir -p out && uv run --no-dev python probe/diag.py 2>&1 | tee out/diag.txt
+      - name: Push
+        if: always()
+        run: |
+          cd out && git init -q -b probe-out && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com" && git add -A && git commit -qm "diag ${{ github.run_id }}" && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" probe-out
