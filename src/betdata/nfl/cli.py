@@ -601,3 +601,8 @@ def final_test15_cmd(again: bool = typer.Option(False, help="Score the test seas
     save_meta({"page": rep["page"]["switch"]})
     typer.echo(f"page switch: {rep['page']}")
     typer.echo(f"report: {REPORT15_PATH} ({rep['label']})")
+
+
+from betdata.nfl.props.cli import register as _register_props  # noqa: E402
+
+_register_props(nfl_app)

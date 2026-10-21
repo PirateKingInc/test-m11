@@ -431,23 +431,25 @@ def status_changes_cmd():
 
 @nba_app.command("bootstrap")
 def bootstrap_cmd():
-    """Load NBA history (schedules and box scores since 2015-16, this season's games so far)
-    into the database without a runner run: for adding NBA to an existing state, which is not a
-    lost-state rebuild (the page's rebuild notice stays off)."""
+    """Load NBA history (schedules and box scores since 2015-16, this season's games so far,
+    lineup stints for this season and the two before) into the database without a runner run:
+    for adding NBA to an existing state, which is not a lost-state rebuild (the page's rebuild
+    notice stays off). With history present, only missing lineup stints are loaded."""
     from betdata.db.schema import utcnow
     from betdata.runner.hourly import has_history
     from betdata.sports import load_entries, plugin
 
     _, engine = _engine()
-    if has_history(engine, "nba"):
-        typer.echo("NBA history present")
-        return
     entry = next(e for e in load_entries() if e.key == "nba")
     sport = plugin(entry) if entry.plugin else None
     if sport is None:  # NBA not active yet: use the plugin class directly
         from betdata.sports.nba import NbaSport
 
         sport = NbaSport(entry)
+    if has_history(engine, "nba"):
+        typer.echo("NBA history present; loading lineup stints where missing")
+        sport.load_stints(engine, utcnow())
+        return
     sport.bootstrap(engine, utcnow())
     typer.echo(f"NBA history loaded: {has_history(engine, 'nba')}")
 
@@ -467,6 +469,42 @@ def props_select_cmd(rebuild: bool = False, adjust: str = ""):
                    f"{r['rmse']:.3f} ({r['rmse_last10']:.3f})  Brier {r['brier_synthetic']:.4f}")
 
 
+@nba_app.command("props-tune")
+def props_tune_cmd():
+    """Validation 2022-23 at the market's prop lines: calibration (one fit only if off) and an
+    edge threshold per backtested market. Writes reports/nba/props_tune.json."""
+    from betdata.nba.props.select import tune_lines
+
+    _, engine = _engine()
+    with engine.connect() as conn:
+        rep = tune_lines(conn)
+    for mk, r in rep["markets"].items():
+        c = r.get("calibration") or {}
+        typer.echo(f"{mk:9s} rows {r['validation_rows']:6d}  threshold {r.get('threshold')}  "
+                   f"platt {c.get('platt_slope', float('nan')):.3f}/"
+                   f"{c.get('platt_intercept', float('nan')):+.3f}  applied "
+                   f"{r.get('calibration_applied')}")
+
+
+@nba_app.command("props-final-test")
+def props_final_test_cmd(again: bool = typer.Option(False, help="Score again (reproduce).")):
+    """Score the NBA prop model once on 2023-24 to 2025-26 (reports/nba/props_final_test.json)."""
+    from betdata.nba.props.select import final_test
+
+    _, engine = _engine()
+    with engine.connect() as conn:
+        res = final_test(conn, again)
+    typer.echo(json.dumps(res, indent=1, default=float)[:6000])
+
+
+@nba_app.command("props-freeze")
+def props_freeze_cmd():
+    """Fit the prop model on every completed season and write the live fit and design."""
+    from betdata.nba.props.select import freeze
+
+    typer.echo(f"wrote {freeze()}")
+
+
 @nba_app.command("select15")
 def select15_cmd(rebuild: bool = False):
     """M15 side version nba15: add the M15 groups one at a time to the M14 frozen design on
@@ -479,3 +517,19 @@ def select15_cmd(rebuild: bool = False):
                    f"{'kept' if s['kept'] else 'dropped'}")
     for a in rep["ablation"]:
         typer.echo(f" without {a['without']:>6}: margin {a['margin']:.3f} total {a['total']:.3f}")
+
+
+@nba_app.command("final-test15")
+def final_test15_cmd(again: bool = typer.Option(False, help="Score again (reproduce only).")):
+    """nba15 on 2023-24 to 2025-26 (second look), once; decides the page switch."""
+    from betdata.nba.select15 import final_test15
+
+    typer.echo(json.dumps(final_test15(again), indent=1, default=float))
+
+
+@nba_app.command("freeze15")
+def freeze15_cmd():
+    """Fit nba15 on 2015-2025 and write config/fits/nba15_fit_2015_2025.json."""
+    from betdata.nba.select15 import freeze15
+
+    typer.echo(f"wrote {freeze15()}")

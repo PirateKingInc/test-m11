@@ -24,10 +24,17 @@ Rules (also in MODEL.md, "M15 NBA lineup stints"):
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import NamedTuple
 
+from sqlalchemy import Connection, delete, insert, select
+
+from betdata.db.schema import games, nba_player_games, nba_stints
+
+log = logging.getLogger(__name__)
 PERIOD = 720.0
 OVERTIME = 300.0
 NO_INFERENCE = ("Technical", "Ejection")  # a bench player can be named on these
@@ -237,3 +244,58 @@ def build_stints(plays: list[Play], roster: dict[str, str], starters: set[str],
         out.stints.extend(stints)
     return out
 
+
+# --- loading -----------------------------------------------------------------------------
+
+
+@dataclass
+class StintLoad:
+    games: int = 0  # games with stints stored
+    stints: int = 0
+    unresolved_games: int = 0  # games with at least one period skipped
+    unmatched: int = 0  # ESPN ids with no game
+    no_box: int = 0  # games without a box score (no starters) or plays: skipped
+    ambiguous: int = 0  # ESPN ids sharing one game with another ESPN id: skipped
+
+
+def load_stints(conn: Connection, plays_by_game: dict[str, tuple[str | None, list[Play]]], *,
+                source: str, fetched_at: datetime, live: bool = False) -> StintLoad:  # fmt: skip
+    """Builds and stores the stints of each game ({ESPN id: (ESPN home team id, plays)}),
+    replacing the game's stored ones. Starters and each player's team come from the game's
+    stored box score (`nba_player_games`), so box scores are loaded first."""
+    from betdata.nba.box import RESULT_DELAY, espn_games
+
+    out = StintLoad()
+    ids = espn_games(conn, plays_by_game)
+    out.unmatched = len(plays_by_game) - len(ids)
+    shared = {g for g, n in Counter(ids.values()).items() if n > 1}
+    for espn_id, gid in ids.items():
+        if gid in shared:  # two ESPN games joined to one game (same teams within 36 h)
+            out.ambiguous += 1
+            conn.execute(delete(nba_stints).where(nba_stints.c.game_id == gid))
+            continue
+        home_team, plays = plays_by_game[espn_id]
+        game = conn.execute(select(games.c.home_team_id, games.c.start_time_utc)
+                            .where(games.c.game_id == gid)).one()  # fmt: skip
+        box = conn.execute(select(nba_player_games.c.player_id, nba_player_games.c.team_id,
+                                  nba_player_games.c.starter)
+                           .where(nba_player_games.c.game_id == gid)).all()  # fmt: skip
+        if not box or not plays:
+            out.no_box += 1
+            continue
+        roster = {p: "home" if t == game.home_team_id else "away" for p, t, _ in box}
+        built = build_stints(plays, roster, {p for p, _, s in box if s}, home_team)
+        out.unresolved_games += bool(built.unresolved)
+        known = fetched_at if live else game.start_time_utc + RESULT_DELAY
+        conn.execute(delete(nba_stints).where(nba_stints.c.game_id == gid))
+        if built.stints:
+            conn.execute(insert(nba_stints), [
+                dict(s, game_id=gid, source=source, known_at=known, fetched_at=fetched_at)
+                for s in built.stints])  # fmt: skip
+            out.games += 1
+            out.stints += len(built.stints)
+    log.info("%s stints: %d games, %d stints, %d games with unresolved periods (skipped), "
+             "%d without a game, %d without a box score or plays, %d sharing a game",
+             source, out.games, out.stints, out.unresolved_games, out.unmatched, out.no_box,
+             out.ambiguous)  # fmt: skip
+    return out
