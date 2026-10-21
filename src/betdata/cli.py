@@ -99,11 +99,13 @@ def backfill(
     ),  # fmt: skip
     seasons: str = typer.Option(..., help="2025 | 2018-2025"),
     source_name: str = typer.Option(
-        "cfbd", "--source", help="cfbd, sportsdataverse, open_meteo (weather) or nflverse"
-    ),
+        "cfbd", "--source",
+        help="cfbd, sportsdataverse, open_meteo (weather), nflverse or nflverse_extra",
+    ),  # fmt: skip
     dataset: str = typer.Option(
-        None, help="nflverse only: injuries, pbp, team_stats, snaps or rosters"
-    ),
+        None, help="nflverse: injuries, pbp, team_stats, snaps or rosters; nflverse_extra: "
+        "comma-separated (participation,ftn,pfr_pass,...,depth_charts,player_stats,ngs_*) or all",
+    ),  # fmt: skip
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
 ):
@@ -127,6 +129,24 @@ def backfill(
                        f"{result.message}")  # fmt: skip
             if result.status == "failed":
                 raise typer.Exit(1)
+        return
+    if source_name == "nflverse_extra":
+        from betdata.sources.nflverse_extra import DATASETS
+
+        names = list(DATASETS) if dataset in (None, "all") else dataset.split(",")
+        unknown = sorted(set(names) - set(DATASETS))
+        if unknown:
+            raise typer.BadParameter(f"unknown datasets {unknown}; available: {list(DATASETS)}")
+        extra = _source("nflverse_extra")
+        for name in names:
+            per_season = DATASETS[name].first is not None
+            for year in years if per_season else [None]:
+                params = {"seasons": str(year)} if per_season else {}
+                result = extra.run(name, **params, **({"refetch": "1"} if refetch else {}))
+                typer.echo(f"  {name} {year or 'all'}: {result.status} "
+                           f"new={result.rows_inserted} {result.message}")  # fmt: skip
+                if result.status == "failed":
+                    raise typer.Exit(1)
         return
     if source_name == "open_meteo":
         if sport not in ("nfl", "ncaaf"):
@@ -152,7 +172,9 @@ def backfill(
                 raise typer.Exit(1)
         return
     if source_name != "cfbd":
-        raise typer.BadParameter("--source must be cfbd, sportsdataverse, open_meteo or nflverse")
+        raise typer.BadParameter(
+            "--source must be cfbd, sportsdataverse, open_meteo, nflverse or nflverse_extra"
+        )
     if sport not in ("ncaaf", "ncaab"):
         raise typer.BadParameter("sport must be ncaaf or ncaab")
     source = _source("cfbd")
