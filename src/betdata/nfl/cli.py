@@ -546,3 +546,8 @@ def select15_cmd(
     if write:
         write_report(report, info)
         typer.echo(f"report: {REPORT_PATH}; draft design: {M15_DESIGN_PATH}")
+
+
+from betdata.nfl.props.cli import register as _register_props  # noqa: E402
+
+_register_props(nfl_app)
