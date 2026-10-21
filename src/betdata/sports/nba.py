@@ -30,9 +30,23 @@ class NbaSport(Sport):
         from betdata.nba.live import run_predict
 
         try:
-            return len(run_predict(engine, now))
+            n = len(run_predict(engine, now))
         except (ValueError, KeyError) as e:  # no history loaded yet
             log.warning("nba predict skipped: %s", e)
+            n = 0
+        self.predict_props(engine, now)
+        return n
+
+    def predict_props(self, engine: Engine, now: datetime) -> int:
+        """M15 prop predictions for players with a stored line (never breaks the run)."""
+        from betdata.nba.props.live import run as run_props
+
+        try:
+            n = run_props(engine, now)
+            log.info("nba props: %d new predictions", n)
+            return n
+        except Exception as e:  # a prop failure must not stop the side predictions or page
+            log.warning("nba props skipped: %s: %s", type(e).__name__, e)
             return 0
 
     def cards(self, conn: Connection, now: datetime) -> list[Card]:
@@ -93,7 +107,12 @@ class NbaSport(Sport):
 
         d = self._design()
         run = grade_nba(conn, now, d.spread_threshold, d.ml_threshold)
-        return {"inserted": run.inserted, "updated": run.updated, "pending": run.pending}
+        out = {"inserted": run.inserted, "updated": run.updated, "pending": run.pending}
+        from betdata.nba.props.grade import grade_nba_props
+
+        props = grade_nba_props(conn, now)
+        out["props_inserted"], out["props_pending"] = props.inserted, props.pending
+        return out
 
     def records(self, conn: Connection) -> list[RecordRow]:
         from betdata.nba.grade import records
@@ -108,6 +127,22 @@ class NbaSport(Sport):
         return {"spread": f"model and market differ by ≥ {d.spread_threshold:g} pts",
                 "moneyline": f"model win chance beats the no-vig market by ≥ "
                              f"{d.ml_threshold:g} % pts"}  # fmt: skip
+
+    def page_version(self) -> str | None:
+        return self.version()
+
+    def props(self, conn: Connection, now: datetime) -> list:
+        from betdata.nba.props.grade import DESIGN_PATH, MODEL, thresholds
+        from betdata.props.page import prop_rows
+
+        if not DESIGN_PATH.exists():
+            return []
+        from betdata.nba.props.live import PropDesign
+
+        d = PropDesign.load()
+        return prop_rows(conn, now, MODEL, DAYS, d.flag_allowed,
+                         lambda m: m in d.research_only or m not in d.thresholds,
+                         thresholds())  # fmt: skip
 
     def moneyline_final_roi(self) -> float | None:
         return self._design().ml_final_test_roi

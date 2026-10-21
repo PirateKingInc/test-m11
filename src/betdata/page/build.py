@@ -10,6 +10,7 @@ even if the runner stops running altogether.
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -23,7 +24,7 @@ from betdata.db.schema import books, runner_runs
 from betdata.moneyline import fair_american
 from betdata.quotes import Quote
 from betdata.runner.window import EASTERN
-from betdata.sports import ACTIVE, Card, RecordRow, Sport, SportEntry
+from betdata.sports import ACTIVE, Card, PropRow, RecordRow, Sport, SportEntry
 
 STALE_HOURS = 2
 REBUILT_NOTICE_HOURS = 48  # the rebuilt-from-scratch notice clears this long after
@@ -34,9 +35,15 @@ POINT_LABELS = {
     "prekick": "pre-kickoff (inactives known)",
     "none": "no prediction yet",
 }
+log = logging.getLogger(__name__)
+MARKET_LABELS = {"points": "points", "rebounds": "rebounds", "assists": "assists",
+                 "threes": "made threes", "pra": "pts+reb+ast", "pass_yds": "passing yds",
+                 "rush_yds": "rushing yds", "rec_yds": "receiving yds",
+                 "receptions": "receptions", "anytime_td": "anytime TD"}  # fmt: skip
 SOURCE_TITLES = {
     "nflverse": "nflverse", "the_odds_api": "The Odds API", "sharpapi": "SharpAPI",
     "oddspapi": "OddsPapi", "cfbd": "CollegeFootballData", "open_meteo": "Open-Meteo",
+    "espn_props": "ESPN",
 }  # fmt: skip
 STATUS_MARK = "<!--status-->"
 
@@ -125,7 +132,7 @@ def _edge(x: float | None, unit: str) -> str:
 
 
 def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
-              ml_flags: bool = True) -> str:  # fmt: skip
+              ml_flags: bool = True, version_note: str | None = None) -> str:  # fmt: skip
     e = escape
     bets = []
     if c.spread_pick:
@@ -167,7 +174,8 @@ def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
    if factors else ''}
   {f'<div class="out"><h4>Likely out</h4><ul>{out_lines}</ul></div>' if out_lines else ''}
   {f'<p class="meta">{e(" · ".join(c.notes))}</p>' if c.notes else ''}
-  {movement_html(c, movement)}
+  {movement_html(c, movement)}{f"""
+  <p class="meta ver">{e(version_note)}</p>""" if version_note else ''}
 </article>"""
 
 
@@ -251,11 +259,67 @@ def jobs_html(last: dict | None, sport: str) -> str:
             "</details>")
 
 
+def version_note(sport: Sport) -> str | None:
+    v = sport.page_version()
+    if not v:
+        return None
+    bg = sport.background_versions()
+    tail = (f" · newer version{'s' if len(bg) > 1 else ''} {', '.join(bg)} running in the "
+            "background (graded live, not shown)") if bg else ""  # fmt: skip
+    return f"Model version: {v}{tail}"
+
+
+def _price(x: int | None) -> str:
+    return "–" if x is None else american(x)
+
+
+def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
+    """Per game, each player prop with a stored line: projection, line and prices, P(over),
+    edge, top 2 factors, and the line's source, book and fetch time."""
+    if not rows:
+        return ("<section class='props'><h2>Props</h2><p class='meta'>No player prop lines "
+                "stored for upcoming games yet.</p></section>")  # fmt: skip
+    e = escape
+    out, by_game = [], {}
+    for r in rows:
+        by_game.setdefault(r.game_id, []).append(r)
+    for rs in by_game.values():
+        g = rs[0]
+        items = []
+        for r in rs:
+            fac = "; ".join(f"{lab} {v:+.1f} {u}" for lab, v, u in (r.factors or [])[:2])
+            book = book_names.get(r.book, r.book) if r.book else "?"
+            src = SOURCE_TITLES.get(r.source, r.source) if r.source else "?"
+            badge = (f'<span class="flag">{e(r.flag.title())} {r.line:g}</span>' if r.flag
+                     else "")  # fmt: skip
+            research = ('<span class="research">research only, not backtested</span>'
+                        if r.research else "")  # fmt: skip
+            line = "–" if r.line is None else f"{r.line:g}"
+            p = "–" if r.p_over is None else f"{100 * r.p_over:.0f}%"
+            edge = "–" if r.edge is None else f"{r.edge:+.1f} pp"
+            items.append(
+                f"<li class='prop'><div><b>{e(r.player)}</b> · "
+                f"{e(MARKET_LABELS.get(r.market, r.market))} {badge}{research}</div>"
+                f"<div>Proj <b>{r.mean:.1f}</b> · line {line} (o {_price(r.over_price)} / "
+                f"u {_price(r.under_price)}) · P(over) {p} · edge {edge}</div>"
+                + (f"<div class='meta'>{e(fac)}</div>" if fac else "")
+                + f"<div class='src'>{e(book)} via {e(src)}, "
+                f"{e(et(r.fetched_at, '%a %-I:%M %p')) if r.fetched_at else '?'}</div></li>")
+        out.append(f"<article class='game'><header><h3>{e(g.away)} @ {e(g.home)}</h3>"
+                   f"<time>{e(et(g.kickoff))}</time></header><ul class='plist'>"
+                   f"{''.join(items)}</ul></article>")  # fmt: skip
+    return ("<section class='props'><h2>Props</h2><p class='meta'>Players with a stored prop "
+            "line. Edge = model P(over) minus the no-vig over probability. Flags only on "
+            "markets whose backtest earned them.</p>" + "".join(out) + "</section>")
+
+
 def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[RecordRow],
-                book_names: dict, info: RunInfo) -> str:  # fmt: skip
+                book_names: dict, info: RunInfo, props: list[PropRow] | None = None,
+                ) -> str:  # fmt: skip
     roi = sport.moneyline_final_roi()
     ml_flags = roi is not None and roi > 0
-    games = "".join(card_html(c, book_names, movement.get(c.game_id, []), ml_flags)
+    note = version_note(sport)
+    games = "".join(card_html(c, book_names, movement.get(c.game_id, []), ml_flags, note)
                     for c in cards)  # fmt: skip
     if not games:
         games = "<p class='meta'>No games in the next 8 days.</p>"
@@ -267,6 +331,7 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
     legend = "".join(f"<li>{escape(k)}: {escape(v)}</li>" for k, v in legend_items.items())
     return f"""
 <section class="games">{games}</section>
+{props_html(props or [], book_names) if props is not None else ""}
 <section class="legend"><h2>Flags</h2><p>A pick is flagged when it clears the threshold chosen
   on validation seasons:</p><ul>{legend}</ul></section>
 <section><h2>Season record</h2>{records_html(records)}</section>
@@ -323,13 +388,24 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     for sport in active:
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
-                                        book_names, info)  # fmt: skip
+                                        book_names, info, _props(sport, conn, now))  # fmt: skip
     status = status_payload(info, now, missing_keys(settings))
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(render(entries, panels, status))
     (out_dir / "status.json").write_text(json.dumps(status, indent=1))
     (out_dir / ".nojekyll").write_text("")
     return status
+
+
+def _props(sport: Sport, conn: Connection, now: datetime) -> list[PropRow] | None:
+    """The sport's props section (None: the sport has no props); a failure only drops it."""
+    if type(sport).props is Sport.props:
+        return None
+    try:
+        return sport.props(conn, now)
+    except Exception as e:  # never lose the page over props
+        log.warning("%s props section skipped: %s", sport.key, e)
+        return []
 
 
 def mark_failed(site: Path, last_good: Path | None, now: datetime, message: str,
@@ -405,6 +481,10 @@ ul{{margin:2px 0;padding-left:18px;font-size:.9rem}}
 details{{margin-top:8px;font-size:.9rem}} summary{{cursor:pointer;color:var(--acc)}}
 .rec .ver{{font-size:.7rem;color:var(--mut);word-break:break-all}}
 .soon{{padding:24px 0;color:var(--mut)}}
+.plist{{list-style:none;padding:0;margin:6px 0 0}} .prop{{padding:6px 0;
+border-bottom:1px solid var(--line);font-size:.9rem}} .prop:last-child{{border-bottom:0}}
+.research{{display:inline-block;color:var(--mut);border:1px solid var(--line);border-radius:6px;
+padding:0 6px;margin-left:4px;font-size:.75rem}}
 footer{{color:var(--mut);font-size:.8rem;padding:24px 16px 32px}}
 </style></head>
 <body>
@@ -415,6 +495,9 @@ footer{{color:var(--mut);font-size:.8rem;padding:24px 16px 32px}}
 <footer><p><b>{footer}</b></p>{keys}
 <p>Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0), used
 non-commercially.</p>
+<p>NFL data: <a href="https://github.com/nflverse">nflverse</a> (CC BY 4.0); charting data:
+FTN Data via nflverse (CC BY-SA 4.0). NBA data: ESPN via sportsdataverse; injury reports: NBA.
+Prop lines: ESPN.</p>
 <p>Lines are paper picks from the M12 model; markets are the latest line each source had when
 the page was built. Spreads are listed with the favourite. Edges are from the home side's view.
 </p></footer>

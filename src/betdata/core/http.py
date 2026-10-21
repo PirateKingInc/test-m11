@@ -145,11 +145,14 @@ class SourceClient:
         dedupe: bool = False,
         archive_meta: dict[str, Any] | None = None,
         store_raw: bool = True,
+        not_found_ok: bool = False,
     ) -> ApiResponse:
         """`dedupe=True`: if the body equals the last stored response for this endpoint, do not
         store it again (for large static files such as nflverse releases).
         `archive_meta`: stored with the request params under "_meta" (never sent), so a replay
-        of the raw response knows what it was for."""
+        of the raw response knows what it was for.
+        `not_found_ok=True`: a 404 is an expected answer (a file not published yet); it is
+        returned (status 404, empty body) and does not count toward the circuit breaker."""
         self._check_breaker()
         last_error: str = ""
         last_status: int | None = None
@@ -188,6 +191,8 @@ class SourceClient:
             if self.quota:
                 self.quota.reconcile(report.remaining, report.used)
 
+            if resp.status_code == 404 and not_found_ok:
+                return ApiResponse(404, resp.headers, b"", started, None, report)
             if ok and not store_raw:  # large files the caller stores itself
                 self._record_success()
                 return ApiResponse(

@@ -189,7 +189,8 @@ def _opp_factors(allow: pd.DataFrame, keys: pd.DataFrame) -> pd.DataFrame:
         league = (m[f"l_{s}"] / m.lmin).to_numpy()
         allowed = ((m[s].fillna(0) + OPP_PRIOR_MIN * league)
                    / (m.min_sum.fillna(0) + OPP_PRIOR_MIN)).to_numpy()  # fmt: skip
-        out[f"opp_{s}"] = np.where(league > 0, allowed / league, 1.0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            out[f"opp_{s}"] = np.where(league > 0, allowed / league, 1.0)
     return out.sort_index().fillna(1.0)
 
 
@@ -278,7 +279,8 @@ def _rotation_context(p, sched, states, inj, tg, play_table) -> pd.DataFrame:
     for s in stats:
         num = team_rows[f"m_{s}"].to_numpy() - own_rows[f"m_{s}"].fillna(0).to_numpy()
         den = team_rows[f"tot_{s}"].to_numpy()
-        out[f"mis_{s}"] = np.where(den > 0, num / den, 0.0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            out[f"mis_{s}"] = np.where(den > 0, num / den, 0.0)
     return out.fillna(0.0)
 
 
