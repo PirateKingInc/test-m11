@@ -51,6 +51,12 @@ sources:
     # runner (M14 probe); one request a second is accepted.
     min_interval_seconds: 1.0
 
+  espn_props:
+    enabled: true
+    # ESPN's player prop lines (M15): no key, no quota, unofficial. One request per second;
+    # per game, the providers list plus each book's propBets (1-3 requests).
+    min_interval_seconds: 1.0
+
   sportsdataverse:
     enabled: true
     base_url: https://github.com/sportsdataverse/sportsdataverse-data/releases/download

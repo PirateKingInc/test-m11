@@ -12,6 +12,7 @@ from betdata.db.engine import make_engine, upgrade
 from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
 from betdata.nba.cli import nba_app
 from betdata.nfl.cli import nfl_app
+from betdata.props.cli import props_app
 from betdata.runner.cli import page_app, runner_app
 from betdata.sources import REGISTRY
 
@@ -26,6 +27,7 @@ alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=T
 app.add_typer(alias_app, name="alias")
 app.add_typer(nfl_app, name="nfl")
 app.add_typer(nba_app, name="nba")
+app.add_typer(props_app, name="props")
 app.add_typer(runner_app, name="runner")
 app.add_typer(page_app, name="page")
 
@@ -104,7 +106,8 @@ def backfill(
     ),  # fmt: skip
     dataset: str = typer.Option(
         None, help="nflverse: injuries, pbp, team_stats, snaps or rosters; nflverse_extra: "
-        "comma-separated (participation,ftn,pfr_pass,...,depth_charts,player_stats,ngs_*) or all",
+        "comma-separated (participation,ftn,pfr_pass,...,depth_charts,player_stats,ngs_*) or all; "
+        "sportsdataverse nba: schedule (default), player_box or pbp (lineup stints; box first)",
     ),  # fmt: skip
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
@@ -163,11 +166,19 @@ def backfill(
     if source_name == "sportsdataverse":
         if sport not in ("nba", "ncaab"):
             raise typer.BadParameter("sportsdataverse backfill covers nba and ncaab")
+        job = dataset or "schedule"
+        if job not in ("schedule", "player_box", "pbp") or (job != "schedule" and sport != "nba"):
+            raise typer.BadParameter("--dataset must be schedule, player_box or pbp (nba only)")
         sdv = _source("sportsdataverse")
         for year in years:
-            result = sdv.run("schedule", sport=sport, seasons=str(year))
-            typer.echo(f"  {sport} {year}: {result.status} games={result.rows_seen} "
-                       f"results_changed={result.rows_inserted} {result.message}")  # fmt: skip
+            if job == "schedule":
+                result = sdv.run("schedule", sport=sport, seasons=str(year))
+                typer.echo(f"  {sport} {year}: {result.status} games={result.rows_seen} "
+                           f"results_changed={result.rows_inserted} {result.message}")  # fmt: skip
+            else:
+                result = sdv.run(job, seasons=str(year))
+                typer.echo(f"  {job} {year}: {result.status} games={result.rows_seen} "
+                           f"rows={result.rows_inserted} {result.message}")  # fmt: skip
             if result.status == "failed":
                 raise typer.Exit(1)
         return

@@ -1,0 +1,777 @@
+{
+ "header": {
+  "competitions": [
+   {
+    "date": "2024-03-17T00:30Z",
+    "status": {
+     "type": {
+      "name": "STATUS_FINAL"
+     }
+    },
+    "competitors": [
+     {
+      "homeAway": "home",
+      "score": "10",
+      "team": {
+       "id": "13",
+       "displayName": "Los Angeles Lakers"
+      }
+     },
+     {
+      "homeAway": "away",
+      "score": "5",
+      "team": {
+       "id": "9",
+       "displayName": "Golden State Warriors"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "boxscore": {
+  "players": [
+   {
+    "team": {
+     "id": "13",
+     "displayName": "Los Angeles Lakers"
+    },
+    "statistics": [
+     {
+      "keys": [
+       "minutes",
+       "points"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "101",
+         "displayName": "Player 101"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "2"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "102",
+         "displayName": "Player 102"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "2"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "103",
+         "displayName": "Player 103"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "2"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "104",
+         "displayName": "Player 104"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "2"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "105",
+         "displayName": "Player 105"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "0"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "106",
+         "displayName": "Player 106"
+        },
+        "starter": false,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "2"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "team": {
+     "id": "9",
+     "displayName": "Golden State Warriors"
+    },
+    "statistics": [
+     {
+      "keys": [
+       "minutes",
+       "points"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "201",
+         "displayName": "Player 201"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "0"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "202",
+         "displayName": "Player 202"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "3"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "203",
+         "displayName": "Player 203"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "0"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "204",
+         "displayName": "Player 204"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "2"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "205",
+         "displayName": "Player 205"
+        },
+        "starter": true,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "0"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "206",
+         "displayName": "Player 206"
+        },
+        "starter": false,
+        "didNotPlay": false,
+        "stats": [
+         "20",
+         "0"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "plays": [
+  {
+   "id": "1",
+   "sequenceNumber": "1",
+   "type": {
+    "id": "0",
+    "text": "Jumpball"
+   },
+   "text": "Jumpball",
+   "awayScore": 0,
+   "homeScore": 0,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "12:00"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "101"
+     }
+    },
+    {
+     "athlete": {
+      "id": "201"
+     }
+    }
+   ]
+  },
+  {
+   "id": "2",
+   "sequenceNumber": "2",
+   "type": {
+    "id": "0",
+    "text": "Jump Shot"
+   },
+   "text": "Jump Shot",
+   "awayScore": 0,
+   "homeScore": 2,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "11:40"
+   },
+   "scoringPlay": true,
+   "scoreValue": 2,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "101"
+     }
+    },
+    {
+     "athlete": {
+      "id": "102"
+     }
+    }
+   ]
+  },
+  {
+   "id": "3",
+   "sequenceNumber": "3",
+   "type": {
+    "id": "0",
+    "text": "Jump Shot"
+   },
+   "text": "Jump Shot",
+   "awayScore": 3,
+   "homeScore": 2,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "11:20"
+   },
+   "scoringPlay": true,
+   "scoreValue": 3,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "9"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "202"
+     }
+    }
+   ]
+  },
+  {
+   "id": "4",
+   "sequenceNumber": "4",
+   "type": {
+    "id": "0",
+    "text": "Substitution"
+   },
+   "text": "Substitution",
+   "awayScore": 3,
+   "homeScore": 2,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "6:00"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "106"
+     }
+    },
+    {
+     "athlete": {
+      "id": "101"
+     }
+    }
+   ]
+  },
+  {
+   "id": "5",
+   "sequenceNumber": "5",
+   "type": {
+    "id": "0",
+    "text": "Driving Layup Shot"
+   },
+   "text": "Driving Layup Shot",
+   "awayScore": 3,
+   "homeScore": 4,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "5:30"
+   },
+   "scoringPlay": true,
+   "scoreValue": 2,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "106"
+     }
+    }
+   ]
+  },
+  {
+   "id": "6",
+   "sequenceNumber": "6",
+   "type": {
+    "id": "0",
+    "text": "Lost Ball Turnover"
+   },
+   "text": "Lost Ball Turnover",
+   "awayScore": 3,
+   "homeScore": 4,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "0:30.5"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "9"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "203"
+     }
+    },
+    {
+     "athlete": {
+      "id": "106"
+     }
+    }
+   ]
+  },
+  {
+   "id": "7",
+   "sequenceNumber": "7",
+   "type": {
+    "id": "0",
+    "text": "End Period"
+   },
+   "text": "End Period",
+   "awayScore": 3,
+   "homeScore": 4,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "0:00"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z"
+  },
+  {
+   "id": "8",
+   "sequenceNumber": "8",
+   "type": {
+    "id": "0",
+    "text": "Jump Shot"
+   },
+   "text": "Jump Shot",
+   "awayScore": 3,
+   "homeScore": 6,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "11:45"
+   },
+   "scoringPlay": true,
+   "scoreValue": 2,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "102"
+     }
+    }
+   ]
+  },
+  {
+   "id": "9",
+   "sequenceNumber": "9",
+   "type": {
+    "id": "0",
+    "text": "Defensive Rebound"
+   },
+   "text": "Defensive Rebound",
+   "awayScore": 3,
+   "homeScore": 6,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "11:30"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "9"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "201"
+     }
+    }
+   ]
+  },
+  {
+   "id": "10",
+   "sequenceNumber": "10",
+   "type": {
+    "id": "0",
+    "text": "Pullup Jump Shot"
+   },
+   "text": "Pullup Jump Shot",
+   "awayScore": 5,
+   "homeScore": 6,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "11:10"
+   },
+   "scoringPlay": true,
+   "scoreValue": 2,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "9"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "204"
+     }
+    },
+    {
+     "athlete": {
+      "id": "205"
+     }
+    }
+   ]
+  },
+  {
+   "id": "11",
+   "sequenceNumber": "11",
+   "type": {
+    "id": "0",
+    "text": "Shooting Foul"
+   },
+   "text": "Shooting Foul",
+   "awayScore": 5,
+   "homeScore": 6,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "10:50"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "9"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "203"
+     }
+    }
+   ]
+  },
+  {
+   "id": "12",
+   "sequenceNumber": "12",
+   "type": {
+    "id": "0",
+    "text": "Free Throw - 1 of 2"
+   },
+   "text": "Free Throw - 1 of 2",
+   "awayScore": 5,
+   "homeScore": 7,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "10:50"
+   },
+   "scoringPlay": true,
+   "scoreValue": 1,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "103"
+     }
+    }
+   ]
+  },
+  {
+   "id": "13",
+   "sequenceNumber": "13",
+   "type": {
+    "id": "0",
+    "text": "Substitution"
+   },
+   "text": "Substitution",
+   "awayScore": 5,
+   "homeScore": 7,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "10:50"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "9"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "206"
+     }
+    },
+    {
+     "athlete": {
+      "id": "203"
+     }
+    }
+   ]
+  },
+  {
+   "id": "14",
+   "sequenceNumber": "14",
+   "type": {
+    "id": "0",
+    "text": "Free Throw - 2 of 2"
+   },
+   "text": "Free Throw - 2 of 2",
+   "awayScore": 5,
+   "homeScore": 8,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "10:50"
+   },
+   "scoringPlay": true,
+   "scoreValue": 1,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "103"
+     }
+    }
+   ]
+  },
+  {
+   "id": "15",
+   "sequenceNumber": "15",
+   "type": {
+    "id": "0",
+    "text": "Jump Shot"
+   },
+   "text": "Jump Shot",
+   "awayScore": 5,
+   "homeScore": 10,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "10:30"
+   },
+   "scoringPlay": true,
+   "scoreValue": 2,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "104"
+     }
+    },
+    {
+     "athlete": {
+      "id": "105"
+     }
+    }
+   ]
+  },
+  {
+   "id": "16",
+   "sequenceNumber": "16",
+   "type": {
+    "id": "0",
+    "text": "Jump Shot"
+   },
+   "text": "Jump Shot",
+   "awayScore": 5,
+   "homeScore": 10,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "45.2"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": true,
+   "wallclock": "2024-03-17T00:40:00Z",
+   "team": {
+    "id": "13"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "106"
+     }
+    }
+   ]
+  },
+  {
+   "id": "17",
+   "sequenceNumber": "17",
+   "type": {
+    "id": "0",
+    "text": "End Period"
+   },
+   "text": "End Period",
+   "awayScore": 5,
+   "homeScore": 10,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "0.0"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z"
+  },
+  {
+   "id": "18",
+   "sequenceNumber": "18",
+   "type": {
+    "id": "0",
+    "text": "End Game"
+   },
+   "text": "End Game",
+   "awayScore": 5,
+   "homeScore": 10,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "0.0"
+   },
+   "scoringPlay": false,
+   "scoreValue": 0,
+   "shootingPlay": false,
+   "wallclock": "2024-03-17T00:40:00Z"
+  }
+ ]
+}
