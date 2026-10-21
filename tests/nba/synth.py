@@ -54,7 +54,8 @@ def synth(engine, n_days=40, seed=1):
                     mins = rnd.uniform(14, 38)
                     conn.execute(insert(nba_player_games).values(
                         game_id=gid, team_id=tid[team], player_id=f"{k}{j}",
-                        player_name=f"P{j} T{k}", starter=j < 5, did_not_play=False,
+                        player_name=f"Pl{'abcdefgh'[j]} Tm{'abcd'[k]}", starter=j < 5,
+                        did_not_play=False,
                         minutes=mins, points=rnd.randint(2, 30), plus_minus=rnd.randint(-15, 15),
                         fgm=5, fga=11, fg3m=1, fg3a=4, ftm=2, fta=3, oreb=1, dreb=3, ast=2,
                         stl=1, blk=0, tov=2, pf=2, source="sportsdataverse",
@@ -62,7 +63,7 @@ def synth(engine, n_days=40, seed=1):
             k = TEAMS.index(h)
             conn.execute(insert(nba_injury_reports).values(
                 game_date=tip.astimezone(ET).date().isoformat(), matchup="X@Y", game_id=gid,
-                team_id=tid[h], team_name=h, player_name=f"T{k}, P0",
+                team_id=tid[h], team_name=h, player_name=f"Tm{'abcd'[k]}, Pla",
                 status=rnd.choice(["Out", "Questionable", "Probable"]), reason="Knee",
                 report_at=tip - timedelta(hours=8), known_at=tip - timedelta(hours=7, minutes=45),
                 source="nba_injury", fetched_at=tip))  # fmt: skip

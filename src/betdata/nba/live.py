@@ -32,7 +32,7 @@ from betdata.nba.features import (
 )
 from betdata.nba.pipeline import Fit
 from betdata.nba.points import MORNING, POINTS, PRETIP, morning_time, point_time, pretip_time
-from betdata.nba.state import League
+from betdata.nba.state import League, made_by_game
 from betdata.nfl.features.state import advanced
 from betdata.nfl.model import Ridge
 from betdata.nfl.store import AsOf, Store
@@ -125,7 +125,22 @@ def _players(a: AsOf, g, team: int) -> list[str]:
             name = a.store.names.get(pid, pid)
             tag = s or f"missed last {streak}"
             out.append(f"{name} ({tag}, {100 * prob:.0f}% to play)")
-    return out[:6]
+    # Listed on the report but not (yet) in the team's rotation: new arrivals and players
+    # without minutes. Shown, not counted by the model (it values players by their minutes).
+    rotation = {pid for pid, _ in st.rotation(team)}
+    for r in reversed(advanced(a, "inj", made_by_game("injuries")).rows.get(g.game_id, [])):
+        if r.team_id == team and r.player_id not in rotation and r.status in (
+                "Out", "Doubtful", "Questionable"):  # fmt: skip
+            label = f"{r.player_name} ({r.status}, {100 * play_prob(a, r.status):.0f}% to play)"
+            if label not in out:
+                out.append(label)
+    seen, unique = set(), []
+    for x in out:  # a player's later report row replaces his earlier one
+        name = x.split(" (")[0]
+        if name not in seen:
+            seen.add(name)
+            unique.append(x)
+    return unique[:8]
 
 
 def _notes(store: Store, g) -> list[str]:
