@@ -1,30 +1,19 @@
-import sqlite3, json, gzip
-c = sqlite3.connect("data/betdata.sqlite")
-r = c.execute("select body_gz from raw_responses where source='espn_nba' and endpoint='/scoreboard' order by raw_id desc limit 1").fetchone()
-d = json.loads(gzip.decompress(r[0]))
+import json, sqlite3, urllib.request
+db = sqlite3.connect("data/betdata.sqlite")
+print("== nba games Oct 19-23")
+for r in db.execute("""select g.game_id, g.start_time_utc, h.abbrev, a.abbrev, g.status, g.season
+  from games g join teams h on h.team_id=g.home_team_id join teams a on a.team_id=g.away_team_id
+  join sports s on s.sport_id=g.sport_id where s.key='nba'
+  and g.start_time_utc between '2026-10-19' and '2026-10-23' order by 2"""):
+    print(r)
+print("== source ids for those")
+for r in db.execute("""select gs.* from game_source_ids gs where gs.game_id in (select g.game_id from games g
+  join sports s on s.sport_id=g.sport_id where s.key='nba' and g.start_time_utc between '2026-10-20' and '2026-10-21 12:00')"""):
+    print(r)
+print("== espn 20261020")
+d = json.load(urllib.request.urlopen("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261020"))
 for e in d["events"]:
-    comp = e["competitions"][0]
-    if e["status"]["type"]["name"] == "STATUS_SCHEDULED":
-        print(e["id"], e["date"], "odds:", json.dumps(comp.get("odds"))[:700]); break
-print("n events", len(d["events"]), [ (e["id"], e["status"]["type"]["name"], bool(e["competitions"][0].get("odds"))) for e in d["events"]])
-from datetime import datetime, UTC
-from betdata.config import get_settings
-from betdata.db.engine import make_engine
-from betdata.nba.live import Design, load_fit, loaded_store
-from betdata.nba.features import team_status, _state
-from betdata.nfl.store import AsOf
-e = make_engine(get_settings().db_url)
-fits, play, version = load_fit(Design.load())
-now = datetime(2026, 10, 21, 2, 30, tzinfo=UTC)
-st = loaded_store(e, now, play)
-g = st.games.loc[22881]
-a = AsOf(st, now)
-for team in (g.home, g.away):
-    s, rep = team_status(a, g, team)
-    rot = _state(a).rotation(team)
-    print("team", team, "reported", rep, "statuses", list(s.items())[:8])
-    print("  rotation", [(pid, st.names.get(pid), round(p.min_play,1), p.streak) for pid, p in rot][:12])
-    print("  listed in rotation:", [pid for pid in s if pid in dict(rot)])
-inj = st.frame("injuries").df
-print(inj[inj.game_id == 22881].head(12).to_string())
-print("state season", _state(a).season)
+    print(e["id"], e["date"], e["shortName"], e["status"]["type"]["name"])
+print("== nba predictions by predicted_at")
+for r in db.execute("select predicted_at, prediction_point, count(*) from model_predictions where model='nba' group by 1,2 order by 1"):
+    print(r)
