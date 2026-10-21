@@ -84,6 +84,33 @@ class RecordRow:
 
 
 @dataclass
+class PropRow:
+    """One player prop as the page shows it (M15). `edge` is P(over) minus the no-vig over
+    probability, in % points; `flag` is "over"/"under" only for a market whose backtest earned
+    flags; `research` marks a market without a backtest."""
+
+    game_id: int
+    kickoff: datetime
+    home: str
+    away: str
+    player: str
+    market: str
+    mean: float
+    line: float | None
+    over_price: int | None
+    under_price: int | None
+    p_over: float | None
+    edge: float | None
+    factors: list = field(default_factory=list)  # [label, value, unit]
+    book: str | None = None
+    source: str | None = None
+    fetched_at: datetime | None = None
+    point: str | None = None
+    research: bool = True
+    flag: str | None = None
+
+
+@dataclass
 class SportEntry:
     key: str
     name: str
@@ -130,6 +157,18 @@ class Sport(ABC):
     def thresholds(self) -> dict[str, str]:
         """Bet thresholds, for the page's legend."""
         return {}
+
+    def page_version(self) -> str | None:
+        """The side model version the page shows (M15 label)."""
+        return None
+
+    def background_versions(self) -> list[str]:
+        """Newer side versions predicted and graded live but not shown (M15 Part A rule)."""
+        return []
+
+    def props(self, conn: Connection, now: datetime) -> list[PropRow]:
+        """Player props with a stored line for upcoming games (M15); none by default."""
+        return []
 
     def moneyline_final_roi(self) -> float | None:
         """The final test's moneyline ROI (None: not scored). The page flags moneyline bets only

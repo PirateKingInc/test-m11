@@ -30,6 +30,9 @@ class NflSport(Sport):
 
         return "m13w" if WX_DESIGN_PATH.exists() else "m12"
 
+    def page_version(self) -> str | None:
+        return self.page_model
+
     def predict(self, engine: Engine, now: datetime) -> int:
         from betdata.nfl.live import run_predict
 

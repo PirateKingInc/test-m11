@@ -128,6 +128,22 @@ class NbaSport(Sport):
                 "moneyline": f"model win chance beats the no-vig market by ≥ "
                              f"{d.ml_threshold:g} % pts"}  # fmt: skip
 
+    def page_version(self) -> str | None:
+        return self.version()
+
+    def props(self, conn: Connection, now: datetime) -> list:
+        from betdata.nba.props.grade import DESIGN_PATH, MODEL, thresholds
+        from betdata.props.page import prop_rows
+
+        if not DESIGN_PATH.exists():
+            return []
+        from betdata.nba.props.live import PropDesign
+
+        d = PropDesign.load()
+        return prop_rows(conn, now, MODEL, DAYS, d.flag_allowed,
+                         lambda m: m in d.research_only or m not in d.thresholds,
+                         thresholds())  # fmt: skip
+
     def moneyline_final_roi(self) -> float | None:
         return self._design().ml_final_test_roi
 
