@@ -546,3 +546,58 @@ def select15_cmd(
     if write:
         write_report(report, info)
         typer.echo(f"report: {REPORT_PATH}; draft design: {M15_DESIGN_PATH}")
+
+
+def _store15():
+    from betdata.nfl.data import load_store
+    from betdata.nfl.m15data import with_m15
+    from betdata.nfl.pipeline import TRAIN
+
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+        store, info = with_m15(store, conn, data_dir(), TRAIN)
+    return store, info
+
+
+@nfl_app.command("final-test15")
+def final_test15_cmd(again: bool = typer.Option(False, help="Score the test seasons again.")):
+    """Score m15 on 2023-2025 once (refit on 2013-2022) beside m13w: margin and total MAE per
+    point, the closing line, spread and moneyline records at the close; then write the page
+    switch decision (`page`) into config/nfl_model_m15.json. Nothing is tuned afterwards."""
+    import json
+
+    from betdata.analysis.dataset import load_games
+    from betdata.moneyline import MoneylineConfig
+    from betdata.nfl.m15 import REPORT15_PATH, final_test15, load_design15, rows15, save_meta
+    from betdata.nfl.moneyline import ML_PATH, closing_moneylines
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE, outcomes
+    from betdata.nfl.select15 import REPORT_PATH
+    from betdata.nfl.selection import Design
+    from betdata.nfl.weather import WX_DESIGN_PATH
+
+    if REPORT15_PATH.exists() and not again:
+        typer.echo(f"test seasons already scored for m15: {REPORT15_PATH} (pass --again)")
+        raise typer.Exit(1)
+    d15, meta = load_design15()
+    d13 = Design.load(WX_DESIGN_PATH)  # its groups are a subset of m15's
+    store, _ = _store15()
+    with _engine().connect() as conn:
+        by_id = {g.game_id: g for g in load_games(conn, "nfl")}
+        ml = closing_moneylines(conn)
+    rows = rows15(store, d15, meta, (*TRAIN, *VALIDATE, *TEST))
+    valid = json.loads(REPORT_PATH.read_text())["final"]["margin_mae"]
+    rep = final_test15(rows, outcomes(store), d15, d13, by_id, ml, MoneylineConfig.load(ML_PATH),
+                       again=again, validation_margin=valid)  # fmt: skip
+    for p, r in rep["points"].items():
+        m, t, c = r["margin_mae"], r["total_mae"], r["with_close"]
+        typer.echo(f"{p} ({r['games']} games): margin m15 {m['m15']:.3f}, m13w {m['m13w']:.3f}"
+                   f" (recorded {m['m13w_recorded']:.3f}); total m15 {t['m15']:.3f}, m13w "
+                   f"{t['m13w']:.3f}; close {c['margin_mae']['close']:.3f} / "
+                   f"{c['total_mae']['close']:.3f} ({c['games']} games)")  # fmt: skip
+        for k in ("m15", "m13w"):
+            s, mb = r["spread_bets"][k], r["moneyline"][k]["bets"]
+            typer.echo(f"    {k:5} spread {s['record']} ROI {100 * (s['roi'] or 0):+.1f}% | "
+                       f"moneyline {mb['record']} ROI {100 * (mb['roi'] or 0):+.1f}%")
+    save_meta({"page": rep["page"]["switch"]})
+    typer.echo(f"page switch: {rep['page']}")
+    typer.echo(f"report: {REPORT15_PATH} ({rep['label']})")
