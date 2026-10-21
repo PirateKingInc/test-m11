@@ -1,4 +1,4 @@
-"""`betdata nfl props-select` (M15 NFL player props)."""
+"""`betdata nfl props-select | props-final-test | props-freeze` (M15 NFL player props)."""
 
 from __future__ import annotations
 
@@ -26,3 +26,28 @@ def register(app: typer.Typer) -> None:
             typer.echo(_line(mk, r) + f"  [{res['decisions']['variant'][mk]}]")
         typer.echo(f"yards families: {res['decisions']['families']}; Platt: "
                    f"{sorted(res['decisions']['platt'])}")  # fmt: skip
+
+    @app.command("props-final-test")
+    def props_final_test_cmd(again: bool = typer.Option(False, help="Score the test again.")):
+        """Score the test seasons (2023-2025) once with the validated design refitted on
+        2013-2022; compare with stored prop lines where there are any. Writes
+        reports/nfl/props_final_test.json. No betting backtest (no lines in validation)."""
+        from betdata.nfl.cli import _engine
+        from betdata.nfl.props.final import final_test
+
+        with _engine().connect() as conn:
+            try:
+                res = final_test(conn, again)
+            except RuntimeError as e:
+                raise typer.BadParameter(str(e)) from e
+        for mk, r in res["markets"].items():
+            typer.echo(_line(mk, r))
+        typer.echo(f"vs lines: {res['vs_lines']}")
+
+    @app.command("props-freeze")
+    def props_freeze_cmd():
+        """Fit the validated design on 2013-2025: config/fits/nfl_props_2013_2025.json and
+        config/nfl_props.json (every market research-only)."""
+        from betdata.nfl.props.final import freeze
+
+        typer.echo(freeze())
