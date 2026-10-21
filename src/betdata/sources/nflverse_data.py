@@ -159,10 +159,16 @@ def store_pbp(conn: Connection, f: PbpFile, data_dir: Path) -> tuple[int, int]:
         .order_by(desc(data_files.c.fetched_at), desc(data_files.c.file_id))
         .limit(1)
     ).scalar()
-    if last == sha:
-        return 0, 1
     rel = Path("pbp") / "nfl" / f"play_by_play_{f.season}.parquet"
     target = data_dir / rel
+    if last == sha and target.exists():
+        return 0, 1
+    if last == sha:  # recorded before but not on this disk (a restored database): write only
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".parquet.tmp")
+        tmp.write_bytes(f.body)
+        os.replace(tmp, target)
+        return 0, 1
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(".parquet.tmp")
     tmp.write_bytes(f.body)
