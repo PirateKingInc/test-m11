@@ -22,7 +22,9 @@ jobs:
             data/reports
           key: betdata-state-v1-${{ github.run_id }}
           restore-keys: betdata-state-v1-
-      - run: mkdir -p out && uv run --no-dev python probe/diag.py 2>&1 | tee out/diag.txt
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: mkdir -p out && uv run --no-dev python probe/diag.py 2>&1 | tee out/diag.txt
       - name: Push
         if: always()
         run: |
