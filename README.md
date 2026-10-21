@@ -404,6 +404,29 @@ New games get theirs with their box scores. `betdata nba bootstrap` loads the la
 - **Hourly:** the runner refreshes the injury report, lines and predictions for the next 2 days. It never refits.
 - **Sources, quotas and runtime:** PROJECT.md, "M14".
 
+## M15 new side variables and player props
+
+M15 adds new side versions that run and are graded beside the frozen ones, plus player prop models for both sports (MODEL.md, "M15").
+- **NBA side `nba15`:** M14 design + lineup RAPM + three-point luck + load management. It won the page on the Part A rule; M14 now runs in the background.
+- **NFL side `m15`:** m13w + depth-chart backups + special teams + penalties (margin) + situational luck (total). Its test was worse than m13w's, so it runs in the background only.
+- **Props section on each tab:** players with a stored ESPN line, with projection, line, P(over), edge, top 2 factors and source. No prop market earned flags. NBA PRA and every NFL market are research only.
+
+```bash
+betdata run espn-props lines --param sport=nba   # hourly prop lines (NBA next 2 days; NFL 8)
+betdata props history-fetch|export-history|load-history   # ESPN prop line history (Actions)
+betdata nba props-select | props-tune | props-final-test | props-freeze
+betdata nba select15 | final-test15 | freeze15      # NBA side version nba15
+betdata nfl select15 | final-test15 | freeze15      # NFL side version m15
+betdata nfl props-select | props-final-test | props-freeze
+betdata grade nba --props / betdata grade nfl --props
+betdata backfill --source sportsdataverse --sport nba --dataset pbp --seasons 2015-2025  # stints
+betdata backfill --source nflverse_extra --dataset all --seasons 2016-2026
+```
+
+**Workflows:**
+- `props-history.yml`: ESPN prop line history, published to the `props-history` branch.
+- `nba-bootstrap.yml`: also loads lineup stints into the runner state.
+
 ## Data sources and polling plan
 
 | Source | Free limit | Plan |
@@ -414,6 +437,7 @@ New games get theirs with their box scores. `betdata nba bootstrap` loads the la
 | nflverse (`nflreadpy`) | none | schedules/closing lines/results daily, PBP nightly, injuries daily |
 | NBA (cdn.nba.com) | unofficial, no quota | CLI only: blocked (403) from GitHub Actions |
 | ESPN NBA APIs | unofficial, no quota | hourly scoreboard + new box scores; history lines |
+| ESPN prop lines (core API) | unofficial, no quota | hourly for games within 2 days (NBA) / 8 days (NFL, distant games every 4 h) |
 | NBA official injury report (PDF) | none (1 request/s) | latest report hourly when games are within 2 days |
 | sportsdataverse | none (GitHub releases) | NBA fallback + history; backup NCAAB scores |
 | CFBD | 1,000/mo shared FB + BB | ~150/mo ongoing, ~300 for backfill, 900 hard cap |
@@ -440,3 +464,4 @@ New games get theirs with their box scores. `betdata nba bootstrap` loads the la
   interface for a second sport
 - [x] **M14** NBA: box scores, official injury reports (change-only), ESPN lines; as-of
   model with availability, strength, rest, pace and context groups; NBA tab on the hourly page
+- [x] **M15** new side variables (NBA RAPM, three-point luck, load management; NFL special teams, depth backups, penalties, situational luck) as background or page versions by the switch rule; NBA and NFL player props with live lines, grading and a props section
