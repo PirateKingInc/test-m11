@@ -45,11 +45,11 @@ jobs:
                   # M15: the tab's props section, top 1,400 px, at phone width.
                   sec = pg.locator(f"#tab-{sport} section.props")
                   if sec.count():
-                      sec.first.scroll_into_view_if_needed()
-                      box = sec.first.bounding_box()
+                      top, height = sec.first.evaluate(
+                          "e => [e.getBoundingClientRect().top + window.scrollY, e.offsetHeight]")
                       pg.screenshot(path=f"proof/{sport}_props_phone.png", full_page=True,
-                                    clip={"x": 0, "y": box["y"], "width": 390,
-                                          "height": min(box["height"], 1400)})
+                                    clip={"x": 0, "y": top, "width": 390,
+                                          "height": min(height, 1400)})
                       print(f"{sport} props rows:", sec.first.locator("li.prop").count())
               props_shot("nfl")
               # M14: the NBA tab, opened the way a reader would.
