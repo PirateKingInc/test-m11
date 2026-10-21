@@ -264,8 +264,8 @@ def version_note(sport: Sport) -> str | None:
     if not v:
         return None
     bg = sport.background_versions()
-    tail = (f" · newer version{'s' if len(bg) > 1 else ''} {', '.join(bg)} running in the "
-            "background (graded live, not shown)") if bg else ""  # fmt: skip
+    tail = (f" · also running in the background (graded live, not shown): {', '.join(bg)}"
+            if bg else "")  # fmt: skip
     return f"Model version: {v}{tail}"
 
 
@@ -287,7 +287,8 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
         g = rs[0]
         items = []
         for r in rs:
-            fac = "; ".join(f"{lab} {v:+.1f} {u}" for lab, v, u in (r.factors or [])[:2])
+            fac = "; ".join(f"{lab} {v:+.1f} {u}" for lab, v, u in
+                            [f for f in (r.factors or []) if abs(f[1]) >= 0.05][:2])
             book = book_names.get(r.book, r.book) if r.book else "?"
             src = SOURCE_TITLES.get(r.source, r.source) if r.source else "?"
             badge = (f'<span class="flag">{e(r.flag.title())} {r.line:g}</span>' if r.flag
