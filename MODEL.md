@@ -1105,17 +1105,109 @@ Markets: points, rebounds, assists, made threes, and points + rebounds + assists
 
 ## M15 NFL player props (`nfl/props/`, version `nflp15`)
 
-Markets: passing yards, rushing yards, receiving yards, receptions, and anytime touchdown (a probability). The model is built per player-game at the M12 points.
+Markets: passing yards, rushing yards, receiving yards, receptions, and anytime touchdown (a probability of at least one rushing or receiving TD). The model is built per player-game at the M12 points (`final_report`, `prekick`; live also `early`, read as the final report like M12).
 
-1. **Role:** snap share, target share, air-yards share, carry share, red-zone targets and carries, from the last 6 games and the season. Route participation comes from participation `route`, 2016-2025; 2026 has none, so it falls back to snap share.
-2. **Game script:** team pass attempts and rush attempts from the frozen m13w spread and total.
-3. **Teammate injuries:** targets and carries of players out (weighted by 1 − play probability) are reassigned by share.
-4. **Opponent:** yards allowed per target and per carry by position, plus FTN man/zone rate (2022+) vs the player's man/zone splits, regressed strongly.
-5. **Weather:** wind and precipitation from the M13 weather data, for passing and receiving yards.
+**No betting backtest was possible.** No NFL prop lines exist for the validation seasons (2020-2022), so no edge threshold can be chosen. Every market is judged on prediction error against a naive baseline and on the calibration of P(over), and every market is "research only, not backtested" (`config/nfl_props.json`: `research_only` = all five, no thresholds, no test ROI; never flagged).
 
-- **Distributions:** normal on yards (floored at 0, with a point mass at 0 for receivers), negative binomial on receptions, Poisson on TDs.
-- **No backtest:** validation (2020-2022) has no lines, so every NFL market is "research only, not backtested".
-- **Test comparison:** test-season error vs the line is reported for 2024-2025.
+**Inputs** (`nfl/props/data.py`, `panel.py`; each row known at kickoff + 12 h, read only if known by the point):
+
+1. **Role:** snap share (M12's snap counts), route participation (on the field for a dropback, from participation `offense_players`; nflverse's `route` column is only the targeted receiver's route, so it can't give routes run; 2016-2025, snap share where missing, e.g. 2026), target, air-yards, carry and pass-attempt shares, red-zone targets and carries (play-by-play, `yardline_100 <= 20`). Last 6 games, season so far, and exponentially weighted (half-life 3 games). Rates (yards per target, catch rate, yards per carry and per attempt) over the last 16 games, shrunk to the position's league rate (40 targets/carries, 100 attempts).
+2. **Game script:** team pass attempts, targets and carries from a ridge on the team's last-6 and season averages, the opponent's pace, the side model's margin and total, and wind. The side input is the frozen m13w design (its total model is M12's) refitted so no season's input comes from a fit that saw it: each training season from a fit on the other training seasons, validation from 2013-2019, test from 2013-2022 (`nfl/props/side.py`). Live: the latest stored m13w prediction (m12 if none).
+3. **Teammate injuries:** M12's candidates and play probabilities by status (`features/availability.py`, learned on 2013-2019 and stored in the fit). A teammate's chance of missing is `q = 1 - p_play / p_healthy`, where `p_healthy` is M12's probability for a player with no status at that point (0.84 at the final report, 0.89 at prekick). Using `1 - p_play` raw would count every healthy teammate as 16% missing. His last-6 share of targets, carries or attempts times `q` is the missing share `m`, and the player's expected share if he plays is `share / (1 - m)`: with one teammate surely out the others' shares add back up to the team total (tested).
+4. **Opponent:** receiving yards and receptions allowed per target to WRs, TEs and RBs, rushing yards per carry and passing yards per attempt, over the defence's last 10 games, relative to the league's last ~320 team-games, shrunk strongly (120 targets / 150 carries / 200 attempts of league average). Man/zone: the defence's man rate (participation `defense_man_zone_type`, which starts in 2018; FTN charting has no coverage column) vs the league, times the player's own man-minus-zone yards per route, each shrunk to his overall rate with 150 routes. 2026 has no participation file, so man/zone is 0 live.
+5. **Weather:** the M13 `wx` group's wind above 10 km/h for passing and receiving yards and team volume. **Deviation:** this machine has only nflverse's observed wind (1999-2021). The Open-Meteo forecasts (2022+) live in the runner's state, and Open-Meteo is unreachable from here. So 2022-2025 are scored with no wind. There is no precipitation history at all (nflverse has none), so the rain term was dropped.
+
+**Model** (`nfl/props/model.py`): volume x share x rate, as the NBA prop model's minutes x per-minute rate. Each market's ridge uses these terms:
+- team volume x the last-6, season and EW shares x the rate;
+- for receivers, route participation x targets per route, and air-yards share;
+- teammates' missing share (`share x m / (1 - m)`; passing yards: receivers out);
+- opponent factor;
+- wind;
+- man/zone;
+- own Questionable/Doubtful status;
+- the last-10 average.
+
+Anytime TD uses its own terms: red-zone touches (last 6, season, x the team's implied points), TDs per game (last 6, season, last 16) and redistribution.
+
+**Distributions:**
+- **Yards:** negative binomial or a continuity-corrected normal, with variance a + b·μ + c·μ² fitted on training residuals. The family is picked on validation by Brier at the synthetic line, and negative binomial won for all three markets. It handles the right skew of yards; the normal over-predicts overs for receivers.
+- **Receptions:** negative binomial.
+- **Anytime TD:** Poisson on the expected count, so P(anytime) = 1 − e^−λ.
+
+**Populations** (who each market is scored on, as known before the game):
+- passing yards: QBs with at least 15 attempts a game over the last 6;
+- rushing yards: at least 3 carries a game;
+- receiving yards and receptions: WR/TE/RB with at least 2 targets a game;
+- anytime TD: non-QBs with at least 3 carries + targets a game.
+
+Live predicts every player with a line.
+
+### How it was judged (`betdata nfl props-select`, `reports/nfl/props_selection.json`)
+
+**Setup:**
+- Fit on 2013-2019, scored on 2020-2022.
+- **Baseline:** the last-10-game average. For anytime TD it is the player's season TD rate, giving P = 1 − e^−rate.
+- **Calibration:** P(over) at a synthetic line, the last-10 average rounded down + 0.5.
+- **Per market:** one full build plus three adjustments, the same three for every market. Each market keeps the variant with the lowest validation MAE (anytime TD: the lowest Brier, since the MAE of a mostly-zero count rewards predicting 0).
+
+**Platt rule** (decided before looking): one Platt fit per market on the validation predictions, applied only if a calibration bin with at least 300 predictions is off by more than 0.03, or the n-weighted mean gap is above 0.015. All five markets met it: passing and rushing yards under-predicted overs by 3-5 points in the middle bins.
+
+| Validation | n | MAE model | MAE baseline | RMSE model | RMSE baseline | Brier (P(over)) | Brier constant | Mean calibration gap → after Platt |
+|---|---|---|---|---|---|---|---|---|
+| passing yards | 3,412 | **65.80** | 69.02 | **83.17** | 87.52 | 0.2363 | 0.2487 | 0.032 → 0.017 |
+| rushing yards | 9,004 | **21.98** | 23.03 | **29.33** | 30.56 | 0.2330 | 0.2414 | 0.041 → 0.009 |
+| receiving yards | 20,280 | **21.75** | 22.27 | **28.56** | 29.30 | 0.2317 | 0.2374 | 0.017 → 0.016 |
+| receptions | 20,280 | **1.638** | 1.677 | **2.086** | 2.133 | 0.2361 | 0.2425 | 0.016 → 0.013 |
+| anytime TD (count; P(≥1)) | 20,822 | 0.437 | **0.428** | **0.565** | 0.613 | **0.1812** (baseline 0.2013) | 0.1916 | 0.013 → 0.007 |
+
+Normal vs negative binomial (validation Brier):
+
+| Market | Normal | Negative binomial |
+|---|---|---|
+| passing yards | 0.2365 | 0.2363 |
+| rushing yards | 0.2385 | 0.2330 |
+| receiving yards | 0.2448 | 0.2317 |
+
+| Adjustment (validation MAE; TD: Brier) | pass yds | rush yds | rec yds | receptions | anytime TD | Kept for |
+|---|---|---|---|---|---|---|
+| Full build (ridge penalty 10) | **65.80** | **21.98** | **21.75** | 1.6384 | **0.1812** | pass, rush, rec yds, TD |
+| 1. Ridge penalty 100 | 65.88 | 22.00 | 21.75 | **1.6382** | 0.1812 | receptions |
+| 2. Ridge penalty 1000 | 66.24 | 22.09 | 21.78 | 1.639 | 0.1812 | – |
+| 3. Fewer share terms (EW and route shares only) | 66.85 | 22.10 | 21.86 | 1.646 | 0.1813 | – |
+
+### Final test: 2023-2025, scored once (`betdata nfl props-final-test`, `reports/nfl/props_final_test.json`)
+
+The validated design was refitted on 2013-2022 with the validation Platt fits and scored once on 2023-2025.
+
+| Test | n | MAE model | MAE baseline | RMSE model | RMSE baseline | Brier at synthetic line | Brier constant | Mean calibration gap |
+|---|---|---|---|---|---|---|---|---|
+| passing yards | 3,602 | **69.70** | 70.71 | **88.33** | 89.04 | 0.2480 | 0.2499 | 0.038 |
+| rushing yards | 9,202 | **21.14** | 22.03 | **28.25** | 29.45 | 0.2317 | 0.2407 | 0.019 |
+| receiving yards | 19,562 | **21.56** | 22.01 | **28.53** | 29.14 | 0.2343 | 0.2391 | 0.015 |
+| receptions | 19,562 | **1.590** | 1.637 | **2.038** | 2.090 | 0.2323 | 0.2420 | 0.007 |
+| anytime TD | 20,118 | 0.429 | **0.420** | **0.556** | 0.611 | **0.1811** (baseline 0.2068) | 0.1931 | 0.009 |
+
+**Reading the test:**
+- The model beats the last-10 average in every season for every yards and receptions market.
+- Passing yards gains least (1.0 yard of MAE). Its calibration got worse on test (mean gap 0.038), so its P(over) is the least trustworthy.
+- Anytime TD loses on MAE, as on validation (a count that is mostly 0), but wins clearly on RMSE and Brier.
+- **Lines:** no prop lines were loaded when the test was scored ("no lines loaded"; the ESPN BET 2024-2025 history is a separate backfill into `prop_lines`). Once loaded, `line_comparison` in `nfl/props/final.py` compares the model and the line on the same player-games: MAE, side hit rate, and Brier vs the no-vig line.
+
+**Frozen fit:** `betdata nfl props-freeze` fits on 2013-2025 and writes:
+- `config/fits/nfl_props_2013_2025.json`, the model with M12's play probabilities;
+- `config/nfl_props.json`.
+
+**Live** (`nfl/props/live.py`):
+- **Who and when:** every NFL game in the next 8 days, for players with a stored prop line, at the game's current point; stored change-only in `prop_predictions` as `nflp15`.
+- **Factors:** the top two, in the stat's units, e.g. `["wind 25 km/h", -4.2, "yds"]` or `["Kelce out", 3.0, "yds"]`.
+- **Plugin:** the NFL plugin runs props after the m12/m13w predictions; a failure is logged and never breaks the run.
+- **Runner state:** the hourly runner keeps `data/derived` but not the nflverse or play-by-play files, which its 7am jobs fetch. So the prop panel caches each season's player-game rows (`derived/nfl_prop_box_<season>.parquet`), rebuilt whenever that season's stats and play-by-play files are newer, and the ESPN→gsis map (`derived/nfl_espn_gsis.json`). Gap: last season's files are never fetched on the runner. Until a full season has been cached there, a rebuilt state has only this season's games as history (rates over fewer games, shrunk harder to the league).
+- **ESPN → gsis ids** (`nfl/props/ids.py`): nflverse's daily ESPN-based depth charts (2025+) carry both ids. Players missing there are matched on a unique normalised name among players with nflverse stats, where the line has a name (ESPN NFL prop items carry only the athlete id, so in practice the depth charts do the mapping). Coverage on 2026-10-20: the latest snapshot gives a gsis id for 2,022 of its 2,028 ESPN ids (587 of 588 QBs, RBs, WRs and TEs), and 511 of the 512 QBs, RBs, WRs and TEs with a 2026 stat line have an ESPN id this way.
+
+**Grading** (`nfl/props/grade.py`):
+- **Actuals:** nflverse weekly player stats. A new daily `nfl-player-stats` job refreshes this season's file; nflverse publishes overnight, so a game is graded the morning after.
+- **No stat line:** a player with no stat line but offensive snaps is graded 0; with the game's snaps in and none for him, `void`; otherwise pending.
+- **Depth charts:** the `nfl-depth-charts` job keeps the ID map current.
 
 ## M15 grading and page
 
