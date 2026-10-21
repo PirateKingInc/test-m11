@@ -13,6 +13,10 @@ NBA player box scores (M14): `espn_nba_player_boxscores/player_box_{label}.parqu
 per season (minutes, points, plus/minus, starter, did-not-play), into `nba_player_games`. The
 current season has no file until it ends; ESPN's game summaries cover it (`espn_nba`).
 
+NBA play-by-play (M15): `espn_nba_pbp/play_by_play_{label}.parquet` (~20 MB a season), rebuilt
+into lineup stints (`nba_stints`, rules in `nba/stints.py`); load the season's box scores first.
+The file is not archived (it is free to fetch again): the raw store keeps its size and sha256.
+
 Role: a keyless fallback, never the schedule authority. For NBA it creates and scores games
 when nba_cdn can't be reached; when nba_cdn works it owns the games and these attach to them.
 For college basketball it attaches to CFBD's games through the ESPN game id CFBD recorded, and
@@ -45,6 +49,7 @@ FILES = {
     "ncaab": "/espn_mens_college_basketball_schedules/mbb_schedule_{label}.csv",
 }
 PLAYER_BOX = "/espn_nba_player_boxscores/player_box_{label}.parquet"
+PBP = "/espn_nba_pbp/play_by_play_{label}.parquet"
 BOX_STATS = {"fgm": "field_goals_made", "fga": "field_goals_attempted",
              "fg3m": "three_point_field_goals_made", "fg3a": "three_point_field_goals_attempted",
              "ftm": "free_throws_made", "fta": "free_throws_attempted",
@@ -152,6 +157,8 @@ class SportsDataverseSource(Source):
                 "schedule", "ESPN schedule + scores. --sport nba|ncaab --seasons 2026 | 2020-2026"
             ),
             "player_box": JobSpec("player_box", "NBA player box scores (--seasons 2025)"),
+            "pbp": JobSpec("pbp", "NBA play-by-play into lineup stints (--seasons 2025; "
+                           "box scores first)"),
         }
 
     def _seasons(self, params) -> list[int]:
@@ -167,6 +174,8 @@ class SportsDataverseSource(Source):
     def fetch(self, job: str, params: dict[str, Any], *, priority: str, run_id: int) -> RawInput:
         if job == "player_box":
             return self._fetch_player_box(params, run_id)
+        if job == "pbp":
+            return self._fetch_pbp(params, run_id)
         sport = params.get("sport")
         if sport not in FILES:
             raise ConfigError(f"{NAME}: --sport must be one of {sorted(FILES)}")
@@ -198,10 +207,37 @@ class SportsDataverseSource(Source):
                                             body=body, content_type="application/json")  # fmt: skip
         return RawInput(path, {"unchanged": prev is not None}, body, resp.fetched_at, raw_id)
 
+    def _fetch_pbp(self, params, run_id) -> RawInput:
+        """The parquet goes to `parse` in memory; only a manifest is archived."""
+        import hashlib
+
+        from betdata.core import raw_store
+
+        seasons = self._seasons({**params, "sport": "nba"})
+        if len(seasons) != 1:
+            raise ConfigError(f"{NAME}: pbp takes one season per run")
+        path = PBP.format(label=seasons[0] + 1)
+        resp = self.client.get(path, est_cost=0, run_id=run_id, store_raw=False)
+        manifest = {"file": path, "bytes": len(resp.body),
+                    "sha256": hashlib.sha256(resp.body).hexdigest()}  # fmt: skip
+        with self.engine.begin() as conn:
+            raw_id = raw_store.save(conn, source=NAME, endpoint=path, params=None,
+                                    http_status=resp.status, fetched_at=resp.fetched_at,
+                                    body=json.dumps(manifest).encode(),
+                                    content_type="application/json")  # fmt: skip
+        return RawInput(path, {"manifest": True}, resp.body, resp.fetched_at, raw_id)
+
     def job_for_endpoint(self, endpoint: str) -> str:
+        if "play_by_play" in endpoint:
+            return "pbp"
         return "player_box" if "player_box" in endpoint else "schedule"
 
     def parse(self, job: str, raw: RawInput):
+        if job == "pbp":
+            if raw.body.startswith(b"{"):
+                raise ParseError(f"{NAME}: play-by-play files are not archived; rerun "
+                                 "`betdata run sportsdataverse pbp --seasons ...`")  # fmt: skip
+            return pbp_games(raw.body)
         if job == "player_box":
             rows = json.loads(raw.body)
             for r in rows:
@@ -213,6 +249,12 @@ class SportsDataverseSource(Source):
         return parse_schedule(raw.body, sport=sport, fetched_at=raw.fetched_at)
 
     def load(self, conn, job: str, batch, *, run_id, raw_id) -> tuple[int, int]:
+        if job == "pbp":
+            from betdata.nba.stints import load_stints
+
+            fetched = conn.execute(select_fetched(raw_id)).scalar() if raw_id else None
+            res = load_stints(conn, batch, source=NAME, fetched_at=fetched or self.clock())
+            return res.stints, len(batch)
         if job == "player_box":
             from betdata.nba.box import load_box_rows
 
@@ -305,3 +347,36 @@ def _only_espn_known_teams(conn, batch: ParsedOdds) -> ParsedOdds:
             "%s ncaab: skipped %d games with untracked teams", NAME, before - len(batch.events)
         )
     return batch
+
+
+PBP_COLUMNS = {"game_id", "sequence_number", "type_text", "team_id", "athlete_id_1",
+               "athlete_id_2", "athlete_id_3", "period_number", "clock_display_value",
+               "home_score", "away_score", "shooting_play", "home_team_id"}  # fmt: skip
+
+
+def pbp_games(body: bytes) -> dict[str, tuple[str, list]]:
+    """The season's play-by-play parquet as {ESPN game id: (ESPN home team id, plays)}."""
+    import pandas as pd
+
+    from betdata.nba.stints import Play, clock_seconds
+
+    try:
+        df = pd.read_parquet(io.BytesIO(body), columns=sorted(PBP_COLUMNS))
+    except Exception as e:  # a missing column or a bad file
+        raise ParseError(f"{NAME}: play-by-play file unreadable or changed: {e}") from e
+    ids = {c: _ids(df[c]) for c in ("team_id", "athlete_id_1", "athlete_id_2", "athlete_id_3")}
+    num = {c: pd.to_numeric(df[c], errors="coerce") for c in ("home_score", "away_score")}
+    out: dict[str, tuple[str, list]] = {}
+    cols = zip(df["game_id"].astype(str), _ids(df["home_team_id"]), df["sequence_number"],
+               df["period_number"], df["clock_display_value"], df["type_text"].fillna(""),
+               ids["team_id"], ids["athlete_id_1"], ids["athlete_id_2"], ids["athlete_id_3"],
+               num["home_score"], num["away_score"], df["shooting_play"].fillna(False),
+               strict=True)  # fmt: skip
+    for gid, home, seq, period, clock, kind, team, a1, a2, a3, hs, as_, shot in cols:
+        plays = out.setdefault(gid, (home, []))[1]
+        plays.append(Play(int(seq), int(period), clock_seconds(clock), str(kind).strip(),
+                          team if isinstance(team, str) else None,
+                          tuple(a for a in (a1, a2, a3) if isinstance(a, str)),
+                          None if hs != hs else int(hs), None if as_ != as_ else int(as_),
+                          bool(shot)))  # fmt: skip
+    return out

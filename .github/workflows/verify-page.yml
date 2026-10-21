@@ -36,9 +36,32 @@ jobs:
               pg.goto("https://piratekinginc.github.io/test-m11/", wait_until="networkidle")
               pg.screenshot(path="proof/phone.png")
               pg.screenshot(path="proof/phone_full.png", full_page=True)
+              pg.screenshot(path="proof/phone_top.png", full_page=True,
+                            clip={"x": 0, "y": 0, "width": 390, "height": 2400})
               print("scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
               print("warning:", pg.evaluate("document.getElementById('warn').hidden ? '(none)' : document.getElementById('warn').textContent"))
               print("updated:", pg.evaluate("document.getElementById('updated').textContent"))
+              def props_shot(sport):
+                  # M15: the tab's props section, top 1,400 px, at phone width.
+                  sec = pg.locator(f"#tab-{sport} section.props")
+                  if sec.count():
+                      top, height = sec.first.evaluate(
+                          "e => [e.getBoundingClientRect().top + window.scrollY, e.offsetHeight]")
+                      pg.screenshot(path=f"proof/{sport}_props_phone.png", full_page=True,
+                                    clip={"x": 0, "y": top, "width": 390,
+                                          "height": min(height, 1400)})
+                      print(f"{sport} props rows:", sec.first.locator("li.prop").count())
+              props_shot("nfl")
+              # M14: the NBA tab, opened the way a reader would.
+              nba = pg.locator('button[data-tab="nba"]')
+              if nba.count():
+                  nba.click()
+                  pg.wait_for_timeout(300)
+                  pg.screenshot(path="proof/nba_phone.png")
+                  pg.screenshot(path="proof/nba_phone_full.png", full_page=True)
+                  print("nba tab:", pg.evaluate("document.getElementById('tab-nba').innerText.slice(0, 600)"))
+                  print("nba scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
+                  props_shot("nba")
               b.close()
           PY
       - name: Push to the proof branch

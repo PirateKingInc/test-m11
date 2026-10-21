@@ -1,0 +1,47 @@
+{
+  "margin_groups": [
+    "base",
+    "avail",
+    "str",
+    "sched",
+    "ref",
+    "coach",
+    "wx",
+    "depth",
+    "st",
+    "pen"
+  ],
+  "total_groups": [
+    "base",
+    "avail",
+    "str",
+    "env",
+    "sitluck"
+  ],
+  "lam_margin": 300.0,
+  "lam_total": 300.0,
+  "model": "ridge",
+  "blend_margin": 0.4,
+  "blend_total": 0.15,
+  "m15_group_versions": {
+    "depth": {
+      "version": 101,
+      "variant": "1: one feature, summed over the groups"
+    },
+    "st": {
+      "version": 1,
+      "variant": "full build"
+    },
+    "sitluck": {
+      "version": 1,
+      "variant": "full build"
+    },
+    "pen": {
+      "version": 1,
+      "variant": "full build"
+    }
+  },
+  "status": "chosen on validation 2020-2022; scored once on 2023-2025 (reports/nfl/m15_final_test.json); page false, so predicted in the background",
+  "page": false,
+  "fit": "config/fits/nfl_m15_fit_57fcaa5663_2013_2025.json"
+}

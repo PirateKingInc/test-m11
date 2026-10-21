@@ -95,11 +95,48 @@ sports:
         job: snaps
         cron: "0 7 * * *"
         active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-player-stats  # nflverse weekly player stats: prop inputs and prop grading (M15)
+        source: nflverse_extra
+        job: player_stats
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-depth-charts  # ESPN-id -> gsis-id map for prop lines (daily snapshots, M15)
+        source: nflverse_extra
+        job: depth_charts
+        cron: "0 7 * * *"
+        active_months: [8, 9, 10, 11, 12, 1, 2]
+      - id: nfl-pfr-pass  # PFR weekly pressures: m15's pressure source while 2026 has no participation
+        source: nflverse_extra
+        job: pfr_pass
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-ngs-passing  # NGS time to throw (one all-season file): m15's fallback (M15)
+        source: nflverse_extra
+        job: ngs_passing
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-participation  # skipped until nflverse publishes this season's file (M15)
+        source: nflverse_extra
+        job: participation
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
       - id: nfl-derive  # local: derived tables from the files above (no network)
         source: nfl_model
         job: derive
         cron: "0 7 * * *"
         active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-inputs15  # local: m15 and prop live inputs in data/derived from the files above
+        source: nfl_model
+        job: inputs15
+        cron: "0 7 * * *"
+        active_months: [8, 9, 10, 11, 12, 1, 2]
+      - id: nfl-props  # ESPN player prop lines, next 8 days (beyond 2 days: 7/11/15/19 ET only)
+        source: espn_props
+        job: lines
+        params: {sport: nfl}
+        cron: "0 7-22 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+        when: {after_minutes: 0, before_minutes: 11520}
 
   - key: nba
     name: NBA
@@ -122,6 +159,13 @@ sports:
         source: nba_injury
         job: report
         cron: "0 7-22 * * *"
+        when: {after_minutes: 0, before_minutes: 2880}
+      - id: nba-props  # ESPN player prop lines for the next 2 days; no key, no quota
+        source: espn_props
+        job: lines
+        params: {sport: nba}
+        cron: "0 7-22 * * *"
+        active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
         when: {after_minutes: 0, before_minutes: 2880}
       # --- keyed sources (skipped while their secret is unset), inside existing quotas ------
       - id: nba-sharp  # DraftKings + FanDuel (needs SHARPAPI_KEY); 1 call per run

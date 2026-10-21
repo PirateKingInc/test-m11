@@ -18,6 +18,10 @@ Decisions that change dependencies, data rules or scope, newest last.
 | 2026-10-19 | No new runtime dependencies in M13. Playwright is used only in the `verify-page` workflow (pip, on the runner) and for local screenshots (`uv run --with`). | The page is static HTML/CSS/JS written by Python. |
 | 2026-10-20 | Hourly workflow has a backup trigger at :30, and a slot that already ran successfully is skipped. | GitHub dropped 6 of 7 top-of-hour scheduled runs on the first evening. |
 | 2026-10-20 | Clock workflow: a self-redispatching job that starts each hourly run. | GitHub's cron kept dropping almost every tick, including the :30 backups. This stays inside "Actions + Pages only", at the cost of an idle runner, which is free on a public repository. |
+| 2026-10-21 | M15 NBA lineup stints in `nba_stints` (migration 0018). sportsdataverse play-by-play files are not archived in `raw_responses` (only size and sha256); the runner's state holds stints for the last three seasons only. | Each file is ~20 MB and free to fetch again; the full history (`betdata backfill --source sportsdataverse --sport nba --dataset pbp`) is ~45k rows a season and only needed where the RAPM fit runs. |
+| 2026-10-21 | M15 nflverse files (participation, FTN, PFR, depth charts, player stats, NGS) are kept as parquet under `data/nflverse/` by source `nflverse_extra`, CLI/backfill only, outside the Actions cache. | 53 MB in all; nothing in the hourly run reads them yet. Features derived from them should go into database tables (cached), as play-by-play does; the current season's files can then be fetched by one daily `refresh` job. |
+| 2026-10-21 | m15 and NFL prop live inputs are compact per-season tables under `data/derived` (kept by the runner state), refreshed by the daily 7am job `nfl-inputs15`; earlier seasons built once by the `nfl-m15-bootstrap` workflow. | Caching raw play-by-play and nflverse files would add about 100 MB to the state; the tables are about 1 MB and give identical features (see "NFL M15 on the hourly runner"). |
+| 2026-10-21 | M15 NFL props (`nflp15`): the hourly NFL run fetches this season's nflverse player stats and depth charts once a day (`nfl-player-stats`, `nfl-depth-charts`). The prop panel caches its per-season player-game rows and the ESPN→gsis id map under `data/derived` (kept by the runner state). Every NFL prop market is research-only. | Prop inputs and grading need weekly player stats; prop lines carry ESPN athlete ids, and the depth charts map them to gsis ids. No NFL prop lines exist for validation, so no betting backtest or threshold is possible (MODEL.md, "M15 NFL player props"). |
 
 ## M13: the hourly page
 
@@ -117,3 +121,106 @@ On this machine's database, `plan --runner` charges the weekly archive job for e
 * **pdfminer.six** (MIT; pulls `cryptography` and `charset-normalizer`): reads the official NBA
   injury report PDFs with each text line's position, which the report's table layout needs
   (`src/betdata/nba/injury_pdf.py`). It is the only new runtime dependency of M14.
+
+### NBA sources (all free; checked from an Actions runner)
+
+| Data | Source | Hourly job | Quota |
+|---|---|---|---|
+| Schedule, tip times, scores, free DraftKings line | ESPN scoreboard API (`espn_nba scoreboard`) | every run, Oct-Jun | none (polite: one request per 0.5 s) |
+| Box scores of newly finished games | ESPN game summary (`espn_nba boxscores`) | every run | none (one call per finished game) |
+| Official injury report (latest PDF) | `ak-static.cms.nba.com` (`nba_injury report`) | every run with games in the next 2 days | none (one request per second; a burst of ~2,000 was refused) |
+| Lines from DraftKings and FanDuel | SharpAPI | every run with games in the next 2 days | needs `SHARPAPI_KEY` |
+| One board before the evening tips | The Odds API | 18:00 ET | needs `ODDS_API_KEY` |
+| One Pinnacle board | OddsPapi | 17:00 ET | needs `ODDSPAPI_KEY` |
+| History: schedules, box scores 2015-16 on | sportsdataverse release files | rebuild only | none |
+| History: injury reports, opening and closing lines | league PDFs, ESPN core odds API | `nba-history` workflow (manual) | none |
+
+**Blocked from Actions:** cdn.nba.com (403) and stats.nba.com (no answer). Neither is used.
+
+**ESPN's public APIs** are unofficial and undocumented. They are used the way the M7 sportsdataverse files already use ESPN data: free, keyless, and at a polite rate. If ESPN closes them, the NBA page loses its free line and live scores; the sportsdataverse files remain for scores with up to a day's delay.
+
+**State.** The live runner loads only the last three seasons plus the current one (`LIVE_SEASONS`). A lost cache is rebuilt from the sportsdataverse files and ESPN (`NbaSport.bootstrap`), like NFL. The injury-report and line history that feed the backtest are not needed live. They live on the `nba-history` branch and load with `betdata nba load-history`.
+
+**Adding NBA to an existing state** (`nba-bootstrap` workflow, run once before NBA went live) loads that history without marking a rebuild. Otherwise the first NBA run would have shown the "saved data was lost" notice for 48 hours.
+
+### Quota over 30 days, NFL + NBA
+
+Measured with `betdata scheduler plan --runner --days 30`, 2026-10-20, on the real schedules of both sports. NBA has games on 26 of the 30 days. The worst case for both sports is simulated in `tests/runner/test_quota_month.py`.
+
+| Source | NFL units | NBA units | Total | Free limit (after margin) | Verdict |
+|---|---|---|---|---|---|
+| SharpAPI (hourly, if keyed; one request per sport) | 479 | 479 | 958 (~32/day) | 3,000/day | OK |
+| The Odds API (NFL pre-kickoff; NBA one 18:00 ET board on game days) | 72 | 87 | 159 | 450/month | OK |
+| OddsPapi (NFL windows; NBA one 17:00 ET board on game days) | 13 | 29 | 42 | 225/month | OK |
+| ESPN NBA (scoreboard: 4 day-requests a run, yesterday to +2 days; box scores: one per newly finished game) | - | ~1,900 + ~200 requests | - | no quota | OK |
+| NBA injury report PDF (1 per run with games within 2 days) | - | ~450 requests | - | no quota | OK |
+| Open-Meteo, nflverse | as in M13 | - | - | - | OK |
+
+None of the keyed sources has a secret today, so they are skipped and cost nothing. The table shows what they would use if keyed.
+
+### Runtime with NFL + NBA
+
+Measured on GitHub's runners, 2026-10-21, with NBA active.
+
+| Run | Run step | Whole run job |
+|---|---|---|
+| NFL only (last runs before NBA went live) | 18-21 s | ~45 s |
+| NFL + NBA, regular hourly run | 34-35 s | ~55 s |
+
+- **The NBA share** is about 15 s: load the last three seasons into the as-of store, predict the next 2 days and fetch the injury PDF.
+- **Budget:** a run is well under 3 minutes, and billed minutes are unchanged at 2 a run.
+- **Rebuild:** a run that rebuilds a lost state with NBA (sportsdataverse files for 2015-16 on, then ESPN for this season) is the one exception. It is a one-time cost, and history loading is separate (`nba-bootstrap`).
+
+## M15: new side variables and player props
+
+### NFL M15 on the hourly runner (state size and runtime)
+
+- **State:** the m15 and NFL prop live inputs are compact tables in `data/derived`, which the state already keeps. No play-by-play or nflverse file is cached.
+  - m15 (2024-2026): team-games, kickers, and depth charts kept only when they change. About 0.75 MB.
+  - Props (2025-2026): player-games, team-games and the ESPN id map. About 0.33 MB.
+  - Together about 1.1 MB.
+- **Daily (the 7am run):** downloads this season's play-by-play, player stats and depth charts, plus PFR pass and NGS passing (about 1.5 MB), and participation once nflverse publishes it. Then `nfl-inputs15` rebuilds this season's tables, which took about 15 s locally.
+- **Hourly:** m15 adds about 6 s, because it shares the M12 store with m12 and m13w. Props add about 9 s with about 1,700 lines. Both were measured locally on a copy of the runner's data with no raw files on disk.
+  - Locally the whole NFL predict step (store load 19 s, m12 + m13w 11 s, m15 6 s, props 9 s) takes about 45 s.
+- **One-off:** `nfl-m15-bootstrap` (manual, concurrency group `hourly`):
+  - restores the state;
+  - downloads 2024-2026 play-by-play and nflverse files into its workspace;
+  - runs `betdata nfl live-inputs`;
+  - saves the state.
+  - Run it once after merging. Run it again after a lost-state rebuild: until then m15 is skipped, and props read whatever player stats the 7am run has fetched.
+
+### Data licences and attribution (checked 2026-10-21)
+
+| Dataset | Licence | Attribution |
+|---|---|---|
+| nflverse-data (pbp, participation, NGS, PFR advanced, depth charts, player stats) | CC-BY 4.0 | "Data: nflverse" (already on the page since M12) |
+| FTN charting via nflverse | CC-BY-SA 4.0 | "Charting data: FTN Data via nflverse", on the page wherever FTN-derived numbers are used |
+| sportsdataverse-data (NBA play-by-play, box scores) | MIT (repository); underlying data from ESPN | "NBA data: sportsdataverse / ESPN" |
+| ESPN prop lines (core API) | none published; unofficial endpoint | Lines are shown with their source and book. Raw responses stay in the private Actions cache and are never republished. Requests stay at ≤1 a second, with backoff on 429 or empty payloads. |
+
+M15 needs no paid source and no new API key.
+
+### M15 quota and runtime proof (NFL + NBA sides and props, measured on the runner)
+
+**Measured hourly runs, 2026-10-21, automatic (clock):**
+
+| Run (UTC) | What ran | Run step | NFL predict | NBA predict | nba-props lines | nfl-props lines |
+|---|---|---|---|---|---|---|
+| 21:00 | sides + prop lines (no prop design yet) | 84 s | 20 s | 20 s | 38 s | 2 s |
+| 22:00 | + NBA and NFL prop predictions | 95 s | 22 s | 29 s | 37 s | 2 s |
+| 23:00 | + m15, NFL props four-hourly refresh (19:00 ET) | 126 s | 25 s | 30 s | 37 s | 29 s |
+
+- **Whole job:** about 30 s more than the run step (restore and save state, deploy), so about 2.0-2.6 minutes. That is under the 3-minute budget.
+- **Largest cost:** the NBA prop lines, at one request a second (about 37 requests for a slate). Distant NFL games are refreshed only every 4 hours (7, 11, 15, 19 ET) to keep the other runs short.
+- **The 7am run:** it adds the daily NFL refresh (play-by-play, player stats, depth charts, PFR and NGS, then `nfl-inputs15`, about 15 s), and is projected at about 2.5 minutes. If it ever passes 3 minutes, the first cut is to refresh NBA lines for games more than 24 hours away every 4 hours instead of hourly; no market would be dropped.
+- **Never refit hourly:** every M15 model reads a frozen fit under `config/fits/`. RAPM uses the snapshot of the latest Monday, about 1 s to fit from the stints.
+
+**Quota over 30 days:**
+- **ESPN prop lines** (core API, keyless, no published quota): about 37 requests a run for NBA × 16 runs ≈ 600 a day, plus NFL ≈ 30 a run on four-hourly runs and fewer otherwise. Always at ≤1 request a second, with backoff on 429 and 404 treated as "no props".
+- **History backfill** (`props-history`, manual): about 5,000 requests a season at 1 a second, one season at a time.
+- **nflverse and sportsdataverse files:** GitHub release downloads, no quota.
+- **Keyed sources** (SharpAPI, The Odds API, OddsPapi) are unchanged from M14: SharpAPI 958 of 3,000 a day, The Odds API 159 of 450 a month, OddsPapi 42 of 225 a month. None is keyed today, so they use nothing.
+
+**State:** the Actions cache entry is about 99 MB compressed (93 MB before M15). That covers the lineup stints for 2024-25 to 2026-27, prop lines, prop predictions and the NFL m15/prop tables (about 1 MB).
+
+**Dependencies:** M15 adds no new runtime dependency. RAPM uses `scipy.sparse`, which is already installed with scikit-learn.

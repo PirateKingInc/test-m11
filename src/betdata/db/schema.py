@@ -683,6 +683,32 @@ nba_player_games = Table(
     Index("ix_nba_player_games_player", "player_id", "known_at"),
 )
 
+# NBA lineup stints (M15): stretches of play with the same ten players on the floor, rebuilt
+# from ESPN play-by-play (`nba/stints.py` has the rules). Times are seconds elapsed in the game;
+# players are ESPN athlete ids, five per side, sorted and comma-joined; home/away follow the
+# game's orientation. Possessions are estimated per team (FGA - OREB + TOV + 0.44 FTA).
+# `known_at`: tip + 3 h for history, the fetch time live. Re-loading a game replaces its rows.
+nba_stints = Table(
+    "nba_stints",
+    metadata,
+    Column("stint_id", Integer, primary_key=True),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("period", Integer, nullable=False),
+    Column("start_sec", Float, nullable=False),
+    Column("end_sec", Float, nullable=False),
+    Column("home_players", String(64), nullable=False),
+    Column("away_players", String(64), nullable=False),
+    Column("home_pts", Integer, nullable=False),
+    Column("away_pts", Integer, nullable=False),
+    Column("home_poss", Float, nullable=False),
+    Column("away_poss", Float, nullable=False),
+    Column("source", String(32), nullable=False),
+    Column("known_at", UTCDateTime, nullable=False),
+    Column("fetched_at", UTCDateTime, nullable=False),
+    UniqueConstraint("game_id", "period", "start_sec"),
+    Index("ix_nba_stints_known", "known_at"),
+)
+
 # The official NBA injury report, every version, change-only: a row is added when a player's
 # status or reason for a game differs from his previous row for that game, and a `Removed` row
 # when a player listed earlier is no longer on a later report that still covers his team's game.
@@ -731,4 +757,92 @@ nba_bet_grades = Table(
     Column("graded_at", UTCDateTime, nullable=False),
     UniqueConstraint("prediction_id", "market"),
     Index("ix_nba_bet_grades_version", "model_version"),
+)
+
+
+# --- M15 player props ------------------------------------------------------------------
+
+# Player prop lines (ESPN's propBets), append-only and change-only: a row is added when a
+# (game, player, market, book, kind)'s line or prices differ from its previous row. Only the main
+# over/under line is kept (alternate ladders are skipped). `kind`: `open` and `close` come from a
+# finished game's history (the book's opening and last line), `poll` from live fetches. NBA and
+# NFL; `player_id` is ESPN's athlete id. `line` is null for yes/no markets (anytime touchdown).
+prop_lines = Table(
+    "prop_lines",
+    metadata,
+    Column("prop_line_id", Integer, primary_key=True),
+    Column("source", String(32), nullable=False),
+    Column("source_game_id", String(32), nullable=False),
+    Column("game_id", ForeignKey("games.game_id")),  # null until matched
+    Column("player_id", String(32), nullable=False),
+    Column("player_name", String(128)),
+    Column("market", String(16), nullable=False),
+    Column("book_id", ForeignKey("books.book_id"), nullable=False),
+    Column("kind", String(8), nullable=False),  # open, close, poll
+    Column("line", Float),
+    Column("over_price", Integer),
+    Column("under_price", Integer),
+    Column("quoted_at", UTCDateTime),  # the book's last update, as ESPN gives it
+    Column("fetched_at", UTCDateTime, nullable=False),
+    Column("raw_id", ForeignKey("raw_responses.raw_id")),
+    UniqueConstraint("source", "source_game_id", "player_id", "market", "book_id", "kind",
+                     "fetched_at", name="uq_prop_lines_source"),
+    Index("ix_prop_lines_game", "game_id", "player_id", "market", "fetched_at"),
+)
+
+# Stored prop predictions (M15 prop models), change-only per (version, game, player, market,
+# point): the projection's mean, the over probability at the line it was compared with, and the
+# distribution's parameters, so grading needs nothing else.
+prop_predictions = Table(
+    "prop_predictions",
+    metadata,
+    Column("prop_prediction_id", Integer, primary_key=True),
+    Column("model", String(32), nullable=False),  # nbap15, nflp15
+    Column("model_version", String(128), nullable=False),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("player_id", String(32), nullable=False),  # ESPN athlete id
+    Column("player_name", String(128), nullable=False),
+    Column("team_id", ForeignKey("teams.team_id")),
+    Column("market", String(16), nullable=False),
+    Column("prediction_point", String(16), nullable=False),
+    Column("predicted_at", UTCDateTime, nullable=False),
+    Column("mean", Float, nullable=False),
+    Column("line", Float),
+    Column("over_price", Integer),
+    Column("under_price", Integer),
+    Column("book_id", ForeignKey("books.book_id")),
+    Column("line_fetched_at", UTCDateTime),
+    Column("p_over", Float),
+    Column("edge", Float),  # p_over minus the no-vig over probability, in % points
+    Column("dist", JSON),  # {"family": ..., params}
+    Column("factors", JSON),
+    Index("ix_prop_predictions_game", "game_id", "player_id", "market", "predicted_at"),
+)
+
+# Graded prop predictions: every stored prediction (last one before tip per point) once the box
+# score is in. `outcome` is how the stat fell against the stored line (over/under/push), or
+# `void` when the player did not play; a bet (side, price, profit) only where the edge cleared
+# the market's validated threshold. CLV is in no-vig % points against the closing line, when
+# one is stored.
+prop_grades = Table(
+    "prop_grades",
+    metadata,
+    Column("grade_id", Integer, primary_key=True),
+    Column("prop_prediction_id", ForeignKey("prop_predictions.prop_prediction_id"),
+           nullable=False),
+    Column("model_version", String(128), nullable=False),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("player_id", String(32), nullable=False),
+    Column("market", String(16), nullable=False),
+    Column("actual", Float),
+    Column("outcome", String(8), nullable=False),  # over, under, push, void, no_line
+    Column("bet_side", String(8)),
+    Column("price_american", Integer),
+    Column("profit", Float),
+    Column("close_line", Float),
+    Column("close_price_american", Integer),
+    Column("clv", Float),
+    Column("graded_at", UTCDateTime, nullable=False),
+    UniqueConstraint("prop_prediction_id"),
+    Index("ix_prop_grades_version", "model_version", "market"),
 )

@@ -12,6 +12,7 @@ from betdata.db.engine import make_engine, upgrade
 from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
 from betdata.nba.cli import nba_app
 from betdata.nfl.cli import nfl_app
+from betdata.props.cli import props_app
 from betdata.runner.cli import page_app, runner_app
 from betdata.sources import REGISTRY
 
@@ -26,6 +27,7 @@ alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=T
 app.add_typer(alias_app, name="alias")
 app.add_typer(nfl_app, name="nfl")
 app.add_typer(nba_app, name="nba")
+app.add_typer(props_app, name="props")
 app.add_typer(runner_app, name="runner")
 app.add_typer(page_app, name="page")
 
@@ -99,11 +101,14 @@ def backfill(
     ),  # fmt: skip
     seasons: str = typer.Option(..., help="2025 | 2018-2025"),
     source_name: str = typer.Option(
-        "cfbd", "--source", help="cfbd, sportsdataverse, open_meteo (weather) or nflverse"
-    ),
+        "cfbd", "--source",
+        help="cfbd, sportsdataverse, open_meteo (weather), nflverse or nflverse_extra",
+    ),  # fmt: skip
     dataset: str = typer.Option(
-        None, help="nflverse only: injuries, pbp, team_stats, snaps or rosters"
-    ),
+        None, help="nflverse: injuries, pbp, team_stats, snaps or rosters; nflverse_extra: "
+        "comma-separated (participation,ftn,pfr_pass,...,depth_charts,player_stats,ngs_*) or all; "
+        "sportsdataverse nba: schedule (default), player_box or pbp (lineup stints; box first)",
+    ),  # fmt: skip
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
 ):
@@ -128,6 +133,24 @@ def backfill(
             if result.status == "failed":
                 raise typer.Exit(1)
         return
+    if source_name == "nflverse_extra":
+        from betdata.sources.nflverse_extra import DATASETS
+
+        names = list(DATASETS) if dataset in (None, "all") else dataset.split(",")
+        unknown = sorted(set(names) - set(DATASETS))
+        if unknown:
+            raise typer.BadParameter(f"unknown datasets {unknown}; available: {list(DATASETS)}")
+        extra = _source("nflverse_extra")
+        for name in names:
+            per_season = DATASETS[name].first is not None
+            for year in years if per_season else [None]:
+                params = {"seasons": str(year)} if per_season else {}
+                result = extra.run(name, **params, **({"refetch": "1"} if refetch else {}))
+                typer.echo(f"  {name} {year or 'all'}: {result.status} "
+                           f"new={result.rows_inserted} {result.message}")  # fmt: skip
+                if result.status == "failed":
+                    raise typer.Exit(1)
+        return
     if source_name == "open_meteo":
         if sport not in ("nfl", "ncaaf"):
             raise typer.BadParameter("weather backfill covers nfl and ncaaf")
@@ -143,16 +166,26 @@ def backfill(
     if source_name == "sportsdataverse":
         if sport not in ("nba", "ncaab"):
             raise typer.BadParameter("sportsdataverse backfill covers nba and ncaab")
+        job = dataset or "schedule"
+        if job not in ("schedule", "player_box", "pbp") or (job != "schedule" and sport != "nba"):
+            raise typer.BadParameter("--dataset must be schedule, player_box or pbp (nba only)")
         sdv = _source("sportsdataverse")
         for year in years:
-            result = sdv.run("schedule", sport=sport, seasons=str(year))
-            typer.echo(f"  {sport} {year}: {result.status} games={result.rows_seen} "
-                       f"results_changed={result.rows_inserted} {result.message}")  # fmt: skip
+            if job == "schedule":
+                result = sdv.run("schedule", sport=sport, seasons=str(year))
+                typer.echo(f"  {sport} {year}: {result.status} games={result.rows_seen} "
+                           f"results_changed={result.rows_inserted} {result.message}")  # fmt: skip
+            else:
+                result = sdv.run(job, seasons=str(year))
+                typer.echo(f"  {job} {year}: {result.status} games={result.rows_seen} "
+                           f"rows={result.rows_inserted} {result.message}")  # fmt: skip
             if result.status == "failed":
                 raise typer.Exit(1)
         return
     if source_name != "cfbd":
-        raise typer.BadParameter("--source must be cfbd, sportsdataverse, open_meteo or nflverse")
+        raise typer.BadParameter(
+            "--source must be cfbd, sportsdataverse, open_meteo, nflverse or nflverse_extra"
+        )
     if sport not in ("ncaaf", "ncaab"):
         raise typer.BadParameter("sport must be ncaaf or ncaab")
     source = _source("cfbd")
@@ -596,14 +629,45 @@ def predict(
         typer.echo(line + ("" if r.stored else "  (unchanged)"))
 
 
+def _grade_props(sport: str) -> None:
+    from betdata.props.grade import records
+
+    if sport == "nba":
+        from betdata.nba.props.grade import MODEL
+        from betdata.nba.props.grade import grade_nba_props as run_grade
+    elif sport == "nfl":
+        try:
+            from betdata.nfl.props.grade import MODEL
+            from betdata.nfl.props.grade import grade_nfl_props as run_grade
+        except ImportError as e:  # NFL props arrive later in M15
+            raise typer.BadParameter("NFL prop grading is not built yet") from e
+    else:
+        raise typer.BadParameter("props: nba or nfl")
+    with _engine().begin() as conn:
+        run = run_grade(conn, utcnow())
+        recs = records(conn, (MODEL,))
+    typer.echo(f"graded: {run.inserted} new, {run.updated} updated, {run.pending} waiting for a "
+               "box score")
+    for r in recs:
+        roi = f"{100 * r.profit / r.bets:+.1f}%" if r.bets else "-"
+        avg = "-" if r.avg_clv is None else f"{r.avg_clv:+.2f}"
+        typer.echo(f"{r.model_version:28} {r.market:11} graded {r.graded:5} over {r.over:4} "
+                   f"under {r.under:4} push {r.push:3} void {r.void:3} | bets {r.bets:4} "
+                   f"{r.wins}-{r.losses} ROI {roi:>7} CLV {avg}")
+
+
 @app.command()
-def grade(sport: str = typer.Argument("nfl")):
+def grade(sport: str = typer.Argument("nfl"), props: bool = typer.Option(
+        False, "--props", help="grade stored player-prop predictions (M15)")):  # fmt: skip
     """Grade stored predictions on final games (idempotent): result, closing-line value, and
     per model version the record, ROI, average CLV and share of bets that beat the close."""
+    if props:
+        _grade_props(sport)
+        return
     from betdata.nfl.grade import THRESHOLDS, grade_nfl, ml_threshold, records
 
     if sport != "nfl":
-        raise typer.BadParameter("only nfl so far")
+        raise typer.BadParameter("only nfl so far (use --props for NBA prop grading)")
     with _engine().begin() as conn:
         run = grade_nfl(conn, utcnow())
         recs = records(conn)

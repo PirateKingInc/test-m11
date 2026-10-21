@@ -91,6 +91,32 @@ the database: each season's parquet file is saved under `data/pbp/nfl/` (or `BET
 and each new version is recorded in `data_files`; only the latest file per season is kept. Read
 them with pandas, polars or duckdb.
 
+## NFL M15 files (participation, FTN, PFR, depth charts, player stats, NGS)
+
+```bash
+uv run betdata backfill --source nflverse_extra --dataset all --seasons 2016-2026   # ~45 s
+uv run betdata backfill --source nflverse_extra --dataset participation,ftn --seasons 2022-2026
+uv run betdata run nflverse-extra depth_charts --seasons 2026    # one file
+uv run betdata run nflverse-extra refresh                        # every dataset, current season
+```
+
+Saved as parquet under `data/nflverse/` at their nflverse release paths, each version recorded
+in `data_files` (source `nflverse_extra`). A past season's file is downloaded once; the current
+season's and the all-season NGS files at most once a day; a season nflverse hasn't published
+(participation 2026) is `skipped`, not failed. Coverage checked by download on 2026-10-21:
+
+| Dataset (`--dataset`) | Seasons | On disk |
+|---|---|---|
+| `participation` (players on field, pressure, time to throw, coverage) | 2016-2025 | 10.8 MB (names/numbers dropped; 34.8 MB as published) |
+| `ftn` (FTN charting; CC-BY-SA 4.0, "FTN Data via nflverse") | 2022-2026 | 2.4 MB |
+| `pfr_pass`, `pfr_rush`, `pfr_rec`, `pfr_def` (PFR advanced, weekly) | 2018-2026 | 2.4 MB |
+| `depth_charts` (weekly to 2024; daily snapshots 2025-2026) | 2001-2026 | 16.4 MB |
+| `player_stats` (weekly, 150 columns incl. kicking, punting, penalties) | 1999-2026 | 20.7 MB |
+| `ngs_passing`, `ngs_receiving`, `ngs_rushing` (one file each) | 2016-2026 | 2.3 MB |
+
+All of it is 53 MB. These files are not scheduled and not in the Actions cache (the hourly
+runner doesn't read them yet); a lost file is simply downloaded again.
+
 ## Venues and weather
 
 ```bash
@@ -257,7 +283,7 @@ betdata nfl weather [--write]           # weather group on validation (needs the
   - `.github/workflows/hourly.yml` runs the page, on schedule and manually; `drop_state` and `force_fail` exist for testing.
   - `weather.yml` backfills Open-Meteo archived forecasts and evaluates the weather version.
   - `verify-page.yml` screenshots the live page at phone width to the `proof` branch.
-- **Sports come from `config/sports.yaml`:** NFL is active, NBA is "coming soon". The runner, page and grading call a small interface (`betdata/sports/__init__.py`); NFL is its only plugin. Adding NBA means an entry there plus a plugin with `predict`, `cards`, `grade` and `records`.
+- **Sports come from `config/sports.yaml`:** NFL and (since M14) NBA are active. The runner, page and grading call a small interface (`betdata/sports/__init__.py`); each sport is a plugin with `predict`, `cards`, `grade` and `records`.
 - **Per game, the page shows:**
   - kickoff in Eastern time;
   - model vs market spread and edge;
@@ -339,6 +365,68 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - **Portability**: SQLAlchemy Core + Alembic, generic types, UTC everywhere. Set
   `BETDATA_DB_URL` to a Postgres URL to switch.
 
+## M14 NBA model and page tab
+
+The page's **NBA** tab shows the next 2 days of games from the frozen M14 model (MODEL.md, "M14").
+Each card shows:
+- tip time (Eastern);
+- model vs market spread and moneyline, with edges;
+- source, book and fetch time;
+- top 3 factors;
+- players out or questionable, with play probability;
+- back-to-back and rest flags;
+- the prediction point (early, morning or pre-tip).
+
+Totals stay in the CLI. Moneyline flags are off for any sport whose final-test moneyline ROI is not above 0, which today means both sports.
+
+```bash
+betdata run espn_nba scoreboard          # schedule, tips, scores, free DraftKings line (ESPN)
+betdata run nba_injury report            # latest official injury report PDF, change-only
+betdata nba history-fetch --season 2024   # backfill injury reports and ESPN lines (Actions)
+betdata nba export-history --season 2024 --out history
+betdata nba load-history history         # load the published history files
+betdata nba select | tune | final-test | freeze | replay | status-changes
+```
+
+**Lineup stints (M15):** `nba_stints` holds each stretch with the same ten players on the floor, with points and possessions, for the RAPM model. They are rebuilt from play-by-play (rules in MODEL.md, "M15 NBA lineup stints"):
+
+```bash
+betdata backfill --source sportsdataverse --sport nba --dataset pbp --seasons 2015-2025   # ~20 MB/season
+betdata run espn_nba stints --days 30     # this season's games fetched before stints existed
+```
+
+New games get theirs with their box scores. `betdata nba bootstrap` loads the last three seasons.
+
+- **Workflows:**
+  - `nba-history.yml` backfills history to the `nba-history` branch;
+  - `nba-bootstrap.yml` loads history into the runner's state once;
+  - `nba-report.yml` replays this season to the `nba-report` branch.
+- **Hourly:** the runner refreshes the injury report, lines and predictions for the next 2 days. It never refits.
+- **Sources, quotas and runtime:** PROJECT.md, "M14".
+
+## M15 new side variables and player props
+
+M15 adds new side versions that run and are graded beside the frozen ones, plus player prop models for both sports (MODEL.md, "M15").
+- **NBA side `nba15`:** M14 design + lineup RAPM + three-point luck + load management. It won the page on the Part A rule; M14 now runs in the background.
+- **NFL side `m15`:** m13w + depth-chart backups + special teams + penalties (margin) + situational luck (total). Its test was worse than m13w's, so it runs in the background only.
+- **Props section on each tab:** players with a stored ESPN line, with projection, line, P(over), edge, top 2 factors and source. No prop market earned flags. NBA PRA and every NFL market are research only.
+
+```bash
+betdata run espn-props lines --param sport=nba   # hourly prop lines (NBA next 2 days; NFL 8)
+betdata props history-fetch|export-history|load-history   # ESPN prop line history (Actions)
+betdata nba props-select | props-tune | props-final-test | props-freeze
+betdata nba select15 | final-test15 | freeze15      # NBA side version nba15
+betdata nfl select15 | final-test15 | freeze15      # NFL side version m15
+betdata nfl props-select | props-final-test | props-freeze
+betdata grade nba --props / betdata grade nfl --props
+betdata backfill --source sportsdataverse --sport nba --dataset pbp --seasons 2015-2025  # stints
+betdata backfill --source nflverse_extra --dataset all --seasons 2016-2026
+```
+
+**Workflows:**
+- `props-history.yml`: ESPN prop line history, published to the `props-history` branch.
+- `nba-bootstrap.yml`: also loads lineup stints into the runner state.
+
 ## Data sources and polling plan
 
 | Source | Free limit | Plan |
@@ -347,7 +435,10 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 | SharpAPI | 12 req/min, DK + FD, 60 s delay | every 10 min near tip/kickoff, hourly otherwise; capped at 6/min |
 | OddsPapi | ~250/mo (vendor figure) | one Pinnacle board per league before game time (~80/mo at peak) |
 | nflverse (`nflreadpy`) | none | schedules/closing lines/results daily, PBP nightly, injuries daily |
-| NBA (cdn.nba.com) | unofficial, no quota | season schedule daily, scoreboard twice nightly |
+| NBA (cdn.nba.com) | unofficial, no quota | CLI only: blocked (403) from GitHub Actions |
+| ESPN NBA APIs | unofficial, no quota | hourly scoreboard + new box scores; history lines |
+| ESPN prop lines (core API) | unofficial, no quota | hourly for games within 2 days (NBA) / 8 days (NFL, distant games every 4 h) |
+| NBA official injury report (PDF) | none (1 request/s) | latest report hourly when games are within 2 days |
 | sportsdataverse | none (GitHub releases) | NBA fallback + history; backup NCAAB scores |
 | CFBD | 1,000/mo shared FB + BB | ~150/mo ongoing, ~300 for backfill, 900 hard cap |
 | Open-Meteo | 10k/day (weighted), non-commercial | outdoor games: forecast every 3 h for the week, observed ~6 days after (~150/day) |
@@ -371,3 +462,6 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - [x] **M13** hourly page on GitHub Actions + Pages (7am-10pm ET), moneyline (fair odds, no-vig
   edge, calibration check, grading), weather history and a weather model version, sport
   interface for a second sport
+- [x] **M14** NBA: box scores, official injury reports (change-only), ESPN lines; as-of
+  model with availability, strength, rest, pace and context groups; NBA tab on the hourly page
+- [x] **M15** new side variables (NBA RAPM, three-point luck, load management; NFL special teams, depth backups, penalties, situational luck) as background or page versions by the switch rule; NBA and NFL player props with live lines, grading and a props section

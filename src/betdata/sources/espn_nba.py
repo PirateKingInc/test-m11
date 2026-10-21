@@ -7,7 +7,10 @@ current season, and historical opening/closing lines.
                  authority on GitHub Actions, where cdn.nba.com answers 403.
   boxscores      .../summary?event=ID for finished games that have no box score yet: players'
                  minutes, points, plus/minus, starter, did-not-play (the current season has no
-                 sportsdataverse file until it ends).
+                 sportsdataverse file until it ends). The plays are kept too and rebuilt into
+                 lineup stints (`nba_stints`, M15).
+  stints         .../summary?event=ID again for finished games that have a box score but no
+                 stints (games fetched before M15); stores stints only.
   odds_history   sports.core.api.espn.com .../events/ID/competitions/ID/odds for past games:
                  each book's opening and last (closing) line, back to 2015-16 (MODEL.md).
 
@@ -21,6 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -37,7 +41,7 @@ from betdata.core.normalize.odds_math import american_to_decimal
 from betdata.core.odds_loader import load_odds
 from betdata.core.results_loader import load_results
 from betdata.core.source import JobSpec, RawInput, Source
-from betdata.db.schema import game_source_ids, games, nba_player_games, odds_snapshots
+from betdata.db.schema import game_source_ids, games, nba_player_games, nba_stints, odds_snapshots
 
 NAME = "espn_nba"
 log = logging.getLogger(__name__)
@@ -58,6 +62,14 @@ BOOKS = {
     "betrivers": "betrivers", "unibet": "unibet", "sugarhouse": "sugarhouse",
     "pointsbet": "pointsbet", "opening": "opening",
 }  # fmt: skip
+BOOKS_NORM = {re.sub(r"[^a-z0-9()]", "", k): v for k, v in BOOKS.items()}
+
+
+def book_of(provider: str) -> str | None:
+    """Our book key for an ESPN provider name, ignoring case, spaces and punctuation
+    ("DraftKings" and "Draft Kings" are the same book)."""
+    key = re.sub(r"[^a-z0-9()]", "", str(provider).lower())
+    return BOOKS_NORM.get(key)
 
 
 def _int_odds(v) -> int | None:
@@ -131,7 +143,7 @@ def _event(e: dict) -> ParsedEvent | None:
 
 
 def _scoreboard_prices(gid: str, odds: dict) -> list[ParsedPrice]:
-    book = BOOKS.get(str(odds.get("provider", {}).get("name", "")).lower())
+    book = book_of(odds.get("provider", {}).get("name", ""))
     if book is None:
         return []
     out = []
@@ -213,6 +225,42 @@ def summary_box(espn_id: str, data: dict) -> dict:
     return out
 
 
+def summary_plays(data: dict) -> dict:
+    """The fields of a summary's plays that lineup stints need, compact: [sequence, period,
+    clock, type, team id, athlete ids (substitutions: entering, leaving), home score, away
+    score, shooting], plus ESPN's home team id."""
+    comp = data["header"]["competitions"][0]
+    home = next((str(c["team"]["id"]) for c in comp.get("competitors", [])
+                 if c.get("homeAway") == "home"), None)  # fmt: skip
+    plays = []
+    for p in data.get("plays") or []:
+        team = (p.get("team") or {}).get("id")
+        plays.append([
+            int(p.get("sequenceNumber") or 0), int((p.get("period") or {}).get("number") or 0),
+            str((p.get("clock") or {}).get("displayValue") or "0"),
+            str((p.get("type") or {}).get("text") or "").strip(),
+            None if team is None else str(team),
+            [str(a["athlete"]["id"]) for a in p.get("participants") or []
+             if (a.get("athlete") or {}).get("id") is not None],
+            p.get("homeScore"), p.get("awayScore"), bool(p.get("shootingPlay"))])  # fmt: skip
+    return {"espn_home": home, "plays": plays}
+
+
+def stint_plays(body: bytes) -> dict:
+    """{ESPN game id: (ESPN home team id, plays)} for finished games whose plays were kept."""
+    from betdata.nba.stints import Play, clock_seconds
+
+    out = {}
+    for g in json.loads(body).get("games", []):
+        if g.get("status") != "STATUS_FINAL" or not g.get("plays"):
+            continue
+        out[g["espn_game_id"]] = (g.get("espn_home"), [
+            Play(seq, period, clock_seconds(clock), kind, team, tuple(ids),
+                 None if hs is None else int(hs), None if as_ is None else int(as_), shot)
+            for seq, period, clock, kind, team, ids, hs, as_, shot in g["plays"]])  # fmt: skip
+    return out
+
+
 def parse_boxscores(body: bytes) -> list[dict]:
     rows = []
     for g in json.loads(body).get("games", []):
@@ -261,7 +309,7 @@ def parse_odds_history(body: bytes, fetched_at: datetime) -> ParsedOdds:
     for g in data.get("games", []):
         gid = g["espn_game_id"]
         for b in g["books"]:
-            book = BOOKS.get(b["provider"].lower())
+            book = book_of(b["provider"])
             if book is None:
                 continue
             kind = "source_opening" if book == "opening" else "source_closing"
@@ -314,6 +362,8 @@ class EspnNbaSource(Source):
                                   "20261020-20261023; default yesterday to 2 days ahead)"),
             "boxscores": JobSpec("boxscores", "Box scores of finished games that have none "
                                  "(--days 3)"),
+            "stints": JobSpec("stints", "Lineup stints of finished games with a box score "
+                              "but none (--days 3)"),
             "odds_history": JobSpec("odds_history", "Opening and closing lines of past games "
                                     "(--season 2023 --limit 500)"),
         }  # fmt: skip
@@ -339,17 +389,24 @@ class EspnNbaSource(Source):
                                         http_status=200, fetched_at=at, body=body,
                                         content_type="application/json")  # fmt: skip
             return RawInput("/scoreboard", None, body, at, raw_id)
-        if job == "boxscores":
-            ids = self._needing_box(int(params.get("days", 3)))
+        if job in ("boxscores", "stints"):
+            box = job == "boxscores"
+            days = int(params.get("days", 3))
+            ids = self._needing_box(days) if box else self._needing_stints(days)
             out = []
             for espn_id in ids:
                 try:
                     resp = self.client.get("/summary", {"event": espn_id}, est_cost=0,
                                            run_id=run_id, store_raw=False)  # fmt: skip
-                    out.append(summary_box(espn_id, json.loads(resp.body)))
-                except (ApiError, ValueError, KeyError) as e:
+                    data = json.loads(resp.body)
+                    game = summary_box(espn_id, data)
+                    if not box:  # stints only: the stored box score stays as it is
+                        game["players"] = []
+                    out.append({**game, **summary_plays(data)})
+                except (ApiError, ValueError, KeyError, TypeError) as e:
                     log.warning("%s summary %s: %s", NAME, espn_id, e)
-            return self._compact("/summary", {"games": out}, run_id)
+            return self._compact("/summary" if box else "/summary/stints", {"games": out},
+                                 run_id)  # fmt: skip
         if job == "odds_history":
             ids = self._needing_odds(int(params["season"]), int(params.get("limit", 500)))
             out = []
@@ -391,6 +448,15 @@ class EspnNbaSource(Source):
                 games.c.start_time_utc >= now - timedelta(days=days),
                 ~exists().where(nba_player_games.c.game_id == games.c.game_id))
 
+    def _needing_stints(self, days: int) -> list[str]:
+        now = self.clock()
+        with self.engine.connect() as conn:
+            return self._espn_ids(
+                conn, games.c.status == "final",
+                games.c.start_time_utc >= now - timedelta(days=days),
+                exists().where(nba_player_games.c.game_id == games.c.game_id),
+                ~exists().where(nba_stints.c.game_id == games.c.game_id))
+
     def _needing_odds(self, season: int, limit: int) -> list[str]:
         """Past games of the season with no stored line from this source yet (resumable)."""
         now = self.clock()
@@ -407,13 +473,13 @@ class EspnNbaSource(Source):
 
     def job_for_endpoint(self, endpoint: str) -> str:
         return {"/scoreboard": "scoreboard", "/summary": "boxscores",
-                "/odds": "odds_history"}[endpoint]  # fmt: skip
+                "/summary/stints": "stints", "/odds": "odds_history"}[endpoint]  # fmt: skip
 
     def parse(self, job: str, raw: RawInput):
         if job == "scoreboard":
             return parse_scoreboard(raw.body, raw.fetched_at)
-        if job == "boxscores":
-            return parse_boxscores(raw.body)
+        if job in ("boxscores", "stints"):
+            return parse_boxscores(raw.body), stint_plays(raw.body)
         return (parse_odds_history(raw.body, raw.fetched_at), json.loads(raw.body))
 
     def load(self, conn, job: str, batch, *, run_id, raw_id) -> tuple[int, int]:
@@ -422,13 +488,19 @@ class EspnNbaSource(Source):
             changed = load_results(conn, source=NAME, events=batch.events,
                                    matches=stats.matches)  # fmt: skip
             return stats.inserted + changed, len(batch.events)
-        if job == "boxscores":
+        if job in ("boxscores", "stints"):
             from betdata.nba.box import load_box_rows
+            from betdata.nba.stints import load_stints
 
-            if not batch:
-                return 0, 0
-            n, _ = load_box_rows(conn, batch, source=NAME, fetched_at=self.clock(), live=True)
-            return n, len(batch)
+            rows, plays = batch
+            n = 0
+            if rows and job == "boxscores":
+                n, _ = load_box_rows(conn, rows, source=NAME, fetched_at=self.clock(), live=True)
+            if plays:  # after the box score: it gives the starters
+                res = load_stints(conn, plays, source=NAME, fetched_at=self.clock(), live=True)
+                if job == "stints":
+                    return res.stints, len(plays)
+            return n, len(rows)
         parsed, payload = batch
         # Odds rows point at games through the ESPN id the schedule recorded.
         from betdata.nba.box import espn_games

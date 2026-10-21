@@ -1,0 +1,52 @@
+{
+ "events": [
+  {
+   "id": "401772900",
+   "date": "2026-10-25T17:00Z",
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "KC",
+        "displayName": "Kansas City Chiefs"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "WSH",
+        "displayName": "Washington Commanders"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401772901",
+   "date": "2026-10-25T20:25Z",
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "DEN",
+        "displayName": "Denver Broncos"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "LV",
+        "displayName": "Las Vegas Raiders"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,277 @@
+{
+ "count": 8,
+ "pageIndex": 1,
+ "pageSize": 1000,
+ "pageCount": 1,
+ "items": [
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3995?lang=en&region=us"
+   },
+   "type": {
+    "id": "1",
+    "name": "Total Points"
+   },
+   "odds": {
+    "american": {
+     "value": "-110",
+     "open": "-110"
+    },
+    "decimal": {
+     "value": "1.91",
+     "open": "1.91"
+    },
+    "total": {
+     "value": "10.5",
+     "open": "10.5"
+    }
+   },
+   "lastUpdated": "2025-03-16T02:20Z",
+   "current": {
+    "over": {
+     "american": "-110"
+    },
+    "target": {
+     "value": 10.5
+    }
+   },
+   "open": {
+    "over": {
+     "american": "-110"
+    },
+    "target": {
+     "value": 10.5
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3995?lang=en&region=us"
+   },
+   "type": {
+    "id": "1",
+    "name": "Total Points"
+   },
+   "lastUpdated": "2025-03-16T02:20Z",
+   "current": {
+    "target": {
+     "value": 9.5
+    }
+   },
+   "open": {
+    "target": {
+     "value": 9.5
+    }
+   },
+   "odds": {
+    "american": {
+     "value": "-150",
+     "open": "-150"
+    },
+    "total": {
+     "value": "9.5",
+     "open": "9.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3995?lang=en&region=us"
+   },
+   "type": {
+    "id": "1",
+    "name": "Total Points"
+   },
+   "odds": {
+    "american": {
+     "value": "-120",
+     "open": "-110"
+    },
+    "decimal": {
+     "value": "1.91",
+     "open": "1.91"
+    },
+    "total": {
+     "value": "10.5",
+     "open": "10.5"
+    }
+   },
+   "lastUpdated": "2025-03-16T02:20Z",
+   "current": {
+    "under": {
+     "american": "-120"
+    },
+    "target": {
+     "value": 10.5
+    }
+   },
+   "open": {
+    "under": {
+     "american": "-110"
+    },
+    "target": {
+     "value": 10.5
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3995?lang=en&region=us"
+   },
+   "type": {
+    "id": "1",
+    "name": "Total Points"
+   },
+   "lastUpdated": "2025-03-16T02:20Z",
+   "current": {
+    "target": {
+     "value": 11.5
+    }
+   },
+   "open": {
+    "target": {
+     "value": 11.5
+    }
+   },
+   "odds": {
+    "american": {
+     "value": "+130",
+     "open": "+130"
+    },
+    "total": {
+     "value": "11.5",
+     "open": "11.5"
+    }
+   }
+  },
+  {
+   "type": {
+    "id": "30",
+    "name": "Total Points"
+   },
+   "odds": {
+    "american": {
+     "value": "-110"
+    }
+   },
+   "current": {
+    "over": {
+     "american": "-110"
+    },
+    "target": {
+     "value": 220.5
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3995?lang=en&region=us"
+   },
+   "type": {
+    "id": "40",
+    "name": "Points 1st Quarter"
+   },
+   "lastUpdated": "2026-10-21T02:14Z",
+   "current": {
+    "target": {
+     "value": 2.5
+    }
+   },
+   "open": {
+    "target": {
+     "value": 2.5
+    }
+   },
+   "odds": {
+    "american": {
+     "value": "-110",
+     "open": "-110"
+    },
+    "total": {
+     "value": "2.5",
+     "open": "2.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/4066?lang=en&region=us"
+   },
+   "type": {
+    "id": "2",
+    "name": "Total Rebounds"
+   },
+   "odds": {
+    "american": {
+     "value": "Even",
+     "open": "-115"
+    },
+    "decimal": {
+     "value": "1.91",
+     "open": "1.91"
+    },
+    "total": {
+     "value": "7.5",
+     "open": "6.5"
+    }
+   },
+   "lastUpdated": "2025-03-16T02:20Z",
+   "current": {
+    "over": {
+     "american": "Even"
+    },
+    "target": {
+     "value": 7.5
+    }
+   },
+   "open": {
+    "over": {
+     "american": "-115"
+    },
+    "target": {
+     "value": 6.5
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/4066?lang=en&region=us"
+   },
+   "type": {
+    "id": "2",
+    "name": "Total Rebounds"
+   },
+   "odds": {
+    "american": {
+     "value": "-130",
+     "open": "-105"
+    },
+    "decimal": {
+     "value": "1.91",
+     "open": "1.91"
+    },
+    "total": {
+     "value": "7.5",
+     "open": "6.5"
+    }
+   },
+   "lastUpdated": "2025-03-16T02:20Z",
+   "current": {
+    "under": {
+     "american": "-130"
+    },
+    "target": {
+     "value": 7.5
+    }
+   },
+   "open": {
+    "under": {
+     "american": "-105"
+    },
+    "target": {
+     "value": 6.5
+    }
+   }
+  }
+ ]
+}

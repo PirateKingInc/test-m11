@@ -2,7 +2,7 @@
  "games": 3937,
  "morning": {
   "margin_mae": 10.986601772022988,
-  "total_mae": 14.838816396157286,
+  "total_mae": 14.838816396157284,
   "close_margin_mae": 10.760543699186991,
   "model_mae_where_close": 10.985111319690741,
   "close_total_mae": 14.295783591567183,
@@ -105,7 +105,7 @@
   "ml_threshold": 5.0,
   "blend_weight": 0.2,
   "fit": "config/fits/nba_fit_2015_2025.json",
-  "ml_final_test_roi": -0.0726,
+  "ml_final_test_roi": -0.0704,
   "calibration": {
    "slope": 0.9752506347268594,
    "intercept": -0.021033754854447192,

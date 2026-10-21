@@ -24,21 +24,83 @@ FIRST_HISTORY_SEASON = 2010  # what the M12 store reads
 class NflSport(Sport):
     @property
     def page_model(self) -> str:
-        """The version the page shows: M13's weather version once validation accepted it,
-        otherwise frozen M12. Both are predicted, graded and listed in the season record."""
+        """The version the page shows: m15 if its switch rule passed (`page: true` in
+        config/nfl_model_m15.json), else M13's weather version once validation accepted it,
+        otherwise frozen M12. All are predicted, graded and listed in the season record."""
+        from betdata.nfl.live15 import page15
+
+        return "m15" if page15() else self.base_model
+
+    @property
+    def base_model(self) -> str:
         from betdata.nfl.weather import WX_DESIGN_PATH
 
         return "m13w" if WX_DESIGN_PATH.exists() else "m12"
 
-    def predict(self, engine: Engine, now: datetime) -> int:
-        from betdata.nfl.live import run_predict
+    def page_version(self) -> str | None:
+        if self.page_model == "m15":
+            from betdata.nfl.live15 import version15
 
+            return version15()
+        return self.page_model
+
+    def background_versions(self) -> list[str]:
+        """m15 runs in the background unless the switch rule moved the page to it."""
+        from betdata.nfl.live15 import version15
+
+        v = version15()
+        if v is None:
+            return []
+        return [self.base_model] if self.page_model == "m15" else [v]
+
+    def predict(self, engine: Engine, now: datetime) -> int:
+        from betdata.nfl.live import loaded_store, run_predict
+
+        store = None
         try:
-            _, picks = run_predict(engine, now, DAYS)
+            store = loaded_store(engine)  # loaded once: m12, m13w and m15 share it
+            _, picks = run_predict(engine, now, DAYS, store=store)
         except ValueError as e:  # no history loaded
             log.warning("nfl predict skipped: %s", e)
-            return 0
+            picks = []
+        self.predict_15(engine, now, store)
+        self.predict_props(engine, now)
         return len(picks)
+
+    def predict_15(self, engine: Engine, now: datetime, store=None) -> int:
+        """The M15 side version m15 (background unless the switch rule moved the page)."""
+        from betdata.nfl.live15 import run_predict15
+
+        try:
+            return len(run_predict15(engine, now, DAYS, store))
+        except Exception as e:  # never breaks the run or the m12/m13w predictions
+            log.warning("m15 predict skipped: %s: %s", type(e).__name__, e)
+            return 0
+
+    def predict_props(self, engine: Engine, now: datetime) -> int:
+        """M15 prop predictions for players with a stored line (never breaks the run)."""
+        from betdata.nfl.props.live import run as run_props
+
+        try:
+            n = run_props(engine, now)
+            log.info("nfl props: %d new predictions", n)
+            return n
+        except Exception as e:  # a prop failure must not stop the side predictions or page
+            log.warning("nfl props skipped: %s: %s", type(e).__name__, e)
+            return 0
+
+    def props(self, conn: Connection, now: datetime) -> list:
+        from betdata.nfl.props.grade import DESIGN_PATH, MODEL, thresholds
+        from betdata.props.page import prop_rows
+
+        if not DESIGN_PATH.exists():
+            return []
+        from betdata.nfl.props.live import load_design
+
+        d = load_design()
+        return prop_rows(conn, now, MODEL, DAYS, d.flag_allowed,
+                         lambda m: m in d.research_only or m not in d.thresholds,
+                         thresholds())  # fmt: skip
 
     def cards(self, conn: Connection, now: datetime) -> list[Card]:
         sid = sport_id(conn, "nfl")
@@ -58,17 +120,21 @@ class NflSport(Sport):
         ids = [r.game_id for r in rows]
         if not ids:
             return []
-        last = (
-            select(mp.c.game_id, func.max(mp.c.predicted_at).label("at"))
-            .where(mp.c.model == self.page_model, mp.c.game_id.in_(ids), mp.c.predicted_at <= now)
-            .group_by(mp.c.game_id)
-            .subquery()
-        )
-        preds = {p.game_id: p for p in conn.execute(
-            select(mp).join(last, and_(last.c.game_id == mp.c.game_id,
-                                       last.c.at == mp.c.predicted_at))
-            .where(mp.c.model == self.page_model)
-        )}  # fmt: skip
+        preds: dict = {}
+        # The page's version first; a game it has no prediction for falls back to m13w (m12).
+        for model in dict.fromkeys((self.page_model, self.base_model)):
+            last = (
+                select(mp.c.game_id, func.max(mp.c.predicted_at).label("at"))
+                .where(mp.c.model == model, mp.c.game_id.in_(ids), mp.c.predicted_at <= now)
+                .group_by(mp.c.game_id)
+                .subquery()
+            )
+            for p in conn.execute(
+                select(mp).join(last, and_(last.c.game_id == mp.c.game_id,
+                                           last.c.at == mp.c.predicted_at))
+                .where(mp.c.model == model)
+            ):  # fmt: skip
+                preds.setdefault(p.game_id, p)
         quotes = current_quotes(conn, ids, now)
         ml_t, calib = ml_threshold(), ml_calibration()
         out = []
@@ -102,7 +168,12 @@ class NflSport(Sport):
 
     def grade(self, conn: Connection, now: datetime) -> dict[str, int]:
         run = grade_nfl(conn, now)
-        return {"inserted": run.inserted, "updated": run.updated, "pending": run.pending}
+        out = {"inserted": run.inserted, "updated": run.updated, "pending": run.pending}
+        from betdata.nfl.props.grade import grade_nfl_props
+
+        props = grade_nfl_props(conn, now)
+        out["props_inserted"], out["props_pending"] = props.inserted, props.pending
+        return out
 
     def records(self, conn: Connection) -> list[RecordRow]:
         return [

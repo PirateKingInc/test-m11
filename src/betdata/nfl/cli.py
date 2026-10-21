@@ -502,3 +502,144 @@ def replay_cmd():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n")
     typer.echo(f"written to {path}")
+
+
+@nfl_app.command("select15")
+def select15_cmd(
+    refresh: bool = typer.Option(False, help="Recompute the M15 groups' cached feature rows."),
+    asof_sample: int = typer.Option(4, help="Real games to run the as-of harness on first."),
+    write: bool = typer.Option(True, help="Write reports/nfl/m15_selection.json and "
+                               "config/nfl_model_m15.json (a draft; never used live)."),
+):
+    """M15 side variables on validation 2020-2022 only (fit 2013-2019): add lines, depth, st,
+    sitluck and pen one at a time to the m13w design, keep a group only where it lowers
+    validation MAE, then the ablation table. Test seasons are never built or scored."""
+    import random
+
+    from betdata.nfl.asof import check
+    from betdata.nfl.data import load_store
+    from betdata.nfl.groups import GROUPS
+    from betdata.nfl.groups15 import GROUPS15
+    from betdata.nfl.m15data import with_m15
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE, outcomes
+    from betdata.nfl.select15 import M15_DESIGN_PATH, REPORT_PATH, select15
+    from betdata.nfl.select15 import write as write_report
+    from betdata.nfl.selection import Design
+    from betdata.nfl.weather import WX_DESIGN_PATH
+
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+        store, info = with_m15(store, conn, data_dir(), TRAIN)
+    src = info["pressure_source_by_season"]
+    info["pressure_source_by_season"] = {s: v for s, v in src.items() if s not in TEST}
+    ids = model_games(store, (*TRAIN, *VALIDATE))
+    if asof_sample:
+        picked = sorted(random.Random(0).sample(ids, asof_sample))
+        bad = check(store, [GROUPS["base"], *GROUPS15.values()], picked)
+        typer.echo(f"as-of harness, {len(picked)} real games x 2 points: {len(bad)} violations")
+        if bad:
+            raise typer.Exit(1)
+    start = Design.load(WX_DESIGN_PATH)
+    base = design_rows(store, start, (*TRAIN, *VALIDATE))
+    report = select15(base, outcomes(store), lambda g: feature_rows(store, g, ids, refresh),
+                      start, log=typer.echo)  # fmt: skip
+    if write:
+        write_report(report, info)
+        typer.echo(f"report: {REPORT_PATH}; draft design: {M15_DESIGN_PATH}")
+
+
+def _store15():
+    from betdata.nfl.data import load_store
+    from betdata.nfl.m15data import with_m15
+    from betdata.nfl.pipeline import TRAIN
+
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+        store, info = with_m15(store, conn, data_dir(), TRAIN)
+    return store, info
+
+
+@nfl_app.command("final-test15")
+def final_test15_cmd(again: bool = typer.Option(False, help="Score the test seasons again.")):
+    """Score m15 on 2023-2025 once (refit on 2013-2022) beside m13w: margin and total MAE per
+    point, the closing line, spread and moneyline records at the close; then write the page
+    switch decision (`page`) into config/nfl_model_m15.json. Nothing is tuned afterwards."""
+    import json
+
+    from betdata.analysis.dataset import load_games
+    from betdata.moneyline import MoneylineConfig
+    from betdata.nfl.m15 import REPORT15_PATH, final_test15, load_design15, rows15, save_meta
+    from betdata.nfl.moneyline import ML_PATH, closing_moneylines
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE, outcomes
+    from betdata.nfl.select15 import REPORT_PATH
+    from betdata.nfl.selection import Design
+    from betdata.nfl.weather import WX_DESIGN_PATH
+
+    if REPORT15_PATH.exists() and not again:
+        typer.echo(f"test seasons already scored for m15: {REPORT15_PATH} (pass --again)")
+        raise typer.Exit(1)
+    d15, meta = load_design15()
+    d13 = Design.load(WX_DESIGN_PATH)  # its groups are a subset of m15's
+    store, _ = _store15()
+    with _engine().connect() as conn:
+        by_id = {g.game_id: g for g in load_games(conn, "nfl")}
+        ml = closing_moneylines(conn)
+    rows = rows15(store, d15, meta, (*TRAIN, *VALIDATE, *TEST))
+    valid = json.loads(REPORT_PATH.read_text())["final"]["margin_mae"]
+    rep = final_test15(rows, outcomes(store), d15, d13, by_id, ml, MoneylineConfig.load(ML_PATH),
+                       again=again, validation_margin=valid)  # fmt: skip
+    for p, r in rep["points"].items():
+        m, t, c = r["margin_mae"], r["total_mae"], r["with_close"]
+        typer.echo(f"{p} ({r['games']} games): margin m15 {m['m15']:.3f}, m13w {m['m13w']:.3f}"
+                   f" (recorded {m['m13w_recorded']:.3f}); total m15 {t['m15']:.3f}, m13w "
+                   f"{t['m13w']:.3f}; close {c['margin_mae']['close']:.3f} / "
+                   f"{c['total_mae']['close']:.3f} ({c['games']} games)")  # fmt: skip
+        for k in ("m15", "m13w"):
+            s, mb = r["spread_bets"][k], r["moneyline"][k]["bets"]
+            typer.echo(f"    {k:5} spread {s['record']} ROI {100 * (s['roi'] or 0):+.1f}% | "
+                       f"moneyline {mb['record']} ROI {100 * (mb['roi'] or 0):+.1f}%")
+    save_meta({"page": rep["page"]["switch"]})
+    typer.echo(f"page switch: {rep['page']}")
+    typer.echo(f"report: {REPORT15_PATH} ({rep['label']})")
+
+
+@nfl_app.command("freeze15")
+def freeze15_cmd():
+    """Fit m15 on every completed season from 2013 (as m13w's live fit) to a new file under
+    config/fits/ and record it in config/nfl_model_m15.json. Never overwrites a fit."""
+    from betdata.db.schema import utcnow
+    from betdata.nfl.live15 import freeze
+
+    store, info = _store15()
+    try:
+        path = freeze(store, info, utcnow())
+    except FileExistsError as e:
+        typer.echo(str(e))
+        raise typer.Exit(1) from None
+    typer.echo(f"m15 live fit: {path}")
+
+
+@nfl_app.command("live-inputs")
+def live_inputs_cmd():
+    """Build or refresh m15's and the NFL props' compact live inputs under data/derived from
+    the play-by-play and nflverse files on disk (the daily job `nfl-inputs15` does the same;
+    the `nfl-m15-bootstrap` workflow runs it once after downloading the earlier seasons)."""
+    from betdata.db.schema import utcnow
+    from betdata.nfl.live_inputs import refresh, sizes
+
+    with _engine().connect() as conn:
+        out = refresh(conn, utcnow(), data_dir())
+    for k, v in out.items():
+        typer.echo(f"  {k}: {v} rows")
+    total = 0
+    for name, b in sizes(data_dir()).items():
+        total += b
+        typer.echo(f"  data/derived/{name}: {b / 1e3:.0f} kB")
+    typer.echo(f"live inputs in data/derived: {total / 1e6:.2f} MB")
+    if not out:
+        raise typer.Exit(1)
+
+
+from betdata.nfl.props.cli import register as _register_props  # noqa: E402
+
+_register_props(nfl_app)
