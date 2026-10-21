@@ -102,7 +102,8 @@ def backfill(
         "cfbd", "--source", help="cfbd, sportsdataverse, open_meteo (weather) or nflverse"
     ),
     dataset: str = typer.Option(
-        None, help="nflverse only: injuries, pbp, team_stats, snaps or rosters"
+        None, help="nflverse: injuries, pbp, team_stats, snaps or rosters; sportsdataverse nba: "
+        "schedule (default), player_box or pbp (lineup stints; box scores first)"
     ),
     yes: bool = typer.Option(False, "--yes", help="Run without asking."),
     refetch: bool = typer.Option(False, help="Call again even for windows already fetched."),
@@ -143,11 +144,19 @@ def backfill(
     if source_name == "sportsdataverse":
         if sport not in ("nba", "ncaab"):
             raise typer.BadParameter("sportsdataverse backfill covers nba and ncaab")
+        job = dataset or "schedule"
+        if job not in ("schedule", "player_box", "pbp") or (job != "schedule" and sport != "nba"):
+            raise typer.BadParameter("--dataset must be schedule, player_box or pbp (nba only)")
         sdv = _source("sportsdataverse")
         for year in years:
-            result = sdv.run("schedule", sport=sport, seasons=str(year))
-            typer.echo(f"  {sport} {year}: {result.status} games={result.rows_seen} "
-                       f"results_changed={result.rows_inserted} {result.message}")  # fmt: skip
+            if job == "schedule":
+                result = sdv.run("schedule", sport=sport, seasons=str(year))
+                typer.echo(f"  {sport} {year}: {result.status} games={result.rows_seen} "
+                           f"results_changed={result.rows_inserted} {result.message}")  # fmt: skip
+            else:
+                result = sdv.run(job, seasons=str(year))
+                typer.echo(f"  {job} {year}: {result.status} games={result.rows_seen} "
+                           f"rows={result.rows_inserted} {result.message}")  # fmt: skip
             if result.status == "failed":
                 raise typer.Exit(1)
         return

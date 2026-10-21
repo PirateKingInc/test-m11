@@ -683,6 +683,32 @@ nba_player_games = Table(
     Index("ix_nba_player_games_player", "player_id", "known_at"),
 )
 
+# NBA lineup stints (M15): stretches of play with the same ten players on the floor, rebuilt
+# from ESPN play-by-play (`nba/stints.py` has the rules). Times are seconds elapsed in the game;
+# players are ESPN athlete ids, five per side, sorted and comma-joined; home/away follow the
+# game's orientation. Possessions are estimated per team (FGA - OREB + TOV + 0.44 FTA).
+# `known_at`: tip + 3 h for history, the fetch time live. Re-loading a game replaces its rows.
+nba_stints = Table(
+    "nba_stints",
+    metadata,
+    Column("stint_id", Integer, primary_key=True),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("period", Integer, nullable=False),
+    Column("start_sec", Float, nullable=False),
+    Column("end_sec", Float, nullable=False),
+    Column("home_players", String(64), nullable=False),
+    Column("away_players", String(64), nullable=False),
+    Column("home_pts", Integer, nullable=False),
+    Column("away_pts", Integer, nullable=False),
+    Column("home_poss", Float, nullable=False),
+    Column("away_poss", Float, nullable=False),
+    Column("source", String(32), nullable=False),
+    Column("known_at", UTCDateTime, nullable=False),
+    Column("fetched_at", UTCDateTime, nullable=False),
+    UniqueConstraint("game_id", "period", "start_sec"),
+    Index("ix_nba_stints_known", "known_at"),
+)
+
 # The official NBA injury report, every version, change-only: a row is added when a player's
 # status or reason for a game differs from his previous row for that game, and a `Removed` row
 # when a player listed earlier is no longer on a later report that still covers his team's game.
