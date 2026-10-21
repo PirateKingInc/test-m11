@@ -257,7 +257,7 @@ betdata nfl weather [--write]           # weather group on validation (needs the
   - `.github/workflows/hourly.yml` runs the page, on schedule and manually; `drop_state` and `force_fail` exist for testing.
   - `weather.yml` backfills Open-Meteo archived forecasts and evaluates the weather version.
   - `verify-page.yml` screenshots the live page at phone width to the `proof` branch.
-- **Sports come from `config/sports.yaml`:** NFL is active, NBA is "coming soon". The runner, page and grading call a small interface (`betdata/sports/__init__.py`); NFL is its only plugin. Adding NBA means an entry there plus a plugin with `predict`, `cards`, `grade` and `records`.
+- **Sports come from `config/sports.yaml`:** NFL and (since M14) NBA are active. The runner, page and grading call a small interface (`betdata/sports/__init__.py`); each sport is a plugin with `predict`, `cards`, `grade` and `records`.
 - **Per game, the page shows:**
   - kickoff in Eastern time;
   - model vs market spread and edge;
@@ -339,6 +339,36 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - **Portability**: SQLAlchemy Core + Alembic, generic types, UTC everywhere. Set
   `BETDATA_DB_URL` to a Postgres URL to switch.
 
+## M14 NBA model and page tab
+
+The page's **NBA** tab shows the next 2 days of games from the frozen M14 model (MODEL.md, "M14").
+Each card shows:
+- tip time (Eastern);
+- model vs market spread and moneyline, with edges;
+- source, book and fetch time;
+- top 3 factors;
+- players out or questionable, with play probability;
+- back-to-back and rest flags;
+- the prediction point (early, morning or pre-tip).
+
+Totals stay in the CLI. Moneyline flags are off for any sport whose final-test moneyline ROI is not above 0, which today means both sports.
+
+```bash
+betdata run espn_nba scoreboard          # schedule, tips, scores, free DraftKings line (ESPN)
+betdata run nba_injury report            # latest official injury report PDF, change-only
+betdata nba history-fetch --season 2024   # backfill injury reports and ESPN lines (Actions)
+betdata nba export-history --season 2024 --out history
+betdata nba load-history history         # load the published history files
+betdata nba select | tune | final-test | freeze | replay | status-changes
+```
+
+- **Workflows:**
+  - `nba-history.yml` backfills history to the `nba-history` branch;
+  - `nba-bootstrap.yml` loads history into the runner's state once;
+  - `nba-report.yml` replays this season to the `nba-report` branch.
+- **Hourly:** the runner refreshes the injury report, lines and predictions for the next 2 days. It never refits.
+- **Sources, quotas and runtime:** PROJECT.md, "M14".
+
 ## Data sources and polling plan
 
 | Source | Free limit | Plan |
@@ -347,7 +377,9 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 | SharpAPI | 12 req/min, DK + FD, 60 s delay | every 10 min near tip/kickoff, hourly otherwise; capped at 6/min |
 | OddsPapi | ~250/mo (vendor figure) | one Pinnacle board per league before game time (~80/mo at peak) |
 | nflverse (`nflreadpy`) | none | schedules/closing lines/results daily, PBP nightly, injuries daily |
-| NBA (cdn.nba.com) | unofficial, no quota | season schedule daily, scoreboard twice nightly |
+| NBA (cdn.nba.com) | unofficial, no quota | CLI only: blocked (403) from GitHub Actions |
+| ESPN NBA APIs | unofficial, no quota | hourly scoreboard + new box scores; history lines |
+| NBA official injury report (PDF) | none (1 request/s) | latest report hourly when games are within 2 days |
 | sportsdataverse | none (GitHub releases) | NBA fallback + history; backup NCAAB scores |
 | CFBD | 1,000/mo shared FB + BB | ~150/mo ongoing, ~300 for backfill, 900 hard cap |
 | Open-Meteo | 10k/day (weighted), non-commercial | outdoor games: forecast every 3 h for the week, observed ~6 days after (~150/day) |
@@ -371,3 +403,5 @@ BETDATA_TEST_PG_URL=postgresql+psycopg://user:pass@localhost/betdata_test uv run
 - [x] **M13** hourly page on GitHub Actions + Pages (7am-10pm ET), moneyline (fair odds, no-vig
   edge, calibration check, grading), weather history and a weather model version, sport
   interface for a second sport
+- [x] **M14** NBA: box scores, official injury reports (change-only), ESPN lines; as-of
+  model with availability, strength, rest, pace and context groups; NBA tab on the hourly page

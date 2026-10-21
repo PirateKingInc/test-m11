@@ -117,3 +117,52 @@ On this machine's database, `plan --runner` charges the weekly archive job for e
 * **pdfminer.six** (MIT; pulls `cryptography` and `charset-normalizer`): reads the official NBA
   injury report PDFs with each text line's position, which the report's table layout needs
   (`src/betdata/nba/injury_pdf.py`). It is the only new runtime dependency of M14.
+
+### NBA sources (all free; checked from an Actions runner)
+
+| Data | Source | Hourly job | Quota |
+|---|---|---|---|
+| Schedule, tip times, scores, free DraftKings line | ESPN scoreboard API (`espn_nba scoreboard`) | every run, Oct-Jun | none (polite: one request per 0.5 s) |
+| Box scores of newly finished games | ESPN game summary (`espn_nba boxscores`) | every run | none (one call per finished game) |
+| Official injury report (latest PDF) | `ak-static.cms.nba.com` (`nba_injury report`) | every run with games in the next 2 days | none (one request per second; a burst of ~2,000 was refused) |
+| Lines from DraftKings and FanDuel | SharpAPI | every run with games in the next 2 days | needs `SHARPAPI_KEY` |
+| One board before the evening tips | The Odds API | 18:00 ET | needs `ODDS_API_KEY` |
+| One Pinnacle board | OddsPapi | 17:00 ET | needs `ODDSPAPI_KEY` |
+| History: schedules, box scores 2015-16 on | sportsdataverse release files | rebuild only | none |
+| History: injury reports, opening and closing lines | league PDFs, ESPN core odds API | `nba-history` workflow (manual) | none |
+
+**Blocked from Actions:** cdn.nba.com (403) and stats.nba.com (no answer). Neither is used.
+
+**ESPN's public APIs** are unofficial and undocumented. They are used the way the M7 sportsdataverse files already use ESPN data: free, keyless, and at a polite rate. If ESPN closes them, the NBA page loses its free line and live scores; the sportsdataverse files remain for scores with up to a day's delay.
+
+**State.** The live runner loads only the last three seasons plus the current one (`LIVE_SEASONS`). A lost cache is rebuilt from the sportsdataverse files and ESPN (`NbaSport.bootstrap`), like NFL. The injury-report and line history that feed the backtest are not needed live. They live on the `nba-history` branch and load with `betdata nba load-history`.
+
+**Adding NBA to an existing state** (`nba-bootstrap` workflow, run once before NBA went live) loads that history without marking a rebuild. Otherwise the first NBA run would have shown the "saved data was lost" notice for 48 hours.
+
+### Quota over 30 days, NFL + NBA
+
+Measured with `betdata scheduler plan --runner --days 30`, 2026-10-20, on the real schedules of both sports. NBA has games on 26 of the 30 days. The worst case for both sports is simulated in `tests/runner/test_quota_month.py`.
+
+| Source | NFL units | NBA units | Total | Free limit (after margin) | Verdict |
+|---|---|---|---|---|---|
+| SharpAPI (hourly, if keyed; one request per sport) | 479 | 479 | 958 (~32/day) | 3,000/day | OK |
+| The Odds API (NFL pre-kickoff; NBA one 18:00 ET board on game days) | 72 | 87 | 159 | 450/month | OK |
+| OddsPapi (NFL windows; NBA one 17:00 ET board on game days) | 13 | 29 | 42 | 225/month | OK |
+| ESPN NBA (scoreboard: 4 day-requests a run, yesterday to +2 days; box scores: one per newly finished game) | - | ~1,900 + ~200 requests | - | no quota | OK |
+| NBA injury report PDF (1 per run with games within 2 days) | - | ~450 requests | - | no quota | OK |
+| Open-Meteo, nflverse | as in M13 | - | - | - | OK |
+
+None of the keyed sources has a secret today, so they are skipped and cost nothing. The table shows what they would use if keyed.
+
+### Runtime with NFL + NBA
+
+Measured on GitHub's runners, 2026-10-21, with NBA active.
+
+| Run | Run step | Whole run job |
+|---|---|---|
+| NFL only (last runs before NBA went live) | 18-21 s | ~45 s |
+| NFL + NBA, regular hourly run | 34-35 s | ~55 s |
+
+- **The NBA share** is about 15 s: load the last three seasons into the as-of store, predict the next 2 days and fetch the injury PDF.
+- **Budget:** a run is well under 3 minutes, and billed minutes are unchanged at 2 a run.
+- **Rebuild:** a run that rebuilds a lost state with NBA (sportsdataverse files for 2015-16 on, then ESPN for this season) is the one exception. It is a one-time cost, and history loading is separate (`nba-bootstrap`).
