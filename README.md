@@ -362,6 +362,15 @@ betdata nba load-history history         # load the published history files
 betdata nba select | tune | final-test | freeze | replay | status-changes
 ```
 
+**Lineup stints (M15):** `nba_stints` holds each stretch with the same ten players on the floor, with points and possessions, for the RAPM model. They are rebuilt from play-by-play (rules in MODEL.md, "M15 NBA lineup stints"):
+
+```bash
+betdata backfill --source sportsdataverse --sport nba --dataset pbp --seasons 2015-2025   # ~20 MB/season
+betdata run espn_nba stints --days 30     # this season's games fetched before stints existed
+```
+
+New games get theirs with their box scores. `betdata nba bootstrap` loads the last three seasons.
+
 - **Workflows:**
   - `nba-history.yml` backfills history to the `nba-history` branch;
   - `nba-bootstrap.yml` loads history into the runner's state once;

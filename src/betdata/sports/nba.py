@@ -17,6 +17,7 @@ from betdata.sports import Card, RecordRow, Sport
 
 log = logging.getLogger(__name__)
 FIRST_HISTORY_SEASON = 2015
+STINT_SEASONS = 3  # lineup stints are loaded for this season and the two before (M15)
 POINT_NAMES = {"early": "early (before game-day injury statuses)",
                "morning": "morning (game-day injury report)",
                "pretip": "pre-tip (latest injury report)"}  # fmt: skip
@@ -144,5 +145,41 @@ class NbaSport(Sport):
                 espn.run("scoreboard", dates=f"{day:%Y%m%d}-{end:%Y%m%d}")
                 day = end + timedelta(days=1)
             espn.run("boxscores", days=(now - start).days + 1)
+        finally:
+            espn.close()
+        self.load_stints(engine, now, source_kwargs)
+
+    def load_stints(self, engine: Engine, now: datetime,
+                    source_kwargs: dict | None = None) -> None:  # fmt: skip
+        """Lineup stints for the live window (this season and the two before) where a season
+        has none yet: past seasons from sportsdataverse play-by-play files, this season from
+        ESPN game summaries (new games get theirs with their box scores). Box scores first."""
+        from betdata.config import get_settings
+        from betdata.db.schema import nba_stints
+        from betdata.sources.espn_nba import EspnNbaSource
+        from betdata.sources.sportsdataverse import SportsDataverseSource
+
+        settings = get_settings()
+        current = season_for("nba", now)
+        with engine.connect() as conn:
+            q = (select(games.c.season).distinct()
+                 .join(nba_stints, nba_stints.c.game_id == games.c.game_id)
+                 .where(games.c.sport_id == sport_id(conn, "nba")))  # fmt: skip
+            done = set(conn.execute(q).scalars())
+        past = [y for y in range(current - STINT_SEASONS + 1, current) if y not in done]
+        if past:
+            sdv = SportsDataverseSource(engine, settings.source("sportsdataverse"),
+                                        **(source_kwargs or {}))  # fmt: skip
+            try:
+                for year in past:
+                    res = sdv.run("pbp", seasons=str(year))
+                    log.info("nba stints %s: %s %s", year, res.status, res.message)
+            finally:
+                sdv.close()
+        espn = EspnNbaSource(engine, settings.source("espn_nba"), **(source_kwargs or {}))
+        try:
+            days = (now - datetime(current, 10, 1, tzinfo=now.tzinfo)).days + 1
+            res = espn.run("stints", days=max(days, 1))
+            log.info("nba stints %s: %s %s", current, res.status, res.message)
         finally:
             espn.close()
