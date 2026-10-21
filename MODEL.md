@@ -957,3 +957,139 @@ The frozen model replays the new season's finished games. Each game gets a predi
 - **No market comparison yet:** both games tipped before the runner first stored an NBA line (NBA went live in the evening of Oct 20).
 - **From here on:** every game has the DraftKings line from ESPN at each point, and the replay grows as the season does. Re-run the workflow to update it.
 - **Opening-night limitation (BACKLOG):** the rotations are last season's until a team's first game is over.
+
+# M15: new side variables and player props
+
+## M15 evaluation rules (Part A)
+
+- **Side models are decided on validation only.** NFL uses 2020-2022 and NBA uses 2021-22 and 2022-23, the M12 and M14 splits. The test seasons have been seen before (NFL 2023-2025 twice, NBA 2023-24 to 2025-26 once). Each new side version is scored on them once, labelled **repeat look** (third for NFL, second for NBA), and nothing is adjusted afterwards.
+- **Page switch rule.** The page moves to a new side version only if it improved validation AND did not worsen the test result (margin MAE at every prediction point). Otherwise the current version stays on the page, and the new one is predicted, stored and graded in the background.
+- **Live grading.** Every new version, sides and props, is stored and graded live from now on. 2026-27 onward is the only unseen data left, and live CLV is the judge.
+- **Budget per variable group and per prop market:** one full build plus at most 3 targeted adjustments on validation. A group is kept only if it lowers validation error. Every result is recorded below, kept or dropped.
+- **Frozen versions stay frozen.** m12, m13w and the M14 NBA version (`nba:8d4d776447`) are not changed: not their code paths, fits or configs. New variables ship as new versions (`m15` for NFL, `nba15` for NBA) beside them.
+
+## M15 data sources
+
+All were checked from a GitHub Actions runner on 2026-10-21 (`probe/m15-sources`).
+
+| Dataset | Where | Reachable | Coverage | Licence / attribution |
+|---|---|---|---|---|
+| NFL participation (players on field, pressure, time to throw, coverage man/zone) | nflverse-data `pbp_participation` | yes | 2016-2025; **not yet published for 2026** | CC-BY 4.0 (nflverse), data from NFL NGS |
+| FTN charting (blitzers, pass rushers, play action, screen, QB fault sack) | nflverse-data `ftn_charting` | yes | 2022-2026 (2026 updated weekly) | CC-BY-SA 4.0, attribute FTN Data |
+| Next Gen Stats (separation, cushion, time to throw) | nflverse-data `nextgen_stats` | yes | 2016-2026 (combined files, updated daily) | CC-BY 4.0 (nflverse); NFL NGS |
+| PFR advanced stats (pressures, hurries, blitzes; def coverage) | nflverse-data `pfr_advstats` | yes | 2018-2026 weekly | CC-BY 4.0 (nflverse); Pro Football Reference |
+| Depth charts | nflverse-data `depth_charts` | yes | 2001-2024 weekly (one format); 2025-2026 daily snapshots (new ESPN-based format: `dt, team, pos_abb, pos_rank`) | CC-BY 4.0 (nflverse) |
+| Player weekly stats (incl. kicking/punting, penalties) | nflverse-data `stats_player` | yes | 1999-2026 | CC-BY 4.0 (nflverse) |
+| Play-by-play (EPA, special teams, penalties, third down, red zone) | nflverse-data `pbp` (already used) | yes | 1999-2026 | CC-BY 4.0 (nflverse) |
+| NBA play-by-play with substitutions (lineups rebuilt from them) | sportsdataverse-data `espn_nba_pbp` | yes | 2002-2026 seasons; current season from ESPN game summaries (`plays`) | MIT (sportsdataverse); data from ESPN |
+| NBA player box scores | sportsdataverse + ESPN summaries (M14) | yes | 2015-16 on | as M14 |
+| ESPN player prop lines | `sports.core.api.espn.com/.../competitions/{id}/odds/{provider}/propBets` | yes (keyless, unofficial) | see below | ESPN; unofficial API, used at ≤1 request/s; no redistribution of raw data |
+| NBA referee crews | none stored (M14.1 was not run) | – | – | skipped; BACKLOG |
+
+**ESPN prop line history.** The coverage scan sampled two games a month, every provider ESPN lists:
+
+- **NBA:**
+  - none in 2021-22 or earlier;
+  - from 2022-23 (DraftKings, Caesars, MGM, SugarHouse; ESPN BET from Dec 2023), points, rebounds, assists and threes with over and under labelled and priced, opening and final price;
+  - points + rebounds + assists from 2024-25;
+  - 2025-26: ESPN BET until about Nov 2025, then DraftKings (provider 100) with gaps: Dec, Feb, Mar and Apr samples were empty;
+  - 2026-27: DraftKings, live.
+- **NFL:**
+  - 2022-2023: touchdown-scorer specials only, no yardage;
+  - 2024-2025: ESPN BET passing, rushing and receiving yards, receptions and anytime TD. The main line has over and under prices; alternate milestone lines carry no prices;
+  - 2026 (DraftKings): lines with **no prices**.
+- **Item format.** Every item is one side of one line. Labelled items (`current.over` / `current.under`) are the main line. DraftKings 2026 items come in unlabelled pairs per line, the first being the over: 144 of 148 pairs agree with DraftKings' own milestone prices. Alternate ladders (one-sided, mostly unpriced) are ignored.
+
+**What that allows:**
+- **NBA points, rebounds, assists and threes:** lines in validation (2022-23) and test seasons, so a real backtest with thresholds chosen on 2022-23.
+- **NBA PRA:** lines from 2024-25 only (test), so accuracy-only.
+- **NFL (all markets):** no lines in validation, so no betting backtest is possible. The test seasons (2024-2025) are compared on error vs the line only.
+- **Live:** prop lines are stored every hourly run from now on, for live grading.
+
+## M15 NFL side variables (`nfl/features/m15_*.py`, version `m15`)
+
+All use only plays and games before the prediction point, which the M12 harness checks. They are exponentially weighted with the M12 strength half-life and regressed to the league mean by sample size.
+
+1. **Line matchups.**
+   - *Pass:* offense pressure rate allowed, sack rate and time to throw vs defense pressure rate and sack rate. Pressure and time to throw come from participation (2016-2025); 2026 has none, so pressure falls back to PFR weekly pressures (2018+), and sack rate comes from pbp.
+   - *Run:* offense rushing EPA before contact is not free, so rush EPA/success vs defense rush EPA/success from pbp.
+   - *OL continuity:* starts by the same five linemen (snap counts, OL position), plus OL starters out (injury report, as M12 availability).
+2. **Depth-chart backups.** Every position group (QB, RB, WR, TE, OL, DL, LB, DB): when a starter is out, the value of the actual next player on the most recent depth chart before the point, by his own snap-weighted EPA share. M12 only did this for QB. Depth charts before the point: weekly for 2016-2024 and the latest daily snapshot for 2025-2026.
+3. **Special teams.** Kicker FG accuracy vs expected by distance (pbp `field_goal_result`, `kick_distance`), punting net EPA, return and coverage EPA per play (pbp `special_teams_play`).
+4. **Situational luck.**
+   - Third-down conversion rate vs expected (a logistic on distance) and red-zone TD rate vs expected (by yard line), offense and defense.
+   - The difference is regressed toward 0 like M12's turnover luck: the feature is the part expected to revert.
+5. **Penalty discipline.** Accepted penalties and yards per play, offense and defense (pbp `penalty_team`).
+
+## M15 NBA side variables (`nba/features15.py`, version `nba15`)
+
+1. **Lineup RAPM.**
+   - *Stints:* rebuilt from ESPN play-by-play substitutions. Starters come from the box score; later periods' starters are inferred from who acts before being subbed in.
+   - *Fit:* a ridge regression of points per 100 possessions on the players on court, fitted with `scipy.sparse` (already installed as a dependency of scikit-learn; no new package) on games before each Monday (weekly refits; live: the latest Monday).
+   - *Prior:* a box-score per-minute prior for players under 250 minutes.
+   - *Team strength:* the minute-weighted sum of expected available players' RAPM (play probability × projected minutes).
+2. **Three-point shooting luck.** Team 3P% and opponent 3P% vs the league, over the last 15 games, regressed toward the mean with a 750-attempt prior. Defensive 3P% allowed is mostly luck.
+3. **Load management.**
+   - Each star's chance of sitting is learned on training seasons by situation: second night of a back-to-back, national TV (ESPN broadcast field), opponent below .400, and after Mar 15 with seeding settled (the team's playoff position locked by standings).
+   - "Star" means top 2 on his team by minutes × usage.
+   - It is used **only while the player is not on the injury report** for that game. Once the report lists him, availability takes over.
+4. **New-player integration.** Games since each rotation player joined the team. Rotation minutes added and lost in the last 30 days (trades and signings) as a share of team minutes.
+5. **Style matchups.** All from box scores, last 15 games, regressed:
+   - offensive rebound rate vs opponent defensive rebound rate;
+   - 3PA rate vs opponent 3PA allowed;
+   - turnover forcing vs ball security;
+   - FT rate vs opponent foul rate.
+
+## M15 NBA player props (`nba/props/`, version `nbap15`)
+
+Markets: points, rebounds, assists, made threes, and points + rebounds + assists. The model is built per player-game, as of each prediction point (morning and pre-tip, as M14).
+
+1. **Projected minutes.** A ridge regression, trained on 2015-16 to 2020-21, on:
+   - recent minutes (last 3, 10, season), starter role and rest or back-to-back;
+   - games since returning from an absence (restriction);
+   - fouls per minute;
+   - blowout risk: the M14 frozen model's projected margin;
+   - teammates' expected missing minutes at his position.
+2. **Per-minute rates with redistribution.**
+   - The player's rates (last 10, season) and usage share.
+   - When teammates are out or questionable (weighted by 1 − play probability), their share of the team's stat is reassigned in proportion to the player's share.
+   - A per-player "with/without" boost is learned from this team's earlier games without that teammate, shrunk heavily to the league response.
+3. **Game environment.** The M14 frozen model's predicted total and pace relative to the league.
+4. **Opponent.** Stat allowed per minute to the player's position (G/F/C) relative to the league, last 20 games, shrunk strongly (half weight at 40 games).
+5. **Referee crews:** not stored (M14.1 not run). Skipped and logged in BACKLOG.
+
+- **Output:** mean μ and a negative binomial distribution per stat, with dispersion fitted per market on training seasons. The output includes P(over line).
+- **Calibration:** over probabilities are checked on validation and one Platt fit is applied only if they are miscalibrated.
+- **Baselines:** the last-10-game average (naive) and, where lines exist, the line itself.
+- **Backtest:** markets with lines in validation (points, rebounds, assists, threes):
+  - edge thresholds (probability points over the no-vig line) are chosen on 2022-23;
+  - the test is 2023-24 to 2025-26, graded at the final ESPN line and price;
+  - each market reports its record, 95% range, ROI and Brier vs no-vig.
+- **PRA:** lines start in 2024-25, so it is accuracy-only and marked "research only, not backtested".
+
+## M15 NFL player props (`nfl/props/`, version `nflp15`)
+
+Markets: passing yards, rushing yards, receiving yards, receptions, and anytime touchdown (a probability). The model is built per player-game at the M12 points.
+
+1. **Role:** snap share, target share, air-yards share, carry share, red-zone targets and carries, from the last 6 games and the season. Route participation comes from participation `route`, 2016-2025; 2026 has none, so it falls back to snap share.
+2. **Game script:** team pass attempts and rush attempts from the frozen m13w spread and total.
+3. **Teammate injuries:** targets and carries of players out (weighted by 1 − play probability) are reassigned by share.
+4. **Opponent:** yards allowed per target and per carry by position, plus FTN man/zone rate (2022+) vs the player's man/zone splits, regressed strongly.
+5. **Weather:** wind and precipitation from the M13 weather data, for passing and receiving yards.
+
+- **Distributions:** normal on yards (floored at 0, with a point mass at 0 for receivers), negative binomial on receptions, Poisson on TDs.
+- **No backtest:** validation (2020-2022) has no lines, so every NFL market is "research only, not backtested".
+- **Test comparison:** test-season error vs the line is reported for 2024-2025.
+
+## M15 grading and page
+
+- **Prop grading:** `betdata grade nba --props` and `betdata grade nfl --props` grade every stored prop prediction against the box score into `prop_grades`:
+  - over, under or push;
+  - void if the player did not play;
+  - CLV vs the closing prop line, or none if there is no closing line.
+- **Props section:** each sport tab gets one, listing players with a stored line. Each row shows:
+  - projection, line, P(over) and edge;
+  - top 2 factors;
+  - source and fetch time.
+- **Prop flags:** only for markets whose test-season backtest ROI was positive. Markets without a backtest are labelled "research only, not backtested" and never flagged.
+- **Side cards** name the version used and any version running in the background.
