@@ -619,6 +619,27 @@ def freeze15_cmd():
     typer.echo(f"m15 live fit: {path}")
 
 
+@nfl_app.command("live-inputs")
+def live_inputs_cmd():
+    """Build or refresh m15's and the NFL props' compact live inputs under data/derived from
+    the play-by-play and nflverse files on disk (the daily job `nfl-inputs15` does the same;
+    the `nfl-m15-bootstrap` workflow runs it once after downloading the earlier seasons)."""
+    from betdata.db.schema import utcnow
+    from betdata.nfl.live_inputs import refresh, sizes
+
+    with _engine().connect() as conn:
+        out = refresh(conn, utcnow(), data_dir())
+    for k, v in out.items():
+        typer.echo(f"  {k}: {v} rows")
+    total = 0
+    for name, b in sizes(data_dir()).items():
+        total += b
+        typer.echo(f"  data/derived/{name}: {b / 1e3:.0f} kB")
+    typer.echo(f"live inputs in data/derived: {total / 1e6:.2f} MB")
+    if not out:
+        raise typer.Exit(1)
+
+
 from betdata.nfl.props.cli import register as _register_props  # noqa: E402
 
 _register_props(nfl_app)

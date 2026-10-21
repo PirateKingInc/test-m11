@@ -1,0 +1,69 @@
+# M15, one-off (manual): give the hourly runner's saved state the compact live inputs of the
+# m15 side version and the NFL props (data/derived/nfl_m15_* and nfl_prop_*, ~1 MB). It
+# downloads the play-by-play and nflverse files of the last seasons into the job's workspace,
+# builds the tables (`betdata nfl live-inputs`), and saves the state. The raw files are not in
+# the saved paths, so they are dropped with the workspace. After this, the daily 7am run keeps
+# the current season's tables fresh (jobs nfl-pbp ... nfl-inputs15). Shares the hourly runner's
+# concurrency group, so it never overlaps an hourly run.
+
+name: nfl-m15-bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: "Seasons to download and build (m15 reads the last three, props two)"
+        type: string
+        default: "2024-2026"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Restore state
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Require saved state
+        if: steps.restore.outputs.cache-matched-key == ''
+        run: |
+          echo "no saved hourly state to add to; let an hourly run build it first" >&2
+          exit 1
+      - name: Download play-by-play and nflverse files
+        env:
+          SEASONS: ${{ inputs.seasons }}
+        run: |
+          uv run --no-dev betdata backfill --source nflverse --dataset pbp --seasons "$SEASONS"
+          uv run --no-dev betdata backfill --source nflverse_extra --seasons "$SEASONS" \
+            --dataset participation,pfr_pass,depth_charts,player_stats,ngs_passing
+      - name: Build the live inputs
+        run: uv run --no-dev betdata nfl live-inputs
+      - name: Save state
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}

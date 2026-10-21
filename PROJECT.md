@@ -20,6 +20,7 @@ Decisions that change dependencies, data rules or scope, newest last.
 | 2026-10-20 | Clock workflow: a self-redispatching job that starts each hourly run. | GitHub's cron kept dropping almost every tick, including the :30 backups. This stays inside "Actions + Pages only", at the cost of an idle runner, which is free on a public repository. |
 | 2026-10-21 | M15 NBA lineup stints in `nba_stints` (migration 0018). sportsdataverse play-by-play files are not archived in `raw_responses` (only size and sha256); the runner's state holds stints for the last three seasons only. | Each file is ~20 MB and free to fetch again; the full history (`betdata backfill --source sportsdataverse --sport nba --dataset pbp`) is ~45k rows a season and only needed where the RAPM fit runs. |
 | 2026-10-21 | M15 nflverse files (participation, FTN, PFR, depth charts, player stats, NGS) are kept as parquet under `data/nflverse/` by source `nflverse_extra`, CLI/backfill only, outside the Actions cache. | 53 MB in all; nothing in the hourly run reads them yet. Features derived from them should go into database tables (cached), as play-by-play does; the current season's files can then be fetched by one daily `refresh` job. |
+| 2026-10-21 | m15 and NFL prop live inputs are compact per-season tables under `data/derived` (kept by the runner state), refreshed by the daily 7am job `nfl-inputs15`; earlier seasons built once by the `nfl-m15-bootstrap` workflow. | Caching raw play-by-play and nflverse files would add about 100 MB to the state; the tables are about 1 MB and give identical features (see "NFL M15 on the hourly runner"). |
 | 2026-10-21 | M15 NFL props (`nflp15`): the hourly NFL run fetches this season's nflverse player stats and depth charts once a day (`nfl-player-stats`, `nfl-depth-charts`). The prop panel caches its per-season player-game rows and the ESPN→gsis id map under `data/derived` (kept by the runner state). Every NFL prop market is research-only. | Prop inputs and grading need weekly player stats; prop lines carry ESPN athlete ids, and the depth charts map them to gsis ids. No NFL prop lines exist for validation, so no betting backtest or threshold is possible (MODEL.md, "M15 NFL player props"). |
 
 ## M13: the hourly page
@@ -171,6 +172,22 @@ Measured on GitHub's runners, 2026-10-21, with NBA active.
 - **Rebuild:** a run that rebuilds a lost state with NBA (sportsdataverse files for 2015-16 on, then ESPN for this season) is the one exception. It is a one-time cost, and history loading is separate (`nba-bootstrap`).
 
 ## M15: new side variables and player props
+
+### NFL M15 on the hourly runner (state size and runtime)
+
+- **State:** the m15 and NFL prop live inputs are compact tables in `data/derived`, which the state already keeps. No play-by-play or nflverse file is cached.
+  - m15 (2024-2026): team-games, kickers, and depth charts kept only when they change. About 0.75 MB.
+  - Props (2025-2026): player-games, team-games and the ESPN id map. About 0.33 MB.
+  - Together about 1.1 MB.
+- **Daily (the 7am run):** downloads this season's play-by-play, player stats and depth charts, plus PFR pass and NGS passing (about 1.5 MB), and participation once nflverse publishes it. Then `nfl-inputs15` rebuilds this season's tables, which took about 15 s locally.
+- **Hourly:** m15 adds about 6 s, because it shares the M12 store with m12 and m13w. Props add about 9 s with about 1,700 lines. Both were measured locally on a copy of the runner's data with no raw files on disk.
+  - Locally the whole NFL predict step (store load 19 s, m12 + m13w 11 s, m15 6 s, props 9 s) takes about 45 s.
+- **One-off:** `nfl-m15-bootstrap` (manual, concurrency group `hourly`):
+  - restores the state;
+  - downloads 2024-2026 play-by-play and nflverse files into its workspace;
+  - runs `betdata nfl live-inputs`;
+  - saves the state.
+  - Run it once after merging. Run it again after a lost-state rebuild: until then m15 is skipped, and props read whatever player stats the 7am run has fetched.
 
 ### Data licences and attribution (checked 2026-10-21)
 

@@ -98,13 +98,15 @@ def live_models() -> list[tuple[str, Design]]:
 
 
 def run_predict(engine: Engine, now: datetime, days: int, refit: bool = False,
-                models: list[tuple[str, Design]] | None = None) -> tuple[str, list[LivePick]]:
+                models: list[tuple[str, Design]] | None = None,
+                store=None) -> tuple[str, list[LivePick]]:
     # fmt: skip
     """Predict every scheduled game in the next `days` as of now with each live model version,
     and store it (change-only). A game whose final-report or prekick time has passed with no
     stored prediction at that point (the runner was down, or the data was rebuilt) also gets
-    one as of that time, from what was known then. Returns the first model's (M12's) picks."""
-    store = loaded_store(engine)
+    one as of that time, from what was known then. Returns the first model's (M12's) picks.
+    `store`: an already loaded store (the hourly run shares it with m15)."""
+    store = store if store is not None else loaded_store(engine)
     g = store.games
     upcoming = [i for i in g.index
                 if now < g.at[i, "kickoff"] <= now + timedelta(days=days)
