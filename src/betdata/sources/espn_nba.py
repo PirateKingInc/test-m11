@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -58,6 +59,14 @@ BOOKS = {
     "betrivers": "betrivers", "unibet": "unibet", "sugarhouse": "sugarhouse",
     "pointsbet": "pointsbet", "opening": "opening",
 }  # fmt: skip
+BOOKS_NORM = {re.sub(r"[^a-z0-9()]", "", k): v for k, v in BOOKS.items()}
+
+
+def book_of(provider: str) -> str | None:
+    """Our book key for an ESPN provider name, ignoring case, spaces and punctuation
+    ("DraftKings" and "Draft Kings" are the same book)."""
+    key = re.sub(r"[^a-z0-9()]", "", str(provider).lower())
+    return BOOKS_NORM.get(key)
 
 
 def _int_odds(v) -> int | None:
@@ -131,7 +140,7 @@ def _event(e: dict) -> ParsedEvent | None:
 
 
 def _scoreboard_prices(gid: str, odds: dict) -> list[ParsedPrice]:
-    book = BOOKS.get(str(odds.get("provider", {}).get("name", "")).lower())
+    book = book_of(odds.get("provider", {}).get("name", ""))
     if book is None:
         return []
     out = []
@@ -261,7 +270,7 @@ def parse_odds_history(body: bytes, fetched_at: datetime) -> ParsedOdds:
     for g in data.get("games", []):
         gid = g["espn_game_id"]
         for b in g["books"]:
-            book = BOOKS.get(b["provider"].lower())
+            book = book_of(b["provider"])
             if book is None:
                 continue
             kind = "source_opening" if book == "opening" else "source_closing"

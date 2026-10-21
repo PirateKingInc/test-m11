@@ -181,3 +181,10 @@ def test_scoreboard_asks_one_day_at_a_time(espn, engine, fake_api, clock):
     assert [r.url.params["dates"] for r in fake_api.requests] == [
         "20261020", "20261021", "20261022", "20261023"]
     assert len(scoreboard_days("20261001-20261003", None)) == 3
+
+
+def test_book_names_ignore_spaces():
+    from betdata.sources.espn_nba import book_of
+
+    assert book_of("Draft Kings") == book_of("DraftKings") == "draftkings"
+    assert book_of("ESPN BET") == "espnbet" and book_of("consensus") is None

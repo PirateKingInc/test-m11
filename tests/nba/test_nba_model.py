@@ -72,3 +72,4 @@ def test_absences_do_not_carry_into_a_new_season():
     p = Player(team=1, streak=15)  # sat out the end of last season
     assert streak_for(st, SimpleNamespace(season=2026), p) == 0  # opening night
     assert streak_for(st, SimpleNamespace(season=2025), p) == 15
+

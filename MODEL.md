@@ -911,6 +911,11 @@ Brier score, both points: model **0.2043**, no-vig closing market **0.1990**.
   - Both runs are committed (`final_test_first_scoring.json`).
 - **What was not done:** no threshold, group or penalty was re-chosen after the test was seen.
 
+**Two more live findings (REVIEW.md M14-5, M14-6).**
+- **The name-map fix (M14-6):** changed neither validation nor test to 4 decimals. The fit was refrozen.
+- **The rejected roster carry-over (M14-5):** carrying last season's rosters into a new season until each team plays was also tried, and rejected because validation got worse (10.516 → 10.520). It was scored on the test seasons in the same run (11.017, spread −6.7% and moneyline −9.3% at the close), so it is reported here. That test score played no part in the decision.
+- **Reported results:** the numbers above are the current design's.
+
 ### How often statuses change between morning and pre-tip
 
 For players listed on a report by the pre-tip point, the share whose status at pre-tip differs

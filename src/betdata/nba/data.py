@@ -121,7 +121,10 @@ def load_injuries(conn: Connection, g: pd.DataFrame) -> pd.DataFrame:
                                nba_player_games.c.team_id).distinct(), conn)  # fmt: skip
     names["key"] = names.player_name.map(norm_name)
     by_team = {(r.team_id, r.key): r.player_id for r in names.itertuples()}
-    anyone = names.drop_duplicates("key", keep=False).set_index("key").player_id.to_dict()
+    # A name shared by two different players is ambiguous; one player seen on several teams
+    # is not (REVIEW.md M14-6).
+    ids = names.drop_duplicates(["key", "player_id"])
+    anyone = ids.drop_duplicates("key", keep=False).set_index("key").player_id.to_dict()
     keys = i.player_name.map(norm_name)
     i["player_id"] = [by_team.get((tm, k)) or anyone.get(k)
                       for tm, k in zip(i.team_id, keys, strict=True)]  # fmt: skip
