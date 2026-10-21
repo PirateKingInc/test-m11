@@ -56,6 +56,7 @@ class Card:
     ml_pick: str | None = None
     factors: list[tuple[str, float]] = field(default_factory=list)  # points toward home
     missing: dict[str, list[str]] = field(default_factory=dict)  # team -> players likely out
+    notes: list[str] = field(default_factory=list)  # schedule flags, e.g. back-to-backs (M14)
 
 
 @dataclass
