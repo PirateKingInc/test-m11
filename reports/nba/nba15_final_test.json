@@ -1,0 +1,52 @@
+{
+ "look": "second look at 2023-24 to 2025-26 (M14 scored them first)",
+ "design": {
+  "groups": [
+   "avail",
+   "str",
+   "rest",
+   "pace",
+   "ctx",
+   "rapm",
+   "luck3",
+   "load"
+  ],
+  "dropped_by_ablation": [],
+  "lam_m": 100.0,
+  "lam_t": 300.0,
+  "spread_threshold": 6.0,
+  "ml_threshold": 5.0,
+  "blend_weight": 0.2,
+  "calibration": {
+   "slope": 0.9752506347268594,
+   "intercept": -0.021033754854447192,
+   "applied": true,
+   "fitted_on": "validation 2021-2022, both points"
+  },
+  "fit": "",
+  "page": true
+ },
+ "validation_margin": 10.468308817697189,
+ "points": {
+  "morning": {
+   "margin_mae": 10.91197235356246,
+   "total_mae": 14.806904532653881,
+   "close_margin_mae": 10.760543699186991,
+   "m14_margin_mae": 10.986601772022988
+  },
+  "pretip": {
+   "margin_mae": 10.863461081504337,
+   "total_mae": 14.811619885673636,
+   "close_margin_mae": 10.760543699186991,
+   "m14_margin_mae": 10.94280233740207
+  },
+  "all": {
+   "margin_mae": 10.887716717533399,
+   "total_mae": 14.809262209163759,
+   "close_margin_mae": 10.760543699186991,
+   "m14_margin_mae": 10.96470205471253
+  }
+ },
+ "page_switch": true,
+ "rule": "switch only if validation improved AND the test margin MAE is not worse at either point than the M14 version's"
+}

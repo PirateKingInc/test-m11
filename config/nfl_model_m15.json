@@ -1,0 +1,45 @@
+{
+  "margin_groups": [
+    "base",
+    "avail",
+    "str",
+    "sched",
+    "ref",
+    "coach",
+    "wx",
+    "depth",
+    "st",
+    "pen"
+  ],
+  "total_groups": [
+    "base",
+    "avail",
+    "str",
+    "env",
+    "sitluck"
+  ],
+  "lam_margin": 300.0,
+  "lam_total": 300.0,
+  "model": "ridge",
+  "blend_margin": 0.4,
+  "blend_total": 0.15,
+  "m15_group_versions": {
+    "depth": {
+      "version": 101,
+      "variant": "1: one feature, summed over the groups"
+    },
+    "st": {
+      "version": 1,
+      "variant": "full build"
+    },
+    "sitluck": {
+      "version": 1,
+      "variant": "full build"
+    },
+    "pen": {
+      "version": 1,
+      "variant": "full build"
+    }
+  },
+  "status": "draft: chosen on validation 2020-2022 only; no test, not used live"
+}
