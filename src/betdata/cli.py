@@ -12,6 +12,7 @@ from betdata.db.engine import make_engine, upgrade
 from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
 from betdata.nba.cli import nba_app
 from betdata.nfl.cli import nfl_app
+from betdata.props.cli import props_app
 from betdata.runner.cli import page_app, runner_app
 from betdata.sources import REGISTRY
 
@@ -26,6 +27,7 @@ alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=T
 app.add_typer(alias_app, name="alias")
 app.add_typer(nfl_app, name="nfl")
 app.add_typer(nba_app, name="nba")
+app.add_typer(props_app, name="props")
 app.add_typer(runner_app, name="runner")
 app.add_typer(page_app, name="page")
 
