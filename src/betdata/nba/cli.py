@@ -465,3 +465,17 @@ def props_select_cmd(rebuild: bool = False, adjust: str = ""):
         r = v[mk]
         typer.echo(f"{mk:9s} MAE {r['mae']:.3f} (last 10 {r['mae_last10']:.3f})  RMSE "
                    f"{r['rmse']:.3f} ({r['rmse_last10']:.3f})  Brier {r['brier_synthetic']:.4f}")
+
+
+@nba_app.command("select15")
+def select15_cmd(rebuild: bool = False):
+    """M15 side version nba15: add the M15 groups one at a time to the M14 frozen design on
+    validation (2021-22, 2022-23). Writes reports/nba/nba15_selection.json."""
+    from betdata.nba.select15 import select15
+
+    rep = select15(rebuild)
+    for s in rep["steps"]:
+        typer.echo(f"{s['step']:>18}  margin {s['margin']:.3f}  total {s['total']:.3f}  "
+                   f"{'kept' if s['kept'] else 'dropped'}")
+    for a in rep["ablation"]:
+        typer.echo(f" without {a['without']:>6}: margin {a['margin']:.3f} total {a['total']:.3f}")
