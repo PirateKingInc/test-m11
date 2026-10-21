@@ -431,23 +431,25 @@ def status_changes_cmd():
 
 @nba_app.command("bootstrap")
 def bootstrap_cmd():
-    """Load NBA history (schedules and box scores since 2015-16, this season's games so far)
-    into the database without a runner run: for adding NBA to an existing state, which is not a
-    lost-state rebuild (the page's rebuild notice stays off)."""
+    """Load NBA history (schedules and box scores since 2015-16, this season's games so far,
+    lineup stints for this season and the two before) into the database without a runner run:
+    for adding NBA to an existing state, which is not a lost-state rebuild (the page's rebuild
+    notice stays off). With history present, only missing lineup stints are loaded."""
     from betdata.db.schema import utcnow
     from betdata.runner.hourly import has_history
     from betdata.sports import load_entries, plugin
 
     _, engine = _engine()
-    if has_history(engine, "nba"):
-        typer.echo("NBA history present")
-        return
     entry = next(e for e in load_entries() if e.key == "nba")
     sport = plugin(entry) if entry.plugin else None
     if sport is None:  # NBA not active yet: use the plugin class directly
         from betdata.sports.nba import NbaSport
 
         sport = NbaSport(entry)
+    if has_history(engine, "nba"):
+        typer.echo("NBA history present; loading lineup stints where missing")
+        sport.load_stints(engine, utcnow())
+        return
     sport.bootstrap(engine, utcnow())
     typer.echo(f"NBA history loaded: {has_history(engine, 'nba')}")
 
