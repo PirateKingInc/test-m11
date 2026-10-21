@@ -1,6 +1,7 @@
-"""Verification (d): a simulated 30-day month of hourly runs on a full NFL schedule stays inside
-every source's free limit after its safety margin. Walks every hourly slot the workflow fires,
-runs the runner's own `due` and gate logic for every NFL job, and adds up worst-case costs."""
+"""Verification (d): a simulated 30-day month of hourly runs on a full NFL schedule and a full
+NBA schedule (M14: both sports together) stays inside every source's free limit after its
+safety margin. Walks every hourly slot the workflow fires, runs the runner's own `due` and gate
+logic for every job of every active sport, and adds up worst-case costs."""
 
 from collections import defaultdict
 from datetime import UTC, date, datetime, time, timedelta
@@ -40,13 +41,23 @@ def _schedule(conn) -> list[datetime]:
              home_team_id=team_ids[(2 * i) % 32], away_team_id=team_ids[(2 * i + 1) % 32],
              status="scheduled")
         for i, t in enumerate(kicks)])  # fmt: skip
+    nba = sport_id(conn, "nba")
+    nba_teams = conn.execute(select(teams.c.team_id).where(teams.c.sport_id == nba)).scalars().all()
+    tips = [datetime.combine(START + timedelta(days=d), time(h, m), tzinfo=EASTERN).astimezone(UTC)
+            for d in range(35) for h, m in ((19, 0), (19, 0), (19, 30), (20, 0), (21, 0),
+                                            (22, 0), (22, 30))]  # fmt: skip
+    conn.execute(insert(games), [
+        dict(sport_id=nba, season=2026, start_time_utc=t, home_team_id=nba_teams[(2 * i) % 30],
+             away_team_id=nba_teams[(2 * i + 1) % 30], status="scheduled")
+        for i, t in enumerate(tips)])  # fmt: skip
     return kicks
 
 
 def test_a_month_of_hourly_runs_stays_inside_every_quota(engine, settings):
     with engine.begin() as conn:
         kicks = _schedule(conn)
-    [nfl] = active_sports()
+    active = active_sports()
+    assert {s.key for s in active} == {"nfl", "nba"}
     start = datetime.combine(START, time(0), tzinfo=UTC)
     slots = [t for d in range(30) for t in cron_fires(START + timedelta(days=d))
              if in_window(t) and t >= start]  # fmt: skip
@@ -54,7 +65,7 @@ def test_a_month_of_hourly_runs_stays_inside_every_quota(engine, settings):
     spend: dict[tuple[str, str], int] = defaultdict(int)  # (source, day or month) -> units
     odds_runs = 0
     for slot_at in slots:
-        for job in nfl.jobs:
+        for job in (j for sp in active for j in sp.jobs):
             if not (due(job, slot_at) and in_season(job, slot_at, EASTERN)):
                 continue
             if job.when and not gate_open(engine, job.when, slot_at):
@@ -77,12 +88,15 @@ def test_a_month_of_hourly_runs_stays_inside_every_quota(engine, settings):
             assert worst_day <= usable, (name, worst_day, usable)
         else:
             assert spend[(name, "month")] <= usable, (name, spend[(name, "month")], usable)
-    assert spend[("the_odds_api", "month")] <= 3 * len(windows) < 450
-    assert spend[("sharpapi", "month")] == 3 * 30 * 16  # every run, inside 3,000 a day
+    # NFL: one snapshot per kickoff window; NBA: one board a day before the evening tips.
+    assert spend[("the_odds_api", "month")] <= 3 * (len(windows) + 30) < 450
+    # Both sports every run (NBA games every day): 2 calls of up to 3 pages, inside 3,000 a day.
+    assert spend[("sharpapi", "month")] == 2 * 3 * 30 * 16
+    assert spend[("oddspapi", "month")] <= 225
 
     # `betdata scheduler plan --runner` agrees: nothing over budget.
     from betdata.scheduler.runner import projection_report
 
     report = projection_report(engine, settings, project(
-        engine, settings, REGISTRY, runner_schedule([nfl]), start, 30), 30)  # fmt: skip
+        engine, settings, REGISTRY, runner_schedule(active), start, 30), 30)  # fmt: skip
     assert not [line for line in report if "OVER BUDGET" in line]

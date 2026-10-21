@@ -16,7 +16,7 @@ def test_nfl_cards_from_stored_predictions_and_quotes(engine, settings, fake_api
                          sleep=lambda s: None, clock=clock)  # fmt: skip
     fake_api.add(body=fixture_bytes("nflverse", "games_sample.csv"))
     assert nfl.run("schedules", seasons="all").status == "ok"
-    [sport] = active_sports()
+    sport = next(s for s in active_sports() if s.key == "nfl")
     with engine.begin() as conn:
         gid = conn.execute(select(game_source_ids.c.game_id).where(
             game_source_ids.c.source_game_id == "2026_06_HOU_JAX")).scalar()  # fmt: skip
@@ -50,8 +50,8 @@ def test_sports_config(tmp_path):
     from betdata.sports import load_entries
 
     entries = {e.key: e for e in load_entries()}
-    assert entries["nfl"].status == "active" and entries["nba"].status == "coming_soon"
-    assert entries["nba"].plugin is None
+    assert entries["nfl"].status == "active" and entries["nba"].status == "active"
+    assert entries["nba"].plugin == "betdata.sports.nba:NbaSport"
     jobs = {j.id: j for j in entries["nfl"].jobs}
     assert jobs["nfl-odds-prekick"].when.sport == "nfl"  # gates on its own sport's games
     bad = tmp_path / "s.yaml"
@@ -61,5 +61,5 @@ def test_sports_config(tmp_path):
 
 
 def test_page_shows_the_weather_version_once_accepted():
-    [sport] = active_sports()
+    sport = next(s for s in active_sports() if s.key == "nfl")
     assert sport.page_model == "m13w"  # config/nfl_model_wx.json is committed

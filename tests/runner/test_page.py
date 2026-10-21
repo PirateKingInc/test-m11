@@ -92,7 +92,7 @@ def test_moneyline_flags_only_when_the_final_test_made_money(engine, settings, t
 
 
 def test_nfl_moneyline_flags_are_off():
-    [nfl] = active_sports()
+    nfl = next(s for s in active_sports() if s.key == "nfl")
     assert nfl.moneyline_final_roi() == -0.092  # MODEL.md: NFL moneyline final test
 
 
