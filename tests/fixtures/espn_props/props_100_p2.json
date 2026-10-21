@@ -1,0 +1,88 @@
+{
+ "count": 3,
+ "pageIndex": 2,
+ "pageSize": 1000,
+ "pageCount": 2,
+ "items": [
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/6478?lang=en&region=us"
+   },
+   "type": {
+    "id": "3",
+    "name": "Total Assists"
+   },
+   "lastUpdated": "2026-10-21T02:14Z",
+   "current": {
+    "target": {
+     "value": 3.5
+    }
+   },
+   "open": {
+    "target": {
+     "value": 3.5
+    }
+   },
+   "odds": {
+    "american": {
+     "value": "+105",
+     "open": "+105"
+    },
+    "total": {
+     "value": "3.5",
+     "open": "3.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/6478?lang=en&region=us"
+   },
+   "type": {
+    "id": "3",
+    "name": "Total Assists"
+   },
+   "lastUpdated": "2026-10-21T02:14Z",
+   "current": {
+    "target": {
+     "value": 3.5
+    }
+   },
+   "open": {
+    "target": {
+     "value": 3.5
+    }
+   },
+   "odds": {
+    "american": {
+     "value": "-135",
+     "open": "-135"
+    },
+    "total": {
+     "value": "3.5",
+     "open": "3.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/6478?lang=en&region=us"
+   },
+   "type": {
+    "id": "3",
+    "name": "Total Assists"
+   },
+   "lastUpdated": "2026-10-21T02:14Z",
+   "current": {
+    "target": {
+     "value": 5.5
+    }
+   },
+   "open": {
+    "target": {
+     "value": 5.5
+    }
+   }
+  }
+ ]
+}

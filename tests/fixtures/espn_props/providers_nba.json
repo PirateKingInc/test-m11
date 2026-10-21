@@ -1,0 +1,29 @@
+{
+ "count": 3,
+ "items": [
+  {
+   "provider": {
+    "id": "58",
+    "name": "ESPN BET",
+    "priority": 1
+   },
+   "details": "x"
+  },
+  {
+   "provider": {
+    "id": "1004",
+    "name": "consensus",
+    "priority": 1
+   },
+   "details": "x"
+  },
+  {
+   "provider": {
+    "id": "100",
+    "name": "Draft Kings",
+    "priority": 1
+   },
+   "details": "x"
+  }
+ ]
+}
