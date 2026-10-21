@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -80,6 +80,16 @@ def _line(v) -> float | None:
         return float(s)
     except ValueError:
         return None
+
+
+def scoreboard_days(dates: str | None, today: date) -> list[date]:
+    """'20261020' or '20261020-20261023' (inclusive) or None (yesterday to 2 days ahead)."""
+    if not dates:
+        return [today + timedelta(days=k) for k in range(-1, 3)]
+    first, _, last = str(dates).partition("-")
+    a = datetime.strptime(first, "%Y%m%d").date()
+    b = datetime.strptime(last, "%Y%m%d").date() if last else a
+    return [a + timedelta(days=k) for k in range((b - a).days + 1)]
 
 
 def _price(gid, book, market, outcome, line, price, kind) -> ParsedPrice | None:
@@ -313,14 +323,22 @@ class EspnNbaSource(Source):
 
     def fetch(self, job: str, params: dict[str, Any], *, priority: str, run_id: int) -> RawInput:
         if job == "scoreboard":
-            dates = params.get("dates")
-            if not dates:
-                d = self._today()
-                dates = f"{d - timedelta(days=1):%Y%m%d}-{d + timedelta(days=2):%Y%m%d}"
-            resp = self.client.get("/scoreboard", {"dates": dates, "limit": 200}, est_cost=0,
-                                   run_id=run_id)  # fmt: skip
-            return RawInput("/scoreboard", {"dates": dates}, resp.body, resp.fetched_at,
-                            resp.raw_id)  # fmt: skip
+            # One request per day: the API answers 400 to a date range (seen on Actions).
+            days = scoreboard_days(params.get("dates"), self._today())
+            events: dict = {}
+            for day in days:
+                resp = self.client.get("/scoreboard", {"dates": f"{day:%Y%m%d}", "limit": 200},
+                                       est_cost=0, run_id=run_id, store_raw=False)  # fmt: skip
+                for e in json.loads(resp.body).get("events", []):
+                    events[str(e.get("id"))] = e  # a game listed on two days counts once
+            body = json.dumps({"events": list(events.values())}).encode()
+            at = self.clock()
+            with self.engine.begin() as conn:
+                raw_id = raw_store.save(conn, source=NAME, endpoint="/scoreboard",
+                                        params={"dates": [f"{d:%Y%m%d}" for d in days]},
+                                        http_status=200, fetched_at=at, body=body,
+                                        content_type="application/json")  # fmt: skip
+            return RawInput("/scoreboard", None, body, at, raw_id)
         if job == "boxscores":
             ids = self._needing_box(int(params.get("days", 3)))
             out = []
