@@ -42,5 +42,6 @@
     }
   },
   "status": "chosen on validation 2020-2022; scored once on 2023-2025 (reports/nfl/m15_final_test.json); page false, so predicted in the background",
-  "page": false
+  "page": false,
+  "fit": "config/fits/nfl_m15_fit_57fcaa5663_2013_2025.json"
 }

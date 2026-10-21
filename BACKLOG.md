@@ -67,3 +67,4 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **A gradient-boosting challenger** for NBA, as M12 did for NFL.
 - **The "Removed" status** (a player dropped from a later report) was seen only 35 times in training, so its play probability (5%) is not trustworthy. Map it to "not on the report" if it stays rare.
 - **Closing totals** are in the store but the totals model stays in the CLI (as NFL).
+- **m15 live inputs on the runner** (REVIEW.md M15-1): keep `data/pbp` and `data/nflverse` in the hourly state cache, fetch the last two seasons of play-by-play once, and schedule `nflverse-extra refresh` daily, so the background m15 version can predict on the runner (it is skipped there until then).
