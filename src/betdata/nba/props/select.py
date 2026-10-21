@@ -115,16 +115,22 @@ def history_lines(conn) -> pd.DataFrame:
     most preferred one that has both sides priced."""
     from sqlalchemy import select as sel
 
-    from betdata.db.schema import books, prop_lines
+    from betdata.db.schema import books, games, prop_lines
     from betdata.props.lines import BOOK_ORDER
 
     t = prop_lines
     df = pd.read_sql(sel(t.c.game_id, t.c.player_id, t.c.market, t.c.kind, t.c.line,
-                         t.c.over_price, t.c.under_price, books.c.key.label("book"))
+                         t.c.over_price, t.c.under_price, books.c.key.label("book"),
+                         t.c.quoted_at, games.c.start_time_utc.label("tip"))
                      .join(books, books.c.book_id == t.c.book_id)
+                     .join(games, games.c.game_id == t.c.game_id)
                      .where(t.c.kind.in_(("open", "close")), t.c.game_id.is_not(None)),
                      conn)  # fmt: skip
     df = df.dropna(subset=["line", "over_price", "under_price"])
+    # ESPN's "current" quote of a finished game is usually the book's last IN-GAME line
+    # (REVIEW M15-3): a close counts only if it was quoted before tip.
+    q, tip = pd.to_datetime(df.quoted_at, utc=True), pd.to_datetime(df.tip, utc=True)
+    df = df[(df.kind == "open") | (q < tip)]
     df["rank"] = df.book.map({b: i for i, b in enumerate(BOOK_ORDER)}).fillna(len(BOOK_ORDER))
     df = df.sort_values("rank").drop_duplicates(["game_id", "player_id", "market", "kind"])
     wide = df.pivot_table(index=["game_id", "player_id", "market"], columns="kind",
@@ -207,10 +213,14 @@ def miscalibrated(c: dict) -> bool:
     return not (0.85 <= c["platt_slope"] <= 1.15) or abs(c["platt_intercept"]) > 0.1
 
 
+LINE = "open"  # the pre-game line ESPN keeps for finished games (its "close" is in-game)
+
+
 def tune_lines(conn) -> dict:
     """Validation 2022-23 (the only validation season with lines): calibration at the market
-    line, a calibration fit only if miscalibrated, and an edge threshold per backtested market
-    (graded at the close, the M14 convention)."""
+    line, a calibration fit only if miscalibrated, and an edge threshold per backtested market.
+    Graded at the opening line and price: ESPN's history has no pre-game close (REVIEW
+    M15-3); the opening line is posted before both prediction points."""
     f = usable(history_features())
     tr = f[f.season.isin(TRAIN)]
     va = f[f.season.isin((2022,))]
@@ -218,7 +228,7 @@ def tune_lines(conn) -> dict:
     lines = history_lines(conn)
     out = {"lines_rows": int(len(lines)), "markets": {}}
     for mk in MARKETS:
-        d = priced(mod, va, lines, mk, "close")
+        d = priced(mod, va, lines, mk, LINE)
         if d.empty or mk not in BACKTESTED:
             out["markets"][mk] = {"validation_rows": int(len(d)), "backtest": None,
                                   "calibration": line_calibration(d) if len(d) > 50 else None}
@@ -226,7 +236,7 @@ def tune_lines(conn) -> dict:
         cal = line_calibration(d)
         if miscalibrated(cal):
             mod.calib[mk] = (cal["platt_slope"], cal["platt_intercept"])
-            d = priced(mod, va, lines, mk, "close")
+            d = priced(mod, va, lines, mk, LINE)
         by = {t: record(bets(d, t)) for t in EDGE_THRESHOLDS}
         ok = [t for t in EDGE_THRESHOLDS if by[t]["bets"] >= MIN_BETS]
         th = max(ok, key=lambda t: (by[t]["roi"], -t)) if ok else None
@@ -239,8 +249,9 @@ def tune_lines(conn) -> dict:
 
 
 def final_test(conn, again: bool = False) -> dict:
-    """Scored once: fit on 2015-16 to 2022-23, predict 2023-24 to 2025-26; pre-tip bets at the
-    close line and price, morning bets at the opening line and price; error vs the line."""
+    """Scored once: fit on 2015-16 to 2022-23, predict 2023-24 to 2025-26; bets at both points
+    at the opening line and price (a pre-game close only where one was quoted before tip, which
+    ESPN's history rarely has); error vs the line."""
     path = REPORTS / "props_final_test.json"
     if path.exists() and not again:
         raise SystemExit(f"{path} exists: the final test is scored once (--again to reproduce)")
@@ -261,7 +272,7 @@ def final_test(conn, again: bool = False) -> dict:
         r = {"n": int(len(y)), "mae": float(np.abs(mu - y).mean()),
              "mae_last10": float(np.abs(base - y).mean())}  # fmt: skip
         th = (tune["markets"].get(mk) or {}).get("threshold")
-        for at, point in (("close", "pretip"), ("open", "morning")):
+        for at, point in (("open", "pretip"), ("open", "morning"), ("close", "pretip")):
             d = priced(mod, te[te.point == point], lines, mk, at)
             if d.empty:
                 r[f"{point}_at_{at}"] = None
@@ -301,7 +312,7 @@ def freeze() -> Path:
     thresholds = {mk: (tune["markets"].get(mk) or {}).get("threshold") for mk in BACKTESTED}
     test_roi = {}
     for mk in BACKTESTED:
-        b = ((test["markets"].get(mk) or {}).get("pretip_at_close") or {}).get("bets")
+        b = ((test["markets"].get(mk) or {}).get("pretip_at_open") or {}).get("bets")
         test_roi[mk] = b["roi"] if b else None
     design = {"fit": str(fit_path.relative_to(PROJECT_ROOT)),
               "thresholds": {k: v for k, v in thresholds.items() if v is not None},

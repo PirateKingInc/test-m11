@@ -1292,3 +1292,41 @@ The validated design was refitted on 2013-2022 with the validation Platt fits an
   - source and fetch time.
 - **Prop flags:** only for markets whose test-season backtest ROI was positive. Markets without a backtest are labelled "research only, not backtested" and never flagged.
 - **Side cards** name the version used and any version running in the background.
+
+## M15 NBA props results (`betdata nba props-select | props-tune | props-final-test`)
+
+**Error vs the last-10 average, validation 2021-22 and 2022-23** (172k player-game-points, both prediction points):
+
+| Market | MAE model | MAE last 10 | RMSE model | RMSE last 10 |
+|---|---|---|---|---|
+| minutes | 5.060 | 5.362 | | |
+| points | 4.615 | 4.733 | 5.985 | 6.202 |
+| rebounds | 1.917 | 1.968 | 2.513 | 2.600 |
+| assists | 1.293 | 1.321 | 1.756 | 1.815 |
+| threes | 0.873 | 0.878 | 1.216 | 1.254 |
+| PRA | 6.040 | 6.240 | 7.732 | 8.057 |
+
+At synthetic half-point lines (no market), P(over) is well calibrated in every bin with volume.
+
+**ESPN prop line history.** Loaded by the `props-history` workflow: 2022-23 to 2025-26, two books a game, about 280k rows a season for 2022-23 and 2023-24, fewer after.
+- **The "close" in ESPN's history is in-game** (REVIEW M15-3), so it is unusable.
+- **The opening line is pre-game:** its over rate is 44-49% in every market and all four books agree. The backtest therefore uses the opening line and price; few closes quoted before tip exist (reported separately).
+
+**Validation 2022-23, at the opening line** (`reports/nba/props_tune.json`):
+- **Model vs the market:** the over probabilities carry no information against the points line; model-minus-line has a correlation of −0.002 with actual-minus-line. Against rebounds, assists and threes the correlation is weak but real (0.11 for rebounds).
+- **Calibration:** each market was miscalibrated (Platt slopes −0.003 points, 0.23 rebounds, 0.38 assists, 0.49 threes), so one Platt fit was applied to each, per the rule.
+- **Thresholds chosen:** points 6, rebounds 10, assists 10, threes 8 % pts.
+
+**Final test 2023-24 to 2025-26, scored once** (`reports/nba/props_final_test.json`, pre-tip predictions at the opening line):
+
+| Market | Rows | MAE model | MAE line | Brier model | Brier no-vig | Bets (W-L) | Win rate (95%) | ROI |
+|---|---|---|---|---|---|---|---|---|
+| points | 39,309 | 5.053 | 5.020 | 0.2499 | 0.2441 | 1,228-2,876 | 29.9% (28.5-31.3) | −18.2% |
+| rebounds | 38,895 | 2.023 | 2.130 | 0.2425 | 0.2378 | 1,722-3,912 | 30.6% (29.4-31.8) | −14.2% |
+| assists | 37,204 | 1.519 | 1.600 | 0.2394 | 0.2353 | 2,304-4,586 | 33.4% (32.3-34.6) | −7.9% |
+| threes | 34,717 | 1.091 | 1.176 | 0.2357 | 0.2314 | 4,228-6,581 | 39.1% (38.2-40.0) | −3.2% |
+| PRA | 18,399 | 6.517 | 6.746 | 0.2424 | 0.2333 | research only (lines from 2024-25) | – | – |
+
+- **Mean error:** the model's mean projection is closer to the result than the opening line for rebounds, assists, threes and PRA, but not points.
+- **Probabilities and bets:** its over probabilities are worse than the market's (Brier), and every backtested market lost money. The bets' low win rates show the calibrated edges mostly pick long-priced sides.
+- **Flags:** none for any prop market (positive test ROI required). Every prop is shown as information only, and PRA is labelled research only.

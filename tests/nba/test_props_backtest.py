@@ -23,10 +23,15 @@ def test_history_lines_prefers_book_with_both_sides(engine):
             conn.execute(insert(prop_lines).values(
                 source="espn_props", source_game_id=str(gid), game_id=gid, player_id="p1",
                 market="points", book_id=bk[b], kind=kind, line=line, over_price=o,
-                under_price=u, fetched_at=now))  # fmt: skip
+                under_price=u, quoted_at=datetime(2021, 10, 1, tzinfo=UTC),
+                fetched_at=now))  # fmt: skip
         df = history_lines(conn)
     r = df.iloc[0]
     assert (r.close_line, r.close_over_price, r.open_line) == (21.5, -115, 19.5)
+    # A close quoted after tip (an in-game line, REVIEW M15-3) is dropped.
+    with engine.begin() as conn:
+        conn.execute(prop_lines.update().values(quoted_at=datetime(2022, 6, 1, tzinfo=UTC)))
+        assert "close_line" not in history_lines(conn).columns
 
 
 def test_bets_and_record():
