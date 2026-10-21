@@ -469,6 +469,42 @@ def props_select_cmd(rebuild: bool = False, adjust: str = ""):
                    f"{r['rmse']:.3f} ({r['rmse_last10']:.3f})  Brier {r['brier_synthetic']:.4f}")
 
 
+@nba_app.command("props-tune")
+def props_tune_cmd():
+    """Validation 2022-23 at the market's prop lines: calibration (one fit only if off) and an
+    edge threshold per backtested market. Writes reports/nba/props_tune.json."""
+    from betdata.nba.props.select import tune_lines
+
+    _, engine = _engine()
+    with engine.connect() as conn:
+        rep = tune_lines(conn)
+    for mk, r in rep["markets"].items():
+        c = r.get("calibration") or {}
+        typer.echo(f"{mk:9s} rows {r['validation_rows']:6d}  threshold {r.get('threshold')}  "
+                   f"platt {c.get('platt_slope', float('nan')):.3f}/"
+                   f"{c.get('platt_intercept', float('nan')):+.3f}  applied "
+                   f"{r.get('calibration_applied')}")
+
+
+@nba_app.command("props-final-test")
+def props_final_test_cmd(again: bool = typer.Option(False, help="Score again (reproduce).")):
+    """Score the NBA prop model once on 2023-24 to 2025-26 (reports/nba/props_final_test.json)."""
+    from betdata.nba.props.select import final_test
+
+    _, engine = _engine()
+    with engine.connect() as conn:
+        res = final_test(conn, again)
+    typer.echo(json.dumps(res, indent=1, default=float)[:6000])
+
+
+@nba_app.command("props-freeze")
+def props_freeze_cmd():
+    """Fit the prop model on every completed season and write the live fit and design."""
+    from betdata.nba.props.select import freeze
+
+    typer.echo(f"wrote {freeze()}")
+
+
 @nba_app.command("select15")
 def select15_cmd(rebuild: bool = False):
     """M15 side version nba15: add the M15 groups one at a time to the M14 frozen design on
