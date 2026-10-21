@@ -603,6 +603,22 @@ def final_test15_cmd(again: bool = typer.Option(False, help="Score the test seas
     typer.echo(f"report: {REPORT15_PATH} ({rep['label']})")
 
 
+@nfl_app.command("freeze15")
+def freeze15_cmd():
+    """Fit m15 on every completed season from 2013 (as m13w's live fit) to a new file under
+    config/fits/ and record it in config/nfl_model_m15.json. Never overwrites a fit."""
+    from betdata.db.schema import utcnow
+    from betdata.nfl.live15 import freeze
+
+    store, info = _store15()
+    try:
+        path = freeze(store, info, utcnow())
+    except FileExistsError as e:
+        typer.echo(str(e))
+        raise typer.Exit(1) from None
+    typer.echo(f"m15 live fit: {path}")
+
+
 from betdata.nfl.props.cli import register as _register_props  # noqa: E402
 
 _register_props(nfl_app)

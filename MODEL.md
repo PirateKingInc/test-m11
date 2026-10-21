@@ -1073,6 +1073,37 @@ Ablation (each kept M15 group removed, penalties fixed at 300/300):
 
 Special teams carries nearly all of the gain. Depth and situational luck are within noise and kept only by the rule. The line-matchup group never helped: pressure and rushing efficiency are mostly already in M12's opponent-adjusted EPA ratings.
 
+### M15 NFL final test: third look at 2023-2025 (`betdata nfl final-test15`; `reports/nfl/m15_final_test.json`)
+
+m15 and m13w were refitted on 2013-2022 with their frozen designs and scored once on the 855 test games. M12 and M13 scored these seasons before, so this is the third look. Nothing was changed after the numbers were seen.
+
+| MAE (855 games) | m15 | m13w (rerun) | m13w (recorded M13 test) | closing line |
+|---|---|---|---|---|
+| Margin, final report | 10.082 | 10.059 | 10.057 | 9.786 |
+| Margin, prekick | 10.005 | 9.995 | 9.992 | 9.786 |
+| Total, final report | 10.374 | 10.379 | 10.377 | 10.120 |
+| Total, prekick | 10.366 | 10.375 | 10.374 | 10.120 |
+
+The rerun of m13w differs from its recorded test by 0.002-0.003. Its features were rebuilt from this machine's database and caches, not the runner's.
+
+Bets at the close:
+
+| | Spread (≥ 3 pts), final report | Spread, prekick | Moneyline (≥ 3 % pts, M13 config), final report | Moneyline, prekick |
+|---|---|---|---|---|
+| m15 | 137-118-5, +2.5% ROI | 138-113-4, +4.9% | 267-321-1, -7.1% | 269-313-1, -5.6% |
+| m13w | 110-99-4, +0.5% | 105-93-3, +1.2% | 234-336-0, -8.1% | 225-337-1, -9.6% |
+
+The 95% ranges of every spread record include 50%. Brier on decided games, prekick: m15 0.2167, m13w 0.2166, no-vig market 0.2102.
+
+**Page switch: no.** Validation improved (9.778 < 9.819), but the test margin MAE is worse than m13w's at both points (+0.025 at the final report, +0.013 at prekick). The page stays on m13w. m15 is written to `config/nfl_model_m15.json` with `page: false`. Its live fit, on 2013-2025 and frozen by `betdata nfl freeze15`, is `config/fits/nfl_m15_fit_57fcaa5663_2013_2025.json`. m15 is predicted, stored (model `m15`) and graded hourly in the background.
+
+**Live inputs.** `nfl/live15.py` rebuilds m15's inputs each run from the last three seasons of play-by-play and the nflverse files, using the frozen expected-rate fits. It skips the run (logged, nothing stored) when the inputs are incomplete:
+- last season's play-by-play is missing;
+- fewer than 90% of this season's finished games are present;
+- no depth chart is known from the last 10 days.
+
+The hourly runner's state cache does not hold `data/pbp` or `data/nflverse` (REVIEW.md M15-1), so until those are kept there, m15 is skipped on the runner rather than stored from empty rates.
+
 ## M15 NBA side variables (`nba/features15.py`, version `nba15`)
 
 1. **Lineup RAPM.**

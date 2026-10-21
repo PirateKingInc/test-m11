@@ -102,6 +102,11 @@ class Expected:
     pressure_from_pfr: float  # participation pressures per PFR times_pressured
     pressure_from_hits: float  # participation pressures per (sacks + QB hits)
 
+    @classmethod
+    def from_dict(cls, d: dict) -> Expected:
+        return cls(Logistic(**d["fg"]), Logistic(**d["third"]), Logistic(**d["rz"]),
+                   d["pressure_from_pfr"], d["pressure_from_hits"])  # fmt: skip
+
     def to_dict(self) -> dict:
         return {"fg": self.fg.__dict__, "third": self.third.__dict__, "rz": self.rz.__dict__,
                 "pressure_from_pfr": self.pressure_from_pfr,
@@ -257,9 +262,13 @@ def read_pbp(data_dir: Path, seasons) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True)
 
 
-def build_frames(store: Store, gm: pd.DataFrame, data_dir: Path, train) -> tuple[dict, dict]:
+def build_frames(store: Store, gm: pd.DataFrame, data_dir: Path, train,
+                 expected: Expected | None = None,
+                 first_season: int | None = None) -> tuple[dict, dict]:  # fmt: skip
+    """`expected`: frozen fits (live) instead of fitting on `train`; `first_season`: build only
+    seasons from it (live reads the last seasons only)."""
     g = store.games
-    seasons = sorted(set(g.season))
+    seasons = sorted(s for s in set(g.season) if first_season is None or s >= first_season)
     pbp = read_pbp(data_dir, seasons)
     part = nf.load_participation(seasons, columns=["nflverse_game_id", "play_id", "was_pressure",
                                                    "time_to_throw"], data_dir=data_dir)
@@ -272,7 +281,7 @@ def build_frames(store: Store, gm: pd.DataFrame, data_dir: Path, train) -> tuple
         ngs = pd.DataFrame()
     raw = raw_team_games(pbp, part, pfr, ngs)
     raw["season"] = raw.game_id.str[:4].astype(int)
-    exp = fit_expected(pbp[pbp.season.isin(train)], raw[raw.season.isin(train)])
+    exp = expected or fit_expected(pbp[pbp.season.isin(train)], raw[raw.season.isin(train)])
     tg = finish(raw, exp, pbp)
     k = kicks(pbp, exp)
 
@@ -315,6 +324,8 @@ def _kickoffs(gm: pd.DataFrame, g: pd.DataFrame) -> pd.Series:
     return pd.Series(d.game_id.map(g.kickoff).to_numpy(), index=d.nfl_id.to_numpy())
 
 
-def with_m15(store: Store, conn: Connection, data_dir: Path, train) -> tuple[Store, dict]:
-    frames, info = build_frames(store, game_map(conn), data_dir, train)
+def with_m15(store: Store, conn: Connection, data_dir: Path, train, *,
+             expected: Expected | None = None,
+             first_season: int | None = None) -> tuple[Store, dict]:  # fmt: skip
+    frames, info = build_frames(store, game_map(conn), data_dir, train, expected, first_season)
     return Store(store.games, {**store.frames, **frames}, store.params, names=store.names), info

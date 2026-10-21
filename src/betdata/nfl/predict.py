@@ -86,7 +86,18 @@ LABELS = {
     "wx_cold": "cold",
     "wx_hot": "heat",
     "wx_rain": "rain",
+    # M15 (model m15 only)
+    "lines_": "line matchup",
+    "depth_": "depth-chart backups",
+    "st_fg": "kicker",
+    "st_punt": "punting",
+    "st_ko": "kickoff coverage",
+    "st_ret": "returns",
+    "sitluck_": "third-down / red-zone luck",
+    "pen_": "penalties",
 }
+DESIGN_FILES = {"m12": "config/nfl_model.json", "m13w": "config/nfl_model_wx.json",
+                "m15": "config/nfl_model_m15.json"}
 
 
 def label(feature: str) -> str:
@@ -217,8 +228,7 @@ def store_picks(conn: Connection, picks: list[LivePick], version: str, now: date
             blend_total=p.blend_total, features=getattr(p, "features", {}),
             factors={"margin": p.margin_factors[:8], "total": p.total_factors[:8],
                      "missing": p.missing},
-            params={"design": "config/nfl_model.json" if model == "m12"
-                    else "config/nfl_model_wx.json"},
+            params={"design": DESIGN_FILES.get(model, "config/nfl_model_wx.json")},
             market_ml_home=p.ml_home, market_ml_away=p.ml_away,
         ))  # fmt: skip
         p.stored = True
