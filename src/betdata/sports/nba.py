@@ -35,8 +35,25 @@ class NbaSport(Sport):
         except (ValueError, KeyError) as e:  # no history loaded yet
             log.warning("nba predict skipped: %s", e)
             n = 0
+        self.predict_15(engine, now)
         self.predict_props(engine, now)
         return n
+
+    def predict_15(self, engine: Engine, now: datetime) -> int:
+        """The M15 side version nba15 (background unless the switch rule moved the page)."""
+        from betdata.nba.live15 import run_predict15
+
+        try:
+            return len(run_predict15(engine, now))
+        except Exception as e:  # never breaks the run or the M14 predictions
+            log.warning("nba15 predict skipped: %s: %s", type(e).__name__, e)
+            return 0
+
+    def _page_model(self) -> str:
+        from betdata.nba.live15 import Design15
+
+        d = Design15.load()
+        return "nba15" if d is not None and d.page else MODEL
 
     def predict_props(self, engine: Engine, now: datetime) -> int:
         """M15 prop predictions for players with a stored line (never breaks the run)."""
@@ -66,13 +83,17 @@ class NbaSport(Sport):
         ids = [r.game_id for r in rows]
         if not ids:
             return []
-        last = (select(mp.c.game_id, func.max(mp.c.predicted_at).label("at"))
-                .where(mp.c.model == MODEL, mp.c.game_id.in_(ids), mp.c.predicted_at <= now)
-                .group_by(mp.c.game_id).subquery())  # fmt: skip
-        preds = {p.game_id: p for p in conn.execute(
-            select(mp).join(last, and_(last.c.game_id == mp.c.game_id,
-                                       last.c.at == mp.c.predicted_at))
-            .where(mp.c.model == MODEL))}  # fmt: skip
+        preds: dict = {}
+        # The page's version first; a game it has no prediction for falls back to M14's.
+        for model in dict.fromkeys((self._page_model(), MODEL)):
+            last = (select(mp.c.game_id, func.max(mp.c.predicted_at).label("at"))
+                    .where(mp.c.model == model, mp.c.game_id.in_(ids),
+                           mp.c.predicted_at <= now)
+                    .group_by(mp.c.game_id).subquery())  # fmt: skip
+            for p in conn.execute(select(mp).join(last, and_(
+                    last.c.game_id == mp.c.game_id, last.c.at == mp.c.predicted_at))
+                    .where(mp.c.model == model)):  # fmt: skip
+                preds.setdefault(p.game_id, p)
         quotes = current_quotes(conn, ids, now)
         design = self._design()
         out = []
@@ -130,7 +151,19 @@ class NbaSport(Sport):
                              f"{d.ml_threshold:g} % pts"}  # fmt: skip
 
     def page_version(self) -> str | None:
+        if self._page_model() == "nba15":
+            from betdata.nba.live15 import version as v15
+
+            return v15()
         return self.version()
+
+    def background_versions(self) -> list[str]:
+        from betdata.nba.live15 import version as v15
+
+        v = v15()
+        if v is None:
+            return []
+        return [self.version()] if self._page_model() == "nba15" else [v]
 
     def props(self, conn: Connection, now: datetime) -> list:
         from betdata.nba.props.grade import DESIGN_PATH, MODEL, thresholds
