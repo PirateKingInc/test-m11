@@ -658,20 +658,49 @@ Published report times, sampled on 12 dates (`probe` workflow, 2026-10-20):
 | 2021-22 to mid 2025-26 | hourly | `_05PM` | same |
 | since early 2026 | every 15 minutes | `_05_15PM` | the time in the name |
 
-How far back the loaded history goes, and how much of each season it covers, is recorded in
-"Results log" once the backfill has run.
+**Loaded history** (`nba-history` workflow, 2026-10-20/21): the first report reachable is
+**2018-12-17**. Nothing earlier answers (2018-01 and older: 403), so 2015-16 to 2017-18 and the
+first two months of 2018-19 have no injury report. 139,673 change-only rows. Every row is
+matched to a team; 3,995 (2.9%) to no game (postponed or rescheduled games).
+
+History loads the hourly reports 11 AM-10 PM ET on game days (three a day before 2021-22),
+which is what the two prediction points read. The other hourly and 15-minute versions exist
+but were not loaded (about 20,000 more requests at the one-a-second the server accepts).
 
 ### Historical lines
 
-ESPN keeps, per game, each book's opening and last line (and, for 2015-2019, an "Opening"
-pseudo-book). The last line is the closing line. Coverage per season is recorded in the
-results log. If a season has no lines, its backtest is scored on prediction error only.
+ESPN keeps, per game, each book's last line, which is the closing line. For some seasons it
+also keeps an opening line. Loaded per season (games with a final score):
+
+| Season | Games | Opening line | Closing spread | Closing moneyline | Main closing books |
+|---|---|---|---|---|---|
+| 2015-16 | 1,312 | 1,312 ("Opening" pseudo-book) | 1,312 | 1,312 | Bovada, BetOnline |
+| 2016-17 | 1,304 | 1,270 | 1,270 | 1,263 | Bovada, BetOnline |
+| 2017-18 | 1,308 | **0** | 1,308 | 1,308 | Westgate |
+| 2018-19 | 1,310 | **0** | 1,310 | 1,310 | Caesars |
+| 2019-20 | 1,143 | **0** | 1,143 | 1,143 | DraftKings, Caesars |
+| 2020-21 | 1,147 | **0** | 1,147 | 1,147 | DraftKings, BetMGM |
+| 2021-22 | 1,319 | **0** | 1,319 | 1,319 | DraftKings, BetMGM |
+| 2022-23 | 1,313 | **0** | 1,313 | 1,313 | DraftKings |
+| 2023-24 | 1,314 | 1,313 (each book's open) | 1,314 | 1,314 | DraftKings, ESPN BET |
+| 2024-25 | 1,310 | 1,310 | 1,309 | 1,310 | ESPN BET |
+| 2025-26 | 1,313 | 1,313 | 1,313 | 1,313 | DraftKings, ESPN BET |
+
+**The gap.** 2017-18 to 2022-23, which include both validation seasons, have no line known
+before tip, only the close. Consequences:
+- **Market group:** it could not be judged on validation, so it is not in the model (below).
+- **Thresholds:** chosen on validation bets graded at the closing line and price (the M12/M13
+  convention).
+- **Final test:** graded both at the opening line and at the close.
+- **Live:** lines collected from now on (ESPN's DraftKings line hourly, plus keyed sources)
+  close the gap (BACKLOG.md).
 
 ## Prediction points (`src/betdata/nba/points.py`)
 
 | Point | When (US Eastern) | What is new |
 |---|---|---|
 | `morning` | 14:00 on game day: the first hourly run after the first official report of game day (1:30 PM in the three-a-day era; teams submit game-day statuses between 11 a.m. and 1 p.m. local). For a tip before 15:00, three hours before tip (not before 07:00). | Game-day injury statuses |
+| `early` (live only) | any hourly run before `morning` | Shown on the page; predicted with the morning fit; not graded separately in backtests |
 | `pretip` | the last hourly run (on the hour, 07:00-22:00) strictly before tip | The latest injury report, the latest line |
 
 How often a player's status changes between the two points is measured and recorded.
@@ -725,3 +754,185 @@ scrambled, and must give identical values.
    (clinched or eliminated teams); In-Season Tournament games.
 7. **Market**: the line at the prediction point and its movement since the open. Model-only and
    model + market blend are both reported. The closing line is never an input.
+
+## M14 results log
+
+Everything below is reproducible from the data (`betdata nba load-history <nba-history files>`,
+then `betdata nba select | tune | final-test | freeze`). The reports are committed under
+`reports/nba/`.
+
+### How the work was judged
+
+- **Development runs:** while the history backfill was still running, the pipeline was debugged
+  on incomplete injury and line data (2022-23 and 2024-26 partly loaded). Those numbers were not
+  used for any decision.
+- **The official runs below:** all on the complete data.
+- **Adjustments:** one targeted adjustment was made, to group 2 (below). No other group was
+  adjusted.
+
+### Play probabilities by status (learned on training seasons 2015-16 to 2020-21)
+
+A rotation player's chance of playing, as learned from what happened at both prediction points
+(`play_prob` in the frozen fit):
+
+| Official status at the point | P(plays) | Player-points seen |
+|---|---|---|
+| Out | 0.5% | 20,109 |
+| Doubtful | 5.2% | 1,019 |
+| Questionable | 50.3% | 5,123 |
+| Probable | 88.8% | 3,008 |
+| Available | 86.6% | 1,449 |
+| Not on a report that lists his team; played last game | 92.5% | 111,403 |
+| ... missed his team's last 1 / 2-4 / 5+ games | 52.7% / 37.2% / 14.9% | 8,420 / 7,910 / 7,326 |
+| No report for the game (2015-18); played last game | 90.6% | 186,257 |
+| ... missed last 1 / 2-4 / 5+ | 47.2% / 28.7% / 10.1% | 16,767 / 18,037 / 20,452 |
+| "Removed" (dropped from a later report) | 5.4% | 35 (too few to trust) |
+
+Box-score absences (a rotation player with no minutes) only count once the game is over, and
+only for later games. "Available" (86.6%) sits below the unlisted rate (92.5%). The likely
+reason, not tested, is that it mostly marks players coming back from an injury.
+
+### Group by group (validation 2021-22 and 2022-23, MAE averaged over both points)
+
+| Step | Margin MAE | Total MAE | Morning / pre-tip margin | Decision |
+|---|---|---|---|---|
+| Base (home court + Elo) | 10.722 | 15.391 | | |
+| + 1 availability | **10.588** | 15.408 | 10.611 / 10.565 | kept (−0.134) |
+| + 2 team strength | **10.553** | 15.186 | 10.570 / 10.536 | kept (−0.035) |
+| + 3 rest and schedule | **10.519** | 15.186 | 10.533 / 10.505 | kept (−0.034) |
+| + 4 pace (totals) | 10.519 | **14.680** | | kept on total (−0.506) |
+| + 5 home court by season | 10.534 | 14.680 | | dropped (+0.015) |
+| + 6 context | **10.516** | 14.680 | 10.531 / 10.502 | kept (−0.003) |
+| + 7 market at the point | 10.530 | 14.665 | | dropped: no line before tip in validation (above) |
+
+For comparison on validation:
+- **Elo baseline:** 10.773.
+- **Closing line:** 10.280 (pre-tip, 2,632 games).
+- **Closing total:** 14.109.
+
+Ablation from the final model (validation):
+
+| Without | Margin MAE | Total MAE |
+|---|---|---|
+| (final model) | 10.516 | 14.680 |
+| availability | 10.579 (+0.063) | 14.679 |
+| team strength | 10.544 (+0.028) | 14.964 (+0.284) |
+| rest and schedule | 10.549 (+0.033) | 14.679 |
+| pace | 10.516 | 15.186 (+0.506) |
+| context | 10.519 (+0.003) | 14.680 |
+
+**Adjustment 1 of 3, team strength.** The rating step was raised from 0.04 to 0.06 (faster ratings). Margin went from 10.553 to 10.566 (worse), so it was reverted; no further adjustments were made.
+
+**Home court (dropped).**
+- **What it tried:** a slow-moving estimate of home edge, plus bubble and limited-crowd flags.
+- **Why it adds nothing:** the base model's home term already carries the average.
+- **The decline the spec mentions is real:** the estimate averaged 2.3-3.4 points a season in 2015-16 to 2019-20, then 1.3 in the limited-crowd 2020-21 season, 1.7-2.7 in 2021-23 and 1.8-2.3 in 2023-26. It moves too slowly to beat a constant on two validation seasons.
+
+**Context.** Its 0.003 gain is the smallest kept effect and sits within noise. It is kept under the acceptance rule. The early-season prior, roster continuity and tanking terms carry it.
+- **Coaching changes:** no free source has them, so they are not modelled.
+- **In-Season Tournament games:** not flagged; the schedule rows don't mark them (BACKLOG.md).
+
+**Model.** Ridge regression with a margin penalty of 3 and a total penalty of 1,000; sigma is 13.28 on the final fit. No gradient-boosting challenger was built for NBA in M14 (BACKLOG.md), so the simple model is the only one.
+
+### Calibration (validation)
+
+- **Platt fit:** slope 0.975 with intercept −0.021, on both points pooled.
+- **Applied:** yes. The rule applies one fit only when the model is overconfident, and slope < 1 means it was, slightly.
+- **Brier score on validation:** 0.2196.
+
+| Predicted | Games | Predicted (mean) | Home won |
+|---|---|---|---|
+| 0.1-0.2 | 79 | 0.165 | 0.203 |
+| 0.2-0.3 | 243 | 0.261 | 0.230 |
+| 0.3-0.4 | 530 | 0.355 | 0.355 |
+| 0.4-0.5 | 935 | 0.453 | 0.428 |
+| 0.5-0.6 | 1,253 | 0.551 | 0.586 |
+| 0.6-0.7 | 1,078 | 0.650 | 0.657 |
+| 0.7-0.8 | 764 | 0.743 | 0.726 |
+| 0.8-0.9 | 336 | 0.836 | 0.818 |
+| 0.9-1.0 | 42 | 0.919 | 0.857 |
+
+### Thresholds and blend (validation; frozen in `config/nba_model.json`)
+
+Spread bets on validation, at the closing line:
+
+| Edge ≥ | Bets | W-L-P | ROI |
+|---|---|---|---|
+| 1 | 3,669 | 1,805-1,808-56 | −4.6% |
+| 2 | 2,440 | 1,219-1,185-36 | −3.2% |
+| 3 | 1,483 | 726-731-26 | −4.8% |
+| 4 | 823 | 412-388-23 | −1.6% |
+| 5 | 444 | 229-206-9 | +0.5% |
+| **6** | **216** | **120-94-2** | **+7.0%** |
+
+- **Spread threshold:** chosen as **6 points**, the best ROI with at least 100 bets.
+- **Moneyline threshold:** chosen as **5 % pts**, at the closing price: +2.0% on 2,607 bets (2 pts +0.5%, 3 +1.8%, 4 +1.9%, 6 +1.3%, 8 −0.1%).
+- **Blend weight:** **0.2** model / 0.8 line.
+  - It needs a line known before tip, which only 2015-16 and 2016-17 have, so it was chosen there.
+  - The model for that choice was fitted on 2017-18 to 2020-21 only.
+  - MAE was 9.62 for the line alone, 9.61 for the 0.2 blend, and 9.86 for the model alone.
+
+### Final test: 2023-24 to 2025-26, scored once (`reports/nba/final_test.json`)
+
+The frozen design was refitted on 2015-16 to 2022-23. There were 3,937 games, and every one had a closing line.
+
+| Margin MAE | Morning | Pre-tip | Both |
+|---|---|---|---|
+| **Model** | 10.987 | 10.943 | **10.965** |
+| Elo baseline | 11.349 | 11.349 | 11.349 |
+| Opening line (the market at the morning point) | 10.983 | 10.983 | 10.983 |
+| **Closing line** | 10.761 | 10.761 | **10.761** |
+| Model + market blend (0.2 × model + 0.8 × opening line) | 10.941 | 10.927 | 10.934 |
+| Total MAE: model / closing total | 14.839 / 14.296 | 14.843 / 14.296 | 14.841 / 14.296 |
+
+Bets at the validation thresholds (spread ≥ 6 pts at −110; moneyline ≥ 5 % pts at the price):
+
+| | Bets | W-L-P | Win rate (95% range) | ROI | Avg CLV |
+|---|---|---|---|---|---|
+| **Spread at the closing line** | 293 | 151-141-1 | 51.7% (46.0-57.4%) | **−1.3%** | 0 by construction |
+| Spread at the opening line | 482 | 302-180-0 | 62.7% (58.3-66.9%) | +19.6% | +4.1 pts |
+| **Moneyline at the closing price** | 3,763 | 1,429-2,334 | 38.0% (36.4-39.5%) | **−7.0%** | — |
+| Moneyline at the opening price | 3,900 | 1,758-2,142 | 45.1% (43.5-46.6%) | +4.6% | — |
+
+Brier score, both points: model **0.2043**, no-vig closing market **0.1990**.
+
+**Reading the bet rows.**
+- **The opening-line rows are not achievable results.** The opener is a stale line. By the morning or pre-tip point, the market has already moved on the same injury news the model reads. That is the +4.1 points of "closing-line value".
+- **The realistic grade lies between the two rows and is closer to the close.** Measured at the close, spread bets are break-even minus vig, and moneyline bets lose 7%.
+- **Part A:** the moneyline final-test ROI used for flagging is the closing-price figure, **−7.0%**. So NBA moneyline edges are shown as information only and are never flagged, as for NFL.
+
+**Re-scoring after a bug fix (REVIEW.md M14-4).**
+- **The bug:** inspecting the first live cards showed that last season's end-of-year absences carried into each opening game.
+- **The fix:** applied identically to training, validation and test, with the frozen design unchanged.
+- **Re-scored with `--again`:**
+  - Margin MAE: 10.966 → 10.965.
+  - Spread at the close: −0.9% → −1.3%.
+  - Moneyline at the close: −7.3% → −7.0%.
+  - Both runs are committed (`final_test_first_scoring.json`).
+- **What was not done:** no threshold, group or penalty was re-chosen after the test was seen.
+
+### How often statuses change between morning and pre-tip
+
+For players listed on a report by the pre-tip point, the share whose status at pre-tip differs
+from the morning (including players first listed after the morning):
+
+| Season | Games | Players listed | Changed | Uncertain → Out | Uncertain → Available |
+|---|---|---|---|---|---|
+| 2018-19 (from Dec) | 860 | 6,632 | 13.1% | 134 | 117 |
+| 2019-20 | 1,125 | 10,172 | 13.3% | 194 | 199 |
+| 2020-21 | 1,135 | 8,671 | 15.7% | 170 | 195 |
+| 2021-22 | 1,315 | 12,920 | 19.3% | 459 | 537 |
+| 2022-23 | 1,295 | 11,748 | 21.1% | 502 | 672 |
+| 2023-24 | 1,295 | 13,216 | 23.7% | 647 | 827 |
+| 2024-25 | 1,295 | 14,269 | 24.3% | 615 | 846 |
+| 2025-26 | 1,292 | 14,183 | 24.7% | 921 | 995 |
+
+Statuses settle later every season: a quarter of listed players now change between 2 PM and the last run before tip. The model is correspondingly better at pre-tip:
+- Validation: 10.502 vs 10.531.
+- Test: 10.943 vs 10.987.
+
+### Frozen live fit
+
+- **Fit:** `config/fits/nba_fit_2015_2025.json`, on every completed season 2015-16 to 2025-26 with the frozen design, including the training-season play probabilities.
+- **Version:** shown on the page as `nba:<hash>`.
+- **No hourly refit:** the hourly runner only reads it.

@@ -1,0 +1,116 @@
+{
+ "games": 3937,
+ "morning": {
+  "margin_mae": 10.986601772022988,
+  "total_mae": 14.838816396157286,
+  "close_margin_mae": 10.760543699186991,
+  "model_mae_where_close": 10.985111319690741,
+  "close_total_mae": 14.295783591567183,
+  "open_margin_mae": 10.982955990842026,
+  "blend_mae": 10.940863939139085,
+  "games_with_close": 3936
+ },
+ "pretip": {
+  "margin_mae": 10.94280233740207,
+  "total_mae": 14.84288599367959,
+  "close_margin_mae": 10.760543699186991,
+  "model_mae_where_close": 10.941423406873753,
+  "close_total_mae": 14.295783591567183,
+  "open_margin_mae": 10.982955990842026,
+  "blend_mae": 10.92655219789104,
+  "games_with_close": 3936
+ },
+ "all": {
+  "margin_mae": 10.96470205471253,
+  "total_mae": 14.840851194918438,
+  "close_margin_mae": 10.760543699186991,
+  "model_mae_where_close": 10.963267363282247,
+  "close_total_mae": 14.295783591567183,
+  "open_margin_mae": 10.982955990842026,
+  "blend_mae": 10.933708068515061,
+  "games_with_close": 7872
+ },
+ "elo_mae": {
+  "morning": 11.348887523733836,
+  "pretip": 11.348887523733836
+ },
+ "spread_bets_open": {
+  "bets": 482,
+  "w": 302,
+  "l": 180,
+  "p": 0,
+  "win_rate": 0.6266,
+  "win_rate_95": [
+   0.5825,
+   0.6686
+  ],
+  "roi": 0.1962,
+  "clv": 4.088
+ },
+ "moneyline_bets_open": {
+  "bets": 3900,
+  "w": 1758,
+  "l": 2142,
+  "p": 0,
+  "win_rate": 0.4508,
+  "win_rate_95": [
+   0.4352,
+   0.4664
+  ],
+  "roi": 0.0464,
+  "clv": null
+ },
+ "spread_bets_close": {
+  "bets": 293,
+  "w": 151,
+  "l": 141,
+  "p": 1,
+  "win_rate": 0.5171,
+  "win_rate_95": [
+   0.46,
+   0.5738
+  ],
+  "roi": -0.0127,
+  "clv": 0.0
+ },
+ "moneyline_bets_close": {
+  "bets": 3763,
+  "w": 1429,
+  "l": 2334,
+  "p": 0,
+  "win_rate": 0.3798,
+  "win_rate_95": [
+   0.3644,
+   0.3954
+  ],
+  "roi": -0.0704,
+  "clv": null
+ },
+ "brier": {
+  "model": 0.20433934465203327,
+  "market_close_novig": 0.19896128544153557,
+  "games": 3937
+ },
+ "design": {
+  "groups": [
+   "avail",
+   "str",
+   "rest",
+   "pace",
+   "ctx"
+  ],
+  "lam_m": 3.0,
+  "lam_t": 1000.0,
+  "spread_threshold": 6.0,
+  "ml_threshold": 5.0,
+  "blend_weight": 0.2,
+  "fit": "config/fits/nba_fit_2015_2025.json",
+  "ml_final_test_roi": -0.0726,
+  "calibration": {
+   "slope": 0.9752506347268594,
+   "intercept": -0.021033754854447192,
+   "applied": true,
+   "fitted_on": "validation 2021-2022, both points"
+  }
+ }
+}

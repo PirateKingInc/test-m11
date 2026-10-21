@@ -1,0 +1,22 @@
+{
+  "groups": [
+    "avail",
+    "str",
+    "rest",
+    "pace",
+    "ctx"
+  ],
+  "lam_m": 3.0,
+  "lam_t": 1000.0,
+  "spread_threshold": 6.0,
+  "ml_threshold": 5.0,
+  "blend_weight": 0.2,
+  "fit": "config/fits/nba_fit_2015_2025.json",
+  "ml_final_test_roi": -0.0704,
+  "calibration": {
+    "slope": 0.9752506347268594,
+    "intercept": -0.021033754854447192,
+    "applied": true,
+    "fitted_on": "validation 2021-2022, both points"
+  }
+}
