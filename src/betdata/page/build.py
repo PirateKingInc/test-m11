@@ -166,6 +166,7 @@ def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
   {f'<div class="why"><h4>Top factors (points for {e(c.home)})</h4><ul>{factors}</ul></div>'
    if factors else ''}
   {f'<div class="out"><h4>Likely out</h4><ul>{out_lines}</ul></div>' if out_lines else ''}
+  {f'<p class="meta">{e(" · ".join(c.notes))}</p>' if c.notes else ''}
   {movement_html(c, movement)}
 </article>"""
 

@@ -708,3 +708,27 @@ nba_injury_reports = Table(
     UniqueConstraint("game_date", "matchup", "player_name", "report_at"),
     Index("ix_nba_injury_game", "game_id", "known_at"),
 )
+
+# Graded paper bets of the NBA model (M14), the same shape as nfl_bet_grades: one row per stored
+# prediction and market whose edge cleared the validated threshold.
+nba_bet_grades = Table(
+    "nba_bet_grades",
+    metadata,
+    Column("grade_id", Integer, primary_key=True),
+    Column("prediction_id", ForeignKey("model_predictions.prediction_id"), nullable=False),
+    Column("model_version", String(128), nullable=False),
+    Column("game_id", ForeignKey("games.game_id"), nullable=False),
+    Column("market", String(16), nullable=False),  # spread, moneyline
+    Column("side", String(8), nullable=False),  # home, away
+    Column("line", Float),
+    Column("price_american", Integer, nullable=False),
+    Column("edge", Float, nullable=False),
+    Column("close_line", Float),
+    Column("clv", Float),
+    Column("close_price_american", Integer),
+    Column("result", String(8), nullable=False),
+    Column("profit", Float, nullable=False),
+    Column("graded_at", UTCDateTime, nullable=False),
+    UniqueConstraint("prediction_id", "market"),
+    Index("ix_nba_bet_grades_version", "model_version"),
+)

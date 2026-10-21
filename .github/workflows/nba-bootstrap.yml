@@ -1,0 +1,47 @@
+# M14, one-off (manual): add NBA history to the hourly runner's saved state before NBA goes live,
+# so the first NBA hourly run is not a lost-state rebuild (which would show the page's "data
+# was lost" notice). Shares the hourly runner's concurrency group, so they never overlap.
+
+name: nba-bootstrap
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Load NBA history
+        run: uv run --no-dev betdata nba bootstrap
+      - name: Save state
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}

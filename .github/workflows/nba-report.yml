@@ -1,0 +1,48 @@
+# M14 reports that need the live state (manual): the replay of this season's games so far with
+# the frozen NBA model (prediction at each point vs the market known then vs the result), from
+# the hourly runner's saved state plus the published history files. Read-only on the state:
+# nothing is saved back. Output is pushed to the `nba-report` branch.
+
+name: nba-report
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Restore the runner's state (read only)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Replay this season
+        run: |
+          git fetch -q origin nba-history && mkdir -p history && git archive FETCH_HEAD | tar -x -C history
+          uv run --no-dev betdata nba load-history history
+          mkdir -p out
+          uv run --no-dev betdata nba replay --out out/replay_2026.json | tee out/replay.txt
+      - name: Push to the nba-report branch
+        run: |
+          cd out
+          git init -q -b nba-report
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "NBA replay $(date -u +%FT%TZ) (run ${{ github.run_id }})"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" nba-report
