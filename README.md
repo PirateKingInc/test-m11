@@ -91,6 +91,32 @@ the database: each season's parquet file is saved under `data/pbp/nfl/` (or `BET
 and each new version is recorded in `data_files`; only the latest file per season is kept. Read
 them with pandas, polars or duckdb.
 
+## NFL M15 files (participation, FTN, PFR, depth charts, player stats, NGS)
+
+```bash
+uv run betdata backfill --source nflverse_extra --dataset all --seasons 2016-2026   # ~45 s
+uv run betdata backfill --source nflverse_extra --dataset participation,ftn --seasons 2022-2026
+uv run betdata run nflverse-extra depth_charts --seasons 2026    # one file
+uv run betdata run nflverse-extra refresh                        # every dataset, current season
+```
+
+Saved as parquet under `data/nflverse/` at their nflverse release paths, each version recorded
+in `data_files` (source `nflverse_extra`). A past season's file is downloaded once; the current
+season's and the all-season NGS files at most once a day; a season nflverse hasn't published
+(participation 2026) is `skipped`, not failed. Coverage checked by download on 2026-10-21:
+
+| Dataset (`--dataset`) | Seasons | On disk |
+|---|---|---|
+| `participation` (players on field, pressure, time to throw, coverage) | 2016-2025 | 10.8 MB (names/numbers dropped; 34.8 MB as published) |
+| `ftn` (FTN charting; CC-BY-SA 4.0, "FTN Data via nflverse") | 2022-2026 | 2.4 MB |
+| `pfr_pass`, `pfr_rush`, `pfr_rec`, `pfr_def` (PFR advanced, weekly) | 2018-2026 | 2.4 MB |
+| `depth_charts` (weekly to 2024; daily snapshots 2025-2026) | 2001-2026 | 16.4 MB |
+| `player_stats` (weekly, 150 columns incl. kicking, punting, penalties) | 1999-2026 | 20.7 MB |
+| `ngs_passing`, `ngs_receiving`, `ngs_rushing` (one file each) | 2016-2026 | 2.3 MB |
+
+All of it is 53 MB. These files are not scheduled and not in the Actions cache (the hourly
+runner doesn't read them yet); a lost file is simply downloaded again.
+
 ## Venues and weather
 
 ```bash

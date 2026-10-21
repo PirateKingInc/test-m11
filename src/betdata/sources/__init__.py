@@ -4,6 +4,7 @@ from betdata.sources.nba_cdn import NbaCdnSource
 from betdata.sources.nba_injury import NbaInjurySource
 from betdata.sources.nfl_model import NflModelSource
 from betdata.sources.nflverse import NflverseSource
+from betdata.sources.nflverse_extra import NflverseExtraSource
 from betdata.sources.oddspapi import OddsPapiSource
 from betdata.sources.open_meteo import OpenMeteoSource
 from betdata.sources.sharpapi import SharpApiSource
@@ -15,6 +16,7 @@ REGISTRY = {
     for cls in (
         TheOddsApiSource,
         NflverseSource,
+        NflverseExtraSource,
         NflModelSource,
         CfbdSource,
         SharpApiSource,
