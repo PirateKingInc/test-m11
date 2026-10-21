@@ -100,6 +100,13 @@ sports:
         job: derive
         cron: "0 7 * * *"
         active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-props  # ESPN player prop lines, next 8 days (beyond 2 days: 7/11/15/19 ET only)
+        source: espn_props
+        job: lines
+        params: {sport: nfl}
+        cron: "0 7-22 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+        when: {after_minutes: 0, before_minutes: 11520}
 
   - key: nba
     name: NBA
@@ -122,6 +129,13 @@ sports:
         source: nba_injury
         job: report
         cron: "0 7-22 * * *"
+        when: {after_minutes: 0, before_minutes: 2880}
+      - id: nba-props  # ESPN player prop lines for the next 2 days; no key, no quota
+        source: espn_props
+        job: lines
+        params: {sport: nba}
+        cron: "0 7-22 * * *"
+        active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
         when: {after_minutes: 0, before_minutes: 2880}
       # --- keyed sources (skipped while their secret is unset), inside existing quotas ------
       - id: nba-sharp  # DraftKings + FanDuel (needs SHARPAPI_KEY); 1 call per run

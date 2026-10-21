@@ -1123,6 +1123,30 @@ The hourly runner's state cache does not hold `data/pbp` or `data/nflverse` (REV
    - turnover forcing vs ball security;
    - FT rate vs opponent foul rate.
 
+## M15 NBA lineup stints (`nba/stints.py`, table `nba_stints`)
+
+Stints are stretches with the same ten players on the floor, rebuilt from ESPN play-by-play: sportsdataverse season files for history (`betdata backfill --source sportsdataverse --sport nba --dataset pbp --seasons 2015-2025`, box scores first), and each newly finished game's ESPN summary live (the `espn_nba boxscores` job). `betdata nba bootstrap` loads the last three seasons where they have none.
+
+- **Period 1** starts with the box score's five starters per team.
+- **Later periods:** a player who records any event in the period (technicals and ejections excepted) or is subbed out before being subbed in started it. Fewer than five: the rest come from the previous period's closing lineup, leaving out anyone subbed in during the period, only if exactly the missing number is left.
+- **Unresolved:** more than five found, an ambiguous fill, or a substitution that doesn't fit the lineup. That period's stints are skipped, counted and logged.
+- **Dead balls:** all substitutions at one clock instant are applied together, after the other plays at that instant, so free throws belong to the lineup of the foul.
+- **Points:** changes in the running score. **Possessions:** FGA − player offensive rebounds + turnovers (travels included) + 0.44 × FTA (technical free throws excluded), per team.
+- **Time:** seconds elapsed in the game (720 s periods, 300 s overtimes). `known_at`: tip + 3 h for history, the fetch time live.
+- **Skipped games:** two ESPN games that the schedule matcher joined into one game (same teams within 36 hours, mostly 2020-21's two-game series) get no stints.
+
+Sanity checks (2026-10-21, local database, stints vs `results`):
+
+| Season | Games with stints | Stints per game (median, min-max) | Fully resolved | Stint points = final score | Skipped: shared game / no game |
+|---|---|---|---|---|---|
+| 2015-16 | 1,305 | 30 (13-51) | 99.1% | 98.8% | 8 / 1 |
+| 2020-21 | 1,123 | 29 (19-44) | 99.6% | 99.6% | 48 / 1 |
+| 2024-25 | 1,299 | 30 (17-50) | 99.5% | 99.5% | 22 / 3 |
+| 2025-26 | 1,303 | 32 (15-50) | 99.2% | 99.2% | 18 / 4 |
+
+- **Points:** in every fully resolved game, stint points add up to the play-by-play's own final score. The few fully resolved games that differ from `results` (4 in 2015-16, 1 in 2025-26) are games where the file's running score itself ends elsewhere.
+- **Possessions:** summed per team-game, they run 0.6 ± 1.0 above the box-score formula in 2024-25 (team turnovers count here; box scores leave them out). In 2015-16 they run 1.8 ± 2.8 below, because some plays are missing from the file.
+
 ## M15 NBA player props (`nba/props/`, version `nbap15`)
 
 Markets: points, rebounds, assists, made threes, and points + rebounds + assists. The model is built per player-game, as of each prediction point (morning and pre-tip, as M14).

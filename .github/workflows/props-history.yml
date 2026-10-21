@@ -1,0 +1,78 @@
+# M15: ESPN player prop line history (MODEL.md "M15 data sources"), which only GitHub Actions
+# can fetch. One job per season, ONE AT A TIME (max-parallel: 1), so the total rate stays at one
+# request per second (sources.yaml). Each job builds a throwaway database with that season's
+# schedule, fetches every finished game's opening and closing lines (at most two books per
+# game) and exports gzipped CSV. The last job publishes the files on the `props-history` branch;
+# files of seasons not re-fetched are kept. Load them anywhere with
+# `betdata props load-history <dir>`.
+#
+# Volume: NBA ~1,300 games a season x 2-3 requests (about an hour); NFL ~285 games plus ~60
+# scoreboard days.
+
+name: props-history
+
+on:
+  workflow_dispatch:
+    inputs:
+      sport:
+        description: "nba or nfl"
+        default: "nba"
+      seasons:
+        description: "Seasons (start years) as a JSON list; NBA 2022-2025, NFL 2024-2025"
+        default: "[2022, 2023, 2024, 2025]"
+
+permissions:
+  contents: write
+
+jobs:
+  season:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        season: ${{ fromJSON(inputs.seasons) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Fetch
+        run: uv run --no-dev betdata props history-fetch --sport ${{ inputs.sport }} --season ${{ matrix.season }}
+      - name: Export
+        if: always()
+        run: uv run --no-dev betdata props export-history --sport ${{ inputs.sport }} --season ${{ matrix.season }} --out history
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: props-history-${{ inputs.sport }}-${{ matrix.season }}
+          path: history/
+          retention-days: 7
+
+  publish:
+    needs: season
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: props-history-*
+          path: history
+          merge-multiple: true
+      - name: Push to the props-history branch (files of seasons not re-fetched are kept)
+        run: |
+          mkdir -p history
+          git clone -q --depth 1 --branch props-history \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" old \
+            || mkdir old
+          cp -n old/*.csv.gz history/ 2>/dev/null || true
+          cd history
+          ls -la
+          git init -q -b props-history
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Prop line history export $(date -u +%FT%TZ) (run ${{ github.run_id }})"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" props-history

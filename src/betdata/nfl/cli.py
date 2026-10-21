@@ -617,3 +617,8 @@ def freeze15_cmd():
         typer.echo(str(e))
         raise typer.Exit(1) from None
     typer.echo(f"m15 live fit: {path}")
+
+
+from betdata.nfl.props.cli import register as _register_props  # noqa: E402
+
+_register_props(nfl_app)
