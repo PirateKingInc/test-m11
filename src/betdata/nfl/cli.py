@@ -504,6 +504,50 @@ def replay_cmd():
     typer.echo(f"written to {path}")
 
 
+@nfl_app.command("select15")
+def select15_cmd(
+    refresh: bool = typer.Option(False, help="Recompute the M15 groups' cached feature rows."),
+    asof_sample: int = typer.Option(4, help="Real games to run the as-of harness on first."),
+    write: bool = typer.Option(True, help="Write reports/nfl/m15_selection.json and "
+                               "config/nfl_model_m15.json (a draft; never used live)."),
+):
+    """M15 side variables on validation 2020-2022 only (fit 2013-2019): add lines, depth, st,
+    sitluck and pen one at a time to the m13w design, keep a group only where it lowers
+    validation MAE, then the ablation table. Test seasons are never built or scored."""
+    import random
+
+    from betdata.nfl.asof import check
+    from betdata.nfl.data import load_store
+    from betdata.nfl.groups import GROUPS
+    from betdata.nfl.groups15 import GROUPS15
+    from betdata.nfl.m15data import with_m15
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE, outcomes
+    from betdata.nfl.select15 import M15_DESIGN_PATH, REPORT_PATH, select15
+    from betdata.nfl.select15 import write as write_report
+    from betdata.nfl.selection import Design
+    from betdata.nfl.weather import WX_DESIGN_PATH
+
+    with _engine().connect() as conn:
+        store = fitted_params(load_store(conn))
+        store, info = with_m15(store, conn, data_dir(), TRAIN)
+    src = info["pressure_source_by_season"]
+    info["pressure_source_by_season"] = {s: v for s, v in src.items() if s not in TEST}
+    ids = model_games(store, (*TRAIN, *VALIDATE))
+    if asof_sample:
+        picked = sorted(random.Random(0).sample(ids, asof_sample))
+        bad = check(store, [GROUPS["base"], *GROUPS15.values()], picked)
+        typer.echo(f"as-of harness, {len(picked)} real games x 2 points: {len(bad)} violations")
+        if bad:
+            raise typer.Exit(1)
+    start = Design.load(WX_DESIGN_PATH)
+    base = design_rows(store, start, (*TRAIN, *VALIDATE))
+    report = select15(base, outcomes(store), lambda g: feature_rows(store, g, ids, refresh),
+                      start, log=typer.echo)  # fmt: skip
+    if write:
+        write_report(report, info)
+        typer.echo(f"report: {REPORT_PATH}; draft design: {M15_DESIGN_PATH}")
+
+
 from betdata.nfl.props.cli import register as _register_props  # noqa: E402
 
 _register_props(nfl_app)
