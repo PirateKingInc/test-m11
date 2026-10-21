@@ -166,3 +166,16 @@ Measured on GitHub's runners, 2026-10-21, with NBA active.
 - **The NBA share** is about 15 s: load the last three seasons into the as-of store, predict the next 2 days and fetch the injury PDF.
 - **Budget:** a run is well under 3 minutes, and billed minutes are unchanged at 2 a run.
 - **Rebuild:** a run that rebuilds a lost state with NBA (sportsdataverse files for 2015-16 on, then ESPN for this season) is the one exception. It is a one-time cost, and history loading is separate (`nba-bootstrap`).
+
+## M15: new side variables and player props
+
+### Data licences and attribution (checked 2026-10-21)
+
+| Dataset | Licence | Attribution |
+|---|---|---|
+| nflverse-data (pbp, participation, NGS, PFR advanced, depth charts, player stats) | CC-BY 4.0 | "Data: nflverse" (already on the page since M12) |
+| FTN charting via nflverse | CC-BY-SA 4.0 | "Charting data: FTN Data via nflverse", on the page wherever FTN-derived numbers are used |
+| sportsdataverse-data (NBA play-by-play, box scores) | MIT (repository); underlying data from ESPN | "NBA data: sportsdataverse / ESPN" |
+| ESPN prop lines (core API) | none published; unofficial endpoint | Lines are shown with their source and book. Raw responses stay in the private Actions cache and are never republished. Requests stay at ≤1 a second, with backoff on 429 or empty payloads. |
+
+M15 needs no paid source and no new API key.
