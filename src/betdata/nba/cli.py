@@ -450,3 +450,18 @@ def bootstrap_cmd():
         sport = NbaSport(entry)
     sport.bootstrap(engine, utcnow())
     typer.echo(f"NBA history loaded: {has_history(engine, 'nba')}")
+
+
+@nba_app.command("props-select")
+def props_select_cmd(rebuild: bool = False, adjust: str = ""):
+    """M15 NBA prop model on validation (2021-22, 2022-23): error vs the last-10 average per
+    market and calibration. Writes reports/nba/props_selection*.json."""
+    from betdata.nba.props.select import select
+
+    res = select(rebuild, adjust or None)
+    v = res["validation"]
+    typer.echo(f"minutes MAE {v['minutes']['mae']:.3f} (last 10: {v['minutes']['mae_last10']:.3f})")
+    for mk in ("points", "rebounds", "assists", "threes", "pra"):
+        r = v[mk]
+        typer.echo(f"{mk:9s} MAE {r['mae']:.3f} (last 10 {r['mae_last10']:.3f})  RMSE "
+                   f"{r['rmse']:.3f} ({r['rmse_last10']:.3f})  Brier {r['brier_synthetic']:.4f}")
