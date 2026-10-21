@@ -1,0 +1,18 @@
+{
+ "version": "nba:8d4d776447",
+ "games": 2,
+ "morning": {
+  "model_mae": 11.3,
+  "market_mae": null,
+  "with_line": 0
+ },
+ "pretip": {
+  "model_mae": 11.32,
+  "market_mae": null,
+  "with_line": 0
+ }
+}
+2026-10-20T19:00  BOS@DET morning  model -0.8  market -  result +8
+2026-10-20T19:00  BOS@DET  pretip  model -0.4  market -  result +8
+2026-10-20T23:00  PHI@NYK morning  model +7.8  market -  result -6
+2026-10-20T23:00  PHI@NYK  pretip  model +8.2  market -  result -6

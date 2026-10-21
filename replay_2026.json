@@ -1,0 +1,58 @@
+{
+ "summary": {
+  "version": "nba:8d4d776447",
+  "games": 2,
+  "morning": {
+   "model_mae": 11.3,
+   "market_mae": null,
+   "with_line": 0
+  },
+  "pretip": {
+   "model_mae": 11.32,
+   "market_mae": null,
+   "with_line": 0
+  }
+ },
+ "games": [
+  {
+   "game": "BOS@DET",
+   "tip": "2026-10-20T19:00:00+00:00",
+   "point": "morning",
+   "model_margin": -0.8,
+   "market_margin": null,
+   "result_margin": 8.0,
+   "model_err": 8.8,
+   "market_err": null
+  },
+  {
+   "game": "BOS@DET",
+   "tip": "2026-10-20T19:00:00+00:00",
+   "point": "pretip",
+   "model_margin": -0.4,
+   "market_margin": null,
+   "result_margin": 8.0,
+   "model_err": 8.4,
+   "market_err": null
+  },
+  {
+   "game": "PHI@NYK",
+   "tip": "2026-10-20T23:00:00+00:00",
+   "point": "morning",
+   "model_margin": 7.8,
+   "market_margin": null,
+   "result_margin": -6.0,
+   "model_err": 13.8,
+   "market_err": null
+  },
+  {
+   "game": "PHI@NYK",
+   "tip": "2026-10-20T23:00:00+00:00",
+   "point": "pretip",
+   "model_margin": 8.25,
+   "market_margin": null,
+   "result_margin": -6.0,
+   "model_err": 14.25,
+   "market_err": null
+  }
+ ]
+}
