@@ -1336,3 +1336,14 @@ At synthetic half-point lines (no market), P(over) is well calibrated in every b
 - **Mean error:** the model's mean projection is closer to the result than the opening line for rebounds, assists, threes and PRA, but not points.
 - **Probabilities and bets:** its over probabilities are worse than the market's (Brier), and every backtested market lost money. The bets' low win rates show the calibrated edges mostly pick long-priced sides.
 - **Flags:** none for any prop market (positive test ROI required). Every prop is shown as information only, and PRA is labelled research only.
+
+## M15 summary: what changed on the page
+
+| Sport | Page side version | Background (graded live) | Why |
+|---|---|---|---|
+| NBA | `nba15` (M14 + RAPM + 3-point luck + load) | M14 `nba` | Validation 10.516 → 10.468; test (second look) 10.888 vs 10.965, better at both points |
+| NFL | `m13w` (unchanged) | `m15` (m13w + depth + special teams + penalties; situational luck in totals) | Validation 9.819 → 9.778, but the test (third look) was worse at both points (+0.025 final report, +0.013 prekick) |
+
+**Props** (both tabs) are shown for players with a stored ESPN line, as information only:
+- No NBA market had a positive test ROI.
+- NBA PRA and every NFL market have no backtest ("research only, not backtested").

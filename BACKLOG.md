@@ -67,3 +67,23 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **A gradient-boosting challenger** for NBA, as M12 did for NFL.
 - **The "Removed" status** (a player dropped from a later report) was seen only 35 times in training, so its play probability (5%) is not trustworthy. Map it to "not on the report" if it stays rare.
 - **Closing totals** are in the store but the totals model stays in the CLI (as NFL).
+
+## M15 additions
+- **Variables with no free source** (skipped by design):
+  - coordinator changes;
+  - betting splits (share of bets vs money);
+  - historical NFL line movement;
+  - NBA national-TV broadcasts. No broadcast field is stored, so the load-management "national TV" situation is not modelled; ESPN's scoreboard has `broadcasts` if a column is added.
+- **NBA referee crews** for prop free throws and foul trouble: M14.1 (crews) was not run, so they are not stored.
+- **Practice-day injury trends** as a model input: only stored since M12, too little history.
+- **Pre-game closing prop lines in history.** ESPN's history keeps only the opening line and an in-game "current" quote (REVIEW M15-3), so prop backtests use the opening line. Live closes (the last poll before tip) build a proper close history from 2026-27.
+- **NFL prop backtest.** No NFL prop lines exist for the validation seasons (2020-2022), so every NFL market is research only. ESPN has 2024-2025 lines (`props-history` workflow, NFL) for an error-vs-line comparison and a future backtest once 2026 lines accumulate.
+- **NFL props weather.** The 2022+ Open-Meteo forecasts live only in the runner state, so the NFL prop test (2023-2025) ran without wind. There is no precipitation history.
+- **2026 participation** (pressure, routes, man/zone) is not published yet. Fallbacks are documented in MODEL.md (PFR pressures, snap share).
+- **Prop markets beyond the five** (blocks, steals, double-doubles, first basket, longest reception, kicking), alt lines and same-game parlays: out of scope.
+- **NBA prop model ideas not tried** (the stop rule):
+  - per-player with/without teammate history beyond the shrunk proportional redistribution;
+  - minutes restrictions from report text.
+- **NBA side groups `integ` and `style`** added nothing after RAPM; revisit with lineup-level style data.
+- **NFL group `lines`** was dropped after 3 adjustments. Revisit when 2026 participation is published.
+- **Schedule matcher merges two real games** between the same teams within 36 hours (NBA two-game series; found by the stints work). Their box scores and results are mixed, and stints skip them.
