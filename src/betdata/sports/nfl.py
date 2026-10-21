@@ -40,8 +40,34 @@ class NflSport(Sport):
             _, picks = run_predict(engine, now, DAYS)
         except ValueError as e:  # no history loaded
             log.warning("nfl predict skipped: %s", e)
-            return 0
+            picks = []
+        self.predict_props(engine, now)
         return len(picks)
+
+    def predict_props(self, engine: Engine, now: datetime) -> int:
+        """M15 prop predictions for players with a stored line (never breaks the run)."""
+        from betdata.nfl.props.live import run as run_props
+
+        try:
+            n = run_props(engine, now)
+            log.info("nfl props: %d new predictions", n)
+            return n
+        except Exception as e:  # a prop failure must not stop the side predictions or page
+            log.warning("nfl props skipped: %s: %s", type(e).__name__, e)
+            return 0
+
+    def props(self, conn: Connection, now: datetime) -> list:
+        from betdata.nfl.props.grade import DESIGN_PATH, MODEL, thresholds
+        from betdata.props.page import prop_rows
+
+        if not DESIGN_PATH.exists():
+            return []
+        from betdata.nfl.props.live import load_design
+
+        d = load_design()
+        return prop_rows(conn, now, MODEL, DAYS, d.flag_allowed,
+                         lambda m: m in d.research_only or m not in d.thresholds,
+                         thresholds())  # fmt: skip
 
     def cards(self, conn: Connection, now: datetime) -> list[Card]:
         sid = sport_id(conn, "nfl")
@@ -105,7 +131,12 @@ class NflSport(Sport):
 
     def grade(self, conn: Connection, now: datetime) -> dict[str, int]:
         run = grade_nfl(conn, now)
-        return {"inserted": run.inserted, "updated": run.updated, "pending": run.pending}
+        out = {"inserted": run.inserted, "updated": run.updated, "pending": run.pending}
+        from betdata.nfl.props.grade import grade_nfl_props
+
+        props = grade_nfl_props(conn, now)
+        out["props_inserted"], out["props_pending"] = props.inserted, props.pending
+        return out
 
     def records(self, conn: Connection) -> list[RecordRow]:
         return [

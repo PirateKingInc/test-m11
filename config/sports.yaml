@@ -95,6 +95,16 @@ sports:
         job: snaps
         cron: "0 7 * * *"
         active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-player-stats  # nflverse weekly player stats: prop inputs and prop grading (M15)
+        source: nflverse_extra
+        job: player_stats
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-depth-charts  # ESPN-id -> gsis-id map for prop lines (daily snapshots, M15)
+        source: nflverse_extra
+        job: depth_charts
+        cron: "0 7 * * *"
+        active_months: [8, 9, 10, 11, 12, 1, 2]
       - id: nfl-derive  # local: derived tables from the files above (no network)
         source: nfl_model
         job: derive
