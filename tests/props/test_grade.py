@@ -36,11 +36,13 @@ def _pred(conn, gid, tip, pid, market, line, edge, over=-110, under=-110, at=Non
         under_price=under, p_over=0.5 + edge / 100, edge=edge))  # fmt: skip
 
 
-def _close(conn, gid, pid, market, line, over, under, book):
+def _close(conn, gid, pid, market, line, over, under, book, quoted=None):
+    tip = conn.execute(select(games.c.start_time_utc).where(games.c.game_id == gid)).scalar()
     conn.execute(insert(prop_lines).values(
         source="espn_props", source_game_id=str(gid), game_id=gid, player_id=pid,
         market=market, book_id=book, kind="close", line=line, over_price=over,
-        under_price=under, fetched_at=NOW))  # fmt: skip
+        under_price=under, quoted_at=quoted or tip - timedelta(minutes=10),
+        fetched_at=NOW))  # fmt: skip
 
 
 def test_outcomes_bets_void_and_clv(setup, engine):
@@ -62,6 +64,8 @@ def test_outcomes_bets_void_and_clv(setup, engine):
         _pred(conn, gid, tip, b, "points", 99.5, edge=-9.0, at=tip + timedelta(minutes=5))
         _close(conn, gid, a, "points", pts[a] + 0.5, -110, -110, book)  # line moved up 1
         _close(conn, gid, c, "points", float(pts[c]), -130, +110, book)  # same line, price
+        # A history "close" quoted after tip is an in-game line and never counts.
+        _close(conn, gid, b, "points", 99.5, -110, -110, book, quoted=tip + timedelta(hours=1))
         run = G.grade_nba_props(conn, NOW)
         again = G.grade_nba_props(conn, NOW)
         rows = {(r.player_id, r.market): r for r in conn.execute(select(prop_grades))}

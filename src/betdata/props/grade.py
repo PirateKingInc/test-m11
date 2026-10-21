@@ -64,7 +64,8 @@ def closing_lines(conn: Connection, keys: set[tuple[int, str, str]], tips: dict[
     gids = sorted({k[0] for k in keys})
     rows = conn.execute(select(prop_lines.c.game_id, prop_lines.c.player_id, prop_lines.c.market,
                                prop_lines.c.kind, prop_lines.c.line, prop_lines.c.over_price,
-                               prop_lines.c.under_price, prop_lines.c.fetched_at)
+                               prop_lines.c.under_price, prop_lines.c.fetched_at,
+                               prop_lines.c.quoted_at)
                         .where(prop_lines.c.game_id.in_(gids))
                         .order_by(prop_lines.c.fetched_at)).all()  # fmt: skip
     close, poll = {}, {}
@@ -72,7 +73,8 @@ def closing_lines(conn: Connection, keys: set[tuple[int, str, str]], tips: dict[
         k = (r.game_id, r.player_id, r.market)
         if k not in keys:
             continue
-        if r.kind == "close":
+        if r.kind == "close" and r.quoted_at is not None and r.quoted_at < tips[r.game_id]:
+            # a history close quoted after tip is an in-game line (REVIEW M15-3)
             close[k] = (r.line, r.over_price, r.under_price)
         elif r.kind == "poll" and r.fetched_at < tips[r.game_id]:
             poll[k] = (r.line, r.over_price, r.under_price)

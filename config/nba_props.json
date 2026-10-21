@@ -1,0 +1,18 @@
+{
+  "fit": "config/fits/nba_props_2015_2025.json",
+  "thresholds": {
+    "points": 6.0,
+    "rebounds": 10.0,
+    "assists": 10.0,
+    "threes": 8.0
+  },
+  "test_roi": {
+    "points": -0.1818,
+    "rebounds": -0.1421,
+    "assists": -0.0792,
+    "threes": -0.0315
+  },
+  "research_only": [
+    "pra"
+  ]
+}
