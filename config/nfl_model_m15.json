@@ -41,5 +41,6 @@
       "variant": "full build"
     }
   },
-  "status": "draft: chosen on validation 2020-2022 only; no test, not used live"
+  "status": "chosen on validation 2020-2022; scored once on 2023-2025 (reports/nfl/m15_final_test.json); page false, so predicted in the background",
+  "page": false
 }
