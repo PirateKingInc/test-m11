@@ -39,6 +39,15 @@ jobs:
               print("scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
               print("warning:", pg.evaluate("document.getElementById('warn').hidden ? '(none)' : document.getElementById('warn').textContent"))
               print("updated:", pg.evaluate("document.getElementById('updated').textContent"))
+              # M14: the NBA tab, opened the way a reader would.
+              nba = pg.locator('button[data-tab="nba"]')
+              if nba.count():
+                  nba.click()
+                  pg.wait_for_timeout(300)
+                  pg.screenshot(path="proof/nba_phone.png")
+                  pg.screenshot(path="proof/nba_phone_full.png", full_page=True)
+                  print("nba tab:", pg.evaluate("document.getElementById('tab-nba').innerText.slice(0, 600)"))
+                  print("nba scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
               b.close()
           PY
       - name: Push to the proof branch
