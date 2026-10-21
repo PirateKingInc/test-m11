@@ -57,32 +57,42 @@ def factors(mod: M.PropModel, row: pd.DataFrame, market: str, vol: dict) -> list
     """The two largest pushes on this projection in the stat's units: wind, teammates out,
     opponent, man/zone matchup, game script (side margin and total through team volume), own
     injury status."""
-    t = mod.terms(row, market, vol)
-    c = mod.stats[market].contributions(t.iloc[0].to_dict())
-    mu = float(mod.predict(row, market, vol)[0])
+    return factors_many(mod, row, market, vol)[0]
+
+
+def factors_many(mod: M.PropModel, rows: pd.DataFrame, market: str, vol: dict,
+                 mu: np.ndarray | None = None) -> list[list[list]]:  # fmt: skip
+    """`factors` for every row of one market at once (terms and volumes computed once)."""
+    t = mod.terms(rows, market, vol)
+    mu = mod.predict(rows, market, vol) if mu is None else mu
     v = {"pass_yds": "att", "rush_yds": "car"}.get(market, "tgt")
-    tx = M.team_x(row, v).iloc[0].to_dict()
-    vc = mod.team[v].contributions(tx)
-    per_vol = mu / max(float(vol[v][0]), 1.0) if market != "anytime_td" else 0.0
-    r = row.iloc[0]
-    names = [str(n).split()[-1] for n in (r.out_names if isinstance(r.out_names, list) else [])]
-    wind = float(r.wind or 0.0)
-    cands = [
-        (f"wind {wind + 10:.0f} km/h" if wind > 0 else "light wind",
-         c.get("wind", 0.0) + vc.get("wind", 0.0) * per_vol),
-        (f"{', '.join(names)} out" if names else "teammates out",
-         c.get("redis", 0.0) + c.get("mates", 0.0)),
-        ("opponent defence", c.get("opp", 0.0)),
-        ("man/zone matchup", c.get("mz", 0.0)),
-        ("game script", (vc.get("side_margin", 0.0) + vc.get("side_total", 0.0)) * per_vol
-         + c.get("rz_imp", 0.0)),
-        ("own injury status", c.get("own_q", 0.0)),
-    ]  # fmt: skip
+    tx = M.team_x(rows, v)
     small = 0.5 if UNIT[market] == "yds" else 0.03
-    cands = [(k, round(x, 1 if UNIT[market] == "yds" else 2)) for k, x in cands
-             if abs(x) >= small]  # fmt: skip
-    cands.sort(key=lambda kv: -abs(kv[1]))
-    return [[k, x, UNIT[market]] for k, x in cands[:2]]
+    out = []
+    for i in range(len(rows)):
+        c = mod.stats[market].contributions(t.iloc[i].to_dict())
+        vc = mod.team[v].contributions(tx.iloc[i].to_dict())
+        per_vol = float(mu[i]) / max(float(vol[v][i]), 1.0) if market != "anytime_td" else 0.0
+        r = rows.iloc[i]
+        names = [str(n).split()[-1] for n in (r.out_names if isinstance(r.out_names, list)
+                                              else [])]  # fmt: skip
+        wind = float(r.wind or 0.0)
+        cands = [
+            (f"wind {wind + 10:.0f} km/h" if wind > 0 else "light wind",
+             c.get("wind", 0.0) + vc.get("wind", 0.0) * per_vol),
+            (f"{', '.join(names)} out" if names else "teammates out",
+             c.get("redis", 0.0) + c.get("mates", 0.0)),
+            ("opponent defence", c.get("opp", 0.0)),
+            ("man/zone matchup", c.get("mz", 0.0)),
+            ("game script", (vc.get("side_margin", 0.0) + vc.get("side_total", 0.0)) * per_vol
+             + c.get("rz_imp", 0.0)),
+            ("own injury status", c.get("own_q", 0.0)),
+        ]  # fmt: skip
+        cands = [(k, round(x, 1 if UNIT[market] == "yds" else 2)) for k, x in cands
+                 if abs(x) >= small]  # fmt: skip
+        cands.sort(key=lambda kv: -abs(kv[1]))
+        out.append([[k, x, UNIT[market]] for k, x in cands[:2]])
+    return out
 
 
 def predict(conn: Connection, now: datetime, design: PropDesign | None = None,
@@ -127,29 +137,35 @@ def predict(conn: Connection, now: datetime, design: PropDesign | None = None,
     f = panel.features(tg, side, mates)
     f = f[f.has_state.astype(bool)].set_index(["game_id", "player_id"])
     f = f[~f.index.duplicated()]
+    lines = lines[[k in f.index for k in zip(lines.game_id, lines.gsis, strict=True)]]
+    lines = lines.reset_index(drop=True)
+    rows = f.loc[list(zip(lines.game_id, lines.gsis, strict=True))].reset_index()
     picks = []
-    for r in lines.itertuples():
-        if (r.game_id, r.gsis) not in f.index:
-            continue
-        row = f.loc[[(r.game_id, r.gsis)]].reset_index()
-        vol = mod.volumes(row)
-        mu = float(mod.predict(row, r.market, vol)[0])
-        line = 0.5 if r.market == "anytime_td" and pd.isna(r.line) else r.line
-        p = float(p_over_no_push(mod, r.market, [mu], [line])[0])
-        nv = no_vig(r.over_price, r.under_price) if pd.notna(r.over_price) and pd.notna(
-            r.under_price) else None  # fmt: skip
-        dist = (mod.dists[r.market].to_dict() if r.market in mod.dists
+    for market, idx in lines.groupby("market").indices.items():
+        # One market's lines at once: volumes, means and factors are vectorised.
+        sub, ln = rows.iloc[idx].reset_index(drop=True), lines.iloc[idx]
+        vol = mod.volumes(sub)
+        mu = mod.predict(sub, market, vol)
+        line = ln.line.to_numpy(dtype=float)
+        if market == "anytime_td":
+            line = np.where(np.isnan(line), 0.5, line)
+        p = p_over_no_push(mod, market, mu, line)
+        fac = factors_many(mod, sub, market, vol, mu)
+        dist = (mod.dists[market].to_dict() if market in mod.dists
                 else {"family": "poisson"})  # fmt: skip
-        picks.append(dict(
-            game_id=int(r.game_id), player_id=str(r.player_id),
-            player_name=r.player_name or str(r.player_id), team_id=int(r.team_id),
-            market=r.market, prediction_point=r.point, mean=round(mu, 2),
-            line=None if pd.isna(r.line) else float(r.line), over_price=_int(r.over_price),
-            under_price=_int(r.under_price), book_id=int(r.book_id),
-            line_fetched_at=r.fetched_at.to_pydatetime(), p_over=round(p, 4),
-            edge=round(100 * (p - nv[0]), 1) if nv else None,
-            dist={**dist, "mean": round(mu, 3), "gsis_id": r.gsis},
-            factors=factors(mod, row, r.market, vol)))  # fmt: skip
+        for i, r in enumerate(ln.itertuples()):
+            nv = no_vig(r.over_price, r.under_price) if pd.notna(r.over_price) and pd.notna(
+                r.under_price) else None  # fmt: skip
+            picks.append(dict(
+                game_id=int(r.game_id), player_id=str(r.player_id),
+                player_name=r.player_name or str(r.player_id), team_id=int(r.team_id),
+                market=market, prediction_point=r.point, mean=round(float(mu[i]), 2),
+                line=None if pd.isna(r.line) else float(r.line), over_price=_int(r.over_price),
+                under_price=_int(r.under_price), book_id=int(r.book_id),
+                line_fetched_at=r.fetched_at.to_pydatetime(), p_over=round(float(p[i]), 4),
+                edge=round(100 * (float(p[i]) - nv[0]), 1) if nv else None,
+                dist={**dist, "mean": round(float(mu[i]), 3), "gsis_id": r.gsis},
+                factors=fac[i]))  # fmt: skip
     return [dict(p, model=MODEL, model_version=version) for p in picks]
 
 

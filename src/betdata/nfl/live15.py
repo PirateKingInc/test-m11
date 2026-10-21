@@ -27,7 +27,8 @@ from betdata.nfl.predict import LivePick, market_weights, predict_games, store_p
 from betdata.nfl.selection import fit_design
 
 MODEL = "m15"
-LIVE_SEASONS = 3  # seasons of M15 inputs rebuilt live (the rates look back 600 days)
+LIVE_SEASONS = 2  # earlier seasons read live (the rates look back 600 days)
+LAG_DAYS = 3  # finished games whose play-by-play may still be on its way
 MIN_LAST_SEASON_ROWS = 400  # team-games of last season required (a season has ~570)
 
 
@@ -92,8 +93,9 @@ def page15() -> bool:
 def inputs_ready(store, now: datetime) -> None:
     """Refuse (ValueError) to predict from incomplete M15 inputs, so a machine without the
     play-by-play and nflverse files never stores m15 numbers built on empty rates: the last
-    season's games, at least 90% of this season's finished games, and a depth chart from the
-    last 10 days (in season) must be there."""
+    season's games, at least 90% of this season's games finished more than LAG_DAYS ago (the
+    play-by-play arrives with the daily 7am refresh), and a depth chart from the last 10 days
+    (in season) must be there."""
     import pandas as pd
 
     t = pd.Timestamp(now)
@@ -101,7 +103,8 @@ def inputs_ready(store, now: datetime) -> None:
     season = season_for("nfl", now)
     if (tg.season == season - 1).sum() < MIN_LAST_SEASON_ROWS:
         raise ValueError(f"m15 inputs: play-by-play for {season - 1} missing")
-    done = set(res.game_id[res.known_at <= t]) & set(g.index[g.season == season])
+    done = set(res.game_id[res.known_at <= t - pd.Timedelta(days=LAG_DAYS)]) & set(
+        g.index[g.season == season])
     have = set(tg.game_id[tg.known_at <= t])
     if done and len(done & have) < 0.9 * len(done):
         raise ValueError(f"m15 inputs: {len(done - have)} of {len(done)} {season} games missing")
@@ -111,7 +114,8 @@ def inputs_ready(store, now: datetime) -> None:
         raise ValueError("m15 inputs: no depth chart from the last 10 days")
 
 
-def run_predict15(engine: Engine, now: datetime, days: int) -> list[LivePick]:
+def run_predict15(engine: Engine, now: datetime, days: int, store=None) -> list[LivePick]:
+    """`store`: the M12 store m12/m13w just predicted from (its computed states are reused)."""
     from betdata.nfl.live import attach_moneylines, loaded_store, missed_points
     from betdata.nfl.m15data import Expected, with_m15
     from betdata.nfl.workflow import data_dir
@@ -120,10 +124,11 @@ def run_predict15(engine: Engine, now: datetime, days: int) -> list[LivePick]:
     if got is None:
         return []
     design, meta, fits, expected, version = got
-    store = loaded_store(engine)
+    store = store if store is not None else loaded_store(engine)
     with engine.connect() as conn:
         store, _ = with_m15(store, conn, data_dir(), TRAIN, expected=Expected.from_dict(expected),
-                            first_season=season_for("nfl", now) - LIVE_SEASONS)  # fmt: skip
+                            first_season=season_for("nfl", now) - LIVE_SEASONS,
+                            cached=True)  # fmt: skip
     inputs_ready(store, now)
     g = store.games
     upcoming = [i for i in g.index if now < g.at[i, "kickoff"] <= now + timedelta(days=days)
