@@ -596,14 +596,45 @@ def predict(
         typer.echo(line + ("" if r.stored else "  (unchanged)"))
 
 
+def _grade_props(sport: str) -> None:
+    from betdata.props.grade import records
+
+    if sport == "nba":
+        from betdata.nba.props.grade import MODEL
+        from betdata.nba.props.grade import grade_nba_props as run_grade
+    elif sport == "nfl":
+        try:
+            from betdata.nfl.props.grade import MODEL
+            from betdata.nfl.props.grade import grade_nfl_props as run_grade
+        except ImportError as e:  # NFL props arrive later in M15
+            raise typer.BadParameter("NFL prop grading is not built yet") from e
+    else:
+        raise typer.BadParameter("props: nba or nfl")
+    with _engine().begin() as conn:
+        run = run_grade(conn, utcnow())
+        recs = records(conn, (MODEL,))
+    typer.echo(f"graded: {run.inserted} new, {run.updated} updated, {run.pending} waiting for a "
+               "box score")
+    for r in recs:
+        roi = f"{100 * r.profit / r.bets:+.1f}%" if r.bets else "-"
+        avg = "-" if r.avg_clv is None else f"{r.avg_clv:+.2f}"
+        typer.echo(f"{r.model_version:28} {r.market:11} graded {r.graded:5} over {r.over:4} "
+                   f"under {r.under:4} push {r.push:3} void {r.void:3} | bets {r.bets:4} "
+                   f"{r.wins}-{r.losses} ROI {roi:>7} CLV {avg}")
+
+
 @app.command()
-def grade(sport: str = typer.Argument("nfl")):
+def grade(sport: str = typer.Argument("nfl"), props: bool = typer.Option(
+        False, "--props", help="grade stored player-prop predictions (M15)")):  # fmt: skip
     """Grade stored predictions on final games (idempotent): result, closing-line value, and
     per model version the record, ROI, average CLV and share of bets that beat the close."""
+    if props:
+        _grade_props(sport)
+        return
     from betdata.nfl.grade import THRESHOLDS, grade_nfl, ml_threshold, records
 
     if sport != "nfl":
-        raise typer.BadParameter("only nfl so far")
+        raise typer.BadParameter("only nfl so far (use --props for NBA prop grading)")
     with _engine().begin() as conn:
         run = grade_nfl(conn, utcnow())
         recs = records(conn)
