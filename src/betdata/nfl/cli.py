@@ -502,3 +502,8 @@ def replay_cmd():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n")
     typer.echo(f"written to {path}")
+
+
+from betdata.nfl.props.cli import register as _register_props  # noqa: E402
+
+_register_props(nfl_app)
