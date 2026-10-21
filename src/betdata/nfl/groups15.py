@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from betdata.nfl.features.m15_depth import Depth
 from betdata.nfl.features.m15_lines import Lines
+from betdata.nfl.features.m15_pen import Penalties
+from betdata.nfl.features.m15_sitluck import SituationalLuck
+from betdata.nfl.features.m15_st import SpecialTeams
 
-GROUPS15 = {g.name: g for g in (Lines(), Depth())}
+GROUPS15 = {g.name: g for g in (Lines(), Depth(), SpecialTeams(), SituationalLuck(),
+                                Penalties())}  # fmt: skip
 ORDER15 = list(GROUPS15)
