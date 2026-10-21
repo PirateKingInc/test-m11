@@ -1033,6 +1033,46 @@ All use only plays and games before the prediction point, which the M12 harness 
    - The difference is regressed toward 0 like M12's turnover luck: the feature is the part expected to revert.
 5. **Penalty discipline.** Accepted penalties and yards per play, offense and defense (pbp `penalty_team`).
 
+### M15 NFL build notes (`nfl/m15data.py`, `nfl/features/m15_*.py`)
+
+- **Inputs.** Three frames are added beside M12's, all stamped as M12 stamps a game's stats (kickoff + 12 h): `m15_tg` (per team-game counts from pbp 2011-2026 and the nflverse files), `m15_kick` (field goals per kicker per game) and `m15_depth` (depth charts; known at the chart's `as_of`). M12's frames and groups are unchanged.
+- **Expected rates**, logistic fits on training seasons 2013-2019 only: FG make = 1/(1+exp(-(6.236 - 0.1095 x distance))); third-down conversion = 1/(1+exp(-(0.918 - 0.823 x ln(yards to go)))); red-zone trip TD = 1/(1+exp(-(1.375 - 0.0775 x yard line of the first snap inside the 20))).
+- **Pressure fallback.** Participation `was_pressure` where the game has it (2016-2025); else PFR `times_pressured` x 1.147 (2018+, used for 2026); else (sacks + QB hits) x 1.218 (2011-2015). Both factors make the fallback match participation on training games that have both. Time to throw: participation, else NGS weekly passing (2026); 2011-2015 have none and regress to the league mean.
+- **Regression and weighting.** Every rate uses M12 strength's half-life (120 days), look-back (600 days) and between-season keep (0.7), and is shrunk toward the league with a prior: 150 dropbacks/carries (lines), 30 punts / 30 kickoffs / 40 returns / 20 FG attempts (st), 100 third downs / 20 red-zone trips (sitluck), 300 snaps (pen).
+- **Depth value** = a player's recency-weighted share of his unit's snaps over his games, shrunk toward 0 with 2 games. A starter counts as missing only when the injury data flags him (report, prekick inactive, reserve), weighted by 1 - M12's play probability.
+- **Data gaps.** No 2010 play-by-play file, so `m15_tg` starts in 2011 (well before the first training game's 600-day window matters). Depth-chart starters match a snap-count player 99%+ of the time from 2013 (60-89% in 2010-2012, before snap history). Participation is not published for 2026.
+
+### M15 NFL selection (validation 2020-2022, `betdata nfl select15`; `reports/nfl/m15_selection.json`)
+
+Start: the page version m13w (M12 + weather in the margin model), fitted on 2013-2019, 838 validation games, MAE averaged over both points, ridge penalty chosen on validation from M12's grid. M12's rule: a group's margin half is kept if it lowers margin MAE, its total half if it lowers total MAE. A dropped full build gets up to 3 targeted adjustments; a kept build ends the group.
+
+| Step | Margin MAE | Total MAE | Penalty m/t | Decision (margin / total) |
+|---|---|---|---|---|
+| start (m13w design) | 9.819 | 10.734 | 1000/300 | start |
+| + lines, full build | 9.821 | 10.783 | 1000/1000 | drop / drop |
+| + lines, adj. 1: pass protection + OL only (rush terms overlap M12 strength) | 9.820 | 10.782 | 1000/300 | drop / drop |
+| + lines, adj. 2: prior x3 (450) | 9.823 | 10.791 | 1000/1000 | drop / drop |
+| + lines, adj. 3: pressure matchup + OL starters out only | 9.822 | 10.757 | 1000/300 | drop / drop: **lines dropped** |
+| + depth, full build (7 position groups) | 9.821 | 10.763 | 1000/300 | drop / drop |
+| + depth, adj. 1: one feature summed over groups | **9.818** | 10.745 | 1000/300 | KEEP / drop (-0.001, noise) |
+| + st, full build | **9.782** | 10.768 | 300/300 | KEEP / drop (-0.036) |
+| + sitluck, full build | 9.817 | **10.733** | 1000/300 | drop / KEEP (-0.001, noise) |
+| + pen, full build | **9.778** | 10.752 | 300/300 | KEEP / drop (-0.004) |
+
+Final draft (`config/nfl_model_m15.json`): margin = m13w margin groups + depth (summed, version 101) + st + pen, penalty 300; total = M12's total groups + sitluck, penalty 300. Validation MAE 9.778 / 10.733 (final report 9.807 / 10.743, prekick 9.749 / 10.723), against 9.819 / 10.734 for m13w. Not tested on 2023-2025 and not used live.
+
+Ablation (each kept M15 group removed, penalties fixed at 300/300):
+
+| | Margin | Total |
+|---|---|---|
+| all kept | 9.778 | 10.733 |
+| without depth | 9.779 (+0.001) | 10.733 |
+| without st | 9.823 (+0.045) | 10.733 |
+| without sitluck | (not in margin) | 10.734 (+0.001) |
+| without pen | 9.782 (+0.004) | 10.733 |
+
+Special teams carries nearly all of the gain. Depth and situational luck are within noise and kept only by the rule. The line-matchup group never helped: pressure and rushing efficiency are mostly already in M12's opponent-adjusted EPA ratings.
+
 ## M15 NBA side variables (`nba/features15.py`, version `nba15`)
 
 1. **Lineup RAPM.**

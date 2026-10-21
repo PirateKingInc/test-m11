@@ -1,0 +1,450 @@
+{
+ "train": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019
+ ],
+ "validate": [
+  2020,
+  2021,
+  2022
+ ],
+ "start": {
+  "margin_groups": [
+   "base",
+   "avail",
+   "str",
+   "sched",
+   "ref",
+   "coach",
+   "wx"
+  ],
+  "total_groups": [
+   "base",
+   "avail",
+   "str",
+   "env"
+  ],
+  "lam_margin": 1000.0,
+  "lam_total": 300.0,
+  "model": "ridge",
+  "blend_margin": 0.4,
+  "blend_total": 0.15
+ },
+ "steps": [
+  {
+   "step": "start (m13w design)",
+   "margin_mae": 9.8186,
+   "total_mae": 10.734,
+   "lam_margin": 1000.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8475,
+     "total": 10.7445,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7897,
+     "total": 10.7234,
+     "games": 838
+    }
+   },
+   "decision": "start"
+  },
+  {
+   "step": "+ lines (full build)",
+   "margin_mae": 9.8213,
+   "total_mae": 10.7833,
+   "lam_margin": 1000.0,
+   "lam_total": 1000.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8506,
+     "total": 10.7903,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.792,
+     "total": 10.7764,
+     "games": 838
+    }
+   },
+   "group": "lines",
+   "variant": "full build",
+   "decision_margin": "drop",
+   "decision_total": "drop"
+  },
+  {
+   "step": "+ lines (1: pass protection and OL only (rush terms overlap M12 strength's rush rating))",
+   "margin_mae": 9.8196,
+   "total_mae": 10.782,
+   "lam_margin": 1000.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8494,
+     "total": 10.782,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7899,
+     "total": 10.782,
+     "games": 838
+    }
+   },
+   "group": "lines",
+   "variant": "1: pass protection and OL only (rush terms overlap M12 strength's rush rating)",
+   "decision_margin": "drop",
+   "decision_total": "drop"
+  },
+  {
+   "step": "+ lines (2: three times the prior (450 dropbacks / carries))",
+   "margin_mae": 9.8229,
+   "total_mae": 10.7911,
+   "lam_margin": 1000.0,
+   "lam_total": 1000.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8523,
+     "total": 10.7976,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7934,
+     "total": 10.7847,
+     "games": 838
+    }
+   },
+   "group": "lines",
+   "variant": "2: three times the prior (450 dropbacks / carries)",
+   "decision_margin": "drop",
+   "decision_total": "drop"
+  },
+  {
+   "step": "+ lines (3: pressure matchup and OL starters out only)",
+   "margin_mae": 9.8225,
+   "total_mae": 10.7571,
+   "lam_margin": 1000.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8539,
+     "total": 10.7576,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.791,
+     "total": 10.7565,
+     "games": 838
+    }
+   },
+   "group": "lines",
+   "variant": "3: pressure matchup and OL starters out only",
+   "decision_margin": "drop",
+   "decision_total": "drop"
+  },
+  {
+   "step": "+ depth (full build)",
+   "margin_mae": 9.8215,
+   "total_mae": 10.7632,
+   "lam_margin": 1000.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8492,
+     "total": 10.7975,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7938,
+     "total": 10.729,
+     "games": 838
+    }
+   },
+   "group": "depth",
+   "variant": "full build",
+   "decision_margin": "drop",
+   "decision_total": "drop"
+  },
+  {
+   "step": "+ depth (1: one feature, summed over the groups)",
+   "margin_mae": 9.8179,
+   "total_mae": 10.7448,
+   "lam_margin": 1000.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8465,
+     "total": 10.7546,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7894,
+     "total": 10.735,
+     "games": 838
+    }
+   },
+   "group": "depth",
+   "variant": "1: one feature, summed over the groups",
+   "decision_margin": "KEEP",
+   "decision_total": "drop"
+  },
+  {
+   "step": "+ st (full build)",
+   "margin_mae": 9.7824,
+   "total_mae": 10.7675,
+   "lam_margin": 300.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8122,
+     "total": 10.7757,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7527,
+     "total": 10.7594,
+     "games": 838
+    }
+   },
+   "group": "st",
+   "variant": "full build",
+   "decision_margin": "KEEP",
+   "decision_total": "drop"
+  },
+  {
+   "step": "+ sitluck (full build)",
+   "margin_mae": 9.8168,
+   "total_mae": 10.7329,
+   "lam_margin": 1000.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.837,
+     "total": 10.7429,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7966,
+     "total": 10.723,
+     "games": 838
+    }
+   },
+   "group": "sitluck",
+   "variant": "full build",
+   "decision_margin": "drop",
+   "decision_total": "KEEP"
+  },
+  {
+   "step": "+ pen (full build)",
+   "margin_mae": 9.7781,
+   "total_mae": 10.7523,
+   "lam_margin": 300.0,
+   "lam_total": 300.0,
+   "by_point": {
+    "final_report": {
+     "margin": 9.8069,
+     "total": 10.7605,
+     "games": 838
+    },
+    "prekick": {
+     "margin": 9.7493,
+     "total": 10.7441,
+     "games": 838
+    }
+   },
+   "group": "pen",
+   "variant": "full build",
+   "decision_margin": "KEEP",
+   "decision_total": "drop"
+  }
+ ],
+ "final": {
+  "step": "final",
+  "margin_mae": 9.7781,
+  "total_mae": 10.7329,
+  "lam_margin": 300.0,
+  "lam_total": 300.0,
+  "by_point": {
+   "final_report": {
+    "margin": 9.8069,
+    "total": 10.7429,
+    "games": 838
+   },
+   "prekick": {
+    "margin": 9.7493,
+    "total": 10.723,
+    "games": 838
+   }
+  }
+ },
+ "design": {
+  "margin_groups": [
+   "base",
+   "avail",
+   "str",
+   "sched",
+   "ref",
+   "coach",
+   "wx",
+   "depth",
+   "st",
+   "pen"
+  ],
+  "total_groups": [
+   "base",
+   "avail",
+   "str",
+   "env",
+   "sitluck"
+  ],
+  "lam_margin": 300.0,
+  "lam_total": 300.0,
+  "model": "ridge",
+  "blend_margin": 0.4,
+  "blend_total": 0.15
+ },
+ "group_versions": {
+  "depth": {
+   "version": 101,
+   "variant": "1: one feature, summed over the groups"
+  },
+  "st": {
+   "version": 1,
+   "variant": "full build"
+  },
+  "sitluck": {
+   "version": 1,
+   "variant": "full build"
+  },
+  "pen": {
+   "version": 1,
+   "variant": "full build"
+  }
+ },
+ "ablation": [
+  {
+   "without": "-",
+   "margin_mae": 9.7781,
+   "total_mae": 10.7329
+  },
+  {
+   "without": "depth",
+   "margin_mae": 9.7791,
+   "total_mae": 10.7329,
+   "delta_margin": 0.0011,
+   "delta_total": 0.0
+  },
+  {
+   "without": "st",
+   "margin_mae": 9.8228,
+   "total_mae": 10.7329,
+   "delta_margin": 0.0447,
+   "delta_total": 0.0
+  },
+  {
+   "without": "sitluck",
+   "margin_mae": 9.7781,
+   "total_mae": 10.734,
+   "delta_margin": 0.0,
+   "delta_total": 0.001
+  },
+  {
+   "without": "pen",
+   "margin_mae": 9.7824,
+   "total_mae": 10.7329,
+   "delta_margin": 0.0043,
+   "delta_total": 0.0
+  }
+ ],
+ "inputs": {
+  "expected": {
+   "fg": {
+    "b0": 6.236356525953078,
+    "b1": -0.10947648214514773
+   },
+   "third": {
+    "b0": 0.9180405241327635,
+    "b1": -0.8230269188639362
+   },
+   "rz": {
+    "b0": 1.3747988441446277,
+    "b1": -0.07753672211633106
+   },
+   "pressure_from_pfr": 1.1467105940492124,
+   "pressure_from_hits": 1.2182832463559474
+  },
+  "pressure_source_by_season": {
+   "2011": {
+    "participation": 0,
+    "pbp_hits": 534,
+    "pfr": 0
+   },
+   "2012": {
+    "participation": 0,
+    "pbp_hits": 534,
+    "pfr": 0
+   },
+   "2013": {
+    "participation": 0,
+    "pbp_hits": 534,
+    "pfr": 0
+   },
+   "2014": {
+    "participation": 0,
+    "pbp_hits": 534,
+    "pfr": 0
+   },
+   "2015": {
+    "participation": 0,
+    "pbp_hits": 534,
+    "pfr": 0
+   },
+   "2016": {
+    "participation": 534,
+    "pbp_hits": 0,
+    "pfr": 0
+   },
+   "2017": {
+    "participation": 534,
+    "pbp_hits": 0,
+    "pfr": 0
+   },
+   "2018": {
+    "participation": 534,
+    "pbp_hits": 0,
+    "pfr": 0
+   },
+   "2019": {
+    "participation": 534,
+    "pbp_hits": 0,
+    "pfr": 0
+   },
+   "2020": {
+    "participation": 538,
+    "pbp_hits": 0,
+    "pfr": 0
+   },
+   "2021": {
+    "participation": 570,
+    "pbp_hits": 0,
+    "pfr": 0
+   },
+   "2022": {
+    "participation": 568,
+    "pbp_hits": 0,
+    "pfr": 0
+   },
+   "2026": {
+    "participation": 0,
+    "pbp_hits": 0,
+    "pfr": 182
+   }
+  }
+ }
+}
