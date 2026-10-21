@@ -517,3 +517,19 @@ def select15_cmd(rebuild: bool = False):
                    f"{'kept' if s['kept'] else 'dropped'}")
     for a in rep["ablation"]:
         typer.echo(f" without {a['without']:>6}: margin {a['margin']:.3f} total {a['total']:.3f}")
+
+
+@nba_app.command("final-test15")
+def final_test15_cmd(again: bool = typer.Option(False, help="Score again (reproduce only).")):
+    """nba15 on 2023-24 to 2025-26 (second look), once; decides the page switch."""
+    from betdata.nba.select15 import final_test15
+
+    typer.echo(json.dumps(final_test15(again), indent=1, default=float))
+
+
+@nba_app.command("freeze15")
+def freeze15_cmd():
+    """Fit nba15 on 2015-2025 and write config/fits/nba15_fit_2015_2025.json."""
+    from betdata.nba.select15 import freeze15
+
+    typer.echo(f"wrote {freeze15()}")

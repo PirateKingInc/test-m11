@@ -242,5 +242,11 @@ def fit_load(store, seasons) -> dict[str, float]:
         f"n:{k}": float(n) for k, (_, n) in counts.items()}
 
 
-GROUPS15 = {grp.name: grp for grp in (Luck3(), Load(), Integration(), Style())}
-ORDER15 = ["luck3", "load", "integ", "style"]
+def _groups():
+    from betdata.nba.rapm import Rapm
+
+    return {grp.name: grp for grp in (Rapm(), Luck3(), Load(), Integration(), Style())}
+
+
+GROUPS15 = _groups()
+ORDER15 = ["rapm", "luck3", "load", "integ", "style"]
