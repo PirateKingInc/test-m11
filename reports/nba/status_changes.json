@@ -1,0 +1,74 @@
+{
+ "2018": {
+  "games": 860,
+  "player_rows_at_pretip": 6632,
+  "changed": 868,
+  "changed_share": 0.1309,
+  "uncertain_to_out": 134,
+  "uncertain_to_available": 117
+ },
+ "2019": {
+  "games": 1125,
+  "player_rows_at_pretip": 10172,
+  "changed": 1349,
+  "changed_share": 0.1326,
+  "uncertain_to_out": 194,
+  "uncertain_to_available": 199
+ },
+ "2020": {
+  "games": 1135,
+  "player_rows_at_pretip": 8671,
+  "changed": 1359,
+  "changed_share": 0.1567,
+  "uncertain_to_out": 170,
+  "uncertain_to_available": 195
+ },
+ "2021": {
+  "games": 1315,
+  "player_rows_at_pretip": 12920,
+  "changed": 2497,
+  "changed_share": 0.1933,
+  "uncertain_to_out": 459,
+  "uncertain_to_available": 537
+ },
+ "2022": {
+  "games": 1295,
+  "player_rows_at_pretip": 11748,
+  "changed": 2479,
+  "changed_share": 0.211,
+  "uncertain_to_out": 502,
+  "uncertain_to_available": 672
+ },
+ "2023": {
+  "games": 1295,
+  "player_rows_at_pretip": 13216,
+  "changed": 3138,
+  "changed_share": 0.2374,
+  "uncertain_to_out": 647,
+  "uncertain_to_available": 827
+ },
+ "2024": {
+  "games": 1295,
+  "player_rows_at_pretip": 14269,
+  "changed": 3463,
+  "changed_share": 0.2427,
+  "uncertain_to_out": 615,
+  "uncertain_to_available": 846
+ },
+ "2025": {
+  "games": 1292,
+  "player_rows_at_pretip": 14183,
+  "changed": 3498,
+  "changed_share": 0.2466,
+  "uncertain_to_out": 921,
+  "uncertain_to_available": 995
+ },
+ "2026": {
+  "games": 10,
+  "player_rows_at_pretip": 58,
+  "changed": 0,
+  "changed_share": 0.0,
+  "uncertain_to_out": 0,
+  "uncertain_to_available": 0
+ }
+}
