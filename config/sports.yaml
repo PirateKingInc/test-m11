@@ -105,11 +105,31 @@ sports:
         job: depth_charts
         cron: "0 7 * * *"
         active_months: [8, 9, 10, 11, 12, 1, 2]
+      - id: nfl-pfr-pass  # PFR weekly pressures: m15's pressure source while 2026 has no participation
+        source: nflverse_extra
+        job: pfr_pass
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-ngs-passing  # NGS time to throw (one all-season file): m15's fallback (M15)
+        source: nflverse_extra
+        job: ngs_passing
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-participation  # skipped until nflverse publishes this season's file (M15)
+        source: nflverse_extra
+        job: participation
+        cron: "0 7 * * *"
+        active_months: [9, 10, 11, 12, 1, 2]
       - id: nfl-derive  # local: derived tables from the files above (no network)
         source: nfl_model
         job: derive
         cron: "0 7 * * *"
         active_months: [9, 10, 11, 12, 1, 2]
+      - id: nfl-inputs15  # local: m15 and prop live inputs in data/derived from the files above
+        source: nfl_model
+        job: inputs15
+        cron: "0 7 * * *"
+        active_months: [8, 9, 10, 11, 12, 1, 2]
       - id: nfl-props  # ESPN player prop lines, next 8 days (beyond 2 days: 7/11/15/19 ET only)
         source: espn_props
         job: lines

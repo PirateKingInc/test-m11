@@ -263,27 +263,42 @@ def read_pbp(data_dir: Path, seasons) -> pd.DataFrame:
 
 
 def build_frames(store: Store, gm: pd.DataFrame, data_dir: Path, train,
-                 expected: Expected | None = None,
-                 first_season: int | None = None) -> tuple[dict, dict]:  # fmt: skip
+                 expected: Expected | None = None, first_season: int | None = None,
+                 cached: bool = False) -> tuple[dict, dict]:  # fmt: skip
     """`expected`: frozen fits (live) instead of fitting on `train`; `first_season`: build only
-    seasons from it (live reads the last seasons only)."""
+    seasons from it (live reads the last seasons only); `cached`: read and refresh the
+    per-season tables under data/derived (nfl/m15cache.py; needs `expected`) instead of
+    reading every file, with the depth charts of the last season only."""
     g = store.games
     seasons = sorted(s for s in set(g.season) if first_season is None or s >= first_season)
-    pbp = read_pbp(data_dir, seasons)
-    part = nf.load_participation(seasons, columns=["nflverse_game_id", "play_id", "was_pressure",
-                                                   "time_to_throw"], data_dir=data_dir)
-    part = part.rename(columns={"nflverse_game_id": "game_id"})
-    part["was_pressure"] = part.was_pressure.astype("boolean")
-    pfr = nf.load_pfr("pass", seasons, data_dir=data_dir)
-    try:
-        ngs = nf.load_ngs("passing", data_dir=data_dir)
-    except Exception:  # noqa: BLE001 - the file is optional (time-to-throw fallback only)
-        ngs = pd.DataFrame()
-    raw = raw_team_games(pbp, part, pfr, ngs)
-    raw["season"] = raw.game_id.str[:4].astype(int)
-    exp = expected or fit_expected(pbp[pbp.season.isin(train)], raw[raw.season.isin(train)])
-    tg = finish(raw, exp, pbp)
-    k = kicks(pbp, exp)
+    if cached:
+        from betdata.nfl.m15cache import cached_depth, cached_tables
+
+        if expected is None:
+            raise ValueError("cached m15 inputs need the frozen expected-rate fits")
+        exp = expected
+        tg, k = cached_tables(data_dir, seasons, exp)
+        charts = cached_depth(data_dir, seasons[-1], _kickoffs(gm, g))
+        if charts.empty and len(seasons) > 1:
+            charts = cached_depth(data_dir, seasons[-2], _kickoffs(gm, g))
+    else:
+        pbp = read_pbp(data_dir, seasons)
+        part = nf.load_participation(seasons, columns=["nflverse_game_id", "play_id",
+                                                       "was_pressure", "time_to_throw"],
+                                     data_dir=data_dir)  # fmt: skip
+        part = part.rename(columns={"nflverse_game_id": "game_id"})
+        part["was_pressure"] = part.was_pressure.astype("boolean")
+        pfr = nf.load_pfr("pass", seasons, data_dir=data_dir)
+        try:
+            ngs = nf.load_ngs("passing", data_dir=data_dir)
+        except Exception:  # noqa: BLE001 - the file is optional (time-to-throw fallback only)
+            ngs = pd.DataFrame()
+        raw = raw_team_games(pbp, part, pfr, ngs)
+        raw["season"] = raw.game_id.str[:4].astype(int)
+        exp = expected or fit_expected(pbp[pbp.season.isin(train)], raw[raw.season.isin(train)])
+        tg = finish(raw, exp, pbp)
+        k = kicks(pbp, exp)
+        charts = nf.load_depth_charts(seasons, kickoffs=_kickoffs(gm, g), data_dir=data_dir)
 
     ids = gm.set_index("nfl_id")
     ids = ids[ids.game_id.isin(g.index)]
@@ -303,7 +318,7 @@ def build_frames(store: Store, gm: pd.DataFrame, data_dir: Path, train,
         df["known_at"] = df.kickoff + RESULT_DELAY
         return df
 
-    charts = nf.load_depth_charts(seasons, kickoffs=_kickoffs(gm, g), data_dir=data_dir)
+    charts = charts.copy()
     charts["team"] = [teams.get((int(s), CANON.get(t, t))) for s, t in
                       zip(charts.season, charts.team, strict=True)]  # fmt: skip
     charts = charts[charts.team.notna() & charts.as_of.notna() & charts.gsis_id.notna()]
@@ -325,7 +340,11 @@ def _kickoffs(gm: pd.DataFrame, g: pd.DataFrame) -> pd.Series:
 
 
 def with_m15(store: Store, conn: Connection, data_dir: Path, train, *,
-             expected: Expected | None = None,
-             first_season: int | None = None) -> tuple[Store, dict]:  # fmt: skip
-    frames, info = build_frames(store, game_map(conn), data_dir, train, expected, first_season)
-    return Store(store.games, {**store.frames, **frames}, store.params, names=store.names), info
+             expected: Expected | None = None, first_season: int | None = None,
+             cached: bool = False) -> tuple[Store, dict]:  # fmt: skip
+    frames, info = build_frames(store, game_map(conn), data_dir, train, expected, first_season,
+                                cached)
+    out = Store(store.games, {**store.frames, **frames}, store.params, names=store.names)
+    if cached:  # live: M12's frames are the same, so its computed states are reused
+        out.cache = store.cache
+    return out, info

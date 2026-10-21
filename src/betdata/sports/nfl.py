@@ -54,23 +54,25 @@ class NflSport(Sport):
         return [self.base_model] if self.page_model == "m15" else [v]
 
     def predict(self, engine: Engine, now: datetime) -> int:
-        from betdata.nfl.live import run_predict
+        from betdata.nfl.live import loaded_store, run_predict
 
+        store = None
         try:
-            _, picks = run_predict(engine, now, DAYS)
+            store = loaded_store(engine)  # loaded once: m12, m13w and m15 share it
+            _, picks = run_predict(engine, now, DAYS, store=store)
         except ValueError as e:  # no history loaded
             log.warning("nfl predict skipped: %s", e)
             picks = []
-        self.predict_15(engine, now)
+        self.predict_15(engine, now, store)
         self.predict_props(engine, now)
         return len(picks)
 
-    def predict_15(self, engine: Engine, now: datetime) -> int:
+    def predict_15(self, engine: Engine, now: datetime, store=None) -> int:
         """The M15 side version m15 (background unless the switch rule moved the page)."""
         from betdata.nfl.live15 import run_predict15
 
         try:
-            return len(run_predict15(engine, now, DAYS))
+            return len(run_predict15(engine, now, DAYS, store))
         except Exception as e:  # never breaks the run or the m12/m13w predictions
             log.warning("m15 predict skipped: %s: %s", type(e).__name__, e)
             return 0

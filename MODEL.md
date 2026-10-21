@@ -1097,12 +1097,18 @@ The 95% ranges of every spread record include 50%. Brier on decided games, preki
 
 **Page switch: no.** Validation improved (9.778 < 9.819), but the test margin MAE is worse than m13w's at both points (+0.025 at the final report, +0.013 at prekick). The page stays on m13w. m15 is written to `config/nfl_model_m15.json` with `page: false`. Its live fit, on 2013-2025 and frozen by `betdata nfl freeze15`, is `config/fits/nfl_m15_fit_57fcaa5663_2013_2025.json`. m15 is predicted, stored (model `m15`) and graded hourly in the background.
 
-**Live inputs.** `nfl/live15.py` rebuilds m15's inputs each run from the last three seasons of play-by-play and the nflverse files, using the frozen expected-rate fits. It skips the run (logged, nothing stored) when the inputs are incomplete:
-- last season's play-by-play is missing;
-- fewer than 90% of this season's finished games are present;
+**Live inputs.** `nfl/live15.py` reads m15's inputs for the last three seasons from compact per-season tables under `data/derived`, which the runner's state keeps (`nfl/m15cache.py`):
+- per team-game counts and kicker field goals, computed with the frozen expected-rate fits;
+- this season's depth charts, keeping a daily snapshot only when a team's chart changed.
+
+A season's table is rebuilt when its play-by-play or nflverse file is on disk and newer than the table. On the runner that happens in the 7am run (`nfl-inputs15`); the one-off `nfl-m15-bootstrap` workflow builds the earlier seasons. Tables built this way give exactly the same features as reading the files: checked on the 14 games of 2026-10-21.
+
+The run is skipped (logged, nothing stored) when the inputs are incomplete:
+- last season is missing;
+- fewer than 90% of this season's games that finished more than 3 days ago are present (the play-by-play of the latest games arrives with the next 7am refresh);
 - no depth chart is known from the last 10 days.
 
-The hourly runner's state cache does not hold `data/pbp` or `data/nflverse` (REVIEW.md M15-1), so until those are kept there, m15 is skipped on the runner rather than stored from empty rates.
+m15 reuses the M12 store and the computed states that m12 and m13w have just used, so it adds about 6 s to an hourly run.
 
 ## M15 NBA side variables (`nba/features15.py`, version `nba15`)
 
