@@ -38,8 +38,7 @@ def test_props_section():
 def test_version_label_and_unchanged_card():
     c = Card(1, NOW, "KC", "BUF", "prekick", NOW, model_spread_home=-3.0)
     plain = card_html(c, {}, [])
-    labelled = card_html(c, {}, [], True, "Model version: m13w · newer version m15 running in "
-                         "the background (graded live, not shown)")  # fmt: skip
-    assert labelled.replace('\n  <p class="meta ver">Model version: m13w · newer version m15 '
-                            'running in the background (graded live, not shown)</p>', "") == plain
+    note = "Model version: m13w · also running in the background (graded live, not shown): m15"
+    labelled = card_html(c, {}, [], True, note)
+    assert labelled.replace(f'\n  <p class="meta ver">{note}</p>', "") == plain
     assert version_note(DummySport.__new__(DummySport)) is None  # no version: no label

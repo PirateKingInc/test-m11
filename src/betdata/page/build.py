@@ -264,8 +264,8 @@ def version_note(sport: Sport) -> str | None:
     if not v:
         return None
     bg = sport.background_versions()
-    tail = (f" · newer version{'s' if len(bg) > 1 else ''} {', '.join(bg)} running in the "
-            "background (graded live, not shown)") if bg else ""  # fmt: skip
+    tail = (f" · also running in the background (graded live, not shown): {', '.join(bg)}"
+            if bg else "")  # fmt: skip
     return f"Model version: {v}{tail}"
 
 
