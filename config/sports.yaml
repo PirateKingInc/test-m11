@@ -103,4 +103,42 @@ sports:
 
   - key: nba
     name: NBA
-    status: coming_soon
+    status: active
+    plugin: betdata.sports.nba:NbaSport
+    jobs:
+      # --- every hourly run in season: schedule, scores and the free DraftKings line (ESPN),
+      # box scores of newly finished games, the latest official injury report --------------
+      - id: nba-scoreboard  # games yesterday to 2 days ahead; no key, no quota
+        source: espn_nba
+        job: scoreboard
+        cron: "0 7-22 * * *"
+        active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+      - id: nba-boxscores  # one call per newly finished game (feeds player values)
+        source: espn_nba
+        job: boxscores
+        cron: "0 7-22 * * *"
+        active_months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+      - id: nba-injuries  # the league's latest report (one PDF per run)
+        source: nba_injury
+        job: report
+        cron: "0 7-22 * * *"
+        when: {after_minutes: 0, before_minutes: 2880}
+      # --- keyed sources (skipped while their secret is unset), inside existing quotas ------
+      - id: nba-sharp  # DraftKings + FanDuel (needs SHARPAPI_KEY); 1 call per run
+        source: sharpapi
+        job: odds
+        params: {sport: nba}
+        cron: "0 7-22 * * *"
+        when: {after_minutes: 0, before_minutes: 2880}
+      - id: nba-odds-evening  # The Odds API: one board a day before the evening tips
+        source: the_odds_api
+        job: odds
+        params: {sport: nba}
+        cron: "0 18 * * *"
+        when: {after_minutes: 0, before_minutes: 180}
+      - id: nba-papi  # one Pinnacle board a day (needs ODDSPAPI_KEY)
+        source: oddspapi
+        job: odds
+        params: {sport: nba}
+        cron: "0 17 * * *"
+        when: {after_minutes: 0, before_minutes: 240}

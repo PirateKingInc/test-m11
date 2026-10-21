@@ -142,7 +142,7 @@ def test_nfl_bootstrap_loads_history_from_nflverse(engine, settings, fake_api, c
     for name in ("games_sample.csv", "stats_team_week_2024.csv", "snap_counts_2024.csv",
                  "injuries_2026.csv", "roster_weekly_2024.csv", "play_by_play_2025.parquet"):
         fake_api.add(body=fixture_bytes("nflverse", name))
-    [sport] = active_sports()
+    sport = next(s for s in active_sports() if s.key == "nfl")
     sport.bootstrap(engine, datetime(2024, 10, 15, tzinfo=UTC),
                     {"transport": fake_api.transport, "sleep": lambda s: None, "clock": clock})
     paths = [r.url.path for r in fake_api.requests]
