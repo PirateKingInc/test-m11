@@ -56,3 +56,14 @@ Items deliberately left out of M12, with the reason. Newest first.
 - #6 snap-count name matching can merge two same-named teammates.
 - #7 units alpha/revert chosen on in-sample error.
 - #13 private report helpers imported across modules.
+
+## M14 (NBA) additions
+- **Historical lines before tip, 2017-18 to 2022-23.** ESPN keeps only the closing line for these seasons, so the market group (line at the point, movement since the open) could not be validated and is not in the model. Lines are now stored hourly from ESPN's DraftKings feed; after a season of them, re-run group 7 on the new data.
+- **Injury reports before Dec 2018.** The league's PDFs before 2018-12-17 answer 403. Availability in 2015-18 rests on box-score absences only.
+- **Every report version.** History loads the hourly reports 11 AM-10 PM ET. The 15-minute versions (2026) and overnight reports exist but were not loaded (~20,000 more requests at 1 a second).
+- **Opening-night rosters.** Until a team's first game of a season is over, its rotation is last season's: offseason signings and trades are invisible, and departed players still count. A preseason roster feed (ESPN team rosters) would fix that.
+- **In-Season Tournament games** are not flagged: the stored schedule doesn't mark them. sportsdataverse's `notes_headline` does.
+- **Coaching changes:** no free source wired in; not modelled.
+- **A gradient-boosting challenger** for NBA, as M12 did for NFL.
+- **The "Removed" status** (a player dropped from a later report) was seen only 35 times in training, so its play probability (5%) is not trustworthy. Map it to "not on the report" if it stays rare.
+- **Closing totals** are in the store but the totals model stays in the CLI (as NFL).

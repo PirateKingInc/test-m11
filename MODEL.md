@@ -941,3 +941,19 @@ Statuses settle later every season: a quarter of listed players now change betwe
 - **Fit:** `config/fits/nba_fit_2015_2025.json`, on every completed season 2015-16 to 2025-26 with the frozen design, including the training-season play probabilities.
 - **Version:** shown on the page as `nba:<hash>`.
 - **No hourly refit:** the hourly runner only reads it.
+
+### 2026-27 replay (`betdata nba replay`, run on Actions by `nba-report.yml`)
+
+The frozen model replays the new season's finished games. Each game gets a prediction at its morning and pre-tip points, using only what was stored by then, and that prediction is compared with the market line known then and with the result. Output goes to the `nba-report` branch (`replay_2026.json`). Run 2026-10-21, after opening night:
+
+| Game | Point | Model (home margin) | Market | Result | Error |
+|---|---|---|---|---|---|
+| BOS @ DET | morning | DET −0.8 | – | DET −8 | 8.8 |
+| BOS @ DET | pretip | DET −0.4 | – | DET −8 | 8.4 |
+| PHI @ NYK | morning | NYK +7.8 | – | NYK −6 | 13.8 |
+| PHI @ NYK | pretip | NYK +8.2 | – | NYK −6 | 14.2 |
+
+- **Too few games to judge:** two games, MAE 11.3 at both points against 10.9-11.0 on the test seasons.
+- **No market comparison yet:** both games tipped before the runner first stored an NBA line (NBA went live in the evening of Oct 20).
+- **From here on:** every game has the DraftKings line from ESPN at each point, and the replay grows as the season does. Re-run the workflow to update it.
+- **Opening-night limitation (BACKLOG):** the rotations are last season's until a team's first game is over.
