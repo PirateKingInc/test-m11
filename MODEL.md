@@ -1006,6 +1006,18 @@ All were checked from a GitHub Actions runner on 2026-10-21 (`probe/m15-sources`
 - **NFL (all markets):** no lines in validation, so no betting backtest is possible. The test seasons (2024-2025) are compared on error vs the line only.
 - **Live:** prop lines are stored every hourly run from now on, for live grading.
 
+**As-of rules for the NFL files** (`nfl/nflverse_files.py`; a row whose time can't be placed gets no time and is never used):
+
+| Data | `known_at` / `as_of` | Basis |
+|---|---|---|
+| Participation, FTN charting, PFR advanced, player weekly stats (per game) | kickoff + 12 h | M12 rule for a game's stats and play-by-play |
+| NGS weekly rows | the team's game that week, kickoff + 12 h | same rule |
+| NGS season totals (week 0), and weeks matching no game (NGS numbers the Super Bowl week 23) | the team's last game of the season, kickoff + 12 h | conservative: a running total is never used before the season ends |
+| Depth chart, weekly format (2001-2024), week N | the team's week-N `prekick`; a team without a game that week (bye): that week's last kickoff | as weekly rosters: the weekly file may hold game-week changes, so before `prekick` the week N-1 chart is used |
+| Depth chart, daily format (2025+) | the snapshot's own `dt` | real capture time |
+
+Depth-chart positions are normalized to QB RB FB WR TE LT LG C RG RT (OL when the side isn't given) DE DT LB CB S K P LS H KR PR, with groups QB RB WR TE OL DL LB DB ST; rank 1 is the starter.
+
 ## M15 NFL side variables (`nfl/features/m15_*.py`, version `m15`)
 
 All use only plays and games before the prediction point, which the M12 harness checks. They are exponentially weighted with the M12 strength half-life and regressed to the league mean by sample size.
