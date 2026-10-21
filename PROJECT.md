@@ -199,3 +199,28 @@ Measured on GitHub's runners, 2026-10-21, with NBA active.
 | ESPN prop lines (core API) | none published; unofficial endpoint | Lines are shown with their source and book. Raw responses stay in the private Actions cache and are never republished. Requests stay at ≤1 a second, with backoff on 429 or empty payloads. |
 
 M15 needs no paid source and no new API key.
+
+### M15 quota and runtime proof (NFL + NBA sides and props, measured on the runner)
+
+**Measured hourly runs, 2026-10-21, automatic (clock):**
+
+| Run (UTC) | What ran | Run step | NFL predict | NBA predict | nba-props lines | nfl-props lines |
+|---|---|---|---|---|---|---|
+| 21:00 | sides + prop lines (no prop design yet) | 84 s | 20 s | 20 s | 38 s | 2 s |
+| 22:00 | + NBA and NFL prop predictions | 95 s | 22 s | 29 s | 37 s | 2 s |
+| 23:00 | + m15, NFL props four-hourly refresh (19:00 ET) | 126 s | 25 s | 30 s | 37 s | 29 s |
+
+- **Whole job:** about 30 s more than the run step (restore and save state, deploy), so about 2.0-2.6 minutes. That is under the 3-minute budget.
+- **Largest cost:** the NBA prop lines, at one request a second (about 37 requests for a slate). Distant NFL games are refreshed only every 4 hours (7, 11, 15, 19 ET) to keep the other runs short.
+- **The 7am run:** it adds the daily NFL refresh (play-by-play, player stats, depth charts, PFR and NGS, then `nfl-inputs15`, about 15 s), and is projected at about 2.5 minutes. If it ever passes 3 minutes, the first cut is to refresh NBA lines for games more than 24 hours away every 4 hours instead of hourly; no market would be dropped.
+- **Never refit hourly:** every M15 model reads a frozen fit under `config/fits/`. RAPM uses the snapshot of the latest Monday, about 1 s to fit from the stints.
+
+**Quota over 30 days:**
+- **ESPN prop lines** (core API, keyless, no published quota): about 37 requests a run for NBA × 16 runs ≈ 600 a day, plus NFL ≈ 30 a run on four-hourly runs and fewer otherwise. Always at ≤1 request a second, with backoff on 429 and 404 treated as "no props".
+- **History backfill** (`props-history`, manual): about 5,000 requests a season at 1 a second, one season at a time.
+- **nflverse and sportsdataverse files:** GitHub release downloads, no quota.
+- **Keyed sources** (SharpAPI, The Odds API, OddsPapi) are unchanged from M14: SharpAPI 958 of 3,000 a day, The Odds API 159 of 450 a month, OddsPapi 42 of 225 a month. None is keyed today, so they use nothing.
+
+**State:** the Actions cache entry is about 99 MB compressed (93 MB before M15). That covers the lineup stints for 2024-25 to 2026-27, prop lines, prop predictions and the NFL m15/prop tables (about 1 MB).
+
+**Dependencies:** M15 adds no new runtime dependency. RAPM uses `scipy.sparse`, which is already installed with scikit-learn.
