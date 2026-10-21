@@ -1,0 +1,12 @@
+{
+  "fit": "config/fits/nfl_props_2013_2025.json",
+  "thresholds": {},
+  "test_roi": {},
+  "research_only": [
+    "pass_yds",
+    "rush_yds",
+    "rec_yds",
+    "receptions",
+    "anytime_td"
+  ]
+}
