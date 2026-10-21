@@ -18,6 +18,7 @@ Decisions that change dependencies, data rules or scope, newest last.
 | 2026-10-19 | No new runtime dependencies in M13. Playwright is used only in the `verify-page` workflow (pip, on the runner) and for local screenshots (`uv run --with`). | The page is static HTML/CSS/JS written by Python. |
 | 2026-10-20 | Hourly workflow has a backup trigger at :30, and a slot that already ran successfully is skipped. | GitHub dropped 6 of 7 top-of-hour scheduled runs on the first evening. |
 | 2026-10-20 | Clock workflow: a self-redispatching job that starts each hourly run. | GitHub's cron kept dropping almost every tick, including the :30 backups. This stays inside "Actions + Pages only", at the cost of an idle runner, which is free on a public repository. |
+| 2026-10-21 | M15 nflverse files (participation, FTN, PFR, depth charts, player stats, NGS) are kept as parquet under `data/nflverse/` by source `nflverse_extra`, CLI/backfill only, outside the Actions cache. | 53 MB in all; nothing in the hourly run reads them yet. Features derived from them should go into database tables (cached), as play-by-play does; the current season's files can then be fetched by one daily `refresh` job. |
 
 ## M13: the hourly page
 
