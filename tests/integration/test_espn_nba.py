@@ -44,7 +44,7 @@ def test_scoreboard_games_and_draftkings_lines(espn, engine, fake_api):
     fake_api.add(body=fixture_bytes("espn_nba", "scoreboard_20261021.json"))
     res = espn.run("scoreboard", dates="20261021")
     assert res.status == "ok", res.message
-    assert "dates=20261021" in str(fake_api.requests[0].url)
+    assert "dates=20261021" in str(fake_api.requests[0].url) and len(fake_api.requests) == 1
     g = espn_game(engine, "401909834")  # ATL @ ORL, Oct 21 2026
     assert (g["season"], g["season_type"], g["status"]) == (2026, "REG", "scheduled")
     with engine.connect() as conn:
@@ -168,3 +168,16 @@ def test_history_export_and_load_round_trip(espn, engine, fake_api, clock, tmp_p
     with engine.connect() as conn:
         row = conn.execute(select(nba_injury_reports)).mappings().one()
     assert row["game_id"] == gid and row["report_at"] == at
+
+
+def test_scoreboard_asks_one_day_at_a_time(espn, engine, fake_api, clock):
+    """ESPN answers 400 to a date range, so a range is fetched day by day and merged."""
+    from betdata.sources.espn_nba import scoreboard_days
+
+    clock.now = datetime(2026, 10, 21, 15, 0, tzinfo=UTC)
+    for _ in range(4):
+        fake_api.add(body=fixture_bytes("espn_nba", "scoreboard_20261021.json"))
+    assert espn.run("scoreboard").status == "ok"  # default: yesterday to 2 days ahead
+    assert [r.url.params["dates"] for r in fake_api.requests] == [
+        "20261020", "20261021", "20261022", "20261023"]
+    assert len(scoreboard_days("20261001-20261003", None)) == 3
