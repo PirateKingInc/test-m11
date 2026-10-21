@@ -1,0 +1,21 @@
+{
+ "count": 2,
+ "items": [
+  {
+   "provider": {
+    "id": "100",
+    "name": "DraftKings",
+    "priority": 1
+   },
+   "details": "x"
+  },
+  {
+   "provider": {
+    "id": "1001",
+    "name": "accuracy",
+    "priority": 1
+   },
+   "details": "x"
+  }
+ ]
+}
