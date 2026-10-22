@@ -19,7 +19,7 @@ def test_record_layout():
     assert "What is counted: One pick per game and market" in main
     assert main.count("<tr><td>") == 2  # spread and moneyline of the page version only
     assert "Spread</td><td>2-4-0" in main and "Moneyline</td><td>0-7-0" in main
-    assert main.count("class='few'") == 2 and "(3 at the close)" in main
+    assert main.count("too few to judge</span>") == 2 and "3 at the close" in main
     assert "nba:old" not in main and "Other model versions (background comparisons)" in other
     assert "nba:old" in other and "Total" in other
 
@@ -27,7 +27,7 @@ def test_record_layout():
 def test_record_page_version_by_name_and_100_picks():
     rows = [_row("spread", "m13w:746dc8cd89", 60, 45)]
     html = records_html(rows, "m13w")
-    assert "60-45-0" in html.split("<details")[0] and "class='few'" not in html
+    assert "60-45-0" in html.split("<details")[0] and "too few to judge</span>" not in html
     assert "No graded picks for this model version yet" in records_html(
         [_row("spread", "m12:x", 1, 0)], "m13w")
 
