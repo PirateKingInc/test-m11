@@ -34,6 +34,21 @@ def test_history_lines_prefers_book_with_both_sides(engine):
         assert "close_line" not in history_lines(conn).columns
 
 
+def test_history_lines_drops_lopsided_alternates(engine):
+    # M16 audit (REVIEW M16-1): an alternate line stored as "main" (+300/-450) is not a main line.
+    gid = synth(engine, n_days=2)[0]
+    with engine.begin() as conn:
+        bk = dict(conn.execute(select(books.c.key, books.c.book_id)).all())
+        for b, line, o, u in [("draftkings", 14.5, 300, -450), ("betmgm", 10.5, -110, -110)]:
+            conn.execute(insert(prop_lines).values(
+                source="espn_props", source_game_id=str(gid), game_id=gid, player_id="p1",
+                market="points", book_id=bk[b], kind="open", line=line, over_price=o,
+                under_price=u, quoted_at=datetime(2021, 10, 1, tzinfo=UTC),
+                fetched_at=datetime(2022, 1, 1, tzinfo=UTC)))  # fmt: skip
+        df = history_lines(conn)
+    assert (df.iloc[0].open_line, len(df)) == (10.5, 1)
+
+
 def test_bets_and_record():
     d = pd.DataFrame({"edge": [6.0, -7.0, 2.0, 8.0], "over": [1.0, 1.0, 0.0, np.nan],
                       "over_price": [-110, -110, -110, +120],

@@ -1337,6 +1337,42 @@ At synthetic half-point lines (no market), P(over) is well calibrated in every b
 - **Probabilities and bets:** its over probabilities are worse than the market's (Brier), and every backtested market lost money. The bets' low win rates show the calibrated edges mostly pick long-priced sides.
 - **Flags:** none for any prop market (positive test ROI required). Every prop is shown as information only, and PRA is labelled research only.
 
+### M16 audit of this backtest (REVIEW M16-1, `reports/nba/props_final_test_m16_audit.json`)
+
+**Question:** win rates of 30-39% sat beside ROIs of only −3% to −18%. Was the arithmetic wrong?
+
+**Answer: the arithmetic was right, but the lines were wrong.**
+- There were no pushes or voids, and each ROI matches its win rate at the prices bet.
+- The bets were long prices: median +175 to +200, and 10% at +500 or longer.
+- On the side it bet, the model's probability averaged about 0.50 against a no-vig price of about 0.32.
+
+**Cause:** the ESPN parser (`sources/espn_props.main_line`) took the *first* labelled over/under pair as the main line. On many players, ESPN also labels alternate ladder lines. So 4-31% of stored history rows (by season and book; ESPN BET 2024 opening lines: 31%) were an alternate line priced like +300/−450 and stored as "main". Against such a line, a 10 % pt "edge" is simply the distance to the alternate.
+
+**Fixes:**
+- The parser now takes the most balanced labelled pair.
+- The backtest keeps only lines whose no-vig over is between 0.35 and 0.65, before choosing the book.
+
+**Re-score:** the frozen `nbap15` was scored again on the cleaned lines, using its own frozen calibration and thresholds. This is a re-score after a data-bug fix, not a refit or a re-tune.
+
+| Market | Rows | MAE model | MAE line | Brier model | Brier no-vig | Bets (W-L) | Win rate (95%) | ROI |
+|---|---|---|---|---|---|---|---|---|
+| points | 37,064 | 5.062 | 4.913 | 0.2501 | 0.2493 | 744-1,092 | 40.5% (38.3-42.8) | −10.7% |
+| rebounds | 34,997 | 2.025 | 2.049 | 0.2472 | 0.2472 | 1,011-980 | 50.8% (48.6-53.0) | +10.6% |
+| assists | 32,042 | 1.542 | 1.556 | 0.2466 | 0.2456 | 1,443-1,593 | 47.5% (45.8-49.3) | +5.0% |
+| threes | 28,485 | 1.115 | 1.146 | 0.2454 | 0.2428 | 3,348-3,921 | 46.1% (44.9-47.2) | +0.9% |
+| PRA | 15,062 | 6.546 | 6.333 | 0.2583 | 0.2487 | research only | – | – |
+
+**Checks:**
+- On the cleaned lines, always betting the over loses 8-10% in every market, and always betting the under loses 2-5%, as the vig predicts.
+- Win rates now sit where the prices say they should.
+
+**Reading:**
+- The model's probabilities are still no better than the market's (Brier equal or worse).
+- The positive ROIs are at *opening* lines. Rebounds' comes almost entirely from unders (93% of its bets), while assists win on both sides. They are one test, not proof of an edge.
+- Re-tuning on the cleaned validation lines would move the assists and threes calibration (threes Platt slope 0.49 → 0.33).
+
+**Page unchanged:** M16 forbids changing frozen fits and the hourly page's behaviour. So `config/nba_props.json` (fit, calibration, thresholds and the M15 `test_roi` that gates flags) is **not** changed. NBA props stay information only, with no flags. Whether rebounds or assists should be flagged on the corrected numbers is left to a later phase, which would need a fresh, untouched test.
+
 ## M15 summary: what changed on the page
 
 | Sport | Page side version | Background (graded live) | Why |

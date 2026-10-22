@@ -173,3 +173,15 @@ def test_nfl_lines_match_scoreboard_and_unpriced_lines(props, engine, fake_api, 
 
     clock.now = datetime(2026, 10, 21, 16, 0, tzinfo=UTC)  # noon ET: 4 days out, not refreshed
     assert props.run("lines", sport="nfl").status == "skipped" and len(fake_api.requests) == 3
+
+
+def _labelled(side, line, price):
+    return {"current": {side: {"american": price}, "target": {"value": line}},
+            "open": {side: {"american": price}, "target": {"value": line}}}  # fmt: skip
+
+
+def test_main_line_most_balanced_of_several_labelled_pairs():
+    # M16 audit (REVIEW M16-1): a labelled alternate pair listed first was taken as the main line.
+    items = [_labelled("over", 14.5, 300), _labelled("under", 14.5, -450),
+             _labelled("over", 10.5, -112), _labelled("under", 10.5, -108)]  # fmt: skip
+    assert main_line("points", items)["close"] == (10.5, -112, -108)
