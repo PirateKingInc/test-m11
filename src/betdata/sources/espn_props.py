@@ -131,7 +131,19 @@ def main_line(market: str, items: list[dict]) -> dict | None:
         by: dict = defaultdict(dict)
         for i in labelled:
             by[_target(i, "current")].setdefault(_side(i), i)
-        t = next((t for t, s in by.items() if len(s) == 2), next(iter(by)))
+        both = [t for t, s in by.items() if len(s) == 2]
+        if both:  # several labelled pairs (ladders labelled too): the most balanced is the main
+
+            def gap(t):
+                o = (_price(by[t]["over"], "current", "over")
+                     or _price(by[t]["over"], "open", "over"))  # fmt: skip
+                u = (_price(by[t]["under"], "current", "under")
+                     or _price(by[t]["under"], "open", "under"))  # fmt: skip
+                return abs(_implied(o) - _implied(u)) if o is not None and u is not None else 9.0
+
+            t = min(both, key=gap)
+        else:
+            t = next(iter(by))
         o, u = by[t].get("over"), by[t].get("under")
         ref = o or u
         return {"close": (t, _price(o, "current", "over"), _price(u, "current", "under")),
