@@ -71,6 +71,7 @@ def test_request_shape_and_pagination(sharp, fake_api, fake_time):
         "offset": "0",
         "market": "moneyline,point_spread,total_points",
         "live": "false",
+        "is_main_line": "true",
     }
     assert r2.url.params["offset"] == "500"
     assert fake_time.sleeps == [10.0]  # second page waited out the 10 s spacing
@@ -162,3 +163,37 @@ def test_runaway_quota_guard(sharp, engine, fake_api):
     sharp.quota.reconcile(remaining=None, used=None)
     status = sharp.quota.status()
     assert status.limit == 3000 and status.period_end - status.period_start == timedelta(days=1)
+
+
+def _free_rows(n, start, line=-4.5, main=True, event="e1"):
+    """n spread rows in the free tier's shape (no pagination metadata)."""
+    return [{"id": f"{event}-{i}", "sportsbook": "draftkings", "event_id": event,
+             "home_team": "Boston Celtics", "away_team": "New York Knicks",
+             "market_type": "point_spread", "team_side": "home", "selection": "Boston Celtics",
+             "line": line, "odds_american": -110, "event_start_time": start,
+             "is_main_line": main} for i in range(n)]  # fmt: skip
+
+
+def test_free_tier_pages_by_row_count_and_horizon(sharp, fake_api, clock):
+    # M16 (REVIEW M16-3): 200 rows and no metadata means "maybe more"; stop at a short page...
+    soon = (clock.now + timedelta(days=1)).isoformat().replace("+00:00", "Z")
+    board(fake_api, json.dumps({"data": _free_rows(200, soon)}).encode(),
+          json.dumps({"data": _free_rows(3, soon)}).encode())  # fmt: skip
+    assert sharp.run("odds", sport="nba").status == "ok"
+    assert [r.url.params["offset"] for r in fake_api.requests] == ["0", "200"]
+    # ...or once a full page reaches past the horizon (events are sorted by start).
+    fake_api.requests.clear()
+    later = (clock.now + timedelta(days=30)).isoformat().replace("+00:00", "Z")
+    board(fake_api, json.dumps({"data": _free_rows(200, later)}).encode())
+    assert sharp.run("odds", sport="nba").status == "ok"
+    assert len(fake_api.requests) == 1
+
+
+def test_alternate_lines_are_never_stored(sharp, engine, fake_api, clock):
+    # M16 (REVIEW M16-3): an alternate spread stored as a poll became the page's market line.
+    soon = (clock.now + timedelta(days=1)).isoformat().replace("+00:00", "Z")
+    data = _free_rows(1, soon, line=-4.5) + _free_rows(1, soon, line=14.5, main=False)
+    data[1]["id"] = "alt"
+    board(fake_api, json.dumps({"data": data}).encode())
+    sharp.run("odds", sport="nba")
+    assert [r["line"] for r in rows(engine)] == [-4.5]

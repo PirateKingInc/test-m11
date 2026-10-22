@@ -15,6 +15,13 @@ Each `OddsLine` is one selection: `event_id`, `home_team`, `away_team`, `event_s
 `suspended`, not dropped). Only full-game moneyline / spread / total are kept; props and
 partial-game segments are skipped.
 
+Live checks (M16, 2026-10-22, free tier): every response is capped at 200 rows with no
+`meta.pagination`, sorted by event start, and most spread/total rows are alternate lines
+(`is_main_line: false`). Requests ask for `is_main_line=true` (a recognised filter) and the
+parser drops any non-main row, so an alternate is never stored as the market line (REVIEW
+M16-3). Without pagination metadata, a full 200-row page means "maybe more": the next page is
+read at `offset + 200` until a short page or an event starting past `horizon_hours`.
+
 Unverified until a live call: the college league ids (`ncaab`, `ncaaf`) and whether the API
 spells markets `point_spread`/`total_points` (SDK) or `spread`/`total` (one docs page) - both
 are accepted when parsing, and the request filter is configurable in sources.yaml.
@@ -24,7 +31,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
@@ -51,6 +58,7 @@ MARKETS = {
 }
 FULL_GAME = {None, "", "full_game", "game"}
 PAGE_SIZE = 500
+FREE_PAGE_ROWS = 200  # the free tier's cap per response (no pagination metadata)
 MAX_PAGES = 20  # runaway guard: 10,000 rows is far beyond any featured-market board
 
 
@@ -72,11 +80,16 @@ class _OddsLine(BaseModel):
     is_live: bool = False
     is_active: bool = True
     player_name: str | None = None
+    is_main_line: bool | None = None
 
 
 class _Page(BaseModel):
     data: list[dict[str, Any]]
     meta: dict[str, Any] | None = None
+
+
+def _when(text: str) -> datetime:
+    return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
 def cost_from_headers(resp: httpx.Response) -> CostReport:
@@ -118,7 +131,8 @@ def parse_odds(
         fetched_at=fetched_at,
         requested_markets=("h2h", "spreads", "totals") if complete else (),
     )
-    skipped = {"props_or_other_markets": 0, "partial_game": 0, "unmapped_side": 0, "no_start": 0}
+    skipped = {"props_or_other_markets": 0, "partial_game": 0, "unmapped_side": 0, "no_start": 0,
+               "alternate": 0}
     events: dict[str, ParsedEvent] = {}
     for item in page.data:
         try:
@@ -128,6 +142,9 @@ def parse_odds(
         market = MARKETS.get(line.market_type.lower())
         if market is None or line.player_name:
             skipped["props_or_other_markets"] += 1
+            continue
+        if line.is_main_line is False:
+            skipped["alternate"] += 1
             continue
         if line.market_segment not in FULL_GAME:
             skipped["partial_game"] += 1
@@ -210,6 +227,8 @@ class SharpApiSource(Source):
             query["market"] = ",".join(opts["markets"])
         if opts.get("pregame_only", True):
             query["live"] = "false"
+        if opts.get("main_lines_only", True):
+            query["is_main_line"] = "true"
         return query
 
     def fetch(self, job: str, params: dict[str, Any], *, priority: str, run_id: int) -> RawInput:
@@ -219,7 +238,9 @@ class SharpApiSource(Source):
         if not sport:
             raise ConfigError(f"{NAME}: --sport is required")
         rows: list[dict] = []
-        offset, first, last = 0, None, None
+        offset, first, last, complete = 0, None, None, False
+        horizon = self.clock() + timedelta(
+            hours=float(self.config.options.get("horizon_hours", 192)))
         for _ in range(MAX_PAGES):
             resp = self.client.get(
                 "/odds", self._query(sport, offset), est_cost=1, priority=priority, run_id=run_id
@@ -227,16 +248,27 @@ class SharpApiSource(Source):
             first = first or resp
             last = resp
             page = json.loads(resp.body)
-            rows += page.get("data", [])
-            pagination = (page.get("meta") or {}).get("pagination") or {}
-            if not pagination.get("has_more"):
+            data = page.get("data", [])
+            rows += data
+            pagination = (page.get("meta") or {}).get("pagination")
+            if pagination is not None:  # paid tiers: the server says whether more exist
+                if not pagination.get("has_more"):
+                    complete = True
+                    break
+                offset = pagination.get("next_offset") or offset + PAGE_SIZE
+                continue
+            if len(data) < FREE_PAGE_ROWS:  # free tier: a short page is the last one
+                complete = True
                 break
-            offset = pagination.get("next_offset") or offset + PAGE_SIZE
+            starts = [d.get("event_start_time") for d in data if d.get("event_start_time")]
+            if starts and _when(max(starts)) > horizon:  # sorted by start: the rest is later
+                break
+            offset += len(data)
         else:
             log.warning("%s %s: stopped after %d pages", NAME, sport, MAX_PAGES)
-        # Each page is archived as fetched; this combined body is what gets loaded. It is
-        # marked complete so selections missing from the whole board can be flagged removed.
-        body = json.dumps({"data": rows, "complete": True}).encode()
+        # Each page is archived as fetched; this combined body is what gets loaded. Only a
+        # board read to its end is marked complete, so missing selections can be flagged removed.
+        body = json.dumps({"data": rows, "complete": complete}).encode()
         return RawInput("/odds", {"sport": sport}, body, first.fetched_at, last.raw_id)
 
     def job_for_endpoint(self, endpoint: str) -> str:
