@@ -1337,6 +1337,42 @@ At synthetic half-point lines (no market), P(over) is well calibrated in every b
 - **Probabilities and bets:** its over probabilities are worse than the market's (Brier), and every backtested market lost money. The bets' low win rates show the calibrated edges mostly pick long-priced sides.
 - **Flags:** none for any prop market (positive test ROI required). Every prop is shown as information only, and PRA is labelled research only.
 
+### M16 audit of this backtest (REVIEW M16-1, `reports/nba/props_final_test_m16_audit.json`)
+
+**Question:** win rates of 30-39% sat beside ROIs of only −3% to −18%. Was the arithmetic wrong?
+
+**Answer: the arithmetic was right, but the lines were wrong.**
+- There were no pushes or voids, and each ROI matches its win rate at the prices bet.
+- The bets were long prices: median +175 to +200, and 10% at +500 or longer.
+- On the side it bet, the model's probability averaged about 0.50 against a no-vig price of about 0.32.
+
+**Cause:** the ESPN parser (`sources/espn_props.main_line`) took the *first* labelled over/under pair as the main line. On many players, ESPN also labels alternate ladder lines. So 4-31% of stored history rows (by season and book; ESPN BET 2024 opening lines: 31%) were an alternate line priced like +300/−450 and stored as "main". Against such a line, a 10 % pt "edge" is simply the distance to the alternate.
+
+**Fixes:**
+- The parser now takes the most balanced labelled pair.
+- The backtest keeps only lines whose no-vig over is between 0.35 and 0.65, before choosing the book.
+
+**Re-score:** the frozen `nbap15` was scored again on the cleaned lines, using its own frozen calibration and thresholds. This is a re-score after a data-bug fix, not a refit or a re-tune.
+
+| Market | Rows | MAE model | MAE line | Brier model | Brier no-vig | Bets (W-L) | Win rate (95%) | ROI |
+|---|---|---|---|---|---|---|---|---|
+| points | 37,064 | 5.062 | 4.913 | 0.2501 | 0.2493 | 744-1,092 | 40.5% (38.3-42.8) | −10.7% |
+| rebounds | 34,997 | 2.025 | 2.049 | 0.2472 | 0.2472 | 1,011-980 | 50.8% (48.6-53.0) | +10.6% |
+| assists | 32,042 | 1.542 | 1.556 | 0.2466 | 0.2456 | 1,443-1,593 | 47.5% (45.8-49.3) | +5.0% |
+| threes | 28,485 | 1.115 | 1.146 | 0.2454 | 0.2428 | 3,348-3,921 | 46.1% (44.9-47.2) | +0.9% |
+| PRA | 15,062 | 6.546 | 6.333 | 0.2583 | 0.2487 | research only | – | – |
+
+**Checks:**
+- On the cleaned lines, always betting the over loses 8-10% in every market, and always betting the under loses 2-5%, as the vig predicts.
+- Win rates now sit where the prices say they should.
+
+**Reading:**
+- The model's probabilities are still no better than the market's (Brier equal or worse).
+- The positive ROIs are at *opening* lines. Rebounds' comes almost entirely from unders (93% of its bets), while assists win on both sides. They are one test, not proof of an edge.
+- Re-tuning on the cleaned validation lines would move the assists and threes calibration (threes Platt slope 0.49 → 0.33).
+
+**Page unchanged:** M16 forbids changing frozen fits and the hourly page's behaviour. So `config/nba_props.json` (fit, calibration, thresholds and the M15 `test_roi` that gates flags) is **not** changed. NBA props stay information only, with no flags. Whether rebounds or assists should be flagged on the corrected numbers is left to a later phase, which would need a fresh, untouched test.
+
 ## M15 summary: what changed on the page
 
 | Sport | Page side version | Background (graded live) | Why |
@@ -1347,3 +1383,74 @@ At synthetic half-point lines (no market), P(over) is well calibrated in every b
 **Props** (both tabs) are shown for players with a stored ESPN line, as information only:
 - No NBA market had a positive test ROI.
 - NBA PRA and every NFL market have no backtest ("research only, not backtested").
+
+# M16: alerts and closing-line value (written 2026-10-22, before any live M16 data)
+
+M16 changes no model. It runs the frozen versions (nba15 and M14, m13w and m15, nbap15, nflp15) faster than hourly when injury news breaks, compares soft books with a sharp reference, alerts the owner, and grades every alert against the pre-game close. Everything below is **fixed now**. Nothing is tuned during the study.
+
+## Status changes that qualify (the "value threshold")
+
+**NBA.** A change in a player's official-report status for a game (Out, Doubtful, Questionable, Probable, Available, or newly listed or removed) qualifies when the player is in his team's current rotation with an expected **≥ 20 minutes per game played** (`min_play`, M14 League state) **and** the change moves his M14 play probability by **≥ 0.25** (e.g. Questionable 0.50 → Out 0.01).
+
+**NFL.** An injury or inactive status change qualifies for:
+- a QB with ≥ 50% of offensive snaps over his last 4 games;
+- any other offensive skill player (RB, WR, TE) with ≥ 60%;
+- any offensive lineman or defensive starter with ≥ 80%;
+
+where the status change moves his M12 play probability by **≥ 0.25**.
+
+## Signal 1: news (model moved by injury news vs the current DraftKings/FanDuel line)
+
+When a qualifying change is detected, only that game is re-predicted, with the frozen page version (NBA nba15, NFL m13w) and the frozen prop model. The game alerts when all of these hold:
+- **Side (spread):** the model's home margin moved by **≥ 1.0 point** because of the news (re-prediction vs the last stored prediction), AND |model margin + DK/FD home spread| ≥ **3.0 points** (NBA) / **2.5 points** (NFL) in the direction of the move, at the current DK or FD line.
+- **Moneyline:** no Signal 1 alert. Spreads and props cover the news.
+- **Props (NBA points, rebounds, assists, threes; NFL receiving and rushing yards, receptions)** for the affected player's teammates (and the player himself when he moves to Questionable or Available):
+  - the projection moved by **≥ 10%**;
+  - P(over | no push) minus the no-vig over at the current DK line is **≥ 8 percentage points**, in the direction of the move.
+
+  If the DK prop line has no prices (NFL DK in 2026), no prop alert is sent.
+
+## Signal 2: soft vs sharp (DraftKings/FanDuel vs Pinnacle)
+
+**Sharp reference:** the Pinnacle no-vig price, from The Odds API (region `eu`) or SportsGameOdds, whichever delivers Pinnacle on its free plan (PROJECT.md, M16 sources). Markets are full-game moneyline, spread and total for NBA and NFL games starting within the polling window.
+
+A soft price alerts when, on the same market and the same line:
+- the soft book's no-vig probability for a side is **≥ 3.0 percentage points below** Pinnacle's no-vig probability for that side; AND
+- the expected value at the soft book's actual price, using Pinnacle's no-vig probability, is **> 0** (p_pin × decimal_soft − 1 > 0).
+
+Spreads and totals compare only identical lines; different lines are skipped. Pinnacle quotes older than 10 minutes, or soft quotes older than 5 minutes, are not compared.
+
+## Alerts
+
+- **Content:** game, market, book, price and line, the reason (e.g. "Embiid → Out at 1:30 PM; FD line unchanged since 1:12 PM"), and a time-stamped link to the page.
+- **Delivery:** POST to ntfy.sh/<NTFY_TOPIC>, a secret that is never logged or committed.
+- **De-duplication:** at most one alert per (game, market, side, signal, triggering change). Signal 1's triggering change is the status change. Signal 2's is the (soft price, Pinnacle price) pair, re-alerted only after the gap closed below threshold and reopened.
+- **Quiet hours:** no pushes from 23:00 to 07:00 ET. Signals found then are stored as paper bets (`sent=false`) but not pushed.
+- **Paper bets:** every alert, pushed or quiet, is a paper bet of 1 unit at the alerted price and line.
+
+## Lag study (Part E, the go/no-go test for Signal 1)
+
+**Events:** every qualifying status change detected by the poller over two weeks of live games.
+
+**Logged per event:**
+- the report time (stated time and when we read it);
+- every poll's DK, FD and Pinnacle prices for that game's spread, moneyline and total, and DK prop lines for affected players, for the next 60 minutes.
+
+**A book's lag:** minutes from the report's publication (the report's stated time, else our first read) to the first poll where that book's line or no-vig price on the affected market has moved by **≥ 0.5 points** (spread or total) or **≥ 1.5 percentage points** (moneyline or prop no-vig). If nothing moved within 60 minutes, the event is censored at 60.
+
+**Rule, fixed now:** if the **median soft-book lag (DK and FD pooled) is under 5 minutes**, Signal 1 is turned off and logged as **not viable on free data**. The poller cannot beat a book that moves within one polling cycle plus SharpAPI's 60-second delay. Signal 2 continues either way.
+
+The decision is taken once, at the end of the two weeks. Before then Signal 1 runs, with its paper bets labelled as part of the study.
+
+## Grading and success rule (Part F)
+
+**`betdata grade alerts`** grades each alert against the **pre-game close**: the last line stored before tip from the same book; else, for Signal 2, Pinnacle's last pre-game line.
+
+**Recorded per alert:**
+- CLV in points (spreads, totals, props);
+- CLV in no-vig probability (all markets);
+- the result (win, loss, push or void) and profit at the alerted price.
+
+**Reports** are split by signal, sport and market: average CLV with a 95% range (normal approximation, mean ± 1.96·sd/√n), and ROI.
+
+**Success rule, fixed now:** after **200 graded alerts per signal**, a signal is "working" only if its average no-vig CLV is **positive and its 95% range excludes zero**. Before 200, no verdict is given.

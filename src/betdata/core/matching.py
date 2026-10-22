@@ -79,11 +79,16 @@ def _candidates(conn, sport_id, home, away, start, ids=None):
                              r.game_id))  # fmt: skip
     taken = _claimed(conn, [r.game_id for r in rows], ids or {})
     out = [(r.game_id, r.home_team_id != home) for r in rows if r.game_id not in taken]
-    for r in rows:
-        if r.game_id in taken and abs(_utc(r.start_time_utc) - _utc(start)) <= RELIST_WINDOW:
-            log.warning("game %s at %s already holds another event of %s; not matched to %s",
-                        r.game_id, r.start_time_utc, sorted(ids), ids)  # fmt: skip
-    return out
+    if out:
+        return out
+    # Only claimed games: one this close is the same game re-listed under a new id (a source
+    # changing its event id must not create a duplicate game); a game a day apart is not.
+    relisted = [r for r in rows
+                if abs(_utc(r.start_time_utc) - _utc(start)) <= RELIST_WINDOW]  # fmt: skip
+    for r in relisted[:1]:
+        log.warning("game %s at %s already holds another event of %s; matched as a re-listing",
+                    r.game_id, r.start_time_utc, sorted(ids or {}))  # fmt: skip
+    return [(r.game_id, r.home_team_id != home) for r in relisted[:1]]
 
 
 def _utc(t: datetime) -> datetime:

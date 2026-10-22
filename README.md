@@ -78,7 +78,7 @@ the ESPN game id CFBD records, giving a second, keyless source of scores.
 
 Sources are matched to one game by their ids, else by the two teams and the closest kickoff
 within 36 hours; a game that already holds another event of the same source is never matched,
-so both games of a two-game series stay separate. Databases built before that fix (M16-1 in
+so both games of a two-game series stay separate. Databases built before that fix (M16-2 in
 REVIEW.md) can be repaired with `uv run betdata games split-merged --dry-run` (then without
 `--dry-run`, and reload the season's results, box scores and stints).
 

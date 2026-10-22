@@ -133,9 +133,17 @@ def test_odds_event_takes_the_closest_kickoff(engine):
 def test_never_a_second_event_of_one_source(engine):
     with engine.begin() as conn:
         a = _match(conn, "odds", "x1", T1).game_id
-        other = _match(conn, "odds", "x2", T1 + timedelta(hours=1))
+        other = _match(conn, "odds", "x2", T1 + timedelta(hours=24))  # the series' next game
         assert other.created and other.game_id != a
         assert _match(conn, "odds", "x1", T1).game_id == a  # known id: unchanged
+
+
+def test_a_relisted_event_id_does_not_duplicate_the_game(engine):
+    # A source changing its event id near the same kickoff is the same game, not a new one.
+    with engine.begin() as conn:
+        a = _match(conn, "odds", "x1", T1).game_id
+        again = _match(conn, "odds", "x1-relisted", T1 + timedelta(hours=1))
+        assert (again.game_id, again.created) == (a, False)
 
 
 def test_split_merged_repairs_an_old_merge(sdv, cdn, engine, fake_api):

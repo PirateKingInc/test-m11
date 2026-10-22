@@ -1,0 +1,51 @@
+# M16 (manual): run `probe/diag.py` from a chosen branch WITH the source secrets, for checking
+# what free plans actually return (quota cost, books, markets). Output (never a secret: GitHub
+# masks them, and probes must print only counts and fields) goes to the `probe-out` branch.
+# Only collaborators can push branches, so only their code reaches these secrets.
+
+name: probe-env
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch holding probe/diag.py"
+        required: true
+        default: "probe/m16"
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --no-dev
+      - name: Restore state (read only)
+        uses: actions/cache/restore@v4
+        with:
+          # The same paths as hourly.yml: the cache version depends on the path list.
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Probe
+        env:
+          SHARPAPI_KEY: ${{ secrets.SHARPAPI_KEY }}
+          SPORTSGAMEODDS_API_KEY: ${{ secrets.SPORTSGAMEODDS_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: mkdir -p out && uv run --no-dev python probe/diag.py 2>&1 | tee out/diag.txt
+      - name: Push
+        if: always()
+        run: |
+          cd out && git init -q -b probe-out && git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com" && git add -A && git commit -qm "probe-env ${{ github.run_id }}" && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" probe-out
