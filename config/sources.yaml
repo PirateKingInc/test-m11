@@ -90,6 +90,8 @@ sources:
     sportsbooks: [draftkings, fanduel]  # the two books on the free tier
     markets: [moneyline, point_spread, total_points]  # SDK spelling; see sharpapi.py docstring
     pregame_only: true
+    main_lines_only: true  # free tier: most rows are alternate lines (REVIEW M16-3)
+    horizon_hours: 192  # free-tier paging stops once a page reaches events past this
     leagues: {nfl: nfl, nba: nba, ncaaf: ncaaf, ncaab: ncaab}  # college ids unverified
 
   cfbd:
