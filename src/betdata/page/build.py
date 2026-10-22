@@ -241,13 +241,13 @@ def _rec_cells(r: RecordRow) -> str:
     clv = "-" if r.avg_clv is None else f"{r.avg_clv:+.2f} {r.clv_unit}"
     beat = "-" if r.beat_close is None else f"{100 * r.beat_close:.0f}%"
     if r.ties:
-        beat += f" <span class='meta'>({r.ties} at the close)</span>"
+        beat += f" <span class='few'>{r.ties} at the close</span>"
     return (f"<td>{escape(r.market.title())}</td><td>{r.wins}-{r.losses}-{r.pushes}</td>"
             f"<td>{roi}</td><td>{clv}</td><td>{beat}</td><td>{r.bets}</td>")
 
 
-REC_HEAD = ("<tr><th>Market</th><th>Record (W-L-P)</th><th>ROI</th><th>Avg CLV</th>"
-            "<th>Beating the close</th><th>Picks</th></tr>")
+REC_HEAD = ("<tr><th>Market</th><th>W-L-P</th><th>ROI</th><th>Avg CLV</th>"
+            "<th>Beat close</th><th>Picks</th></tr>")
 
 
 def _is_version(model_version: str, page_version: str | None) -> bool:
@@ -269,11 +269,13 @@ def records_html(rows: list[RecordRow], page_version: str | None = None,
             and r.market in markets}  # fmt: skip
     rule = (f"<p class='meta'>What is counted: {escape(RECORD_RULE)} Beating the close: share "
             "of picks that got a better number than the closing line, among picks whose number "
-            "differed from it. Under " f"{TOO_FEW} picks a record is too few to judge.</p>")
+            "differed from it. W-L-P: wins, losses, pushes. Under "
+            f"{TOO_FEW} picks a record is too few to judge.</p>")
     if main:
         body = "".join(f"<tr>{_rec_cells(main[m])}</tr>" for m in markets if m in main)
         table = (f"<p class='meta'>Model version {escape(page_version or '')}</p>"
-                 f"<table class='rec'>{REC_HEAD}{body}</table>")  # fmt: skip
+                 f"<div class='recwrap'><table class='rec'>{REC_HEAD}{body}</table>"
+                 "</div>")  # fmt: skip
     else:
         table = "<p class='meta'>No graded picks for this model version yet.</p>"
     others = [r for r in rows if not (_is_version(r.model_version, page_version)
@@ -284,8 +286,10 @@ def records_html(rows: list[RecordRow], page_version: str | None = None,
                        for r in others)  # fmt: skip
         other = ("<details class='other'><summary>Other model versions (background "
                  "comparisons)</summary><p class='meta'>Graded live by the same rule but not "
-                 "shown on the cards; for comparison only.</p><table class='rec'>"
-                 f"{REC_HEAD.replace('</tr>', '<th>Model</th></tr>')}{body}</table></details>")
+                 "shown on the cards; for comparison only.</p><div class='recwrap'>"
+                 "<table class='rec'>"
+                 f"{REC_HEAD.replace('</tr>', '<th>Model</th></tr>')}{body}</table></div>"
+                 "</details>")  # fmt: skip
     if not rows:
         return rule + "<p class='meta'>No graded picks yet.</p>"
     return rule + table + other
@@ -539,7 +543,10 @@ th{{color:var(--mut);font-weight:600}}
 ul{{margin:2px 0;padding-left:18px;font-size:.9rem}}
 details{{margin-top:8px;font-size:.9rem}} summary{{cursor:pointer;color:var(--acc)}}
 .rec .ver{{font-size:.7rem;color:var(--mut);word-break:break-all}}
-.rec .few{{font-size:.7rem;color:var(--mut);white-space:nowrap}}
+.recwrap{{overflow-x:auto;max-width:100%}}
+table.rec{{font-size:.8rem}} .rec th,.rec td{{padding:4px 3px}}
+.rec td:nth-child(2){{white-space:nowrap}}
+.rec .few{{display:block;font-size:.68rem;color:var(--mut)}}
 .soon{{padding:24px 0;color:var(--mut)}}
 .plist{{list-style:none;padding:0;margin:6px 0 0}} .prop{{padding:6px 0;
 border-bottom:1px solid var(--line);font-size:.9rem}} .prop:last-child{{border-bottom:0}}
