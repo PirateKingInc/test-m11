@@ -30,9 +30,12 @@ jobs:
       - name: Restore state (read only)
         uses: actions/cache/restore@v4
         with:
+          # The same paths as hourly.yml: the cache version depends on the path list.
           path: |
             data/betdata.sqlite
             data/derived
+            data/site_last_good
+            data/reports
           key: betdata-state-v1-${{ github.run_id }}
           restore-keys: betdata-state-v1-
       - name: Probe
