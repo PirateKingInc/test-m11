@@ -135,6 +135,7 @@ def resolve_events(
             venue_id=venue_id,
             roof=ev.roof,
             authoritative=authoritative,
+            other_ids=ev.extra_ids,
         )
         for other, other_id in ev.extra_ids.items():
             _link_extra_id(conn, other, other_id, out[ev.source_game_id].game_id)
@@ -165,6 +166,10 @@ def _join_by_extra_id(conn, source: str, ev, home: int, away: int) -> None:
             log.warning("%s %s: %s id %s points at a game with other teams; not joined",
                         source, ev.source_game_id, other, other_id)  # fmt: skip
             return
+        if _holds_other_id(conn, game.game_id, source, ev.source_game_id):
+            log.warning("%s %s: game %s already holds another %s event; not joined",
+                        source, ev.source_game_id, game.game_id, source)  # fmt: skip
+            return
         conn.execute(
             insert(game_source_ids).values(
                 source=source,
@@ -176,13 +181,30 @@ def _join_by_extra_id(conn, source: str, ev, home: int, away: int) -> None:
         return
 
 
+def _holds_other_id(conn, game_id: int, source: str, source_game_id: str) -> bool:
+    """True when the game already maps a different event id of `source` (issue #156)."""
+    return (
+        conn.execute(
+            select(game_source_ids.c.source_game_id).where(
+                game_source_ids.c.game_id == game_id,
+                game_source_ids.c.source == source,
+                game_source_ids.c.source_game_id != source_game_id,
+            )
+        ).first()
+        is not None
+    )
+
+
 def _link_extra_id(conn, source: str, source_game_id: str, game_id: int) -> None:
     exists = conn.execute(
         select(game_source_ids.c.game_id).where(
             game_source_ids.c.source == source, game_source_ids.c.source_game_id == source_game_id
         )
     ).first()
-    if not exists:
+    if not exists and _holds_other_id(conn, game_id, source, source_game_id):
+        log.warning("game %s already holds another %s id; %s not linked",
+                    game_id, source, source_game_id)  # fmt: skip
+    elif not exists:
         conn.execute(
             insert(game_source_ids).values(
                 source=source, source_game_id=source_game_id, game_id=game_id
