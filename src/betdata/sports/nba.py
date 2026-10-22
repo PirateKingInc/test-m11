@@ -111,7 +111,8 @@ class NbaSport(Sport):
                     c.spread_edge = round(p.pred_home_margin + c.market_spread.line, 1)
                     if abs(c.spread_edge) >= design.spread_threshold:
                         c.spread_pick = c.home if c.spread_edge > 0 else c.away
-                c.model_win_home = p.pred_home_win_prob
+                c.model_win_home = (None if p.pred_home_win_prob is None
+                                    else self._calibration()(p.pred_home_win_prob))  # fmt: skip
                 if c.model_win_home is not None and c.market_win_home is not None:
                     c.ml_edge = round(100 * (c.model_win_home - c.market_win_home), 1)
                     if abs(c.ml_edge) >= design.ml_threshold:
@@ -128,7 +129,7 @@ class NbaSport(Sport):
         from betdata.nba.grade import grade_nba
 
         d = self._design()
-        run = grade_nba(conn, now, d.spread_threshold, d.ml_threshold)
+        run = grade_nba(conn, now, d.spread_threshold, d.ml_threshold, self._calibration())
         out = {"inserted": run.inserted, "updated": run.updated, "pending": run.pending}
         from betdata.nba.props.grade import grade_nba_props
 
@@ -136,12 +137,20 @@ class NbaSport(Sport):
         out["props_inserted"], out["props_pending"] = props.inserted, props.pending
         return out
 
+    def _calibration(self):
+        """The frozen moneyline calibration (config, `applied` as validated)."""
+        from betdata.moneyline import Calibration
+
+        c = self._design().calibration or {}
+        return Calibration(c.get("slope", 1.0), c.get("intercept", 0.0), c.get("fitted_on", ""),
+                           bool(c.get("applied")))  # fmt: skip
+
     def records(self, conn: Connection) -> list[RecordRow]:
         from betdata.nba.grade import records
 
         return [RecordRow(r.market, r.model_version, r.wins, r.losses, r.pushes, r.voids,
                           r.profit, r.avg_clv, r.beat_close,
-                          "% pts" if r.market == "moneyline" else "pts")
+                          "% pts" if r.market == "moneyline" else "pts", r.ties)
                 for r in records(conn)]  # fmt: skip
 
     def thresholds(self) -> dict[str, str]:

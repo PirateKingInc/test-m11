@@ -73,6 +73,7 @@ class RecordRow:
     avg_clv: float | None
     beat_close: float | None
     clv_unit: str  # "pts" or "% pts"
+    ties: int = 0  # picks taken at the closing number (left out of beat_close)
 
     @property
     def bets(self) -> int:

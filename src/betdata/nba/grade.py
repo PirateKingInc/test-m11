@@ -10,10 +10,9 @@ source's own close, else its last poll before tip). Postponed or cancelled games
 
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime
 
-from sqlalchemy import Connection, and_, func, insert, select, update
+from sqlalchemy import Connection, and_, delete, func, insert, select, update
 
 from betdata import moneyline as ml
 from betdata.analysis.backtest import DEFAULT_PRICE, profit
@@ -66,7 +65,9 @@ def spread_bet(pred_margin, spread_home, threshold) -> Bet | None:
 
 
 def grade_nba(conn: Connection, now: datetime, spread_threshold: float,
-              ml_threshold: float) -> GradeRun:  # fmt: skip
+              ml_threshold: float, calib: ml.Calibration | None = None) -> GradeRun:  # fmt: skip
+    """`calib`: the design's frozen win-probability calibration, the one the moneyline final
+    test was scored with (M15.1: it was left out live)."""
     run = GradeRun()
     preds = latest_predictions(conn)
     ids = sorted({p["game_id"] for p in preds})
@@ -76,11 +77,13 @@ def grade_nba(conn: Connection, now: datetime, spread_threshold: float,
     closes, ml_closes = _closes(conn, ids), _ml_closes(conn, ids)
     existing = {(r.prediction_id, r.market): r for r in conn.execute(
         select(nba_bet_grades).where(nba_bet_grades.c.game_id.in_(ids)))}  # fmt: skip
+    produced: set[tuple[int, str]] = set()
     for p in preds:
         bets = [b for b in (spread_bet(p["pred_home_margin"], p["market_spread_home"],
                                        spread_threshold),
                             moneyline_bet(p["pred_home_win_prob"], p["market_ml_home"],
-                                          p["market_ml_away"], ml_threshold)) if b]  # fmt: skip
+                                          p["market_ml_away"], ml_threshold, calib))
+                if b]  # fmt: skip
         for bet in bets:
             void = p["status"] in VOID_STATUSES
             if not void and p["game_id"] not in finals:
@@ -102,6 +105,7 @@ def grade_nba(conn: Connection, now: datetime, spread_threshold: float,
                           close_line=close, close_price_american=close_price,
                           clv=None if void else bet_clv, result=result,
                           profit=0.0 if void else round(won, 4))  # fmt: skip
+            produced.add((p["prediction_id"], bet.market))
             old = existing.get((p["prediction_id"], bet.market))
             if old is None:
                 conn.execute(insert(nba_bet_grades).values(**values, graded_at=now))
@@ -111,22 +115,16 @@ def grade_nba(conn: Connection, now: datetime, spread_threshold: float,
                              .where(nba_bet_grades.c.grade_id == old.grade_id)
                              .values(**values, graded_at=now))  # fmt: skip
                 run.updated += 1
+    # A stored grade whose pick no longer qualifies (a re-grade under corrected rules) goes.
+    for key, old in existing.items():
+        if key not in produced and old.game_id in finals:
+            conn.execute(delete(nba_bet_grades).where(nba_bet_grades.c.grade_id == old.grade_id))
+            run.updated += 1
     return run
 
 
 def records(conn: Connection) -> list[VersionRecord]:
-    acc: dict[tuple[str, str], dict] = defaultdict(
-        lambda: {"win": 0, "loss": 0, "push": 0, "void": 0, "profit": 0.0, "clv": []})
-    for r in conn.execute(select(nba_bet_grades)):
-        a = acc[(r.model_version, r.market)]
-        a[r.result] += 1
-        a["profit"] += r.profit
-        if r.clv is not None and r.result != "void":
-            a["clv"].append(r.clv)
-    out = []
-    for (mv, market), a in sorted(acc.items()):
-        c = a["clv"]
-        out.append(VersionRecord(mv, market, a["win"], a["loss"], a["push"], a["void"],
-                                 round(a["profit"], 4), sum(c) / len(c) if c else None,
-                                 sum(x > 0 for x in c) / len(c) if c else None))  # fmt: skip
-    return out
+    """The season record, by the NFL grader's rule (`RECORD_RULE`)."""
+    from betdata.nfl.grade import records as nfl_records
+
+    return nfl_records(conn, nba_bet_grades)
