@@ -544,7 +544,8 @@ ul{{margin:2px 0;padding-left:18px;font-size:.9rem}}
 details{{margin-top:8px;font-size:.9rem}} summary{{cursor:pointer;color:var(--acc)}}
 .rec .ver{{font-size:.7rem;color:var(--mut);word-break:break-all}}
 .recwrap{{overflow-x:auto;max-width:100%}}
-table.rec{{font-size:.8rem}} .rec th,.rec td{{padding:4px 3px}} .rec td:nth-child(2){{white-space:nowrap}}
+table.rec{{font-size:.8rem}} .rec th,.rec td{{padding:4px 3px}}
+.rec td:nth-child(2){{white-space:nowrap}}
 .rec .few{{display:block;font-size:.68rem;color:var(--mut)}}
 .soon{{padding:24px 0;color:var(--mut)}}
 .plist{{list-style:none;padding:0;margin:6px 0 0}} .prop{{padding:6px 0;
