@@ -225,3 +225,23 @@ M15 needs no paid source and no new API key.
 **State:** the Actions cache entry is about 99 MB compressed (93 MB before M15). That covers the lineup stints for 2024-25 to 2026-27, prop lines, prop predictions and the NFL m15/prop tables (about 1 MB).
 
 **Dependencies:** M15 adds no new runtime dependency. RAPM uses `scipy.sparse`, which is already installed with scikit-learn.
+
+## M16: alerts and closing-line value
+
+### Line storage (checked 2026-10-22, issue #157)
+
+M16 grades every alert against the pre-game close, so every line we poll must still be there after tip. Read in the code:
+
+- **Game lines** (`odds_snapshots`): every live loader writes through `core/odds_loader.load_odds`: the ESPN NBA scoreboard (`espn_nba`), SharpAPI, The Odds API, OddsPapi, CFBD and nflverse. It only **inserts**. A row is added when a selection's line, price or status differs from its previous row, and a selection that leaves the board gets a `removed` row. The unique key is (source, event, book, market, outcome, kind, `fetched_at`), so each poll is a new row and re-loading the same response adds nothing. ESPN's per-game odds history (`espn_nba` odds job, `nba/history.load`) also only inserts.
+- **Polls with no change** add no row, by design. The poll itself is still recorded in `ingest_runs` (and the response in `raw_responses`, unless it is byte-identical to the last one). So "unchanged as of T" can be answered, and the latest row before tip is the line at tip (`v_closing_lines`).
+- **Prop lines** (`prop_lines`): `sources/espn_props.store_rows` (live polls) and `props/history.load` (history files) only insert, change-only per (game, player, market, book, kind), unique on `fetched_at`.
+- **No code deletes or rewrites a price, line or time.** The only `UPDATE` on `odds_snapshots` is `betdata relink`, which fills a null `game_id` once a team name is mapped. `betdata games split-merged --relink-odds` (M16-1) can also re-point `game_id` on odds and prop rows; that is opt-in. Nothing else updates or deletes a `prop_lines` row.
+
+`betdata lines coverage --sport nba|nfl --days N [--strict]` lists, for games from the last N days and the next two, per source and book and market:
+- the opening line (a source's own opening, else the first poll);
+- the current line;
+- the pre-game close (a source's own close, else a poll at or before tip);
+- the median minutes from that source's last successful run to tip;
+- for props: open, close and the number of poll rows.
+
+It exits non-zero only with `--strict`, when a started game has no close or an upcoming game has no current line in a market.

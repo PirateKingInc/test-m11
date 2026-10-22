@@ -25,6 +25,8 @@ teams_app = typer.Typer(help="Team registry.", no_args_is_help=True)
 app.add_typer(teams_app, name="teams")
 alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=True)
 app.add_typer(alias_app, name="alias")
+lines_app = typer.Typer(help="Stored game and prop lines.", no_args_is_help=True)
+app.add_typer(lines_app, name="lines")
 app.add_typer(nfl_app, name="nfl")
 app.add_typer(nba_app, name="nba")
 app.add_typer(props_app, name="props")
@@ -373,6 +375,29 @@ def relink_cmd(source: str = typer.Option(None)):
         f"checked {stats.events_checked} events; linked {stats.events_linked}; "
         f"{stats.snapshots_linked} odds rows now have a game"
     )
+
+
+@lines_app.command("coverage")
+def lines_coverage(
+    sport: str = typer.Option(..., help="nba or nfl"),
+    days: int = typer.Option(7, help="Games that started in the last N days (plus the next 2)."),
+    strict: bool = typer.Option(
+        False, "--strict", help="Exit 1 if a started game has no close or an upcoming one no line."
+    ),
+    at: str = typer.Option(None, help="As of this instant (ISO, UTC; default now)."),
+):
+    """Opening, current and pre-game closing lines per source and book (issue #157)."""
+    from datetime import datetime
+
+    from betdata.lines_coverage import coverage, report
+
+    now = datetime.fromisoformat(at) if at else utcnow()
+    with _engine().connect() as conn:
+        cov = coverage(conn, sport, now=now, days=days)
+    for line in report(cov):
+        typer.echo(line)
+    if strict and not cov.complete:
+        raise typer.Exit(1)
 
 
 @teams_app.command("import")
