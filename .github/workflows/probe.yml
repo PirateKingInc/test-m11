@@ -8,6 +8,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    environment: github-pages
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
