@@ -1,0 +1,17 @@
+{
+ "generated_at": "2026-10-22T00:01:51.942610+00:00",
+ "last_ok_at": "2026-10-22T00:01:51.905973+00:00",
+ "last_run": {
+  "status": "ok",
+  "at": "2026-10-22T00:01:51.905973+00:00",
+  "message": null
+ },
+ "rebuilt_at": null,
+ "stale_hours": 2,
+ "missing_keys": [
+  "CollegeFootballData (CFBD_API_KEY)",
+  "OddsPapi (ODDSPAPI_KEY)",
+  "SharpAPI (SHARPAPI_KEY)",
+  "The Odds API (ODDS_API_KEY)"
+ ]
+}
