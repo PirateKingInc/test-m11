@@ -131,6 +131,11 @@ def history_lines(conn) -> pd.DataFrame:
     # (REVIEW M15-3): a close counts only if it was quoted before tip.
     q, tip = pd.to_datetime(df.quoted_at, utc=True), pd.to_datetime(df.tip, utc=True)
     df = df[(df.kind == "open") | (q < tip)]
+    # M16 audit (REVIEW M16-1): older ESPN snapshots sometimes stored an alternate ladder line as
+    # the main line (prices like +300/-450). A main line is close to balanced; keep only quotes
+    # whose no-vig over is 0.35-0.65, before choosing the book.
+    nv = _novig_over(df.over_price.to_numpy(), df.under_price.to_numpy())
+    df = df[(nv >= 0.35) & (nv <= 0.65)]
     df["rank"] = df.book.map({b: i for i, b in enumerate(BOOK_ORDER)}).fillna(len(BOOK_ORDER))
     df = df.sort_values("rank").drop_duplicates(["game_id", "player_id", "market", "kind"])
     wide = df.pivot_table(index=["game_id", "player_id", "market"], columns="kind",
