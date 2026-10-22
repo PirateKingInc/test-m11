@@ -225,3 +225,47 @@ M15 needs no paid source and no new API key.
 **State:** the Actions cache entry is about 99 MB compressed (93 MB before M15). That covers the lineup stints for 2024-25 to 2026-27, prop lines, prop predictions and the NFL m15/prop tables (about 1 MB).
 
 **Dependencies:** M15 adds no new runtime dependency. RAPM uses `scipy.sparse`, which is already installed with scikit-learn.
+
+## M16: alerts, the lag study and closing-line value
+
+### M16 sources (free plans, measured live from an Actions runner, 2026-10-22)
+
+| Source | What the free plan returned | Cost per call | Pinnacle | Props | Verdict |
+|---|---|---|---|---|---|
+| **SharpAPI** (`SHARPAPI_KEY`) | DraftKings and FanDuel only, 60 s delay, 12 requests a minute. Each call returns at most **200 rows**, with no paging metadata, sorted by event start; most spread/total rows are alternate lines unless `is_main_line=true` is sent. `event_id` filters to one game. | 1 request (rate limit only, no daily cap) | no (tier "free": `max_books 2`) | yes: `player_points`, `player_rebounds`, `player_assists`, `player_made_threes`; NFL `player_receiving_yards`, `player_rushing_yards`, `player_receptions` | **Used**: DK/FD prices for Signal 1, Signal 2 and the lag study. Also fixed a live hourly bug: alternates stored as market lines (REVIEW M16-3). |
+| **The Odds API** (`ODDS_API_KEY`) | Pinnacle with `bookmakers=pinnacle` (region eu): h2h, spreads and totals for 14 of 41 NBA and 14 of 28 NFL listed events (the near-term ones). Pinnacle player props per event (`/events/{id}/odds`). | 1 credit per market (3 for the main board; 1 per prop market per event); `/sports` is free and reports the balance. 500 credits a month. | **yes** | yes, but 1 credit per market per event (unaffordable at scale) | **Used** as the sharp reference for Signal 2, inside a budget kept below the hourly job's reserve. |
+| **SportsGameOdds** (`SPORTSGAMEODDS_API_KEY`) | Tier "amateur": 10 requests a minute, **2,500 objects (events) a month**. Books in the payload: FanDuel, DraftKings, Bovada, ESPN BET, Caesars, BetMGM (+ a few). | 1 object per event returned (a 5-event call cost 5 of 2,500) | **no** (not in `byBookmaker` for NBA or NFL) | yes (thousands of player odds per event) | **Dropped**: no Pinnacle on the free plan, and SharpAPI already covers DK/FD props without an object cap. |
+| **Kalshi** (public, no key) | Open game-winner markets (`KXNBAGAME`, `KXNFLGAME`) plus spread and total series; prices as `yes_bid_dollars` / `yes_ask_dollars` / `last_price_dollars`. Tickers name the date and both teams (`KXNBAGAME-26OCT26GSWDEN-GSW`). | free; spaced 1 a second | - | - | **Used** as a secondary probability (game winner), logged in the lag study. |
+| **NBA official injury report** | A new PDF every 15 minutes (`_HH_MM` names), posted about 4 s after the stated time. | free | - | - | **Used** (the M14 parser and loader). |
+| **ESPN NFL** (summary `injuries`, event roster) | Per-team injury statuses with dated entries; game-day rosters with `active` flags. | free | - | - | **Used** for NFL status changes. |
+
+### M16 poller (Part C)
+
+- **Where it runs:** the `poll` job of the clock workflow, beside the clock's own `tick` job, each hour until :56 (the next clock run would cancel it at about :00:30).
+- **Isolation:**
+  - It restores the hourly state as a throwaway copy and never saves it.
+  - Everything it learns goes to `data/poller.sqlite`, saved under its own cache key `betdata-poller-v1-*`.
+  - The hourly job only reads that file to draw the Alerts section, in a separate step that may fail without touching the page.
+  - Before each minute's work it asks the GitHub API whether an hourly run is queued or in progress, and skips that minute if so (no overlap).
+  - It exits at once in an hour with nothing to do.
+- **Cadence:**
+
+| What | When | Rate |
+|---|---|---|
+| NBA official report | every 3 min, 10:00-19:30 ET on game days and 16:30-20:30 ET the day before | <= 1 request a second |
+| NFL statuses | every 5 min from 120 to 60 min before each kickoff window | <= 1 request a second |
+| Lag polls (DK, FD via SharpAPI; Kalshi) | every 3 min (NBA) / 5 min (NFL) for 60 min after a qualifying change | SharpAPI <= 10 a minute |
+| Signal 2 boards (Pinnacle + DK/FD) | NBA 17:30 and 18:45 ET on game days; NFL 75 min before each kickoff window | 3 credits a board |
+| Closing polls | games with an alert, in the 10 min before tip | |
+
+- **On a qualifying change:**
+  - Only that game is re-predicted, with the frozen page models (NBA nba15 + nbap15; NFL m13w + nflp15), just before vs just after the news.
+  - Current DK/FD lines are pulled, and Signal 1 is evaluated.
+  - Nothing is refitted.
+
+### M16 replay on real data (verification c, NBA)
+
+The dev copy of the NBA history was used at 2026-02-11 22:05 UTC: the poller read the real 5:00 PM ET report (`Injury-Report_2026-02-11_05_00PM.pdf`). Evan Mobley's previous row for that game had been set to Questionable, so the report changed him to Out.
+- In one cycle the poller loaded the report and found **one** qualifying change: Mobley, 34.1 min per game played, play probability 0.50 → 0.005.
+- It re-predicted **only** WAS @ CLE with nba15 (CLE margin 16.5 → 15.5, morning point), in 76 s including the store reload.
+- The CI test `tests/alerts/test_poller.py` covers the same chain with stubbed models: one cycle, one re-predicted game, exactly one alert pushed. It also covers de-duplication, quiet hours and Signal 2 re-alerting only after the gap closes.

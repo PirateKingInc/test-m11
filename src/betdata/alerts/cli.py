@@ -49,3 +49,56 @@ def poller_run(
                f"{dict(p.http.count)}, errors {len(p.errors)}")  # fmt: skip
     for e in p.errors[-10:]:
         typer.echo(f"  {e}")
+
+
+@alerts_app.command("lag")
+def alerts_lag(
+    db: Path = typer.Option(Path("data/poller.sqlite"), help="The poller's database."),
+    decide: bool = typer.Option(False, help="Take the Signal 1 decision if two weeks are up."),
+    events: bool = typer.Option(False, help="List every event's lag per book."),
+):
+    """The lag study so far (Part E): lag per book, DK+FD pooled median, Signal 1 status."""
+    from betdata.alerts import lag as L
+    from betdata.alerts.db import engine_for
+    from betdata.config import get_settings
+    from betdata.db.engine import make_engine
+
+    now = datetime.now(UTC)
+    main = make_engine(get_settings().db_url)
+    with engine_for(db).begin() as p, main.connect() as m:
+        lags = L.all_lags(p, m, now)
+        decision = L.decide(p, m, now) if decide else L.get_state(p, "signal1:decision")
+        for line in L.report_lines(lags, decision, L.study_start(p)):
+            typer.echo(line)
+        if events:
+            for x in lags:
+                lag = "-" if x.minutes is None else f"{x.minutes:.1f}{'+' if x.censored else ''}"
+                typer.echo(f"  {x.published:%m-%d %H:%M} {x.sport} game {x.game_id} "
+                           f"{x.player} ({x.change}) {x.book}: {lag} min {x.market or ''}")
+
+
+@alerts_app.command("quota")
+def alerts_quota(days: int = typer.Option(30, help="Days ahead, on the stored schedule.")):
+    """30-day request projection of the poller, with the hourly job's share of shared sources."""
+    from betdata.alerts.quota import project
+    from betdata.config import get_settings
+    from betdata.db.engine import make_engine
+    from betdata.runner.hourly import runner_schedule
+    from betdata.scheduler.runner import project as hourly_project
+    from betdata.sources import REGISTRY
+    from betdata.sports import active_sports
+
+    settings = get_settings()
+    engine = make_engine(settings.db_url)
+    start = datetime.now(UTC)
+    hourly = hourly_project(engine, settings, REGISTRY, runner_schedule(active_sports()), start,
+                            days)  # fmt: skip
+    odds = _units(hourly, "the_odds_api")
+    with engine.connect() as c:
+        for line in project(c, start, days).lines(odds):
+            typer.echo(line)
+
+
+def _units(projection, source: str) -> int:
+    """The hourly projection's units for one source (a list of JobProjection rows)."""
+    return int(sum(p.units for p in projection if p.source == source))

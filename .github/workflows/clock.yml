@@ -5,6 +5,12 @@
 # workflow_dispatch). Only one clock runs at a time (a newer one cancels an older one), and the
 # cron below restarts the chain if it ever breaks. Hourly runs it starts are recorded with
 # trigger "clock"; a slot already run by cron or clock is skipped, so they never double up.
+#
+# M16: the `poll` job runs the alert poller beside the clock for the same hour (MODEL.md and
+# PROJECT.md "M16"). It is a separate job: if it fails, the clock and the hourly page are
+# untouched. It reads the hourly state as a throwaway copy (restored, never saved here), keeps
+# its own database under its own cache key, pauses while an hourly run is queued or running,
+# and stops at :56, before the next clock run starts (which would cancel it).
 
 name: clock
 
@@ -45,3 +51,46 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run clock.yml --repo "${{ github.repository }}" --ref main
+
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    # Keys live in this environment (main only); nothing is deployed from this job.
+    environment: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked --no-dev
+      - name: Restore the hourly state (a read-only copy; never saved by this job)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Restore the poller database
+        uses: actions/cache/restore@v4
+        with:
+          path: data/poller.sqlite
+          key: betdata-poller-v1-${{ github.run_id }}
+          restore-keys: betdata-poller-v1-
+      - name: Poll until :56
+        if: ${{ hashFiles('data/betdata.sqlite') != '' }}
+        env:
+          SHARPAPI_KEY: ${{ secrets.SHARPAPI_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: uv run --no-dev betdata poller run
+      - name: Save the poller database
+        if: ${{ always() && hashFiles('data/poller.sqlite') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: data/poller.sqlite
+          key: betdata-poller-v1-${{ github.run_id }}

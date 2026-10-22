@@ -108,6 +108,7 @@ class Poller:
         self.kalshi = KalshiFeed(self.http)
         self.cycles = self.skipped = 0
         self.errors: list[str] = []
+        self.notes: list[str] = []
 
     # --- the loop ---------------------------------------------------------------------------
 
@@ -119,7 +120,12 @@ class Poller:
         try:
             self.grade(self.now_fn())
             while (now := self.now_fn()) < until:
-                if self.lock():
+                if not self.has_work(now, until):  # nothing can happen before :56
+                    self.notes.append("idle: no window, lag poll, board or close before :56")
+                    break
+                if not self.has_work(now, now + timedelta(minutes=1)):
+                    pass  # nothing due this minute: no need to ask about the hourly job
+                elif self.lock():
                     self.skipped += 1
                 else:
                     self.cycles += 1
@@ -139,7 +145,8 @@ class Poller:
         with self.pdb.begin() as p:
             p.execute(update(poller_runs).where(poller_runs.c.run_id == self.run_id).values(
                 status=status, cycles=self.cycles, skipped_cycles=self.skipped,
-                requests=dict(self.http.count), message="; ".join(self.errors[-5:]) or None,
+                requests=dict(self.http.count),
+                message="; ".join((self.notes + self.errors)[-5:]) or None,
                 finished_at=None if status == "running" else self.now_fn()))  # fmt: skip
 
     def _guard(self, what: str, fn, *args):
@@ -158,6 +165,28 @@ class Poller:
                 return False
             set_state(p, key, now.isoformat(), now)
         return True
+
+    def has_work(self, start: datetime, end: datetime) -> bool:
+        """Could any task be due between start and end (checked every 5 minutes)?"""
+        from betdata.alerts import nba
+
+        with self.pdb.begin() as p:
+            if any(datetime.fromisoformat(w["until"]) > start
+                   for w in get_state(p, "lag:open", {}).values()):  # fmt: skip
+                return True
+            if p.execute(select(alerts.c.alert_id).where(
+                    alerts.c.tip > start,
+                    alerts.c.tip <= end + timedelta(minutes=CLOSING_MIN))).first():  # fmt: skip
+                return True
+        t = start
+        with self.main.connect() as c:
+            while t <= end:
+                if nba.active(c, t) or self.board_times(t, exact=False):
+                    return True
+                if self.nfl_handler is not None and self.nfl_handler.active(c, t):
+                    return True
+                t += timedelta(minutes=5)
+        return False
 
     def cycle(self, now: datetime) -> None:
         from betdata.alerts import nba
@@ -345,17 +374,22 @@ class Poller:
 
     # --- Signal 2 -----------------------------------------------------------------------------
 
-    def board_times(self, now: datetime) -> list[tuple[str, str]]:
-        """(sport, slot key) of the Signal 2 boards due now (within this minute)."""
+    def board_times(self, now: datetime, exact: bool = True) -> list[tuple[str, str]]:
+        """(sport, slot key) of the Signal 2 boards due now (this minute; with exact=False,
+        within the next 5 minutes)."""
+        if self.pin is None or self.sharp is None:
+            return []
         local = now.astimezone(R.EASTERN)
+        span = timedelta(minutes=1 if exact else 5)
         out = []
         with self.main.connect() as c:
             for hh, mm in NBA_BOARDS_ET:
-                if (local.hour, local.minute) == (hh, mm) and self._tips_within(
+                slot = local.replace(hour=hh, minute=mm, second=0, microsecond=0)
+                if timedelta(0) <= local - slot < span and self._tips_within(
                         c, "nba", now, timedelta(hours=3)):  # fmt: skip
                     out.append(("nba", f"{local:%Y-%m-%d}T{hh:02d}{mm:02d}"))
             for tip in self._kickoffs(c, "nfl", now):
-                if timedelta(0) <= tip - NFL_BOARD_BEFORE - now < timedelta(minutes=1):
+                if timedelta(0) <= now - (tip - NFL_BOARD_BEFORE) < span:
                     out.append(("nfl", tip.isoformat()))
         return out
 
@@ -441,9 +475,18 @@ class Poller:
                 self.poll_game(sport, gid, now, None)
 
     def grade(self, now: datetime) -> None:
+        """At the start of each job: grade alerts, and take the Signal 1 decision once the
+        lag study's two weeks are up."""
         from betdata.alerts import grade as G
+        from betdata.alerts import lag as L
 
         self._guard("grade", G.grade_all, self.main, self.pdb, now)
+
+        def _decide():
+            with self.pdb.begin() as p, self.main.connect() as m:
+                return L.decide(p, m, now)
+
+        self._guard("lag decision", _decide)
 
     # --- helpers --------------------------------------------------------------------------------
 
