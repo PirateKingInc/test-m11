@@ -25,6 +25,8 @@ teams_app = typer.Typer(help="Team registry.", no_args_is_help=True)
 app.add_typer(teams_app, name="teams")
 alias_app = typer.Typer(help="Map source spellings to teams.", no_args_is_help=True)
 app.add_typer(alias_app, name="alias")
+games_app = typer.Typer(help="Game rows and their source ids.", no_args_is_help=True)
+app.add_typer(games_app, name="games")
 app.add_typer(nfl_app, name="nfl")
 app.add_typer(nba_app, name="nba")
 app.add_typer(props_app, name="props")
@@ -373,6 +375,48 @@ def relink_cmd(source: str = typer.Option(None)):
         f"checked {stats.events_checked} events; linked {stats.events_linked}; "
         f"{stats.snapshots_linked} odds rows now have a game"
     )
+
+
+@games_app.command("split-merged")
+def games_split_merged(
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show the plan; change nothing."),
+    relink_odds: bool = typer.Option(
+        False, "--relink-odds", help="Also point stored odds/prop rows at the new game."
+    ),
+):
+    """Split games holding two events of one source (issue #156); reload results after."""
+    from betdata.core.split_merged import merged_games, split_game
+
+    engine = _engine()
+    with engine.connect() as conn:
+        tx = conn.begin()
+        done = []
+        for gid in merged_games(conn):
+            r = split_game(conn, gid, relink_odds=relink_odds)
+            done.append(r)
+            ids = ", ".join(f"{s}:{i}" for s, i in r.detached)
+            if r.skipped:
+                typer.echo(f"game {gid}: skipped ({r.skipped}); events {ids}")
+                continue
+            typer.echo(
+                f"game {gid}: {ids} -> new game(s) {r.new_games}; deleted {r.deleted}; "
+                f"odds/prop rows relinked {r.relinked}; predictions/grades left {r.left_on_kept}"
+            )
+        split = sum(1 for r in done if not r.skipped)
+        if dry_run:
+            tx.rollback()
+        else:
+            tx.commit()
+    typer.echo(
+        f"{len(done)} merged game(s); {split} {'would be ' if dry_run else ''}split, "
+        f"{len(done) - split} skipped."
+    )
+    if split and not dry_run:
+        typer.echo(
+            "Reload results, box scores and stints to refill the deleted rows: `betdata backfill "
+            "--source sportsdataverse --sport nba --seasons ...` (then `--dataset player_box`, "
+            "`--dataset pbp`) or the source that owns the games."
+        )
 
 
 @teams_app.command("import")

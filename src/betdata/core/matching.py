@@ -9,16 +9,24 @@ and orientation; other sources may only update a game they created themselves.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import Connection, and_, insert, select, update
+from sqlalchemy import Connection, and_, insert, or_, select, update
 
 from betdata.db.schema import game_source_ids, games, sports
 
-# Sources disagree on kickoff times (TBD slots, flex scheduling); within this window with the
-# same two teams it is the same game.
+log = logging.getLogger(__name__)
+
+# Sources disagree on kickoff times (TBD slots posted as midnight ET, flex scheduling, date-only
+# feeds); within this window with the same two teams it can be the same game. Two real games
+# between the same teams can also fall inside it (NBA two-game series, 24 h apart), so a match
+# takes the closest kickoff, and never a game that already holds another event of the same
+# source (issue #156).
 MATCH_WINDOW = timedelta(hours=36)
+# A claimed game this close is probably the same game re-listed under a new id: logged.
+RELIST_WINDOW = timedelta(hours=3)
 
 
 @dataclass(frozen=True)
@@ -42,17 +50,44 @@ def season_for(sport: str, start: datetime) -> int:
     return start.year if start.month >= 8 else start.year - 1  # nba, ncaab
 
 
-def _find_by_teams(conn, sport_id, home, away, start):
-    return conn.execute(
-        select(games.c.game_id).where(
-            and_(
-                games.c.sport_id == sport_id,
-                games.c.home_team_id == home,
-                games.c.away_team_id == away,
-                games.c.start_time_utc.between(start - MATCH_WINDOW, start + MATCH_WINDOW),
-            )
+def _claimed(conn, game_ids, ids: dict[str, str]) -> set[int]:
+    """Games among `game_ids` already holding a different event id of one of `ids`' sources."""
+    if not game_ids or not ids:
+        return set()
+    clauses = [and_(game_source_ids.c.source == src, game_source_ids.c.source_game_id != sgid)
+               for src, sgid in ids.items()]  # fmt: skip
+    return set(conn.execute(
+        select(game_source_ids.c.game_id).where(
+            game_source_ids.c.game_id.in_(game_ids), or_(*clauses))
+    ).scalars())  # fmt: skip
+
+
+def _candidates(conn, sport_id, home, away, start, ids=None):
+    """[(game_id, swapped)] with these teams (either orientation) within MATCH_WINDOW, closest
+    kickoff first. With `ids` ({source: event id}), games already holding a different event id
+    of one of those sources are left out."""
+    rows = conn.execute(
+        select(games.c.game_id, games.c.home_team_id, games.c.start_time_utc).where(
+            games.c.sport_id == sport_id,
+            or_(and_(games.c.home_team_id == home, games.c.away_team_id == away),
+                and_(games.c.home_team_id == away, games.c.away_team_id == home)),
+            games.c.start_time_utc.between(start - MATCH_WINDOW, start + MATCH_WINDOW),
         )
-    ).scalar()
+    ).all()  # fmt: skip
+    # Same orientation wins a tie (the old matcher tried it first).
+    rows.sort(key=lambda r: (abs(_utc(r.start_time_utc) - _utc(start)), r.home_team_id != home,
+                             r.game_id))  # fmt: skip
+    taken = _claimed(conn, [r.game_id for r in rows], ids or {})
+    out = [(r.game_id, r.home_team_id != home) for r in rows if r.game_id not in taken]
+    for r in rows:
+        if r.game_id in taken and abs(_utc(r.start_time_utc) - _utc(start)) <= RELIST_WINDOW:
+            log.warning("game %s at %s already holds another event of %s; not matched to %s",
+                        r.game_id, r.start_time_utc, sorted(ids), ids)  # fmt: skip
+    return out
+
+
+def _utc(t: datetime) -> datetime:
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
 def _flip_game(conn, game_id: int) -> None:
@@ -90,7 +125,10 @@ def find_or_create_game(
     venue_id: int | None = None,
     roof: str | None = None,
     authoritative: bool = False,
+    other_ids: dict[str, str] | None = None,
 ) -> GameMatch:
+    """`other_ids`: this event's ids in other sources (e.g. {"espn": "401..."}). A game that
+    already holds a different event id of this source or of one of those is never matched."""
     schedule = dict(
         start_time_utc=start_time_utc, season=season or season_for(sport, start_time_utc)
     )
@@ -124,10 +162,9 @@ def find_or_create_game(
         return GameMatch(game_id, swapped, created=False)
 
     created, swapped = False, False
-    game_id = _find_by_teams(conn, sport_id, home_team_id, away_team_id, start_time_utc)
-    if game_id is None:
-        game_id = _find_by_teams(conn, sport_id, away_team_id, home_team_id, start_time_utc)
-        swapped = game_id is not None
+    found = _candidates(conn, sport_id, home_team_id, away_team_id, start_time_utc,
+                        {**(other_ids or {}), source: source_game_id})  # fmt: skip
+    game_id, swapped = found[0] if found else (None, False)
 
     if game_id is None:
         game_id = conn.execute(

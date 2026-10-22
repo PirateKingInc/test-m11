@@ -35,7 +35,7 @@ from betdata.config import SourceConfig
 from betdata.core import raw_store
 from betdata.core.errors import ApiError, ConfigError, NothingToDo
 from betdata.core.http import SourceClient
-from betdata.core.matching import _find_by_teams, sport_id
+from betdata.core.matching import _candidates, sport_id
 from betdata.core.normalize.catalog import BookResolver, book_key
 from betdata.core.normalize.teams import TeamResolver
 from betdata.core.source import JobSpec, RawInput, Source
@@ -231,11 +231,9 @@ def match_events(conn: Connection, sport: str, events: list[dict]) -> dict[str, 
         if h is None or a is None:
             continue
         start = datetime.fromisoformat(e["date"].replace("Z", "+00:00"))
-        gid = _find_by_teams(conn, sid, h, a, start)
-        if gid is not None:
-            out[e["id"]] = (gid, False)
-        elif (gid := _find_by_teams(conn, sid, a, h, start)) is not None:
-            out[e["id"]] = (gid, True)
+        found = _candidates(conn, sid, h, a, start)  # closest kickoff, either orientation
+        if found:
+            out[e["id"]] = found[0]
     return out
 
 
