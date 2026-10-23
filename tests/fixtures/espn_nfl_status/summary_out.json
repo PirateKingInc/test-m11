@@ -1,0 +1,128 @@
+{
+ "header": {
+  "id": "401772900",
+  "competitions": [
+   {
+    "id": "401772900",
+    "competitors": [
+     {
+      "homeAway": "home",
+      "team": {
+       "id": "2",
+       "abbreviation": "BUF",
+       "displayName": "Buffalo Bills"
+      }
+     },
+     {
+      "homeAway": "away",
+      "team": {
+       "id": "15",
+       "abbreviation": "MIA",
+       "displayName": "Miami Dolphins"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "injuries": [
+  {
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF",
+    "displayName": "Buffalo Bills"
+   },
+   "injuries": [
+    {
+     "status": "Out",
+     "date": "2026-10-25T15:31Z",
+     "type": {
+      "id": "1",
+      "name": "INJURY_STATUS_OUT",
+      "abbreviation": "O"
+     },
+     "details": {
+      "type": "Ankle",
+      "location": "Leg"
+     },
+     "athlete": {
+      "id": "3918298",
+      "displayName": "Josh Allen",
+      "position": {
+       "abbreviation": "QB"
+      }
+     }
+    },
+    {
+     "status": "Out",
+     "date": "2026-10-25T15:31Z",
+     "type": {
+      "id": "1",
+      "name": "INJURY_STATUS_OUT",
+      "abbreviation": "O"
+     },
+     "details": {
+      "type": "Hamstring",
+      "location": "Leg"
+     },
+     "athlete": {
+      "id": "4373678",
+      "displayName": "Khalil Shakir",
+      "position": {
+       "abbreviation": "WR"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "team": {
+    "id": "15",
+    "abbreviation": "MIA",
+    "displayName": "Miami Dolphins"
+   },
+   "injuries": [
+    {
+     "status": "Out",
+     "date": "2026-10-23T20:05Z",
+     "type": {
+      "id": "1",
+      "name": "INJURY_STATUS_OUT",
+      "abbreviation": "O"
+     },
+     "details": {
+      "type": "Knee",
+      "location": "Leg"
+     },
+     "athlete": {
+      "id": "4372016",
+      "displayName": "Jaylen Waddle",
+      "position": {
+       "abbreviation": "WR"
+      }
+     }
+    },
+    {
+     "status": "Injured Reserve",
+     "date": "2026-10-01T15:00Z",
+     "type": {
+      "id": "1",
+      "name": "INJURY_STATUS_INJURED_RESERVE",
+      "abbreviation": "I"
+     },
+     "details": {
+      "type": "Shoulder",
+      "location": "Leg"
+     },
+     "athlete": {
+      "id": "4035000",
+      "displayName": "Reserve Guy",
+      "position": {
+       "abbreviation": "CB"
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

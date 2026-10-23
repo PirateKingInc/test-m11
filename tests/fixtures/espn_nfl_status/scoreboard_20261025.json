@@ -1,0 +1,32 @@
+{
+ "events": [
+  {
+   "id": "401772900",
+   "date": "2026-10-25T17:00Z",
+   "name": "Miami Dolphins at Buffalo Bills",
+   "competitions": [
+    {
+     "id": "401772900",
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "2",
+        "abbreviation": "BUF",
+        "displayName": "Buffalo Bills"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "15",
+        "abbreviation": "MIA",
+        "displayName": "Miami Dolphins"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
