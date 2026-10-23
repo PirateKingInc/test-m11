@@ -1,33 +1,23 @@
-"""M16 live check: the Alerts section on the published page (390 px), and the page's status."""
+"""M16 live check of the poller database: runs, status changes, quotes, alerts, state."""
 
-import json
-import re
-import subprocess
-import sys
-import urllib.request
+import os
+import sqlite3
 
-URL = "https://piratekinginc.github.io/test-m11/"
-html = urllib.request.urlopen(URL + "?nocache=3").read().decode()
-st = json.loads(re.search(r'<script id="status" type="application/json">(.*?)</script>', html,
-                          re.S).group(1).replace("<\\/", "</"))
-print("generated_at", st.get("generated_at"), "last_run", st.get("last_run"))
-m = re.search(r'<section id="alerts".*?</section>', html, re.S)
-print("ALERTS:", re.sub(r"\s+", " ", re.sub("<[^>]+>", " | ", m.group(0)))[:2500] if m else "none")
-try:
-    print("alerts.json:", urllib.request.urlopen(URL + "alerts.json").read().decode()[:1500])
-except Exception as e:  # noqa: BLE001
-    print("alerts.json:", e)
-subprocess.run(["uv", "pip", "install", "--python", sys.executable, "playwright==1.48.0"],
-               check=True, capture_output=True)
-subprocess.run([sys.executable, "-m", "playwright", "install", "--with-deps", "chromium"],
-               check=True, capture_output=True)
-from playwright.sync_api import sync_playwright  # noqa: E402
-
-with sync_playwright() as p:
-    b = p.chromium.launch()
-    page = b.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
-    page.goto(URL + "?nocache=4", wait_until="networkidle")
-    if page.locator("#alerts").count():
-        page.locator("#alerts").screenshot(path="out/alerts_390px.png")
-    print("overflow:", page.evaluate("document.documentElement.scrollWidth > window.innerWidth"))
-    b.close()
+p = "data/poller.sqlite"
+print("poller db:", os.path.exists(p), os.path.getsize(p) if os.path.exists(p) else None)
+c = sqlite3.connect(p)
+q = lambda s: c.execute(s).fetchall()  # noqa: E731
+print("runs:", q("select run_id, started_at, finished_at, status, cycles, skipped_cycles, "
+                 "requests, substr(message,1,200) from poller_runs order by run_id desc limit 6"))
+print("events:", q("select count(*), sum(qualifies) from status_events"))
+for r in q("select sport, game_id, player_name, old_status, new_status, prob_before, "
+           "prob_after, weight, qualifies, report_name, detected_at from status_events "
+           "order by event_id desc limit 25"):
+    print("  ", r)
+print("repreds:", q("select game_id, point, margin_before, margin_after, total_before, "
+                    "total_after, created_at from repredictions"))
+print("quotes:", q("select source, book, market, count(*), max(polled_at) from quotes "
+                   "group by 1,2,3"))
+print("alerts:", q("select alert_id, signal, sport, game_label, market, side, line, price, book, "
+                   "quiet, sent, send_status, created_at, substr(reason,1,160) from alerts"))
+print("state:", q("select key, substr(value,1,150) from poller_state"))
