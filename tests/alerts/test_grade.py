@@ -238,3 +238,23 @@ def test_verdict_and_report(pdb, engine):
         out = G.report_lines(p)
     assert any(line.startswith("sharp  nba   spreads") for line in out)
     assert "sharp: no verdict before 200 graded (0 so far)" in out
+
+
+def test_betdata_grade_alerts_cli(engine, monkeypatch, tmp_path):
+    from typer.testing import CliRunner
+
+    from betdata.cli import app
+    from betdata.config import get_settings
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("BETDATA_DB_URL", engine.url.render_as_string(hide_password=False))
+    get_settings.cache_clear()
+    try:
+        out = CliRunner().invoke(app, ["grade", "alerts"])
+        assert out.exit_code == 0, out.output
+        assert "alert grades written: 0" in out.output and "no graded alerts yet" in out.output
+        assert (tmp_path / "data" / "poller.sqlite").exists()
+        out = CliRunner().invoke(app, ["alerts", "grade", "--db", str(tmp_path / "p2.sqlite")])
+        assert out.exit_code == 0, out.output
+    finally:
+        get_settings.cache_clear()

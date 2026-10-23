@@ -16,9 +16,9 @@ from html import escape
 from pathlib import Path
 from types import SimpleNamespace
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, func, select
 
-from betdata.alerts.db import alert_grades, alerts
+from betdata.alerts.db import alert_grades, alerts, get_state, status_events
 from betdata.alerts.grade import VERDICT_N, group_stats, verdict
 from betdata.alerts.notify import BOOKS, MARKETS, selection
 from betdata.alerts.rules import EASTERN
@@ -38,11 +38,30 @@ def _ro_engine(db: Path):
     return create_engine(f"sqlite:///file:{db.resolve()}?mode=ro&uri=true", future=True)
 
 
-def load(db: Path) -> dict:
-    """Recent alerts (newest first) with their grades, and the running CLV per signal."""
+def lag_study(c, now: datetime) -> dict:
+    """Qualifying changes so far, the DK+FD pooled median lag, and Signal 1's status."""
+    from betdata.alerts import lag as L
+
+    n = c.execute(select(func.count()).select_from(status_events)
+                  .where(status_events.c.qualifies.is_(True))).scalar()  # fmt: skip
+    s = L.summary(L.all_lags(c, None, now))
+    decision = get_state(c, "signal1:decision")
+    return {"changes": n, "soft_n": s["soft_n"], "soft_median": s["soft_median"],
+            "signal1": decision["signal1"] if decision else "on (study running)"}  # fmt: skip
+
+
+def load(db: Path, now: datetime | None = None) -> dict:
+    """Recent alerts (newest first) with their grades, the running CLV per signal, and the
+    lag study's status."""
+    now = now or datetime.now(UTC)
     eng = _ro_engine(db)
     try:
         with eng.connect() as c:
+            try:
+                lag = lag_study(c, now)
+            except Exception as e:  # noqa: BLE001 - the lag line is optional
+                log.warning("lag study line skipped: %s", e)
+                lag = None
             rows = c.execute(select(alerts, alert_grades.c.clv_points, alert_grades.c.clv_novig,
                                     alert_grades.c.result, alert_grades.c.profit)
                              .outerjoin(alert_grades,
@@ -65,7 +84,7 @@ def load(db: Path) -> dict:
         "study": bool(r["study"]), "result": r["result"], "profit": r["profit"],
         "clv_points": r["clv_points"], "clv_novig": r["clv_novig"],
     } for r in rows[:RECENT]]  # fmt: skip
-    return {"available": True, "alerts": recent, "signals": signals, "total": len(rows)}
+    return {"available": True, "alerts": recent, "signals": signals, "total": len(rows), "lag": lag}
 
 
 def _selection(r) -> str:
@@ -99,6 +118,13 @@ def fragment(data: dict | None) -> str:
         parts.append(f"<tr><td>{escape(SIGNALS[sig])}</td><td>{s['n_novig']}</td>"
                      f"<td>{escape(avg)}</td><td>{roi}</td><td>{escape(s['verdict'])}</td></tr>")
     parts.append("</table>")
+    if data.get("lag"):
+        lg = data["lag"]
+        med = ("not enough data" if lg["soft_median"] is None else
+               f"{lg['soft_median']:.1f} min over {lg['soft_n']} lags")  # fmt: skip
+        parts.append(f"<p class='meta'>Lag study: {lg['changes']} qualifying changes so far; "
+                     f"DK+FD pooled median lag {escape(med)}; Signal 1 "
+                     f"{escape(lg['signal1'])}.</p>")  # fmt: skip
     if not data["alerts"]:
         parts.append("<p class='meta'>No alerts yet.</p>")
     else:
@@ -147,7 +173,7 @@ def publish(db: Path, site: Path, now: datetime | None = None) -> str:
         if not index.is_file():
             return "no site/index.html: nothing to do"
         try:
-            data = load(db)
+            data = load(db, now)
         except Exception as e:  # noqa: BLE001 - a missing or broken poller DB
             log.warning("alerts unavailable: %s", e)
             data = {"available": False, "error": f"{type(e).__name__}"}
