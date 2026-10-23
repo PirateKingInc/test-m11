@@ -1,0 +1,7 @@
+poller db: True 53248
+runs: [(15, '2026-10-23 14:00:30.072666', '2026-10-23 14:56:00.000408', 'ok', 53, 3, '{"nba_injury": 7}', None), (14, '2026-10-23 13:00:26.339355', '2026-10-23 13:00:26.455668', 'ok', 0, 0, '{}', 'idle: no window, lag poll, board or close before :56'), (13, '2026-10-23 12:00:34.027895', '2026-10-23 12:00:34.194095', 'ok', 0, 0, '{}', 'idle: no window, lag poll, board or close before :56'), (12, '2026-10-23 11:45:52.815572', '2026-10-23 11:45:52.972636', 'ok', 0, 0, '{}', 'idle: no window, lag poll, board or close before :56'), (11, '2026-10-23 11:00:28.210195', '2026-10-23 11:00:28.319478', 'ok', 0, 0, '{}', 'idle: no window, lag poll, board or close before :56'), (10, '2026-10-23 10:00:23.562580', '2026-10-23 10:00:23.797372', 'ok', 0, 0, '{}', 'idle: no window, lag poll, board or close before :56')]
+events: [(0, None)]
+repreds: []
+quotes: []
+alerts: []
+state: [('due:nba_report', '"2026-10-23T14:54:00.000138+00:00"'), ('nba:last_report', '"Injury-Report_2026-10-23_10_45AM.pdf"')]
