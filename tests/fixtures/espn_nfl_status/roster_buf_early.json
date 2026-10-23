@@ -1,0 +1,545 @@
+{
+ "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401772900/competitions/401772900/competitors/2/roster",
+ "entries": [
+  {
+   "playerId": 5000000,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 0",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000001,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 1",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000002,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 2",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000003,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 3",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000004,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 4",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000005,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 5",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000006,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 6",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000007,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 7",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000008,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 8",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 5000009,
+   "active": true,
+   "starter": true,
+   "didNotPlay": false,
+   "displayName": "Player 9",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 3916000,
+   "active": false,
+   "starter": false,
+   "didNotPlay": true,
+   "displayName": "Matt Milano",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/32"
+   }
+  },
+  {
+   "playerId": 6000000,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 0",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000001,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 1",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000002,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 2",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000003,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 3",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000004,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 4",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000005,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 5",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000006,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 6",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000007,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 7",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000008,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 8",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000009,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 9",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000010,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 10",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000011,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 11",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000012,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 12",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000013,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 13",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000014,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 14",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000015,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 15",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000016,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 16",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000017,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 17",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000018,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 18",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000019,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 19",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000020,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 20",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000021,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 21",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000022,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 22",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000023,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 23",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000024,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 24",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000025,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 25",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000026,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 26",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000027,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 27",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000028,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 28",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000029,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 29",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000030,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 30",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000031,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 31",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000032,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 32",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000033,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 33",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000034,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 34",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000035,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 35",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000036,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 36",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000037,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 37",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000038,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 38",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000039,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 39",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000040,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 40",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000041,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 41",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  },
+  {
+   "playerId": 6000042,
+   "active": false,
+   "starter": false,
+   "didNotPlay": false,
+   "displayName": "Pending 42",
+   "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/1"
+   }
+  }
+ ]
+}
