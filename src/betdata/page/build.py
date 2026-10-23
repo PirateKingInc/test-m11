@@ -97,7 +97,8 @@ def run_info(conn: Connection, now: datetime) -> RunInfo:
                    rebuilt[0]["finished_at"] if rebuilt else None, today)  # fmt: skip
 
 
-def status_payload(info: RunInfo, now: datetime, missing_keys: list[str]) -> dict:
+def status_payload(info: RunInfo, now: datetime, missing_keys: list[str],
+                   detected_keys: list[str] | None = None) -> dict:  # fmt: skip
     def iso(t):
         return None if t is None else t.astimezone(UTC).isoformat()
 
@@ -112,6 +113,7 @@ def status_payload(info: RunInfo, now: datetime, missing_keys: list[str]) -> dic
         and now - info.rebuilt_at < timedelta(hours=REBUILT_NOTICE_HOURS) else None,
         "stale_hours": STALE_HOURS,
         "missing_keys": missing_keys,
+        "detected_keys": detected_keys or [],
     }  # fmt: skip
 
 
@@ -229,19 +231,68 @@ def e_t(t: datetime) -> str:
     return et(t, "%-I:%M %p")
 
 
-def records_html(rows: list[RecordRow]) -> str:
+TOO_FEW = 100  # under this many picks a record is shown, but not judged
+
+
+def _rec_cells(r: RecordRow) -> str:
+    roi = "-" if r.roi is None else f"{100 * r.roi:+.1f}%"
+    if r.bets < TOO_FEW:
+        roi += " <span class='few'>too few to judge</span>"
+    clv = "-" if r.avg_clv is None else f"{r.avg_clv:+.2f} {r.clv_unit}"
+    beat = "-" if r.beat_close is None else f"{100 * r.beat_close:.0f}%"
+    if r.ties:
+        beat += f" <span class='few'>{r.ties} at the close</span>"
+    return (f"<td>{escape(r.market.title())}</td><td>{r.wins}-{r.losses}-{r.pushes}</td>"
+            f"<td>{roi}</td><td>{clv}</td><td>{beat}</td><td>{r.bets}</td>")
+
+
+REC_HEAD = ("<tr><th>Market</th><th>W-L-P</th><th>ROI</th><th>Avg CLV</th>"
+            "<th>Beat close</th><th>Picks</th></tr>")
+
+
+def _is_version(model_version: str, page_version: str | None) -> bool:
+    if not page_version:
+        return False
+    if ":" in page_version:
+        return model_version == page_version
+    return model_version.split(":")[0] == page_version
+
+
+def records_html(rows: list[RecordRow], page_version: str | None = None,
+                 markets: tuple[str, ...] = ("spread", "moneyline")) -> str:  # fmt: skip
+    """The season record of the version the page shows: one row per market, spread and
+    moneyline, under one counting rule; every other version and market in a collapsed
+    section of background comparisons (M15.1)."""
+    from betdata.nfl.grade import RECORD_RULE
+
+    main = {r.market: r for r in rows if _is_version(r.model_version, page_version)
+            and r.market in markets}  # fmt: skip
+    rule = (f"<p class='meta'>What is counted: {escape(RECORD_RULE)} Beating the close: share "
+            "of picks that got a better number than the closing line, among picks whose number "
+            "differed from it. W-L-P: wins, losses, pushes. Under "
+            f"{TOO_FEW} picks a record is too few to judge.</p>")
+    if main:
+        body = "".join(f"<tr>{_rec_cells(main[m])}</tr>" for m in markets if m in main)
+        table = (f"<p class='meta'>Model version {escape(page_version or '')}</p>"
+                 f"<div class='recwrap'><table class='rec'>{REC_HEAD}{body}</table>"
+                 "</div>")  # fmt: skip
+    else:
+        table = "<p class='meta'>No graded picks for this model version yet.</p>"
+    others = [r for r in rows if not (_is_version(r.model_version, page_version)
+                                      and r.market in markets)]  # fmt: skip
+    other = ""
+    if others:
+        body = "".join(f"<tr>{_rec_cells(r)}<td class='ver'>{escape(r.model_version)}</td></tr>"
+                       for r in others)  # fmt: skip
+        other = ("<details class='other'><summary>Other model versions (background "
+                 "comparisons)</summary><p class='meta'>Graded live by the same rule but not "
+                 "shown on the cards; for comparison only.</p><div class='recwrap'>"
+                 "<table class='rec'>"
+                 f"{REC_HEAD.replace('</tr>', '<th>Model</th></tr>')}{body}</table></div>"
+                 "</details>")  # fmt: skip
     if not rows:
-        return "<p class='meta'>No graded picks yet.</p>"
-    body = "".join(
-        f"<tr><td>{escape(r.market)}</td><td>{r.wins}-{r.losses}-{r.pushes}</td>"
-        f"<td>{'-' if r.roi is None else f'{100 * r.roi:+.1f}%'}</td>"
-        f"<td>{'-' if r.avg_clv is None else f'{r.avg_clv:+.2f} {r.clv_unit}'}</td>"
-        f"<td>{'-' if r.beat_close is None else f'{100 * r.beat_close:.0f}%'}</td>"
-        f"<td class='ver'>{escape(r.model_version)}</td></tr>"
-        for r in rows
-    )  # fmt: skip
-    return ("<table class='rec'><tr><th>Market</th><th>W-L-P</th><th>ROI</th><th>Avg CLV</th>"
-            f"<th>Beat close</th><th>Model</th></tr>{body}</table>")  # fmt: skip
+        return rule + "<p class='meta'>No graded picks yet.</p>"
+    return rule + table + other
 
 
 def jobs_html(last: dict | None, sport: str) -> str:
@@ -335,7 +386,7 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
 {props_html(props or [], book_names) if props is not None else ""}
 <section class="legend"><h2>Flags</h2><p>A pick is flagged when it clears the threshold chosen
   on validation seasons:</p><ul>{legend}</ul></section>
-<section><h2>Season record</h2>{records_html(records)}</section>
+<section><h2>Season record</h2>{records_html(records, sport.page_version())}</section>
 {jobs_html(info.last, sport.key)}"""
 
 
@@ -348,6 +399,15 @@ def movement_for(conn: Connection, sport: Sport, info: RunInfo) -> dict[int, lis
                 "market": c.market_spread.line if c.market_spread else None,
                 "win": c.model_win_home, "mwin": c.market_win_home})  # fmt: skip
     return out
+
+
+def detected_keys(settings: Settings) -> list[str]:
+    """Keyed sources whose key this run found (the secret's name, never its value)."""
+    return sorted(
+        f"{SOURCE_TITLES.get(name, name)} ({cfg.api_key_env})"
+        for name, cfg in settings.sources.items()
+        if cfg.enabled and cfg.api_key_env and cfg.api_key
+    )  # fmt: skip
 
 
 def missing_keys(settings: Settings) -> list[str]:
@@ -369,9 +429,11 @@ def render(entries: list[SportEntry], panels: dict[str, str], status: dict) -> s
                                       "soon.</p>")  # fmt: skip
         sections.append(f'<div class="panel" id="tab-{escape(en.key)}"'
                         f'{"" if i == 0 else " hidden"}>{body}</div>')
-    keys = status.get("missing_keys") or []
-    keys_note = ("<p>Sources skipped because their API key is not set: "
-                 + escape(", ".join(keys)) + ".</p>") if keys else ""  # fmt: skip
+    keys, found = status.get("missing_keys") or [], status.get("detected_keys") or []
+    keys_note = ("<p>API keys detected in this run: " + escape(", ".join(found) or "none")
+                 + ". " + ("Sources skipped because their key is not set: "
+                           + escape(", ".join(keys)) + "." if keys else "No key is missing.")
+                 + "</p>")  # fmt: skip
     payload = json.dumps(status).replace("</", "<\\/")
     return PAGE.format(
         updated=escape(et(datetime.fromisoformat(status["last_ok_at"]))
@@ -390,7 +452,7 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
                                         book_names, info, _props(sport, conn, now))  # fmt: skip
-    status = status_payload(info, now, missing_keys(settings))
+    status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(render(entries, panels, status))
     (out_dir / "status.json").write_text(json.dumps(status, indent=1))
@@ -481,6 +543,10 @@ th{{color:var(--mut);font-weight:600}}
 ul{{margin:2px 0;padding-left:18px;font-size:.9rem}}
 details{{margin-top:8px;font-size:.9rem}} summary{{cursor:pointer;color:var(--acc)}}
 .rec .ver{{font-size:.7rem;color:var(--mut);word-break:break-all}}
+.recwrap{{overflow-x:auto;max-width:100%}}
+table.rec{{font-size:.8rem}} .rec th,.rec td{{padding:4px 3px}}
+.rec td:nth-child(2){{white-space:nowrap}}
+.rec .few{{display:block;font-size:.68rem;color:var(--mut)}}
 .soon{{padding:24px 0;color:var(--mut)}}
 .plist{{list-style:none;padding:0;margin:6px 0 0}} .prop{{padding:6px 0;
 border-bottom:1px solid var(--line);font-size:.9rem}} .prop:last-child{{border-bottom:0}}

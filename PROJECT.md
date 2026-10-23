@@ -22,6 +22,7 @@ Decisions that change dependencies, data rules or scope, newest last.
 | 2026-10-21 | M15 nflverse files (participation, FTN, PFR, depth charts, player stats, NGS) are kept as parquet under `data/nflverse/` by source `nflverse_extra`, CLI/backfill only, outside the Actions cache. | 53 MB in all; nothing in the hourly run reads them yet. Features derived from them should go into database tables (cached), as play-by-play does; the current season's files can then be fetched by one daily `refresh` job. |
 | 2026-10-21 | m15 and NFL prop live inputs are compact per-season tables under `data/derived` (kept by the runner state), refreshed by the daily 7am job `nfl-inputs15`; earlier seasons built once by the `nfl-m15-bootstrap` workflow. | Caching raw play-by-play and nflverse files would add about 100 MB to the state; the tables are about 1 MB and give identical features (see "NFL M15 on the hourly runner"). |
 | 2026-10-21 | M15 NFL props (`nflp15`): the hourly NFL run fetches this season's nflverse player stats and depth charts once a day (`nfl-player-stats`, `nfl-depth-charts`). The prop panel caches its per-season player-game rows and the ESPN→gsis id map under `data/derived` (kept by the runner state). Every NFL prop market is research-only. | Prop inputs and grading need weekly player stats; prop lines carry ESPN athlete ids, and the depth charts map them to gsis ids. No NFL prop lines exist for validation, so no betting backtest or threshold is possible (MODEL.md, "M15 NFL player props"). |
+| 2026-10-22 | **Season record rule (M15.1):** the page's season record counts one pick per game and market, the model's last prediction before the start, whenever its edge cleared the market's threshold (the flag rule), whether or not a flag was shown. Only the version the page uses is in the table; background versions are in a collapsed section. Under 100 picks the ROI reads "too few to judge". | The record counted every prediction point of a game, up to three times (NBA moneyline read 0-20 from 7 games). One rule for spread and moneyline, stated above the table. |
 | 2026-10-22 | **Scope change requested by the owner (M16):** alerts are now in scope. M16 adds a fast injury poller on the clock workflow, two closing-line-value signals, push alerts via ntfy.sh (topic in the `NTFY_TOPIC` secret), paper bets for every alert, and a lag study. No model, sport or bet-placement change. | Every model phase lands near the close but not past it; M16 targets closing-line value directly. Earlier milestones listed alerts as out of scope; this is a deliberate change. |
 
 ## M13: the hourly page
@@ -226,7 +227,25 @@ M15 needs no paid source and no new API key.
 
 **Dependencies:** M15 adds no new runtime dependency. RAPM uses `scipy.sparse`, which is already installed with scikit-learn.
 
-## M16: alerts, the lag study and closing-line value
+## M16: alerts and closing-line value
+
+### Line storage (checked 2026-10-22, issue #157)
+
+M16 grades every alert against the pre-game close, so every line we poll must still be there after tip. Read in the code:
+
+- **Game lines** (`odds_snapshots`): every live loader writes through `core/odds_loader.load_odds`: the ESPN NBA scoreboard (`espn_nba`), SharpAPI, The Odds API, OddsPapi, CFBD and nflverse. It only **inserts**. A row is added when a selection's line, price or status differs from its previous row, and a selection that leaves the board gets a `removed` row. The unique key is (source, event, book, market, outcome, kind, `fetched_at`), so each poll is a new row and re-loading the same response adds nothing. ESPN's per-game odds history (`espn_nba` odds job, `nba/history.load`) also only inserts.
+- **Polls with no change** add no row, by design. The poll itself is still recorded in `ingest_runs` (and the response in `raw_responses`, unless it is byte-identical to the last one). So "unchanged as of T" can be answered, and the latest row before tip is the line at tip (`v_closing_lines`).
+- **Prop lines** (`prop_lines`): `sources/espn_props.store_rows` (live polls) and `props/history.load` (history files) only insert, change-only per (game, player, market, book, kind), unique on `fetched_at`.
+- **No code deletes or rewrites a price, line or time.** The only `UPDATE` on `odds_snapshots` is `betdata relink`, which fills a null `game_id` once a team name is mapped. `betdata games split-merged --relink-odds` (M16-1) can also re-point `game_id` on odds and prop rows; that is opt-in. Nothing else updates or deletes a `prop_lines` row.
+
+`betdata lines coverage --sport nba|nfl --days N [--strict]` lists, for games from the last N days and the next two, per source and book and market:
+- the opening line (a source's own opening, else the first poll);
+- the current line;
+- the pre-game close (a source's own close, else a poll at or before tip);
+- the median minutes from that source's last successful run to tip;
+- for props: open, close and the number of poll rows.
+
+It exits non-zero only with `--strict`, when a started game has no close or an upcoming game has no current line in a market.
 
 ### M16 sources (free plans, measured live from an Actions runner, 2026-10-22)
 

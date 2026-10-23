@@ -86,4 +86,3 @@ Items deliberately left out of M12, with the reason. Newest first.
   - minutes restrictions from report text.
 - **NBA side groups `integ` and `style`** added nothing after RAPM; revisit with lineup-level style data.
 - **NFL group `lines`** was dropped after 3 adjustments. Revisit when 2026 participation is published.
-- **Schedule matcher merges two real games** between the same teams within 36 hours (NBA two-game series; found by the stints work). Their box scores and results are mixed, and stints skip them.
