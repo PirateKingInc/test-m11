@@ -5,6 +5,7 @@ import logging
 import typer
 from sqlalchemy import desc, select
 
+from betdata.alerts.cli import alerts_app, poller_app
 from betdata.config import get_settings
 from betdata.core.quota import QuotaManager
 from betdata.db import seed as seed_mod
@@ -34,6 +35,8 @@ app.add_typer(nba_app, name="nba")
 app.add_typer(props_app, name="props")
 app.add_typer(runner_app, name="runner")
 app.add_typer(page_app, name="page")
+app.add_typer(poller_app, name="poller")
+app.add_typer(alerts_app, name="alerts")
 
 
 @app.callback()
