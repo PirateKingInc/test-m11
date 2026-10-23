@@ -730,7 +730,14 @@ def _grade_props(sport: str) -> None:
 def grade(sport: str = typer.Argument("nfl"), props: bool = typer.Option(
         False, "--props", help="grade stored player-prop predictions (M15)")):  # fmt: skip
     """Grade stored predictions on final games (idempotent): result, closing-line value, and
-    per model version the record, ROI, average CLV and share of bets that beat the close."""
+    per model version the record, ROI, average CLV and share of bets that beat the close.
+    `betdata grade alerts` grades the M16 alerts (data/poller.sqlite) instead."""
+    if sport == "alerts":
+        from betdata.alerts.cli import grade_alerts
+        from betdata.alerts.db import DEFAULT_PATH
+
+        grade_alerts(DEFAULT_PATH)
+        return
     if props:
         _grade_props(sport)
         return
