@@ -282,6 +282,29 @@ It exits non-zero only with `--strict`, when a started game has no close or an u
   - Current DK/FD lines are pulled, and Signal 1 is evaluated.
   - Nothing is refitted.
 
+### M16 quota: 30 days of hourly runs plus polling (verification e)
+
+Measured with `betdata alerts quota --days 30` on the live state on 2026-10-23: 28 NBA game days and 27 NFL kickoff windows. Each line is the poller's worst case: every assumption in `alerts/quota.py` is an upper bound, and a CI test checks a worst-case month (`tests/alerts/test_quota.py`).
+
+| Source | Hourly job | Poller (worst case) | Free limit | Verdict |
+|---|---|---|---|---|
+| The Odds API | 156 credits | 249 credits (Signal 2 boards) | 450 usable of 500 a month | OK (405) |
+| SharpAPI | ~32 calls a day | 20,446 calls (peak day 1,580) | 12 a minute; no daily cap | OK: the poller spaces calls 6 s apart (<= 10 a minute) and never polls while an hourly run is queued or running |
+| NBA injury report | ~450 | 15,280 (peak day 540) | none published | <= 1 a second |
+| ESPN (NFL statuses) | - | 2,052 | none published | <= 1 a second |
+| Kalshi | - | 9,312 | public API | <= 1 a second |
+
+Live guard: before each Pinnacle board the poller reads the remaining credits (the free `/sports` call). It skips the board if spending it would leave less than the hourly job's need for the rest of the month (5.3 a day) plus 50.
+
+### Line storage on the live state (issue #157, 2026-10-23)
+
+`betdata lines coverage` on the live state:
+- **NFL** (games of the last 7 days): every game has a pre-game close.
+  - Only games played after the hourly job began polling on 2026-10-19 have an opening and a current line from polls; earlier ones keep nflverse's close.
+- **NBA** (last 3 days plus the next 2): 13 of 16 started games have a pre-game close at every polled book (ESPN DraftKings; SharpAPI DK/FD and The Odds API since 2026-10-22).
+  - The 3 without one are opening-night games (2026-10-20) played before NBA polling started.
+  - The 7 upcoming games without a line are 2-3 days out, before books post.
+
 ### M16 replay on real data (verification c, NBA)
 
 The dev copy of the NBA history was used at 2026-02-11 22:05 UTC: the poller read the real 5:00 PM ET report (`Injury-Report_2026-02-11_05_00PM.pdf`). Evan Mobley's previous row for that game had been set to Questionable, so the report changed him to Out.
