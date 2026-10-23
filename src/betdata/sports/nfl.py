@@ -178,7 +178,8 @@ class NflSport(Sport):
     def records(self, conn: Connection) -> list[RecordRow]:
         return [
             RecordRow(r.market, r.model_version, r.wins, r.losses, r.pushes, r.voids, r.profit,
-                      r.avg_clv, r.beat_close, "% pts" if r.market == "moneyline" else "pts")
+                      r.avg_clv, r.beat_close, "% pts" if r.market == "moneyline" else "pts",
+                      r.ties)
             for r in records(conn) if r.market in PAGE_MARKETS
         ]  # fmt: skip
 

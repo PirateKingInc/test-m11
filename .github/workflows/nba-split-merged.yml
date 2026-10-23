@@ -1,0 +1,93 @@
+# M15.1, one-off (manual): repair the hourly runner's saved state after the schedule-matcher
+# fix (REVIEW M16-2). Games that hold two events of one source (both games of a two-game series,
+# merged by the old matcher) are split with `betdata games split-merged`; the rows built from the
+# mixed game (results, NBA box scores, stints) are reloaded from sportsdataverse for the seasons
+# involved. No odds or prop rows are touched (the dry run on the live state found none on the
+# events that move). Shares the hourly runner's concurrency group, so it never overlaps an
+# hourly run; the state is saved only if every step succeeds.
+
+name: nba-split-merged
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Restore state
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Require saved state
+        if: steps.restore.outputs.cache-matched-key == ''
+        run: |
+          echo "no saved hourly state to repair" >&2
+          exit 1
+      - name: Seasons with merged NBA games
+        id: seasons
+        run: |
+          seasons=$(uv run --no-dev python - <<'PY'
+          from sqlalchemy import select
+          from betdata.config import get_settings
+          from datetime import UTC, datetime
+          from betdata.core.matching import season_for, sport_id
+          from betdata.core.split_merged import merged_games
+          from betdata.db.engine import make_engine
+          from betdata.db.schema import games
+          with make_engine(get_settings().db_url).connect() as c:
+              ids = merged_games(c)
+              rows = c.execute(select(games.c.season).where(
+                  games.c.game_id.in_(ids), games.c.sport_id == sport_id(c, "nba"))).scalars()
+              # The current season's merged games are upcoming (nothing to reload); its scores
+              # come from ESPN every hour, and sportsdataverse may not publish it yet.
+              now = season_for("nba", datetime.now(UTC))
+              print(" ".join(str(s) for s in sorted(set(rows)) if s < now))
+          PY
+          )
+          echo "seasons=$seasons" >> "$GITHUB_OUTPUT"
+          echo "past NBA seasons with merged games: $seasons"
+      - name: Split merged games
+        run: |
+          uv run --no-dev betdata games split-merged --dry-run | tail -3
+          uv run --no-dev betdata games split-merged | tail -3
+      - name: Reload results, box scores and stints of those seasons
+        if: steps.seasons.outputs.seasons != ''
+        env:
+          SEASONS: ${{ steps.seasons.outputs.seasons }}
+        run: |
+          for s in $SEASONS; do
+            uv run --no-dev betdata backfill --source sportsdataverse --sport nba --seasons "$s" --yes
+            uv run --no-dev betdata backfill --source sportsdataverse --sport nba --seasons "$s" --dataset player_box --yes
+            uv run --no-dev betdata backfill --source sportsdataverse --sport nba --seasons "$s" --dataset pbp --yes
+          done
+          uv run --no-dev betdata games split-merged --dry-run | tail -1
+      - name: Save state
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}

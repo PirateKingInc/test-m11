@@ -20,7 +20,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import Connection, and_, func, insert, select, update
+from sqlalchemy import Connection, and_, delete, func, insert, select, update
 
 from betdata import moneyline as ml
 from betdata.analysis.backtest import DEFAULT_PRICE, profit
@@ -204,6 +204,7 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
         (r.prediction_id, r.market): r
         for r in conn.execute(select(nfl_bet_grades).where(nfl_bet_grades.c.game_id.in_(ids)))
     }
+    produced: set[tuple[int, str]] = set()
     for p in preds:
         bets = bets_for(p["pred_home_margin"], p["pred_total"], p["market_spread_home"],
                         p["market_total"])  # fmt: skip
@@ -234,6 +235,7 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
                 close_price_american=close_price, clv=None if void else bet_clv,
                 result=result, profit=0.0 if void else round(won, 4),
             )  # fmt: skip
+            produced.add((p["prediction_id"], bet.market))
             old = existing.get((p["prediction_id"], bet.market))
             if old is None:
                 conn.execute(insert(nfl_bet_grades).values(**values, graded_at=now))
@@ -243,6 +245,11 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
                              .where(nfl_bet_grades.c.grade_id == old.grade_id)
                              .values(**values, graded_at=now))  # fmt: skip
                 run.updated += 1
+    # A stored grade whose pick no longer qualifies (a re-grade under corrected rules) goes.
+    for key, old in existing.items():
+        if key not in produced and old.game_id in finals:
+            conn.execute(delete(nfl_bet_grades).where(nfl_bet_grades.c.grade_id == old.grade_id))
+            run.updated += 1
     return run
 
 
@@ -256,7 +263,11 @@ class VersionRecord:
     voids: int
     profit: float
     avg_clv: float | None
-    beat_close: float | None  # share of bets with a close that got a better number
+    # Share of picks that got a better number than the close, among picks whose price or
+    # line differed from the close (M15.1: picks taken at the closing price are ties, not
+    # misses; with hourly polling most pretip picks are taken at the close).
+    beat_close: float | None
+    ties: int = 0  # picks whose CLV is exactly 0
 
     @property
     def bets(self) -> int:
@@ -267,12 +278,29 @@ class VersionRecord:
         return self.profit / self.bets if self.bets else None
 
 
-def records(conn: Connection) -> list[VersionRecord]:
+# What the season record counts (M15.1), one rule for every market: one pick per game, market
+# and model version, the last prediction stored before the game started, whenever its edge
+# cleared the market's validated threshold, whether or not the card showed a flag. Earlier
+# prediction points of the same game are graded and stored but not counted again.
+RECORD_RULE = ("One pick per game and market: the model's last prediction before the start, "
+               "counted whenever its edge cleared the threshold below (the flag rule), "
+               "whether or not a flag was shown.")  # fmt: skip
+
+
+def records(conn: Connection, table=None) -> list[VersionRecord]:
+    table = nfl_bet_grades if table is None else table
+    mp = model_predictions
+    last: dict[tuple[str, str, int], object] = {}
+    for r in conn.execute(select(table, mp.c.predicted_at)
+                          .join(mp, mp.c.prediction_id == table.c.prediction_id)):  # fmt: skip
+        k = (r.model_version, r.market, r.game_id)
+        if k not in last or r.predicted_at > last[k].predicted_at:
+            last[k] = r
     acc: dict[tuple[str, str], dict] = defaultdict(
         lambda: {"win": 0, "loss": 0, "push": 0, "void": 0, "profit": 0.0, "clv": []}
     )
-    for r in conn.execute(select(nfl_bet_grades)):
-        a = acc[(r.model_version, r.market)]
+    for (mv, market, _), r in last.items():
+        a = acc[(mv, market)]
         a[r.result] += 1
         a["profit"] += r.profit
         if r.clv is not None and r.result != "void":
@@ -280,7 +308,9 @@ def records(conn: Connection) -> list[VersionRecord]:
     out = []
     for (mv, market), a in sorted(acc.items()):
         c = a["clv"]
+        moved = [x for x in c if x != 0]
         out.append(VersionRecord(mv, market, a["win"], a["loss"], a["push"], a["void"],
                                  round(a["profit"], 4), sum(c) / len(c) if c else None,
-                                 sum(x > 0 for x in c) / len(c) if c else None))  # fmt: skip
+                                 sum(x > 0 for x in moved) / len(moved) if moved else None,
+                                 len(c) - len(moved)))  # fmt: skip
     return out
