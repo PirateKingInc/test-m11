@@ -38,6 +38,12 @@ jobs:
             data/reports
           key: betdata-state-v1-${{ github.run_id }}
           restore-keys: betdata-state-v1-
+      - name: Restore the poller database (read only)
+        uses: actions/cache/restore@v4
+        with:
+          path: data/poller.sqlite
+          key: betdata-poller-v1-${{ github.run_id }}
+          restore-keys: betdata-poller-v1-
       - name: Probe
         env:
           SHARPAPI_KEY: ${{ secrets.SHARPAPI_KEY }}
