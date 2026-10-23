@@ -102,3 +102,36 @@ def alerts_quota(days: int = typer.Option(30, help="Days ahead, on the stored sc
 def _units(projection, source: str) -> int:
     """The hourly projection's units for one source (a list of JobProjection rows)."""
     return int(sum(p.units for p in projection if p.source == source))
+
+
+def grade_alerts(db: Path) -> None:
+    """Grade alerts against the pre-game close and print the report (shared with `betdata grade
+    alerts`). Reads the main database; writes only the poller database."""
+    from betdata.alerts.db import engine_for
+    from betdata.alerts.grade import grade_all, report_lines
+    from betdata.config import get_settings
+    from betdata.db.engine import make_engine
+
+    pdb = engine_for(db)
+    n = grade_all(make_engine(get_settings().db_url), pdb, datetime.now(UTC))
+    typer.echo(f"alert grades written: {n}")
+    with pdb.connect() as p:
+        for line in report_lines(p):
+            typer.echo(line)
+
+
+@alerts_app.command("grade")
+def alerts_grade(db: Path = typer.Option(Path("data/poller.sqlite"), help="Poller database.")):
+    """Grade every alert whose game has started (idempotent) and report CLV, ROI and the
+    success-rule verdict per signal."""
+    grade_alerts(db)
+
+
+@alerts_app.command("page")
+def alerts_page(db: Path = typer.Option(Path("data/poller.sqlite"), help="Poller database."),
+                site: Path = typer.Option(Path("site"), help="The built site.")):  # fmt: skip
+    """Add the Alerts section to the built site/index.html and write site/alerts.json. Never
+    fails: without a readable poller database the section says "Alerts unavailable"."""
+    from betdata.alerts.page import publish
+
+    typer.echo(publish(db, site))
