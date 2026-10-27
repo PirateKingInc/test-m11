@@ -1,5 +1,5 @@
 {
- "rule": "flags only for markets whose final-test ROI is positive (M15); thresholds unchanged",
+ "rule": "flags only for markets whose final-test ROI is positive (M15); thresholds unchanged; a market whose ROI 95% range includes zero is info only, not flagged (2026-10-27)",
  "source": "frozen nbap15 re-scored on the cleaned 2023-24..2025-26 final-test lines (M16 audit, REVIEW M16-1)",
  "markets": {
   "points": {
@@ -52,7 +52,8 @@
     -0.0173,
     0.0356
    ],
-   "flag": true
+   "flag": false,
+   "info_only": true
   }
  }
 }

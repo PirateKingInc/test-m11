@@ -37,6 +37,8 @@ class PropDesign:
     thresholds: dict[str, float | None] = field(default_factory=dict)  # backtested markets
     test_roi: dict[str, float | None] = field(default_factory=dict)  # final-test ROI per market
     research_only: list[str] = field(default_factory=list)  # markets without a backtest
+    # 95% range of the final-test ROI; a market whose range includes zero is "info only"
+    test_roi_95: dict[str, list[float]] = field(default_factory=dict)
 
     @classmethod
     def load(cls) -> PropDesign:
@@ -44,7 +46,16 @@ class PropDesign:
 
     def flag_allowed(self, market: str) -> bool:
         roi = self.test_roi.get(market)
-        return market not in self.research_only and roi is not None and roi > 0
+        return (market not in self.research_only and roi is not None and roi > 0
+                and not self.info_only(market))  # fmt: skip
+
+    def info_only(self, market: str) -> bool:
+        """Backtested with a positive ROI whose 95% range includes zero: shown, never flagged
+        (decision 2026-10-27, MODEL.md "Prop flags after the M16 audit")."""
+        lo_hi = self.test_roi_95.get(market)
+        roi = self.test_roi.get(market)
+        return (market not in self.research_only and roi is not None and roi > 0
+                and lo_hi is not None and lo_hi[0] <= 0)  # fmt: skip
 
 
 def load_model(design: PropDesign) -> tuple[M.PropModel, str]:
