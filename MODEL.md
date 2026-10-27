@@ -1676,3 +1676,34 @@ Built from the engine's own tables (`nfl/engine/plays.py`: drives, team-games an
 - **Pace is an offensive trait only.** A defence's seconds per play allowed has a split-half r of −0.01, so the defensive pace term is dropped.
 - **Proxy routes are steadier than real routes** for targets per route (0.75 vs 0.65). A2 tests which predicts next-game targets better.
 - **Season to season, team rates regress a lot** (r 0.2-0.4). The previous season's weight in a team's prior comes from these numbers, and is cut further where A4 shows a coordinator change matters.
+
+## M17 A3 results: pressure flags (`reports/nfl/m17_checks.json`, `betdata nfl engine checks`)
+
+Participation's `was_pressure` and PFR's `times_pressured` (summed over a team's QBs) were compared per team-game, 2018-2025 (4,422 team-games):
+
+| | Participation | PFR |
+|---|---|---|
+| Pressure rate per dropback, 2018 → 2025 | 0.279 → 0.297 (2023-2025 higher) | 0.241 → 0.216 (falling) |
+| Offence split-half r (padding) | 0.62 (202) | 0.55 (276) |
+| Defence split-half r (padding) | 0.42 (461) | 0.26 (923) |
+
+They agree poorly: team-game r = **0.41**, team-season r = 0.47. They also drift apart in level from 2023, with participation rising and PFR falling.
+
+**Decision, by the fixed rule** (agreement below 0.7): pressure is **left out**. The sack step uses the offence's and QB's sack rates and the defence's sack rate allowed, each shrunk with its A1 padding (the defence's is shrunk almost to the league mean, padding 3,939). The two pressure flags are counted differently: participation from NGS tracking, PFR by charters. The live source (PFR) is the less reliable of the two.
+
+## M17 A2 results: routes vs the proxy (validation 2020-2022)
+
+Next-game targets of WR, TE and RB (15,545 player-games with at least two earlier games), predicted from earlier games only:
+- exponentially weighted with a half-life of 4 games, and last season's games at weight 0.5;
+- shrunk with the A1 paddings;
+- the team's prior average volume in each case.
+
+| Target model | MAE | RMSE | Bias |
+|---|---|---|---|
+| real routes × targets per route (participation) | **1.748** | **2.325** | +0.10 |
+| target share × team attempts | 1.750 | 2.330 | +0.06 |
+| proxy routes (snap share × team dropbacks) × targets per proxy route | 1.873 | 2.558 | +0.23 |
+
+- **The proxy costs 0.125 targets of MAE (7%).** Snap share counts run-blocking snaps as routes.
+- **Target share does as well as real routes** (+0.002) and needs no participation data.
+- **Decision:** step 4 uses **target share** (shrunk, padding 23 targets), not routes. This is not a timing workaround: it is as accurate on validation and available in season. Route share stays a candidate adjustment in B3's budget.

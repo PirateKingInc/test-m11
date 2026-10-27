@@ -1,0 +1,92 @@
+{
+ "pressure": {
+  "team_games": 4422,
+  "r_team_game": 0.412,
+  "r_team_season": 0.47,
+  "level_by_season": {
+   "2018": {
+    "participation": 0.279,
+    "pfr": 0.241,
+    "team_games": 518
+   },
+   "2019": {
+    "participation": 0.262,
+    "pfr": 0.229,
+    "team_games": 518
+   },
+   "2020": {
+    "participation": 0.261,
+    "pfr": 0.227,
+    "team_games": 538
+   },
+   "2021": {
+    "participation": 0.254,
+    "pfr": 0.226,
+    "team_games": 570
+   },
+   "2022": {
+    "participation": 0.258,
+    "pfr": 0.206,
+    "team_games": 568
+   },
+   "2023": {
+    "participation": 0.293,
+    "pfr": 0.205,
+    "team_games": 570
+   },
+   "2024": {
+    "participation": 0.31,
+    "pfr": 0.212,
+    "team_games": 570
+   },
+   "2025": {
+    "participation": 0.297,
+    "pfr": 0.216,
+    "team_games": 570
+   }
+  },
+  "reliability": {
+   "offence_participation": {
+    "r_split_half": 0.622,
+    "padding": 201.8,
+    "r_season_to_season": 0.372
+   },
+   "offence_pfr": {
+    "r_split_half": 0.546,
+    "padding": 275.6,
+    "r_season_to_season": 0.325
+   },
+   "defence_participation": {
+    "r_split_half": 0.417,
+    "padding": 460.8,
+    "r_season_to_season": 0.42
+   },
+   "defence_pfr": {
+    "r_split_half": 0.263,
+    "padding": 923.3,
+    "r_season_to_season": 0.341
+   }
+  }
+ },
+ "routes": {
+  "player_games": 15545,
+  "seasons": "2020-2022 (validation)",
+  "half_life_games": 4.0,
+  "last_season_weight": 0.5,
+  "real_routes": {
+   "mae": 1.7479,
+   "rmse": 2.3254,
+   "bias": 0.0982
+  },
+  "proxy_routes": {
+   "mae": 1.873,
+   "rmse": 2.558,
+   "bias": 0.2253
+  },
+  "target_share": {
+   "mae": 1.7504,
+   "rmse": 2.3303,
+   "bias": 0.0586
+  }
+ }
+}

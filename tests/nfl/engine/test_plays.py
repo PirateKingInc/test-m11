@@ -56,3 +56,14 @@ def test_stability_recovers_a_known_reliability():
     theory = 1600 / (1600 + 25)  # half = 8 games x 200 trials
     assert abs(r["r_split_half"] - theory) < 0.02
     assert 15 < r["padding"] < 40
+
+
+def test_prior_sums_use_only_earlier_games_and_carry_last_season():
+    from betdata.nfl.engine.checks import _prior_sums
+
+    ko = pd.date_range("2020-09-10", periods=4, freq="7D", tz="UTC")
+    df = pd.DataFrame({"unit": ["a"] * 4, "season": [2019, 2020, 2020, 2020], "kickoff": ko,
+                       "x": [10.0, 1.0, 2.0, 4.0]})  # fmt: skip
+    out, pr = _prior_sums(df, ["x"], half_life=1.0, last_season_w=0.5)
+    # game 0: nothing before; game 1: last season's 10 x 0.5; game 2: 5 x 0.5 + 1; ...
+    assert pr.prior_x.tolist() == [0.0, 5.0, 3.5, 3.75]

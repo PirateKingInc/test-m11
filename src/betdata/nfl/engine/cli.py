@@ -55,3 +55,11 @@ def stability(out: Path = typer.Option(Path("reports/nfl/stability.csv"))):
 
     t = write(out)
     typer.echo(f"{len(t)} rows -> {out}")
+
+
+@engine_app.command("checks")
+def checks(out: Path = typer.Option(Path("reports/nfl/m17_checks.json"))):
+    """A2 route proxy and A3 pressure flags."""
+    from betdata.nfl.engine.checks import write
+
+    typer.echo(json.dumps(write(out), indent=1))
