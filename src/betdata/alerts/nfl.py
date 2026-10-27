@@ -229,6 +229,9 @@ class NflHandler:
                 elif o.get("source") == "injuries" and o.get("team") not in listed:
                     current[aid] = o
         changes = self.diff(poller, g, eid, prev, current, known, now)
+        if any(ch.qualifies for ch in changes):
+            poller._guard(f"nfl model probs {g.game_id}", self.model_probs, poller, g, prev or {},
+                          current, known, changes, now)  # fmt: skip
         by_game: list[tuple[int, Change]] = []
         for ch in changes:
             ev = poller.record_event(
@@ -243,6 +246,29 @@ class NflHandler:
         if by_game:
             self.news(poller, g, eid, by_game, prev or {}, current, known, now)
         return changes
+
+    def model_probs(self, poller, g, prev: dict, current: dict, known: dict,
+                    changes: list, now: datetime) -> None:  # fmt: skip
+        """The value test against what the model knew (REVIEW M17-0): the ESPN mapping is only
+        a pre-filter. M12's own play probability before and after (the game-day roster, the
+        nflverse report and this ESPN read, as the re-prediction sees them) must move by
+        >= 0.25. A change the model already knew (an inactive already on the game-day roster)
+        is recorded, not qualifying, and so is a player M12 does not use (not a candidate)."""
+        models = self.models(poller.main, now)
+        before = models.play_probs(g, observations(prev, known), now)
+        after = models.play_probs(g, observations(current, known), now)
+        if after is None:
+            return
+        for ch in changes:
+            if not ch.qualifies:
+                continue
+            if not ch.gsis or ch.gsis not in after:
+                ch.qualifies = False
+                continue
+            pb, pa = before.get(ch.gsis, ch.prob_before), after[ch.gsis]
+            ch.prob_before, ch.prob_after = round(pb, 4), round(pa, 4)
+            ch.qualifies = qualifies_nfl(ch.position, ch.snap_share, pb, pa,
+                                         starter=ch.position in STARTER_GROUPS)  # fmt: skip
 
     def diff(self, poller, g, eid: str, prev: dict | None, current: dict, known: dict,
              now: datetime) -> list[Change]:  # fmt: skip
@@ -614,6 +640,25 @@ class Models:
                                   team_id=p["team_id"], market=p["market"],
                                   mean_before=pb[key]["mean"], mean_after=p["mean"]))
         return Repredicted(self.version, a.point, b.margin, a.margin, b.total, a.total, props)
+
+    def play_probs(self, g, obs: list[dict], now: datetime) -> dict[str, float] | None:
+        """gsis -> the model's own play probability for every candidate of both teams, with
+        these ESPN observations in the as-of store: what M12 actually uses at this point."""
+        from betdata.nfl.features.availability import candidates
+        from betdata.nfl.points import FINAL_REPORT
+        from betdata.nfl.predict import EARLY, point_now
+        from betdata.nfl.store import AsOf
+
+        game = self.store.games.loc[int(g.game_id)]
+        s = with_statuses(self.store, game, obs, now)
+        a = AsOf(s, now)
+        point = point_now(game.kickoff, now)
+        point = FINAL_REPORT if point == EARLY else point
+        out: dict[str, float] = {}
+        for team in (game.home, game.away):
+            for k, _, _, b in candidates(a, game, team, point):
+                out[k] = play_prob(s.params, b)
+        return out
 
     def p_over(self, market: str, mean: float, line: float) -> float:
         import numpy as np

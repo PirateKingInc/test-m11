@@ -7,6 +7,7 @@ tested on the synthetic M12 store)."""
 from __future__ import annotations
 
 import json
+import types
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -127,6 +128,23 @@ class FakeModels:
 
     def p_over(self, market, mean, line):
         return 0.5
+
+    def play_probs(self, g, obs, now):
+        return None  # no model probabilities: the ESPN mapping stands (as on a model failure)
+
+
+class KnewModels(FakeModels):
+    """M12 already had Allen at this probability, whatever ESPN says (REVIEW M17-0)."""
+
+    prob = {"Questionable": 0.003, "Out": 0.003}
+
+    def play_probs(self, g, obs, now):
+        st = {o["name"]: o["status"] for o in obs}.get("Josh Allen", "Questionable")
+        return {"00-0034857": self.prob[st]}
+
+
+class MovedModels(KnewModels):
+    prob = {"Questionable": 0.8, "Out": 0.01}
 
 
 class BrokenModels:
@@ -253,6 +271,21 @@ def test_change_across_cycles_qualifies_and_reaches_signal_1(setup):
     assert len(_events(p)) == len(ev) and len(news) == 1
 
 
+@pytest.mark.parametrize("models, qualifies", [(KnewModels, False), (MovedModels, True)])
+def test_qualification_uses_the_models_own_play_probability(setup, models, qualifies):
+    p, h, espn, ids, news = setup
+    h._models_factory = models
+    t0 = KICK - timedelta(minutes=110)
+    h.cycle(p, t0)
+    espn.summary = "summary_out.json"
+    h.cycle(p, t0 + timedelta(minutes=5))
+    allen = _events(p)[("Josh Allen", "Out")]
+    assert allen.qualifies is qualifies
+    assert (allen.prob_before, allen.prob_after) == (models.prob["Questionable"],
+                                                     models.prob["Out"])
+    assert len(news) == int(qualifies)
+
+
 def test_inactives_count_only_once_the_list_is_released(setup):
     p, h, espn, ids, news = setup
     t = KICK - timedelta(minutes=90)
@@ -336,3 +369,33 @@ def test_store_injection_changes_only_the_news():
     assert len(s4.frame("rosters").df) == len(store.frame("rosters").df)
     fr = {k: b for k, _, _, b in candidates(AsOf(s4, t_fr), g, team, FINAL_REPORT)}
     assert fr[key] == "fr|Out|DNP"
+
+
+def test_model_play_probs_on_a_real_store():
+    """Models.play_probs runs M12's own rules (no stub): a starter reported Out moves."""
+    from tests.nfl.synth import make_store
+
+    store = make_store()
+    g = store.games.iloc[-1]
+    team = int(g.home)
+    now = (prekick_time(g.kickoff) - pd.Timedelta(minutes=20)).to_pydatetime()
+    m = N.Models.__new__(N.Models)
+    m.store = store.with_params(**N.m12_params())
+    row = types.SimpleNamespace(game_id=int(g.name))
+    before = m.play_probs(row, [], now)
+    key = max(before, key=before.get)
+    obs = [{"status": "Out", "team": team, "gsis": key, "group": None, "practice": None}]
+    after = m.play_probs(row, obs, now)
+    assert after[key] < 0.1 < before[key]
+    assert {k: v for k, v in after.items() if k != key} == {
+        k: v for k, v in before.items() if k != key}
+
+
+def test_a_player_m12_does_not_use_never_qualifies(setup):
+    p, h, espn, ids, news = setup
+    h._models_factory = type("NoAllen", (KnewModels,), {"play_probs": lambda *a: {}})
+    t0 = KICK - timedelta(minutes=110)
+    h.cycle(p, t0)
+    espn.summary = "summary_out.json"
+    h.cycle(p, t0 + timedelta(minutes=5))
+    assert not _events(p)[("Josh Allen", "Out")].qualifies and news == []
