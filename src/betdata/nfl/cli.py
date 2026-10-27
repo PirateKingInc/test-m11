@@ -17,6 +17,15 @@ from betdata.nfl.workflow import (
 nfl_app = typer.Typer(help="NFL model (M12): as-of data, checks.", no_args_is_help=True)
 
 
+def _add_engine() -> None:
+    from betdata.nfl.engine.cli import engine_app
+
+    nfl_app.add_typer(engine_app, name="engine")
+
+
+_add_engine()
+
+
 def _engine():
     from betdata.config import get_settings
     from betdata.db.engine import make_engine
