@@ -56,6 +56,8 @@ class Report:
     report_at: datetime  # stated (Eastern, aware)
     known_at: datetime  # when the rows became known in the database
     changes: list[Change] = field(default_factory=list)
+    parsed: int = 0  # rows on the report
+    inserted: int = 0  # rows new to the database (change-only)
 
 
 def active(conn, now: datetime) -> bool:
@@ -105,18 +107,33 @@ def load_new_report(engine: Engine, name: str, pdf: bytes, now: datetime) -> Rep
     payload = {"name": name, "report_at": stated, "known_at": now, "rows": rep.rows,
                "teams": [[*k, v] for k, v in rep.teams.items()]}  # fmt: skip
     with engine.begin() as conn:
-        load_report(conn, payload, fetched_at=now, raw_id=None)
+        inserted = load_report(conn, payload, fetched_at=now, raw_id=None)
         known = conn.execute(select(func.min(nba_injury_reports.c.known_at)).where(
             nba_injury_reports.c.report_at == stated)).scalar()  # fmt: skip
-    return Report(name, stated, _utc(known) if known else now)
+    return Report(name, stated, _utc(known) if known else now, parsed=len(rep.rows),
+                  inserted=inserted)
+
+
+def soon_games(store, now: datetime) -> list:
+    """Games tipping in the next 36 hours (not postponed or cancelled)."""
+    g = store.games
+    return [gid for gid in g.index if g.at[gid, "status"] not in ("postponed", "cancelled")
+            and now < _utc(g.at[gid, "tip"]) <= now + timedelta(hours=36)]  # fmt: skip
+
+
+def games_soon(store, now: datetime) -> int | None:
+    """For the report log only: never stops detection."""
+    try:
+        return len(soon_games(store, now))
+    except (AttributeError, KeyError, TypeError):
+        return None
 
 
 def detect(engine: Engine, store, report: Report, now: datetime) -> list[Change]:
     """Every rotation player of a game on the report (tip within 36 hours) whose play
     probability differs just before vs just after the report became known."""
     g = store.games
-    soon = [gid for gid in g.index if g.at[gid, "status"] not in ("postponed", "cancelled")
-            and now < _utc(g.at[gid, "tip"]) <= now + timedelta(hours=36)]  # fmt: skip
+    soon = soon_games(store, now)
     before, after = AsOf(store, report.known_at - timedelta(seconds=1)), AsOf(store,
                                                                               report.known_at)
     out = []
