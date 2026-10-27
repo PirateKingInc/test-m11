@@ -5,19 +5,22 @@ import httpx
 from betdata.core.http import SourceClient
 from betdata.nfl.engine import web
 
-PAGE = """{{Short description|NFL team season}}
+PAGE = (
+    """{{Short description|NFL team season}}
 {{Infobox NFL team season
 | team = Detroit Lions
 | year = 2016
 | record = 9–7
 | coach = [[Jim Caldwell]]
 | off_coach = [[Jim Bob Cooter]]
-| def_coach = [[Teryl Austin]] <small>(fired after week 7)</small><br />[[Kris Kocurek|Kris Kocurek]] <small>(interim, week 8)</small>
+| def_coach = [[Teryl Austin]] <small>(fired after week 7)</small><br />""" \
+    """[[Kris Kocurek|Kris Kocurek]] <small>(interim, week 8)</small>
 | stadium = [[Ford Field]]
 | uniform = {{NFL uniform|DET}}
 }}
 The '''2016 Detroit Lions season''' was ...
 """
+)
 
 ARTICLE = """{{Infobox NFL biography
 | coach_years = {{plainlist|
