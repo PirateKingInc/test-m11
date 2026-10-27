@@ -114,12 +114,26 @@ def load_new_report(engine: Engine, name: str, pdf: bytes, now: datetime) -> Rep
                   inserted=inserted)
 
 
+def soon_games(store, now: datetime) -> list:
+    """Games tipping in the next 36 hours (not postponed or cancelled)."""
+    g = store.games
+    return [gid for gid in g.index if g.at[gid, "status"] not in ("postponed", "cancelled")
+            and now < _utc(g.at[gid, "tip"]) <= now + timedelta(hours=36)]  # fmt: skip
+
+
+def games_soon(store, now: datetime) -> int | None:
+    """For the report log only: never stops detection."""
+    try:
+        return len(soon_games(store, now))
+    except (AttributeError, KeyError, TypeError):
+        return None
+
+
 def detect(engine: Engine, store, report: Report, now: datetime) -> list[Change]:
     """Every rotation player of a game on the report (tip within 36 hours) whose play
     probability differs just before vs just after the report became known."""
     g = store.games
-    soon = [gid for gid in g.index if g.at[gid, "status"] not in ("postponed", "cancelled")
-            and now < _utc(g.at[gid, "tip"]) <= now + timedelta(hours=36)]  # fmt: skip
+    soon = soon_games(store, now)
     before, after = AsOf(store, report.known_at - timedelta(seconds=1)), AsOf(store,
                                                                               report.known_at)
     out = []

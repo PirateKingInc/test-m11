@@ -239,6 +239,7 @@ class Poller:
             log_.append({"name": name, "stated": report.report_at.isoformat(),
                          "known": report.known_at.isoformat(), "read": now.isoformat(),
                          "parsed": report.parsed, "inserted": report.inserted,
+                         "games_36h": nba.games_soon(store, now),
                          "changes": len(changes),
                          "qualifying": sum(c.qualifies for c in changes)})  # fmt: skip
             set_state(p, "nba:reports", log_, now)
