@@ -220,3 +220,22 @@ def calibrate(eng: Engine, seasons=(2018, 2019), n: int = 500, rounds: int = 3) 
             "target_dropback_share": float(target_db),
             "rounds": log_, "time_scale": eng.model.time_scale,
             "td_intercept": float(eng.model.intercept[0])}
+
+
+def decompose_run(eng: Engine, slots: list[I.Slot], n: int = 2000, seed: int = 0) -> pd.DataFrame:
+    """Per slot, each chain step's contribution to the home margin and total (Part D):
+    the full run minus the run with that step at the league average, same random numbers."""
+    from betdata.nfl.engine.live import decompose
+
+    tr = I.team_rows(eng.store, slots)
+    pr = I.player_rows(eng.store, eng.avail, slots, eng.ids, eng.coefs, eng.depth)
+    p = SM.SimParams(n=n)
+    rows = []
+    for i, s in enumerate(slots):
+        kick, pat = D.kickoff_starts(eng.store, s.t), D.pat_rates(eng.store, s.t)
+        steps = decompose(eng.model, tr, pr, s, eng.cfg.rates.qb_weight, kick, pat, p, seed + i)
+        row = {"game_id": s.game_id, "point": s.point, "season": s.season}
+        for k, v in steps.items():
+            row[f"c_{k}"], row[f"ct_{k}"] = v["margin"], v["total"]
+        rows.append(row)
+    return pd.DataFrame(rows)
