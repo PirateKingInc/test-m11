@@ -88,7 +88,8 @@ class RecordRow:
 class PropRow:
     """One player prop as the page shows it (M15). `edge` is P(over) minus the no-vig over
     probability, in % points; `flag` is "over"/"under" only for a market whose backtest earned
-    flags; `research` marks a market without a backtest."""
+    flags; `research` marks a market without a backtest; `info` one whose backtest ROI's 95%
+    range includes zero."""
 
     game_id: int
     kickoff: datetime
@@ -109,6 +110,7 @@ class PropRow:
     point: str | None = None
     research: bool = True
     flag: str | None = None
+    info: bool = False  # backtested, but the ROI's 95% range includes zero: never flagged
 
 
 @dataclass

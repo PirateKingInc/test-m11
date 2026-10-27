@@ -13,7 +13,8 @@ from betdata.sports import PropRow
 
 def prop_rows(conn: Connection, now: datetime, model: str, days: int,
               flag_allowed: Callable[[str], bool], research: Callable[[str], bool],
-              thresholds: dict[str, float]) -> list[PropRow]:  # fmt: skip
+              thresholds: dict[str, float],
+              info_only: Callable[[str], bool] | None = None) -> list[PropRow]:  # fmt: skip
     """The latest stored prediction per (game, player, market) known at `now`, for scheduled
     games in the next `days` days, with the line's source and fetch time."""
     pp = prop_predictions
@@ -50,5 +51,6 @@ def prop_rows(conn: Connection, now: datetime, model: str, days: int,
             r["player_name"], r["market"], r["mean"], r["line"], r["over_price"],
             r["under_price"], r["p_over"], r["edge"], list(r["factors"] or []), r["book"],
             src.get(r["book_id"]), r["line_fetched_at"], r["prediction_point"],
-            research(r["market"]), flag))  # fmt: skip
+            research(r["market"]), flag,
+            bool(info_only and info_only(r["market"]))))  # fmt: skip
     return out

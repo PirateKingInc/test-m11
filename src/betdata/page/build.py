@@ -345,7 +345,9 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
             badge = (f'<span class="flag">{e(r.flag.title())} {r.line:g}</span>' if r.flag
                      else "")  # fmt: skip
             research = ('<span class="research">research only, not backtested</span>'
-                        if r.research else "")  # fmt: skip
+                        if r.research else
+                        '<span class="research">info only (backtest ROI range includes 0)'
+                        "</span>" if r.info else "")  # fmt: skip
             line = "–" if r.line is None else f"{r.line:g}"
             p = "–" if r.p_over is None else f"{100 * r.p_over:.0f}%"
             edge = "–" if r.edge is None else f"{r.edge:+.1f} pp"

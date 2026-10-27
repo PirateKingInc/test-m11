@@ -1387,9 +1387,10 @@ The M15 rule is applied unchanged to the corrected final-test numbers: a market 
 | points | 6 pts | 744-1,092 | −10.7% | −15.6% to −5.7% | no |
 | rebounds | 10 pts | 1,011-980 | +10.6% | +5.7% to +15.4% | **yes** |
 | assists | 10 pts | 1,443-1,593 | +5.0% | +1.1% to +9.0% | **yes** |
-| threes | 8 pts | 3,348-3,921 | +0.9% | −1.7% to +3.6% | **yes** (the rule is "positive"; its range includes zero) |
+| threes | 8 pts | 3,348-3,921 | +0.9% | −1.7% to +3.6% | no: **info only** (see below) |
 | PRA | - | research only | - | - | no |
 
+- **Info only (owner's decision, 2026-10-27):** a market is flagged only when its whole 95% range is above zero. A positive ROI whose range includes zero is shown on the page as "info only (backtest ROI range includes 0)" and never flagged. Threes (+0.9%, −1.7% to +3.6%, 7,269 bets) is info only; rebounds (1,991 bets) and assists (3,036 bets) stay flagged. `config/nba_props.json` carries `test_roi_95`; `PropDesign.flag_allowed` checks it.
 - **Caveat:** these are opening lines, and the rebounds edge is almost all unders. The flags are graded live like every other pick.
 - **Model version:** `nbap15` hashes only the frozen fit, so it does not change.
 

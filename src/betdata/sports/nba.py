@@ -185,7 +185,7 @@ class NbaSport(Sport):
         d = PropDesign.load()
         return prop_rows(conn, now, MODEL, DAYS, d.flag_allowed,
                          lambda m: m in d.research_only or m not in d.thresholds,
-                         thresholds())  # fmt: skip
+                         thresholds(), d.info_only)  # fmt: skip
 
     def moneyline_final_roi(self) -> float | None:
         return self._design().ml_final_test_roi

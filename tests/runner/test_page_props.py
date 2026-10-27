@@ -44,3 +44,26 @@ def test_version_label_and_unchanged_card():
     labelled = card_html(c, {}, [], True, note)
     assert labelled.replace(f'\n  <p class="meta ver">{note}</p>', "") == plain
     assert version_note(DummySport.__new__(DummySport)) is None  # no version: no label
+
+
+def test_info_only_label_and_flag_rule():
+    from betdata.nba.props.live import PropDesign
+
+    d = PropDesign(fit="x", thresholds={"threes": 8.0, "assists": 10.0, "points": 6.0},
+                   test_roi={"threes": 0.0091, "assists": 0.0504, "points": -0.1},
+                   test_roi_95={"threes": [-0.0173, 0.0356], "assists": [0.0106, 0.0902],
+                                "points": [-0.15, -0.05]})  # fmt: skip
+    assert d.info_only("threes") and not d.flag_allowed("threes")
+    assert d.flag_allowed("assists") and not d.info_only("assists")
+    assert not d.flag_allowed("points") and not d.info_only("points")
+    html = props_html([_row(market="threes", info=True)], {})
+    assert "info only (backtest ROI range includes 0)" in html
+    assert "research only" not in html
+
+
+def test_live_config_keeps_threes_info_only():
+    from betdata.nba.props.live import PropDesign
+
+    d = PropDesign.load()
+    assert d.info_only("threes") and not d.flag_allowed("threes")
+    assert d.flag_allowed("rebounds") and d.flag_allowed("assists")
