@@ -1373,6 +1373,26 @@ At synthetic half-point lines (no market), P(over) is well calibrated in every b
 
 **Page unchanged:** M16 forbids changing frozen fits and the hourly page's behaviour. So `config/nba_props.json` (fit, calibration, thresholds and the M15 `test_roi` that gates flags) is **not** changed. NBA props stay information only, with no flags. Whether rebounds or assists should be flagged on the corrected numbers is left to a later phase, which would need a fresh, untouched test.
 
+
+### Prop flags after the M16 audit (decision 2026-10-27)
+
+The M15 rule is applied unchanged to the corrected final-test numbers: a market is flagged only if its final-test ROI is positive.
+
+- **Source:** the frozen `nbap15`, scored pre-tip at the opening line on the cleaned 2023-24 to 2025-26 lines (`reports/nba/props_flags_m16.json`).
+- **Range:** the 95% range is mean ± 1.96·sd/√n of the 1-unit bet profits.
+- **Unchanged:** the thresholds (validation 2022-23), the fit and the calibration. Only `test_roi` in `config/nba_props.json` changes.
+
+| Market | Threshold | Bets (W-L) | ROI | 95% range | Flag |
+|---|---|---|---|---|---|
+| points | 6 pts | 744-1,092 | −10.7% | −15.6% to −5.7% | no |
+| rebounds | 10 pts | 1,011-980 | +10.6% | +5.7% to +15.4% | **yes** |
+| assists | 10 pts | 1,443-1,593 | +5.0% | +1.1% to +9.0% | **yes** |
+| threes | 8 pts | 3,348-3,921 | +0.9% | −1.7% to +3.6% | **yes** (the rule is "positive"; its range includes zero) |
+| PRA | - | research only | - | - | no |
+
+- **Caveat:** these are opening lines, and the rebounds edge is almost all unders. The flags are graded live like every other pick.
+- **Model version:** `nbap15` hashes only the frozen fit, so it does not change.
+
 ## M15 summary: what changed on the page
 
 | Sport | Page side version | Background (graded live) | Why |

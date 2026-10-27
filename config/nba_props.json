@@ -7,10 +7,10 @@
     "threes": 8.0
   },
   "test_roi": {
-    "points": -0.1818,
-    "rebounds": -0.1421,
-    "assists": -0.0792,
-    "threes": -0.0315
+    "points": -0.1065,
+    "rebounds": 0.1057,
+    "assists": 0.0504,
+    "threes": 0.0091
   },
   "research_only": [
     "pra"
