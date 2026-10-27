@@ -108,7 +108,7 @@ def test_star_out_one_cycle_one_game_one_alert(setup, monkeypatch):
     rep2 = nba.Report("next.pdf", NOW, NOW)
     monkeypatch.setattr(nba, "load_new_report", lambda e, n, pdf, now: rep2)
     monkeypatch.setattr(nba, "detect", lambda e, s, r, now: [
-        _change(g1, True, new="Out", old="Doubtful", report_at=NOW)])
+        _change(g1, True, name="Star, B", new="Out", old="Doubtful", report_at=NOW)])
     p._due = lambda key, every, now: True
     p.cycle(NOW + timedelta(minutes=3))
     p.cycle(NOW + timedelta(minutes=6))  # the same report again: nothing new
@@ -188,3 +188,30 @@ def test_idle_hour_exits_at_once(setup, monkeypatch):
     monkeypatch.setattr(nba, "active", lambda c, t: False)
     assert p.run(NOW + timedelta(minutes=50)) == 0
     assert p.notes and "idle" in p.notes[0]
+
+
+def test_a_change_repeated_by_the_next_report_is_not_detected_again(setup, monkeypatch):
+    """REVIEW M16-4, live 2026-10-25: VJ Edgecombe Questionable -> Out was detected on the
+    6:45 PM report and again on the 7:00 PM report (the next hour's job starts from a copy
+    without the 6:45 rows), giving two alerts for one change."""
+    p, gids, ntfy = setup
+    g1 = gids[0]
+    monkeypatch.setattr(nba, "active", lambda c, t: True)
+    p._nba_models = FakeModels()
+    p._due = lambda key, every, now: True
+    monkeypatch.setattr(p, "poll_game", lambda sport, gid, now, ev: _spread_quotes(gid, -4.5))
+    for i, (name, old, new) in enumerate([("645PM.pdf", "Questionable", "Out"),
+                                          ("700PM.pdf", "Questionable", "Out"),  # the repeat
+                                          ("715PM.pdf", "Out", "Questionable"),  # a real flip
+                                          ("730PM.pdf", "Questionable", "Out")]):  # and back
+        at = NOW + timedelta(minutes=15 * i)
+        rep = nba.Report(name, at, at)
+        monkeypatch.setattr(nba, "newest_report", lambda http, now, last, n=name: (n, b"%PDF"))
+        monkeypatch.setattr(nba, "load_new_report", lambda e, n, pdf, now, r=rep: r)
+        monkeypatch.setattr(nba, "detect", lambda e, s, r, now, o=old, n=new, a=at: [
+            _change(g1, True, old=o, new=n, report_at=a)])
+        p.cycle(at)
+    with p.pdb.connect() as c:
+        ev = [r.new_status for r in c.execute(select(status_events.c.new_status)
+                                              .order_by(status_events.c.event_id))]
+    assert ev == ["Out", "Questionable", "Out"]  # the 7:00 PM repeat was skipped

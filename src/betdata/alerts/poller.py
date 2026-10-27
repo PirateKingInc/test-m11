@@ -248,6 +248,16 @@ class Poller:
             report_at=report_at, detected_at=now, tip=tip, details=details,
         ).on_conflict_do_nothing()  # fmt: skip
         with self.pdb.begin() as p:
+            # The same change seen again (REVIEW M16-4): each job starts from a fresh copy of
+            # the hourly state, which lacks the reports the previous job loaded, so the next
+            # report repeats a change already handled. The poller's own last record decides.
+            se = status_events
+            last = p.execute(select(se.c.new_status)
+                             .where(se.c.sport == sport, se.c.game_id == game_id,
+                                    se.c.player_key == player_key)
+                             .order_by(se.c.event_id.desc()).limit(1)).first()  # fmt: skip
+            if last is not None and last.new_status == new:
+                return None
             res = p.execute(stmt)
             return res.inserted_primary_key[0] if res.rowcount else None
 
