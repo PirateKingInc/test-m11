@@ -1,0 +1,107 @@
+# M17 (MODEL.md "M17"): fetches only GitHub Actions can make, published on the `m17-data`
+# branch for the engine's offline steps. Every request goes through core/http.py at one a second
+# into a throwaway database:
+#   coordinators  Wikipedia team-season infoboxes 2016-2026 (CC BY-SA 4.0) + 40 spot-checks
+#   timing        nflverse release asset update times (GitHub API)
+#   fantasy       Sleeper / ESPN fantasy / FantasyPros rankings / ff_opportunity probes
+#   lines         ESPN per-book opening and closing NFL lines, one season per job, one at a time
+# Files of jobs not re-run are kept on the branch.
+
+name: nfl-m17-data
+
+on:
+  workflow_dispatch:
+    inputs:
+      what:
+        description: "JSON list of: coordinators, timing, fantasy, lines"
+        default: '["coordinators", "timing", "fantasy", "lines"]'
+      seasons:
+        description: "lines: seasons as a JSON list"
+        default: "[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]"
+
+permissions:
+  contents: write
+
+jobs:
+  small:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        what: [coordinators, timing, fantasy]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Fetch
+        if: contains(fromJSON(inputs.what), matrix.what)
+        env:
+          BETDATA_DB_URL: sqlite:///scratch.sqlite
+        run: |
+          uv run --no-dev betdata db init
+          uv run --no-dev betdata nfl engine fetch ${{ matrix.what }} --out m17data
+      - uses: actions/upload-artifact@v4
+        if: always() && contains(fromJSON(inputs.what), matrix.what)
+        with:
+          name: m17-${{ matrix.what }}
+          path: m17data/
+          retention-days: 7
+
+  lines:
+    if: contains(fromJSON(inputs.what), 'lines')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        season: ${{ fromJSON(inputs.seasons) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Fetch
+        env:
+          BETDATA_DB_URL: sqlite:///scratch.sqlite
+        run: |
+          uv run --no-dev betdata db init
+          uv run --no-dev betdata nfl engine fetch lines --season ${{ matrix.season }} --out m17data
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m17-lines-${{ matrix.season }}
+          path: m17data/
+          retention-days: 7
+
+  publish:
+    needs: [small, lines]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m17-*
+          path: m17data
+          merge-multiple: true
+      - name: Push to the m17-data branch (files not re-fetched are kept)
+        run: |
+          mkdir -p m17data
+          git clone -q --depth 1 --branch m17-data \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" old \
+            || mkdir old
+          rm -rf old/.git
+          cp -rn old/. m17data/ 2>/dev/null || true
+          cd m17data
+          ls -la
+          git init -q -b m17-data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "M17 data $(date -u +%FT%TZ) (run ${{ github.run_id }})"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" m17-data
