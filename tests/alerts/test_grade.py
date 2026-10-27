@@ -258,3 +258,31 @@ def test_betdata_grade_alerts_cli(engine, monkeypatch, tmp_path):
         assert out.exit_code == 0, out.output
     finally:
         get_settings.cache_clear()
+
+
+def test_nfl_stats_from_the_state_box_table(tmp_path):
+    """The poller job has only the hourly state: NFL prop grades read the cached per-game box
+    table (`data/derived/nfl_prop_box_<season>.parquet`), mapped to the raw nflverse names."""
+    import pandas as pd
+    import pytest
+
+    from betdata.alerts.grade import _nfl_stats
+
+    with pytest.raises(FileNotFoundError):
+        _nfl_stats(2026, data_dir=tmp_path)
+    (tmp_path / "derived").mkdir()
+    pd.DataFrame({"nid": ["2026_07_NE_CHI"], "game_id": [7370], "team_id": [1],
+                  "player_id": ["00-1"], "name": ["DJ Moore"], "pos": ["WR"],
+                  "rec_yds": [87.0], "rush_yds": [4.0], "rec": [6.0]}).to_parquet(
+        tmp_path / "derived" / "nfl_prop_box_2026.parquet")
+    st = _nfl_stats(2026, data_dir=tmp_path)
+    row = st.iloc[0]
+    assert (row.game_id, row.player_display_name, row.receiving_yards, row.receptions,
+            row.rushing_yards) == ("2026_07_NE_CHI", "DJ Moore", 87.0, 6.0, 4.0)
+    # The raw nflverse file wins when it is on disk.
+    raw = tmp_path / "nflverse" / "stats_player"
+    raw.mkdir(parents=True)
+    pd.DataFrame({"player_display_name": ["DJ Moore"], "game_id": ["2026_07_NE_CHI"],
+                  "season": [2026], "receiving_yards": [90.0], "rushing_yards": [0.0],
+                  "receptions": [7.0]}).to_parquet(raw / "stats_player_week_2026.parquet")
+    assert _nfl_stats(2026, data_dir=tmp_path).iloc[0].receiving_yards == 90.0

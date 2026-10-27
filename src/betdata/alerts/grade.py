@@ -26,6 +26,7 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from statistics import NormalDist
 
 from sqlalchemy import Connection, Engine, select, update
@@ -210,11 +211,29 @@ def find_close(m: Connection, p: Connection, a, tip: datetime) -> Close | None:
 NflStats = Callable[[int], object]  # season -> nflverse player stats DataFrame
 
 
-def _nfl_stats(season: int):
-    from betdata.nfl.nflverse_files import load_player_stats
+def _nfl_stats(season: int, data_dir=None):
+    """The season's player stats: the raw nflverse file when it is on disk (hourly 7am run,
+    dev), else the per-game box table the hourly state keeps in `data/derived`
+    (`nfl_prop_box_<season>.parquet`, refreshed each morning). The poller job restores only the
+    state, so it grades NFL props from the box table."""
+    import pandas as pd
 
+    from betdata.config import PROJECT_ROOT
+    from betdata.nfl.nflverse_files import load_player_stats
+    from betdata.nfl.props.data import STAT_COLS
+
+    root = Path(data_dir) if data_dir else PROJECT_ROOT / "data"
     cols = ["player_display_name", "game_id", *NFL_STAT.values()]
-    return load_player_stats([season], columns=cols)
+    raw = root / "nflverse" / "stats_player" / f"stats_player_week_{season}.parquet"
+    if raw.exists():
+        return load_player_stats([season], columns=cols, data_dir=root)
+    box = root / "derived" / f"nfl_prop_box_{season}.parquet"
+    if not box.exists():
+        raise FileNotFoundError(f"no NFL player stats for {season} ({raw.name} or {box.name})")
+    back = {v: k for k, v in STAT_COLS.items()}
+    b = pd.read_parquet(box).drop(columns=["game_id"], errors="ignore")  # our id; keep nflverse's
+    b = b.rename(columns={"nid": "game_id", "name": "player_display_name", **back})
+    return b[cols]
 
 
 def prop_actual(m: Connection, a, nfl_stats: NflStats) -> float | str | None:
