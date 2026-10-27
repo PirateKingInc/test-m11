@@ -11,6 +11,7 @@ parquet`, ...), written atomically (tmp + rename), and each new version is recor
   depth_charts   depth_charts/depth_charts_{season}.parquet              2001+
   player_stats   stats_player/stats_player_week_{season}.parquet         1999+
   ngs_{kind}     nextgen_stats/ngs_{kind}.parquet (all seasons, 2016+)   (passing receiving rushing)
+  players        players/players.parquet (one file)                      M17: positions, draft round
 
 A past season's file is downloaded once and then skipped while it is on disk; the current
 season's (and the all-season NGS files) at most once a day. A season nflverse has not published
@@ -78,6 +79,9 @@ DATASETS: dict[str, Dataset] = {
     **{f"ngs_{k}": Dataset(f"nextgen_stats/ngs_{k}.parquet", None,
                            frozenset({"season", "week", "team_abbr", "player_gsis_id"}))
        for k in ("passing", "receiving", "rushing")},
+    # M17: player ids, position and draft round (rookie priors); one file, refreshed daily.
+    "players": Dataset("players/players.parquet", None,
+                       frozenset({"gsis_id", "position", "draft_round", "rookie_season"})),
 }  # fmt: skip
 PARTICIPATION_DROP = ("old_game_id", "players_on_play", "offense_names", "defense_names",
                       "offense_numbers", "defense_numbers")  # fmt: skip

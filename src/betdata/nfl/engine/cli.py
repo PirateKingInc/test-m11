@@ -46,3 +46,20 @@ def fetch(what: str = typer.Argument(..., help="coordinators | lines | timing | 
     else:
         raise typer.BadParameter(what)
     typer.echo(json.dumps(res, default=str)[:4000])
+
+
+@engine_app.command("stability")
+def stability(out: Path = typer.Option(Path("reports/nfl/stability.csv"))):
+    """A1: split-half and season-to-season reliability and padding of every engine rate."""
+    from betdata.nfl.engine.stability import write
+
+    t = write(out)
+    typer.echo(f"{len(t)} rows -> {out}")
+
+
+@engine_app.command("checks")
+def checks(out: Path = typer.Option(Path("reports/nfl/m17_checks.json"))):
+    """A2 route proxy and A3 pressure flags."""
+    from betdata.nfl.engine.checks import write
+
+    typer.echo(json.dumps(write(out), indent=1))
