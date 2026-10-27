@@ -96,3 +96,15 @@ def test_staff_lines_fill_a_role_the_infobox_lacks():
                                                          "James Bettcher")
     assert row["oc_from"] == "staff template" and row["staff_revid"] == 9
     assert row["head_coach_from"] == "infobox"
+
+
+def test_prose_lines_never_fill_a_role():
+    prose = ("Head coach [[Matt Rhule]] fired defensive coordinator [[Phil Snow]] after "
+             "the season.\n* Special teams coordinator – [[John Fassel]]\n"
+             "* Outside linebackers – [[Brandon Staley]]")
+    assert web.role_from_text(prose, "dc") is None
+    assert web.role_from_text(prose, "oc") is None
+    staff = ("* '''Defensive coordinator''' – [[Phil Snow]]\n"
+             "|Offensive Coordinator=[[Joe Brady]]")
+    assert web.role_from_text(staff, "dc")["name"] == "Phil Snow"
+    assert web.role_from_text(staff, "oc")["name"] == "Joe Brady"
