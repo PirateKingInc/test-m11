@@ -17,7 +17,7 @@ def test_a_read_sees_only_games_known_at_the_instant():
     p = RateParams(half_life=1.0, last_season_w=0.5)
     st = post_game_state(_games(), ["x"], p)
     q = pd.DataFrame({"unit": ["KC"] * 3, "season": [2020] * 3,
-                      "t": pd.to_datetime(["2020-09-13 20:00", "2020-09-14 01:00",
+                      "t": pd.to_datetime(["2020-09-13 05:00", "2020-09-14 01:00",
                                            "2020-09-26 00:00"], utc=True)})  # fmt: skip
     got = read_state(st, q, ["x"], p).x.tolist()
     # before the first 2020 game is known: last season's 10 carried at 0.5; then 5*0.5+1;
