@@ -82,3 +82,17 @@ def test_fetch_coordinators_through_the_client(engine, tmp_path):
     checks = json.loads((tmp_path / "coordinators_spotcheck.json").read_text())
     assert len(checks) == 3
     assert {x["result"] for x in checks if x["role"] == "dc"} <= {"match"}
+
+
+def test_staff_lines_fill_a_role_the_infobox_lacks():
+    page = {"title": "2016 Arizona Cardinals season", "revid": 5, "wikitext": (
+        "{{Infobox NFL team season\n| coach = [[Bruce Arians]]\n}}\n==Staff==\n")}
+    staff = {"revid": 9, "wikitext": (
+        "* Offensive coordinator – [[Harold Goodwin]]\n"
+        "* Assistant offensive coordinator – [[Somebody Else]]\n"
+        "* Defensive coordinator – [[James Bettcher]]\n")}
+    row = web.coordinators_row("ARI", 2016, page, staff)
+    assert (row["head_coach"], row["oc"], row["dc"]) == ("Bruce Arians", "Harold Goodwin",
+                                                         "James Bettcher")
+    assert row["oc_from"] == "staff template" and row["staff_revid"] == 9
+    assert row["head_coach_from"] == "infobox"

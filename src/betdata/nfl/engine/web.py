@@ -141,7 +141,26 @@ def people(value: str) -> list[dict]:
     return out
 
 
-def coordinators_row(team: str, season: int, page: dict) -> dict:
+ROLE_LINE = {"head_coach": re.compile(r"\bhead coach\b", re.I),
+             "oc": re.compile(r"\boffensive coordinator\b", re.I),
+             "dc": re.compile(r"\bdefensive coordinator\b", re.I)}
+NOT_ROLE = re.compile(r"assistant|quality control|associate|special teams|senior|interim "
+                      r"offensive|former|run game|pass game|co-", re.I)
+
+
+def role_from_text(wikitext: str, role: str) -> dict | None:
+    """The first linked name on a line that names the role (staff lists and staff templates
+    write "Offensive coordinator – [[Name]]"), skipping assistants and similar titles."""
+    for line in wikitext.splitlines():
+        if not ROLE_LINE[role].search(line) or NOT_ROLE.search(line):
+            continue
+        m = LINK.search(line)
+        if m and not re.search(r"season|coordinator|coach|football|league", m.group(1), re.I):
+            return {"name": (m.group(2) or m.group(1)).strip(), "article": m.group(1).strip()}
+    return None
+
+
+def coordinators_row(team: str, season: int, page: dict, staff: dict | None = None) -> dict:
     box = infobox(page.get("wikitext", ""))
     row: dict[str, Any] = {"season": season, "team": team, "title": page["title"],
                            "revid": page.get("revid"),
@@ -154,6 +173,18 @@ def coordinators_row(team: str, season: int, page: dict) -> dict:
         row[f"{role}_after"] = " -> ".join(p["name"] for p in ps[1:]) or None
         row[f"{role}_week"] = next((p["week"] for p in ps[1:] if p["week"]), None)
         row[f"{role}_raw"] = value[:300]
+        row[f"{role}_from"] = "infobox" if ps else None
+        if not ps:  # staff section of the page, then the season's staff template
+            for where, text in (("page", page.get("wikitext", "")),
+                                ("staff template", (staff or {}).get("wikitext", ""))):
+                hit = role_from_text(text, role)
+                if hit:
+                    row[role], row[f"{role}_article"] = hit["name"], hit["article"]
+                    row[f"{role}_from"] = where
+                    if where == "staff template":
+                        row["staff_revid"] = (staff or {}).get("revid")
+                    break
+    row["infobox_keys"] = sorted(box)[:40]
     return row
 
 
@@ -203,7 +234,15 @@ def fetch_coordinators(client: SourceClient, seasons: range, out: Path, checks: 
             if page is None:
                 missing.append(title)
                 continue
-            rows.append(coordinators_row(team, season, page))
+            staff = None
+            box = infobox(page.get("wikitext", ""))
+            if not all(any(p.match(k) for k in box) for p in ROLE_KEYS.values()):
+                try:
+                    staff = wiki_page(client, f"Template:{season} {team_name(team, season)} "
+                                              "staff")  # fmt: skip
+                except (ApiError, SourceUnavailable):
+                    staff = None
+            rows.append(coordinators_row(team, season, page, staff))
     out.mkdir(parents=True, exist_ok=True)
     (out / "coordinators_raw.json").write_text(json.dumps(rows, indent=1))
     rng = random.Random(seed)
