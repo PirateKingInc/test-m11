@@ -130,7 +130,7 @@ class FakeModels:
         return 0.5
 
     def play_probs(self, g, obs, now):
-        return {}  # no candidate: the ESPN mapping stands
+        return None  # no model probabilities: the ESPN mapping stands (as on a model failure)
 
 
 class KnewModels(FakeModels):
@@ -389,3 +389,13 @@ def test_model_play_probs_on_a_real_store():
     assert after[key] < 0.1 < before[key]
     assert {k: v for k, v in after.items() if k != key} == {
         k: v for k, v in before.items() if k != key}
+
+
+def test_a_player_m12_does_not_use_never_qualifies(setup):
+    p, h, espn, ids, news = setup
+    h._models_factory = type("NoAllen", (KnewModels,), {"play_probs": lambda *a: {}})
+    t0 = KICK - timedelta(minutes=110)
+    h.cycle(p, t0)
+    espn.summary = "summary_out.json"
+    h.cycle(p, t0 + timedelta(minutes=5))
+    assert not _events(p)[("Josh Allen", "Out")].qualifies and news == []

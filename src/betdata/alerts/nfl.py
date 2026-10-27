@@ -253,12 +253,17 @@ class NflHandler:
         a pre-filter. M12's own play probability before and after (the game-day roster, the
         nflverse report and this ESPN read, as the re-prediction sees them) must move by
         >= 0.25. A change the model already knew (an inactive already on the game-day roster)
-        is recorded, not qualifying."""
+        is recorded, not qualifying, and so is a player M12 does not use (not a candidate)."""
         models = self.models(poller.main, now)
         before = models.play_probs(g, observations(prev, known), now)
         after = models.play_probs(g, observations(current, known), now)
+        if after is None:
+            return
         for ch in changes:
-            if not ch.qualifies or not ch.gsis or ch.gsis not in after:
+            if not ch.qualifies:
+                continue
+            if not ch.gsis or ch.gsis not in after:
+                ch.qualifies = False
                 continue
             pb, pa = before.get(ch.gsis, ch.prob_before), after[ch.gsis]
             ch.prob_before, ch.prob_after = round(pb, 4), round(pa, 4)
@@ -636,7 +641,7 @@ class Models:
                                   mean_before=pb[key]["mean"], mean_after=p["mean"]))
         return Repredicted(self.version, a.point, b.margin, a.margin, b.total, a.total, props)
 
-    def play_probs(self, g, obs: list[dict], now: datetime) -> dict[str, float]:
+    def play_probs(self, g, obs: list[dict], now: datetime) -> dict[str, float] | None:
         """gsis -> the model's own play probability for every candidate of both teams, with
         these ESPN observations in the as-of store: what M12 actually uses at this point."""
         from betdata.nfl.features.availability import candidates
