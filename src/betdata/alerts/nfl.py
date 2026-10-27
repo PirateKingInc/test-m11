@@ -640,7 +640,8 @@ class Models:
         """gsis -> the model's own play probability for every candidate of both teams, with
         these ESPN observations in the as-of store: what M12 actually uses at this point."""
         from betdata.nfl.features.availability import candidates
-        from betdata.nfl.points import EARLY, FINAL_REPORT, point_now
+        from betdata.nfl.points import FINAL_REPORT
+        from betdata.nfl.predict import EARLY, point_now
         from betdata.nfl.store import AsOf
 
         game = self.store.games.loc[int(g.game_id)]

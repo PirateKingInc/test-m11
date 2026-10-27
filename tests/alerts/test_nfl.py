@@ -7,6 +7,7 @@ tested on the synthetic M12 store)."""
 from __future__ import annotations
 
 import json
+import types
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -368,3 +369,23 @@ def test_store_injection_changes_only_the_news():
     assert len(s4.frame("rosters").df) == len(store.frame("rosters").df)
     fr = {k: b for k, _, _, b in candidates(AsOf(s4, t_fr), g, team, FINAL_REPORT)}
     assert fr[key] == "fr|Out|DNP"
+
+
+def test_model_play_probs_on_a_real_store():
+    """Models.play_probs runs M12's own rules (no stub): a starter reported Out moves."""
+    from tests.nfl.synth import make_store
+
+    store = make_store()
+    g = store.games.iloc[-1]
+    team = int(g.home)
+    now = (prekick_time(g.kickoff) - pd.Timedelta(minutes=20)).to_pydatetime()
+    m = N.Models.__new__(N.Models)
+    m.store = store.with_params(**N.m12_params())
+    row = types.SimpleNamespace(game_id=int(g.name))
+    before = m.play_probs(row, [], now)
+    key = max(before, key=before.get)
+    obs = [{"status": "Out", "team": team, "gsis": key, "group": None, "practice": None}]
+    after = m.play_probs(row, obs, now)
+    assert after[key] < 0.1 < before[key]
+    assert {k: v for k, v in after.items() if k != key} == {
+        k: v for k, v in before.items() if k != key}
