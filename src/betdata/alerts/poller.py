@@ -234,6 +234,14 @@ class Poller:
                                          {"known_at": ch.known_at.isoformat()})  # fmt: skip
             if event_id is not None and ch.qualifies:
                 by_game.setdefault(ch.game_id, []).append((event_id, ch))
+        with self.pdb.begin() as p:  # a short log of every report read (verification)
+            log_ = get_state(p, "nba:reports", [])[-49:]
+            log_.append({"name": name, "stated": report.report_at.isoformat(),
+                         "known": report.known_at.isoformat(), "read": now.isoformat(),
+                         "parsed": report.parsed, "inserted": report.inserted,
+                         "changes": len(changes),
+                         "qualifying": sum(c.qualifies for c in changes)})  # fmt: skip
+            set_state(p, "nba:reports", log_, now)
         for gid, evs in by_game.items():
             self._guard(f"nba game {gid}", self.nba_game, store, models, gid, evs, report, now)
         return len(changes)
