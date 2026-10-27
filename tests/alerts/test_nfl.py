@@ -128,6 +128,23 @@ class FakeModels:
     def p_over(self, market, mean, line):
         return 0.5
 
+    def play_probs(self, g, obs, now):
+        return {}  # no candidate: the ESPN mapping stands
+
+
+class KnewModels(FakeModels):
+    """M12 already had Allen at this probability, whatever ESPN says (REVIEW M17-0)."""
+
+    prob = {"Questionable": 0.003, "Out": 0.003}
+
+    def play_probs(self, g, obs, now):
+        st = {o["name"]: o["status"] for o in obs}.get("Josh Allen", "Questionable")
+        return {"00-0034857": self.prob[st]}
+
+
+class MovedModels(KnewModels):
+    prob = {"Questionable": 0.8, "Out": 0.01}
+
 
 class BrokenModels:
     def __init__(self, engine, now):
@@ -251,6 +268,21 @@ def test_change_across_cycles_qualifies_and_reaches_signal_1(setup):
     # The same statuses read again: nothing new.
     h.cycle(p, t0 + timedelta(minutes=10))
     assert len(_events(p)) == len(ev) and len(news) == 1
+
+
+@pytest.mark.parametrize("models, qualifies", [(KnewModels, False), (MovedModels, True)])
+def test_qualification_uses_the_models_own_play_probability(setup, models, qualifies):
+    p, h, espn, ids, news = setup
+    h._models_factory = models
+    t0 = KICK - timedelta(minutes=110)
+    h.cycle(p, t0)
+    espn.summary = "summary_out.json"
+    h.cycle(p, t0 + timedelta(minutes=5))
+    allen = _events(p)[("Josh Allen", "Out")]
+    assert allen.qualifies is qualifies
+    assert (allen.prob_before, allen.prob_after) == (models.prob["Questionable"],
+                                                     models.prob["Out"])
+    assert len(news) == int(qualifies)
 
 
 def test_inactives_count_only_once_the_list_is_released(setup):
