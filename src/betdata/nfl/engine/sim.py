@@ -145,10 +145,12 @@ def simulate(model: D.DriveModel, home: Side, away: Side, kick_pool: np.ndarray,
             row = _draw_rows(rng, model, out, start[a])
             plays, secs, yards, fgd, nxt, _share, _st = row.T
             secs = np.nan_to_num(secs, nan=150.0) * pace[ps] * model.time_scale
+            # A drive longer than the clock left: a score stands, compressed into the time left
+            # (the outcome model already reads the clock, from real two-minute drives); any
+            # other result becomes the end of the half.
             short = secs > clock[a]
-            scoring = np.isin(out, (IDX["td"], IDX["fg"]))
-            keep = short & scoring & (secs * 0.5 <= clock[a])
-            out = np.where(short & ~keep, IDX["end_half"], out)
+            scoring = np.isin(out, (IDX["td"], IDX["fg"], IDX["opp_td"]))
+            out = np.where(short & ~scoring, IDX["end_half"], out)
             secs = np.minimum(secs, clock[a])
             # play mix
             F = D.pass_features(sd, clock[a], np.full(len(a), half), game_sec, start[a],
