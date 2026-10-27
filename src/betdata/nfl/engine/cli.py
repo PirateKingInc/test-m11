@@ -63,3 +63,28 @@ def checks(out: Path = typer.Option(Path("reports/nfl/m17_checks.json"))):
     from betdata.nfl.engine.checks import write
 
     typer.echo(json.dumps(write(out), indent=1))
+
+
+@engine_app.command("freeze")
+def freeze_cmd(first: int = typer.Option(2016), last: int = typer.Option(2025),
+               rates: str = typer.Option("{}", help="RateParams as JSON (the validated set)")):
+    """Fit the drive model on first..last, calibrate on the last two, write the frozen fit."""
+    from betdata.nfl.engine.live import freeze
+
+    seasons = range(first, last + 1)
+    path = freeze(seasons, (last - 1, last), json.loads(rates))
+    typer.echo(f"frozen fit -> {path}")
+
+
+@engine_app.command("live")
+def live_cmd():
+    """One live engine run now (what the hourly NFL plugin does): predict and store."""
+    from datetime import UTC, datetime
+
+    from betdata.config import get_settings
+    from betdata.db.engine import make_engine
+    from betdata.nfl.engine.live import run
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    typer.echo(json.dumps(run(make_engine(get_settings().db_url), datetime.now(UTC)),
+                          default=str))  # fmt: skip

@@ -40,6 +40,7 @@ def refresh(conn: Connection, now: datetime, data_dir: Path,
             log.warning("%s", e)
         kick = _kickoffs(game_map(conn), load_games(conn))
         out["m15_depth_rows"] = len(cached_depth(data_dir, season, kick))
+    out.update(refresh_engine(season, data_dir))
     from betdata.nfl.props.grade import DESIGN_PATH
 
     if DESIGN_PATH.exists():
@@ -52,6 +53,22 @@ def refresh(conn: Connection, now: datetime, data_dir: Path,
         box, _ = load_box_cached(conn, store.games, store.frame("snaps").df, seasons, data_dir)
         out["props_player_games"] = len(box)
         out["props_espn_ids"] = len(depth_ids(data_dir, seasons))
+    return out
+
+
+def refresh_engine(season: int, data_dir: Path) -> dict[str, int]:
+    """M17 engine tables (drives, team-games, player-games) for the seasons it reads, rebuilt
+    when that season's play-by-play is newer than the cache (no play-by-play: the cache is
+    kept as it is)."""
+    from betdata.nfl.engine.live import LIVE_SEASONS
+    from betdata.nfl.engine.plays import season_tables
+
+    out: dict[str, int] = {}
+    for s in range(season - LIVE_SEASONS, season + 1):
+        try:
+            out[f"m17_team_games_{s}"] = len(season_tables(s, data_dir)["team_games"])
+        except (FileNotFoundError, ValueError, KeyError) as e:
+            log.warning("m17 tables %s: %s", s, e)
     return out
 
 
