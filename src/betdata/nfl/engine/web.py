@@ -32,7 +32,8 @@ WIKI = "https://en.wikipedia.org/w/api.php"
 ESPN_SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl"
 ESPN_CORE = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
 GITHUB_API = "https://api.github.com"
-USER_AGENT = "betdata/0.1 (personal research; github.com/PirateKingInc/test-m11)"
+USER_AGENT = ("betdata-m17/0.1 (https://github.com/PirateKingInc/test-m11; research use) "
+              "python-httpx")  # Wikimedia user-agent policy: a URL to reach the owner
 
 # nflverse abbreviation -> franchise name by season (relocations and renames since 2016)
 TEAMS = {
