@@ -1482,3 +1482,151 @@ The decision is taken once, at the end of the two weeks. Before then Signal 1 ru
 - **Result and profit:** 1 unit at the alerted price and line. Game markets from the final score (`results`, final); props from the box score (NBA `nba_player_games`: points, oreb + dreb, ast, fg3m; NFL nflverse weekly player stats, matched by name, with snap counts telling 0 from did-not-play). Void (profit 0) for a postponed or cancelled game or a player who did not play. ROI = profit / settled bets (wins, losses, pushes; voids excluded).
 - **Counting toward the success rule:** an alert counts as graded for the verdict when it has a no-vig CLV; the 95% range uses the sample sd (n − 1).
 - A grade is rewritten only when a later run has more (a result after a close); a grade with a result and a close is final.
+
+# M17: an NFL engine built bottom-up (written 2026-10-27, before any M17 result)
+
+M17 builds a second NFL model that never reads a betting line. It predicts each game from the plays up: how many plays each team runs, how many are passes, where the targets and carries go, how efficient each is, and how drives end. It then simulates the game 10,000 times. It ships as two **new versions** beside the current ones:
+
+- **`nfle17`** for sides;
+- **`nflpe17`** for props.
+
+m12, m13w, m15 and nflp15 are not changed: not their code, fits, configs or stored predictions. The alerts layer, the append-only odds history and existing migrations are not changed either.
+
+**The market is never an input.** No spread, total, moneyline, prop line or price enters any engine input, fit, calibration or hyper-parameter choice. Lines are read only after the engine has predicted, to compare (Part D) and to grade. A test checks that the engine package imports nothing that reads lines (`odds_snapshots`, `prop_lines`, `quotes`, `nfl/features/market.py`).
+
+## Seasons and rules (fixed now)
+
+- **Sides:**
+  - **Train** 2016-2019 (participation data starts in 2016): every rate, padding and coefficient is fitted here.
+  - **Validate** 2020-2022: every choice of window, padding multiplier, drive-model term or threshold is made here.
+  - **Test** 2023-2025: scored once, after refitting on 2016-2022 with the frozen design. It is labelled **repeat look (fourth for NFL sides)**: M12, M13 and M15 each scored these seasons once. Nothing is adjusted afterwards.
+- **Props:**
+  - The player model is fitted on 2016-2019 and its windows are chosen on 2020-2022 by MAE, as nflp15 was. No lines exist for those seasons.
+  - Betting thresholds need lines, and ESPN's NFL prop lines exist only for 2024 and 2025 (M15). So **2024 is the prop validation season** (thresholds chosen there) and **2025 the prop test season**, scored once.
+  - nflpe17's player model is refitted on 2016-2023 before 2025 is scored. This is declared now: no prop threshold can be chosen on 2020-2022.
+- **Stop rule:** per engine step, one full build plus at most 3 adjustments, each judged on validation. Every result is logged below, kept or dropped. Never adjust after seeing a test season.
+- **As-of:** every input row carries `known_at` (a game's plays: kickoff + 12 h, as M12). A prediction at instant `t` reads only rows known by `t`. The engine predicts at the M12 points (`final_report`, `prekick`; live also `early`, read as `final_report`).
+- **Free data only, no new keys.** Network access stays in `fetch`, through `core/http.py`. UTC is used in storage and Eastern for display.
+
+## Part A: measure first
+
+**A1. Stability table** (`reports/nfl/stability.csv`, `betdata nfl engine stability`). For every rate the engine uses (team pace, neutral pass rate over expected, sack and scramble rates, pressure rate, target share, targets per route, catch rate, yards per target, aDOT, YAC per reception, carry share, yards per carry, red-zone shares, drive-outcome rates, FG make rate, punt net, and the defence's allowed versions):
+
+- **Split-half reliability:** odd vs even games within a season, for units with at least 4 games in each half. Spearman-Brown corrects it to a full season.
+- **Season-to-season reliability:** the correlation of a unit's season rate with its next-season rate (units with enough volume in both seasons).
+- **Empirical padding:** the number of opportunities `k` at which the reliability is 0.5, from the split-half reliability `r` at the median sample size `n`: `k = n·(1 − r)/r`. An estimate after `m` opportunities is then shrunk as `(m·x + k·prior)/(m + k)`, with the prior the position (or league) mean. Rookies use a prior by draft-round bucket (step 10).
+- **Which seasons feed the engine:** columns are computed on 2016-2019 (these feed the engine) and on 2016-2025 (reported only).
+
+**A2. Data timing.** For each nflverse file the engine could use (play-by-play, participation, FTN charting, PFR advanced, NGS, player stats, depth charts, rosters), this records:
+- whether the current season's file exists in season;
+- when it is updated, from the release's asset timestamps, checked on GitHub Actions.
+
+**Routes:** participation (players on the field for each dropback) gives real routes run, but has no 2026 file in season (M15). Two target models are compared on 2020-2022 (validation) for predicting next-game targets:
+- (a) targets per route run, with real routes;
+- (b) targets per *proxy route*, where proxy routes = snap share × team dropbacks.
+
+The engine uses (b) live whenever participation is missing. The comparison measures what the proxy costs.
+
+**A3. Pressure flag check.** Pressure per dropback from participation (`was_pressure`, 2016-2025) is compared with PFR's `times_pressured` (2018-2026), per team-game and per QB-season: correlation, mean level and the split-half reliability of each. The engine's sack step uses PFR (it is published in season) unless the check shows it disagrees with participation (team-game correlation below 0.7). In that case pressure is left out and sacks are modelled from sack rates alone.
+
+**A4. Coordinators** (`seeds/coordinators_nfl.csv`, 2016-2026, 32 teams × 11 seasons):
+- **Rows:** head coach, offensive coordinator, defensive coordinator, and a mid-season change with the week it took effect, where the page states one.
+- **Source:** English Wikipedia's team-season articles ("2023 Buffalo Bills season", infobox fields `coach`, `off_coach`, `def_coach`), fetched via the MediaWiki API from GitHub Actions at one request a second.
+- **Licence:** CC BY-SA 4.0, so every row carries its source URL and revision id, and the file's header gives the attribution.
+- **Not used:** Pro-Football-Reference is not scraped.
+- **Checks:**
+  - **40 random spot-checks:** each row is compared with the coordinator's own Wikipedia article (career entries naming the team and the years). Mismatches are listed and resolved by hand from the cited revision.
+  - **Persistence analysis:** the season-to-season correlation of team pace, neutral pass rate over expected and the defence's pressure and blitz rates, split by "same offensive (defensive) coordinator and head coach" vs "changed". If persistence is clearly lower after a change (difference in r > 0.1 with ≥ 60 team-seasons in each group), the engine's prior for a new season regresses those rates harder for teams with a new coordinator. Otherwise coordinators are not used.
+
+## Part B: the engine, step by step (`src/betdata/nfl/engine/`)
+
+Each step estimates rates from play-by-play known at the prediction point. Estimates are exponentially weighted over the current and previous season, shrunk with the A1 padding, and carried across seasons with the A1 season-to-season reliability. Each is opponent-adjusted where the step names a defence: the defence's allowed rate relative to the league, shrunk with its own padding.
+
+1. **Team plays.** Seconds per play in neutral situations (win probability 0.2-0.8, first and second down, outside the last two minutes of a half), for offence and for the opponent's defence. The drive model (step 7) turns pace into plays and drives; no play total is predicted directly.
+2. **Pass vs run.** Neutral pass rate over expected (nflverse `xpass`, `pass_oe`) for the offence, plus the defence's allowed version. In the simulation the pass probability of each play is the league curve `xpass(down, distance, field position, score, time)` shifted by the team's over-expected rate. Game script therefore moves it.
+3. **Dropbacks.** Each dropback ends in a sack (offence and QB sack rate, the defence's pressure or sack rate), a QB scramble (QB scramble rate) or a pass attempt.
+4. **Targets.** Each receiver gets a share of attempts: his target share, built from route share × targets per route (real or proxy routes, A2) and shrunk to a position prior. Players who are out are removed and the shares renormalised. Air yards (aDOT) is the player's, shrunk.
+5. **Receiving efficiency.** Catch probability from completion over expected (the player's, shrunk, applied to the league's catch curve by aDOT) and the QB's completion over expected. Yards after catch per reception: the player's, shrunk. Both are adjusted for the opponent's yards per target allowed.
+6. **Rushing.** Designed runs are split by carry share among RBs, QB (designed) and others. Yards per carry come from the rusher's rate (shrunk hard: it is unstable, A1), the team's line (team yards before contact, where available, else team success rate) and the opponent's run defence.
+7. **Touchdowns and points: a drive model.** A drive ends in a touchdown, field goal attempt, punt, turnover, turnover on downs or end of half. A multinomial logit is fitted on 2016-2019 drives. Its inputs are:
+   - the start field position;
+   - the offence's and defence's expected points per play (as-of, shrunk), split into pass and run by the drive's pass share;
+   - the half's time left and the score;
+   - the offence's QB.
+
+   Plays and seconds per drive come from the result (negative binomial plays, pace-scaled seconds). A touchdown is a passing or rushing TD by the red-zone pass rate. It goes to a player by red-zone target or carry share (QB rushes included). Field goals are made with the league's make curve by distance (kicker-adjusted, shrunk). Extra points are made at the league rate.
+8. **Defence and special teams.** Defence enters through the allowed rates in steps 1-7. Special teams enter through the start field position after kickoffs (touchback and return distribution) and punts (team net punt, shrunk), and the field goal curve. Kicking props are out of scope.
+9. **Availability.** Every player has M12's play probability at the point (`nfl/features/availability.py`; live, the as-of store with the latest statuses). Each simulation draws who plays. A missing player's targets and carries go to the teammates who play, by their shares. A missing starting QB is replaced by the backup's own shrunk rates, or by a replacement-level prior from backup QBs 2016-2019.
+10. **Rookies and new players.** A player with no NFL history starts from a prior by position × draft-round bucket (1, 2, 3, 4-7, undrafted) from rookie seasons 2016-2019, using nflverse `draft_picks` and `players`. It is then updated with his own games and the A1 padding.
+
+## Part C: simulation (`nfl/engine/sim.py`)
+
+- **Volume:** at least 10,000 simulations per game. They are vectorised (numpy), drive by drive, with a running score and clock.
+- **Correlated script:** pass probability, pace and the drive model all read the simulated score and time. A team that leads runs more, slows down and gives the trailing team more passing plays. Correlations between teams and players follow from this, not from an imposed matrix.
+- **Overdispersed counts and skewed yards:**
+  - Targets per player are Dirichlet-multinomial: shares vary game to game, with the A1 between-game variance.
+  - Receptions are binomial on the targets.
+  - Receiving yards are a sum of skewed per-catch gains (gamma, mean and shape fitted per position on 2016-2019).
+  - Rushing yards per carry come from a fitted two-part distribution (a loss or short gain, plus a long-tail gamma).
+- **Outputs per game:**
+  - the home margin and the total (mean, median, 10th and 90th percentiles);
+  - P(home wins), P(home covers any line);
+  - each team's points, plays, pass attempts, sacks and drives;
+  - per player: median and mean passing yards, rushing yards, receiving yards, receptions, P(anytime TD), and P(over) at any line.
+- **Consistency checks** (tests, on every live run, plus a history report): per team and simulation,
+  - targets add up to pass attempts;
+  - completions = receptions;
+  - receiving yards = passing yards;
+  - rushing TDs + passing TDs = offensive TDs;
+  - points = 6·TD + XP + 3·FG (+ safeties, 2-point tries);
+  - no player above his team's total;
+  - medians within the 10th-90th range.
+
+  On history, the means of plays, pass rate, sacks, points and TDs per team-game are compared with the actuals of the same seasons (bias within 3%).
+- **Runtime:** the hourly NFL engine step (every game in the 8-day window, 10,000 simulations each, props included) must take **under 3 minutes** on the GitHub runner. This is proven from the run logs of live hourly runs.
+
+## Part D: engine vs market (`nfl/engine/value.py`)
+
+- **Gap:** engine minus market. Spread: the engine's home margin + the home spread. Total: engine total − line. Props: engine median − line, and P(over) − the no-vig over.
+- **Decomposition by chain step:** the game is re-simulated with each step's inputs set to the league average, one step at a time, with the same random numbers. A step's contribution is the full prediction minus that run. The page shows the top three steps per game, e.g. "pass rate +1.4, receiving efficiency −0.8".
+- **Thresholds:** chosen on validation only.
+  - **Sides:** spread edge in {1, 1.5, 2, 2.5, 3, 4} points against the nflverse closing line on 2020-2022, with at least 100 picks. The threshold with the highest validation ROI at −110 is chosen, if positive. Otherwise the engine flags no sides.
+  - **Props:** P(over) − no-vig edge in {4, 6, 8, 10, 12} pp on 2024 lines, at least 60 bets per market, the same rule.
+- **The three tests** (validation and test separately; 95% intervals):
+  1. **Do gaps predict results?** Cover rate and ROI by gap size, and a logistic regression of the cover on the gap. Props: over rate vs P(over) − no-vig.
+  2. **Do gaps predict line movement toward the engine (CLV)?** Regress (closing − opening line) on the gap at the opening line; also the share of games where the close moved toward the engine. Opening lines: ESPN's per-book opening and closing lines (the core odds API used for NBA in M14), fetched by a new `nfl-lines-history` workflow on Actions for 2016-2025 as far back as ESPN has them. Coverage is reported. Props: the 2024-2025 ESPN open and close.
+  3. **Which chain steps does the market agree with?** Regress the closing market margin on the step contributions (plus a constant). A coefficient near 1 means the market prices that step fully, near 0 that it ignores it. Then regress the result minus the closing line on the same contributions: a step the market under-prices should carry a positive coefficient.
+
+## Part E: evaluation
+
+- **Sides:**
+  - validation and test margin and total MAE, Brier score of win probability, and ATS record at the validated threshold;
+  - each at both points, compared with m13w on the same games (and m15 where stored).
+  - **Page rule (M15):** nfle17 replaces the page version only if it improves validation margin MAE AND does not worsen test margin MAE at any prediction point. Otherwise it runs in the background, stored and graded, and the page shows it in the "Engine vs market" section and the engine season record.
+- **Props:**
+  - MAE, RMSE and Brier at the line, against nflp15 on the same player-games: 2020-2022 by synthetic lines, 2024-2025 at ESPN lines;
+  - a betting backtest at the 2024-chosen thresholds on 2025, scored once.
+  - Markets that clear it can be flagged (positive 2025 ROI, as the M15 flag rule); the others are "research only".
+
+## Part F: fantasy data
+
+| Source | Use | Rule |
+|---|---|---|
+| nflverse/ffverse `ff_opportunity` (expected fantasy points, expected targets and carries per player-week) | benchmark, and tested as an input | an input only if it lowers validation (2020-2022) error of the player step it feeds |
+| nflverse `ff_rankings` (FantasyPros expert consensus via DynastyProcess) | benchmark only | never an input |
+| Sleeper public API (`api.sleeper.app`) projections | benchmark; input only as above | read-only, no key; terms checked and quoted |
+| ESPN fantasy projections | benchmark; input only as above | unofficial, keyless; terms checked and quoted |
+
+For each source, reachability from GitHub Actions and the terms of use are verified and recorded first. A source whose terms forbid this use is dropped. As-of: a weekly projection is known at its publish time; a source without timestamps is benchmark-only. Benchmarks compare season MAE of targets, carries, receptions, and receiving and rushing yards with the engine's medians on the same player-weeks.
+
+## Part G: page
+
+- **Engine vs market:** each NFL game gets this section with:
+  - the engine margin and total with their 10th-90th range;
+  - the market line and the gap;
+  - P(cover) at the current line;
+  - the top three chain-step contributions;
+  - a "flag" only when the gap clears the validated threshold.
+
+  Each player with a stored prop line shows the engine median, line and P(over). It is labelled "nfle17 engine (market-free)".
+- **Season record:** an engine season record sits beside the current one, with the M15.1 counting rules: one pick per game and market, the last prediction before kickoff, counted whenever the edge cleared the threshold.
