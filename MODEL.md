@@ -1631,3 +1631,48 @@ For each source, reachability from GitHub Actions and the terms of use are verif
 
   Each player with a stored prop line shows the engine median, line and P(over). It is labelled "nfle17 engine (market-free)".
 - **Season record:** an engine season record sits beside the current one, with the M15.1 counting rules: one pick per game and market, the last prediction before kickoff, counted whenever the edge cleared the threshold.
+
+## M17 A1 results: stability (`reports/nfl/stability.csv`, `betdata nfl engine stability`)
+
+Built from the engine's own tables (`nfl/engine/plays.py`: drives, team-games and player-games from play-by-play 2016-2026, plus participation 2016-2025). Training seasons 2016-2019 are shown below; the 2016-2025 columns in the file agree in ranking.
+
+**Two decisions made here, before any engine result:**
+- **Neutral plays:** "neutral" is score within 10 points, first or second down, outside the last two minutes of a half, regulation.
+- **No line-derived inputs:** nflverse's `xpass` and `pass_oe` are never read, because nflfastR's expected-pass model includes `vegas_wp`, which is built from the betting line. Nor are `wp` and `vegas_wp`. The engine fits its own pass-probability curve from game state on 2016-2019 (step 2).
+
+| Level | Rate | League | Split-half r | Padding | Season-to-season r |
+|---|---|---|---|---|---|
+| offence | neutral pass rate | 0.515 | 0.64 | 148 plays | 0.31 |
+| offence | neutral seconds per play | 32.9 | 0.59 | 124 gaps | 0.23 |
+| offence | sack rate | 0.061 | 0.43 | 425 dropbacks | 0.34 |
+| offence | pressure rate | 0.274 | 0.73 | 110 dropbacks | 0.25 |
+| offence | EPA per dropback | 0.043 | 0.57 | 242 | 0.39 |
+| offence | EPA per designed run | −0.081 | 0.24 | 635 | 0.22 |
+| offence | TD per drive | 0.211 | 0.62 | 60 drives | 0.35 |
+| offence | turnover per drive | 0.102 | 0.18 | 425 drives | 0.29 |
+| defence | sack rate allowed | 0.061 | **0.08** | 3,939 | 0.24 |
+| defence | pressure rate | 0.274 | 0.50 | 293 | 0.26 |
+| defence | EPA per dropback allowed | 0.043 | 0.33 | 655 | 0.31 |
+| defence | seconds per play allowed | 32.9 | **−0.01** | none | 0.15 |
+| receiver | target share | 0.098 | **0.91** | 23 targets | 0.81 |
+| receiver | targets per route (real routes) | 0.178 | 0.65 | 93 routes | 0.68 |
+| receiver | targets per proxy route (snap share × dropbacks) | 0.180 | **0.75** | 55 | 0.76 |
+| receiver | catch rate | 0.646 | 0.50 | 39 targets | 0.59 |
+| receiver | yards per target | 7.37 | **0.26** | 108 targets | 0.37 |
+| receiver | aDOT | 8.33 | 0.89 | 5 targets | 0.92 |
+| receiver | YAC per reception | 5.17 | 0.54 | 22 | 0.68 |
+| receiver | receiving TD per target | 0.045 | **0.13** | 269 | 0.14 |
+| rusher | carry share | 0.281 | 0.95 | 7 carries | 0.81 |
+| rusher | yards per carry | 4.51 | 0.47 | 94 carries | 0.38 |
+| rusher | rushing TD per carry | 0.034 | 0.25 | 247 | 0.42 |
+| QB | sack rate | 0.064 | 0.42 | 359 | 0.44 |
+| QB | scramble rate | 0.039 | 0.80 | 68 | 0.75 |
+| QB | EPA per dropback | 0.025 | 0.41 | 382 | 0.32 |
+| QB | interception rate | 0.023 | 0.22 | 853 | 0.29 |
+
+**What it means for the engine** (each used as stated in Part B):
+- **Volume is stable and efficiency is noise.** Shares (targets, carries, routes, red zone) need a few games. Yards per target, yards per carry, TD rates and interceptions need hundreds of opportunities, so the engine shrinks them hard to the position or league mean.
+- **Defences barely control sacks but do control pressure** (0.08 vs 0.50). So the sack step uses the offence's and QB's sack rates plus the defence's *pressure* rate, as A3 decides.
+- **Pace is an offensive trait only.** A defence's seconds per play allowed has a split-half r of −0.01, so the defensive pace term is dropped.
+- **Proxy routes are steadier than real routes** for targets per route (0.75 vs 0.65). A2 tests which predicts next-game targets better.
+- **Season to season, team rates regress a lot** (r 0.2-0.4). The previous season's weight in a team's prior comes from these numbers, and is cut further where A4 shows a coordinator change matters.
