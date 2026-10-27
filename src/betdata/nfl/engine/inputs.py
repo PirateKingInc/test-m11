@@ -95,8 +95,70 @@ def role_coefs(store: RateStore, avail: pd.DataFrame, ids: pd.DataFrame,
     return out
 
 
+class Depth:
+    """nflverse depth charts as known at an instant (`nflverse_files.load_depth_charts` as-of
+    rules): per team, the snapshot times and, per snapshot, gsis -> QB rank / on the chart."""
+
+    def __init__(self, seasons, data_dir=None):
+        from betdata.nfl.cli import _engine
+        from betdata.nfl.nflverse_files import kickoffs, load_depth_charts
+
+        with _engine().connect() as c:
+            kick = kickoffs(c)
+        ch = load_depth_charts(seasons, kickoffs=kick, data_dir=data_dir)
+        ch = ch[ch.as_of.notna() & ch.gsis_id.notna()]
+        self.times, self.members, self.qb_rank = {}, {}, {}
+        for team, g in ch.groupby("team"):
+            snaps = sorted(g.as_of.unique())
+            self.times[team] = np.array([pd.Timestamp(x).tz_convert(None) for x in snaps],
+                                        dtype="datetime64[ns]")
+            for t, x in g.groupby("as_of"):
+                self.members[(team, t)] = set(x.gsis_id)
+                qb = x[x.position == "QB"].sort_values("rank")
+                self.qb_rank[(team, t)] = {gid: int(r) for gid, r in zip(qb.gsis_id, qb["rank"],
+                                                                         strict=True)}
+
+    def at(self, team: str, t: pd.Timestamp):
+        ts = self.times.get(team)
+        if ts is None:
+            return None
+        k = np.searchsorted(ts, np.datetime64(t.tz_convert(None) if t.tzinfo else t, "ns"),
+                            side="right")  # fmt: skip
+        if k == 0:
+            return None
+        key = (team, pd.Timestamp(ts[k - 1]).tz_localize("UTC"))
+        return self.members.get(key), self.qb_rank.get(key, {})
+
+
+def on_team(store: RateStore, a: pd.DataFrame, depth: Depth | None, recent: int = 3):
+    """Keep candidates on their team as known at the point: on the team's latest depth chart,
+    or among the players who played for it in its last `recent` games (M12's candidates can be
+    a season stale at week 1, e.g. a QB who has since moved). Adds `qb_rank` (depth chart)."""
+    if depth is None:
+        a["qb_rank"] = np.nan
+        return a
+    pl = store.players
+    tg = store.team_games.sort_values("known_at")
+    keep, rank = [], []
+    cache = {}
+    for r in a.itertuples(index=False):
+        k = (r.team, r.t)
+        if k not in cache:
+            ch = depth.at(r.team, r.t)
+            games = tg[(tg.team == r.team) & (tg.known_at <= r.t)].game_id.tail(recent)
+            played = set(pl[pl.game_id.isin(games) & (pl.team == r.team)].player)
+            cache[k] = (ch, played)
+        ch, played = cache[k]
+        members, qbr = ch if ch else (None, {})
+        keep.append(r.player_id in played or members is None or r.player_id in members)
+        rank.append(qbr.get(r.player_id, np.nan))
+    a = a.assign(qb_rank=rank)
+    return a[np.array(keep, bool)]
+
+
 def player_rows(store: RateStore, avail: pd.DataFrame, slots: list[Slot],
-                ids: pd.DataFrame, coefs: dict | None = None) -> pd.DataFrame:  # fmt: skip
+                ids: pd.DataFrame, coefs: dict | None = None,
+                depth: Depth | None = None) -> pd.DataFrame:  # fmt: skip
     from betdata.nfl.engine.stability import positions
 
     pos = positions()
@@ -108,6 +170,9 @@ def player_rows(store: RateStore, avail: pd.DataFrame, slots: list[Slot],
     a["t"] = [want[k].t for k in zip(a.nflverse_game_id, a.point, strict=True)]
     a["season"] = [want[k].season for k in zip(a.nflverse_game_id, a.point, strict=True)]
     a["position"] = a.player_id.map(pos).fillna(a.group)
+    a["team"] = np.where(a.side == 0, a.nflverse_game_id.map(ids.home),
+                         a.nflverse_game_id.map(ids.away))
+    a = on_team(store, a, depth)
     q = a.rename(columns={"player_id": "player"})[["player", "season", "t", "position"]].copy()
     if coefs:
         for rate in ROLE_RATES:
@@ -117,24 +182,46 @@ def player_rows(store: RateStore, avail: pd.DataFrame, slots: list[Slot],
     return pd.concat([a.reset_index(drop=True), r.reset_index(drop=True)], axis=1)
 
 
+# Chain steps for the Part D decomposition: each is set to the league average in turn
+# (MODEL.md "M17" Part D); "home" is home field, switched off in the simulation itself.
+STEPS = ("pace", "pass_tendency", "sacks", "pass_offence", "pass_defence", "run_offence",
+         "run_defence", "availability", "home")  # fmt: skip
+NEUTRAL = {"pass_offence": (("o_pass_epa", "l_pass_epa"), ("o_ypa", "l_ypa")),
+           "pass_defence": (("d_pass_epa", "l_pass_epa"), ("d_ypa", "l_ypa")),
+           "run_offence": (("o_run_epa", "l_run_epa"), ("o_ypc", "l_ypc")),
+           "run_defence": (("d_run_epa", "l_run_epa"), ("d_ypc", "l_ypc")),
+           "sacks": (("o_sack", "l_sack"), ("d_sack", "l_sack"), ("o_scramble", "l_scramble")),
+           "pass_tendency": (("o_neutral_pass", "l_neutral_pass"),),
+           "pace": (("o_pace", "l_pace"),)}  # fmt: skip
+
+
 def sides(tr: pd.DataFrame, pr: pd.DataFrame, slot: Slot, qb_weight: float,
-          min_games: float = 0.0) -> tuple[Side, Side]:  # fmt: skip
+          neutral: frozenset = frozenset()) -> tuple[Side, Side]:  # fmt: skip
+    """Both teams' inputs; `neutral` names chain steps set to the league average."""
     out = []
     for s in (0, 1):
-        r = tr[tr.key == (slot.game_id, slot.point, s)].iloc[0]
+        r = tr[tr.key == (slot.game_id, slot.point, s)].iloc[0].copy()
+        for step in neutral:
+            for col, lg in NEUTRAL.get(step, ()):
+                r[col] = r[lg]
         x = float(D.matchup(r.to_frame().T).iloc[0])
         off = float(D._logit(r.o_neutral_pass)[()] - D._logit(r.l_neutral_pass)[()])
         side = Side(x=x, offset=off, pace=float(r.o_pace / r.l_pace),
                     sack=float(r.o_sack + (r.d_sack - r.l_sack)),
                     scramble=float(r.o_scramble),
-                    ypa=float(r.o_ypa + r.d_ypa - r.l_ypa), ypc=float(r.o_ypc + r.d_ypc - r.l_ypc),
+                    ypa=float(r.o_ypa + r.d_ypa - r.l_ypa),
+                    ypc=float(r.o_ypc + r.d_ypc - r.l_ypc),
                     pass_td_share=float(np.clip(r.o_pass_td_share, 0.3, 0.85)))  # fmt: skip
-        p = pr[(pr.nflverse_game_id == slot.game_id) & (pr.point == slot.point) & (pr.side == s)]
-        qbs = p[p.group == "QB"].sort_values("role", ascending=False)
+        p = pr[(pr.nflverse_game_id == slot.game_id) & (pr.point == slot.point)
+               & (pr.side == s)]
+        # expected starter first: depth-chart rank, then M12 role
+        qbs = p[p.group == "QB"].assign(_r=p.qb_rank.fillna(9)).sort_values(
+            ["_r", "role"], ascending=[True, False])
         if len(qbs):
             ref = float(qbs.qb_epa.iloc[0])
             pr_pass = float(r.o_neutral_pass)
-            side.qbs = [(q.player_id, float(1 - q.q), pr_pass * qb_weight * (float(q.qb_epa) - ref))
+            side.qbs = [(q.player_id, float(1 - q.q),
+                         pr_pass * qb_weight * (float(q.qb_epa) - ref))
                         for q in qbs.head(3).itertuples()]  # fmt: skip
             qb_sack = float(qbs.qb_sack.iloc[0])
             side.sack = float(np.clip(0.5 * side.sack + 0.5 * qb_sack, 0.02, 0.15))
@@ -146,5 +233,9 @@ def sides(tr: pd.DataFrame, pr: pd.DataFrame, slot: Slot, qb_weight: float,
         rush = p[(p.group == "RB") | ((p.group.isin(("QB", "WR"))) & (p.carry_share > 0.03))]
         side.rush = [(q.player_id, float(q.q), float(q.carry_share), float(q.ypc),
                       float(q.rz_carry_share)) for q in rush.itertuples()]  # fmt: skip
+        if "availability" in neutral:  # everyone healthy: the expected starter plays
+            side.qbs = [(qid, 1.0, 0.0) for qid, _, _ in side.qbs[:1]]
+            side.rec = [(r_[0], 0.0, *r_[2:]) for r_ in side.rec]
+            side.rush = [(r_[0], 0.0, *r_[2:]) for r_ in side.rush]
         out.append(side)
     return out[0], out[1]

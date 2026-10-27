@@ -53,6 +53,7 @@ class Engine:
         self.avail = A.load(seasons)
         self.ids = I.team_ids()
         self.coefs = I.role_coefs(self.store, self.avail, self.ids, self.cfg.fit_seasons)
+        self.depth = I.Depth(seasons)
 
     def slots(self, seasons, points=POINTS) -> list[I.Slot]:
         from betdata.nfl.points import point_time
@@ -67,9 +68,12 @@ class Engine:
                 out.append(I.Slot(r.game_id, pt, t, int(r.season), h.home, h.away))
         return out
 
-    def run(self, slots: list[I.Slot], players: bool = True, seed: int = 0):
+    def run(self, slots: list[I.Slot], players: bool = True, seed: int = 0,
+            prop_lines: dict | None = None):  # fmt: skip
+        """`prop_lines`: (game_id, gsis) -> {market: [lines]}: P(over) at those lines is read off
+        the simulated draws afterwards (the lines never touch the simulation)."""
         tr = I.team_rows(self.store, slots)
-        pr = I.player_rows(self.store, self.avail, slots, self.ids, self.coefs)
+        pr = I.player_rows(self.store, self.avail, slots, self.ids, self.coefs, self.depth)
         games, plist = [], []
         for i, s in enumerate(slots):
             t0 = time.perf_counter()
@@ -78,7 +82,7 @@ class Engine:
                              D.pat_rates(self.store, s.t), self.cfg.sim, seed + i)  # fmt: skip
             games.append(summarise_game(s, gs, time.perf_counter() - t0))
             if players:
-                plist.extend(summarise_players(s, gs, home, away))
+                plist.extend(summarise_players(s, gs, home, away, prop_lines))
         return pd.DataFrame(games), pd.DataFrame(plist)
 
 
@@ -102,7 +106,18 @@ def summarise_game(s: I.Slot, gs: SM.GameSim, secs: float) -> dict:
     return out
 
 
-def summarise_players(s: I.Slot, gs: SM.GameSim, home: SM.Side, away: SM.Side) -> list[dict]:
+MARKET_STAT = {"pass_yds": "pass_yards", "rush_yds": "rush_yards", "rec_yds": "rec_yards",
+               "receptions": "receptions"}  # fmt: skip
+
+
+def p_over(v: np.ndarray, line: float) -> float:
+    """P(stat > line | not a push) from simulated draws."""
+    over, under = (v > line).sum(), (v < line).sum()
+    return float(over / (over + under)) if over + under else 0.5
+
+
+def summarise_players(s: I.Slot, gs: SM.GameSim, home: SM.Side, away: SM.Side,
+                      prop_lines: dict | None = None) -> list[dict]:  # fmt: skip
     out = []
     ids = {pid for (pid, _k) in gs.players}
     team_of = {}
@@ -128,6 +143,12 @@ def summarise_players(s: I.Slot, gs: SM.GameSim, home: SM.Side, away: SM.Side) -
         tds = np.asarray(gs.players.get((pid, "rec_td"), 0), float) + np.asarray(
             gs.players.get((pid, "rush_td"), 0), float)
         row["p_anytime_td"] = float(np.mean(tds >= 1)) if np.ndim(tds) else 0.0
+        for market, ls in (prop_lines or {}).get((s.game_id, pid), {}).items():
+            v = gs.players.get((pid, MARKET_STAT.get(market, "")))
+            if v is None or np.ndim(v) == 0:
+                continue
+            row[f"p_over_{market}"] = [(float(x), p_over(np.asarray(v, float), float(x)))
+                                       for x in ls]  # fmt: skip
         out.append(row)
     return out
 

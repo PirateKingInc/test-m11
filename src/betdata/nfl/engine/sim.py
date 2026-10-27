@@ -90,7 +90,8 @@ def _draw_rows(rng, model: D.DriveModel, outcome: np.ndarray, start: np.ndarray)
 
 
 def simulate(model: D.DriveModel, home: Side, away: Side, kick_pool: np.ndarray, pat: dict,
-             p: SimParams | None = None, seed: int = 0) -> GameSim:  # fmt: skip
+             p: SimParams | None = None, seed: int = 0,
+             home_field: bool = True) -> GameSim:  # fmt: skip
     p = p or SimParams()
     rng = np.random.default_rng(seed)
     n = p.n
@@ -138,7 +139,7 @@ def simulate(model: D.DriveModel, home: Side, away: Side, kick_pool: np.ndarray,
             sd = score[a, ps] - score[a, 1 - ps]
             game_sec = clock[a] + (1800 if half == 1 else 0)
             X = D.features(start[a], x_sim[a, ps], sd, clock[a], np.full(len(a), half),
-                           game_sec, ps == 0)  # fmt: skip
+                           game_sec, (ps == 0) & home_field)  # fmt: skip
             pr = model.probs(X)
             u = rng.random(len(a))
             out = (pr.cumsum(1) < u[:, None]).sum(1).clip(0, len(D.OUTCOMES) - 1)
@@ -299,3 +300,38 @@ def _allocate(rng, side: Side, s: int, stats: dict, qb_id, players: dict, p: Sim
         players[(qid, "rush_yards")] = (players.get((qid, "rush_yards"), 0)
                                         + np.where(me, stats["scramble_yards"][:, s], 0))
         players[(qid, "played")] = me
+
+
+def consistency(gs: GameSim, home: Side, away: Side) -> dict:
+    """Part C identity checks, per simulation: the worst violation of each (0 = holds)."""
+    out = {}
+    for s, side in enumerate((home, away)):
+        tag = "home" if s == 0 else "away"
+        att = gs.team[(s, "attempts")]
+        tg = sum((gs.players.get((r[0], "targets"), 0) for r in side.rec), np.zeros_like(att))
+        rec = sum((gs.players.get((r[0], "receptions"), 0) for r in side.rec), np.zeros_like(att))
+        ry = sum((gs.players.get((r[0], "rec_yards"), 0) for r in side.rec), np.zeros_like(att))
+        qy = sum((gs.players.get((q[0], "pass_yards"), 0) for q in side.qbs), np.zeros_like(att))
+        ptd = sum((gs.players.get((r[0], "rec_td"), 0) for r in side.rec), np.zeros_like(att))
+        car = sum((gs.players.get((r[0], "carries"), 0) for r in side.rush), np.zeros_like(att))
+        out[f"{tag}_targets_over_attempts"] = float(np.maximum(tg - att, 0).max())
+        out[f"{tag}_receptions_over_targets"] = float(np.maximum(rec - tg, 0).max())
+        has = rec > 0
+        out[f"{tag}_rec_yards_vs_pass_yards"] = float(
+            np.abs(ry - gs.team[(s, "pass_yards")])[has].max()) if has.any() else 0.0
+        if side.qbs:
+            out[f"{tag}_qb_yards_vs_pass_yards"] = float(
+                np.abs(qy - gs.team[(s, "pass_yards")]).max())
+        if side.rec:
+            out[f"{tag}_rec_td_vs_pass_td"] = float(np.abs(ptd - gs.team[(s, "pass_td")]).max())
+        if side.rush:
+            out[f"{tag}_carries_vs_runs"] = float(np.abs(car - gs.team[(s, "runs")]).max())
+        out[f"{tag}_td_split"] = float(np.abs(gs.team[(s, "pass_td")] + gs.team[(s, "rush_td")]
+                                              - gs.team[(s, "td")]).max())
+        pts = gs.home_pts if s == 0 else gs.away_pts
+        out[f"{tag}_points_floor"] = float(np.maximum(
+            6 * gs.team[(s, "td")] + 3 * gs.team[(s, "fg_made")] - pts, 0).max())
+    m = gs.margin
+    out["median_inside_p10_p90"] = float(not (np.percentile(m, 10) <= np.median(m)
+                                              <= np.percentile(m, 90)))
+    return out
