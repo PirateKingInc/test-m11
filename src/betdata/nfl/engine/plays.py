@@ -24,13 +24,14 @@ import pandas as pd
 
 log = logging.getLogger(__name__)
 KNOWN_DELAY = pd.Timedelta(hours=12)
-VERSION = 1  # bump to rebuild the cached tables
+VERSION = 2  # bump to rebuild the cached tables
 FIRST, LAST = 2016, 2026
 
 PBP_COLS = [
     "game_id", "play_id", "season", "week", "season_type", "home_team", "away_team",
     "posteam", "defteam", "fixed_drive", "fixed_drive_result", "drive_start_yard_line",
-    "drive_end_yard_line", "drive_time_of_possession", "play_type", "down", "ydstogo",
+    "drive_end_yard_line", "drive_time_of_possession", "drive_start_transition", "play_type",
+    "down", "ydstogo",
     "yardline_100", "qtr", "half_seconds_remaining", "game_seconds_remaining",
     "score_differential", "posteam_score", "defteam_score", "qb_dropback", "qb_scramble", "sack",
     "pass_attempt", "rush_attempt", "complete_pass", "interception", "fumble_lost",
@@ -123,6 +124,7 @@ def drives(d: pd.DataFrame) -> pd.DataFrame:
         "start_yl": yardline(first.drive_start_yard_line, first.posteam).values,
         "end_yl": yardline(first.drive_end_yard_line, first.posteam).values,
         "seconds": _clock(first.drive_time_of_possession).values,
+        "transition": first.drive_start_transition.values,
         "qtr": first.qtr.values, "half_seconds": first.half_seconds_remaining.values,
         "game_seconds": first.game_seconds_remaining.values,
         "score_diff": first.score_differential.values,
@@ -136,6 +138,13 @@ def drives(d: pd.DataFrame) -> pd.DataFrame:
     out = out.merge(fg, left_on=["game_id", "drive"], right_index=True, how="left")
     out["fg_made"] = out.fg_made == "made"
     out["half"] = np.where(out.qtr <= 2, 1, np.where(out.qtr <= 4, 2, 3))
+    # Where the other team's next drive of the same half starts (the field position this
+    # drive's end hands over: punt, kickoff after a score, turnover spot, ...).
+    out = out.sort_values(["game_id", "drive"]).reset_index(drop=True)
+    nxt = out.groupby("game_id").shift(-1)
+    same = (nxt.half == out.half) & (nxt.posteam != out.posteam)
+    out["next_start"] = nxt.start_yl.where(same)
+    out["next_transition"] = nxt.transition.where(same)
     return out
 
 
