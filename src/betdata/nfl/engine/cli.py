@@ -77,7 +77,7 @@ def freeze_cmd(first: int = typer.Option(2016), last: int = typer.Option(2025),
 
 
 @engine_app.command("live")
-def live_cmd():
+def live_cmd(at: str = typer.Option(None, help="Run as of this UTC instant (replays only)")):
     """One live engine run now (what the hourly NFL plugin does): predict and store."""
     from datetime import UTC, datetime
 
@@ -86,5 +86,5 @@ def live_cmd():
     from betdata.nfl.engine.live import run
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    typer.echo(json.dumps(run(make_engine(get_settings().db_url), datetime.now(UTC)),
-                          default=str))  # fmt: skip
+    now = datetime.fromisoformat(at).replace(tzinfo=UTC) if at else datetime.now(UTC)
+    typer.echo(json.dumps(run(make_engine(get_settings().db_url), now), default=str))

@@ -164,7 +164,11 @@ def predict(conn: Connection, m12_store, now: datetime,
     run = EngineRun()
     simp = SM.SimParams(n=design.sims)
     decp = SM.SimParams(n=design.decomposition_sims)
-    lines = _prop_lines(conn, list(gid_map), now, season)
+    try:
+        lines = _prop_lines(conn, list(gid_map), now, season)
+    except Exception as e:  # noqa: BLE001 - props never stop the side predictions
+        log.warning("nfle17 prop lines unavailable: %s", e)
+        lines = pd.DataFrame()
     inv = {v: k for k, v in gid_map.items()}
     for s in slots:
         seed = seed_of(s.game_id, s.point)
