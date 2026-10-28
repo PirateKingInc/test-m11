@@ -99,8 +99,12 @@ def section_html(game_rows: list[dict], prop_rows: dict[int, list[dict]], design
     intro = ("<p class='meta'>nfle17 engine (market-free): plays, pass rate, dropbacks, targets, "
              "efficiency and drives simulated 10,000 times per game; no betting line is an input. "
              "Gap = engine margin vs the current line, in points toward the team named. "
-             + (f"Flag: gap ≥ {t:g} pts (chosen on 2020-2022)." if t is not None else
-                "No side flags: no threshold earned one on validation.") + "</p>")
+             + (f"Flag: gap ≥ {t:g} pts (chosen on 2020-2022)." if t is not None
+                and design.flag_sides else
+                f"Info only, no side flags: the {t:g}-pt threshold chosen on 2020-2022 lost on "
+                f"the test seasons (ROI {100 * design.side_test_roi:+.1f}%); its picks are still "
+                "graded in the season record." if t is not None and design.side_test_roi
+                is not None else "No side flags: no threshold earned one.") + "</p>")
     if not game_rows:
         return ("<section class='engine'><h2>Engine vs market</h2>" + intro
                 + "<p class='meta'>No engine predictions for upcoming games yet.</p></section>")
@@ -122,7 +126,7 @@ def section_html(game_rows: list[dict], prop_rows: dict[int, list[dict]], design
             if pc is not None:
                 side_p = pc if gap > 0 else 1 - pc
                 cover = f" · P(cover {e(home if gap > 0 else away)}) {100 * side_p:.0f}%"
-            if t is not None and abs(gap) >= t:
+            if t is not None and design.flag_sides and abs(gap) >= t:
                 flag = (f'<span class="flag">Engine: {e(home if gap > 0 else away)} '
                         f"{line.line if gap > 0 else -line.line:+g}</span>")
         steps = (r["factors"] or {}).get("steps") or {}

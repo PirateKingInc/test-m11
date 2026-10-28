@@ -35,7 +35,7 @@ def _row(margin=5.0, line=-1.0):
 
 
 def test_engine_section_shows_gap_cover_steps_and_flags_only_past_the_threshold():
-    d = EngineDesign(fit="x", spread_threshold=4.0)
+    d = EngineDesign(fit="x", spread_threshold=4.0, flag_sides=True)
     html = section_html([_row(5.0, -1.0)], {}, d, et)
     assert "Engine vs market" in html and "market-free" in html
     assert "Engine <b>KC −5.0</b>" in html and "market KC −1.0" in html
@@ -74,3 +74,9 @@ def test_engine_record_sits_beside_the_page_record():
     head, other = html.split("Other model versions")
     assert "Engine (market-free) nfle17:abc" in head
     assert "nfle17" not in other and "m15:def" in other
+
+
+def test_no_side_flags_when_the_test_was_lost():
+    d = EngineDesign(fit="x", spread_threshold=4.0, flag_sides=False, side_test_roi=-0.0826)
+    html = section_html([_row(9.0, -1.0)], {}, d, et)
+    assert 'class="flag"' not in html and "Info only" in html and "-8.3%" in html

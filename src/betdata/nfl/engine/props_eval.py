@@ -91,7 +91,8 @@ def line_frame(engine_players: pd.DataFrame, prop_lines: pd.DataFrame, actual: p
     for r in prop_lines.itertuples(index=False):
         if r.market not in MARKET_STAT or (r.game_id, r.gsis_id) not in e.index:
             continue
-        ps = dict(e.loc[(r.game_id, r.gsis_id)].get(f"p_over_{r.market}") or [])
+        got = e.loc[(r.game_id, r.gsis_id)].get(f"p_over_{r.market}")
+        ps = dict(got) if isinstance(got, list | tuple | np.ndarray) else {}
         row = r._asdict()
         for kind in ("open", "close"):
             line = getattr(r, f"{kind}_line")
