@@ -24,7 +24,7 @@ def _client(source: str, headers: dict | None = None):
 
 
 @engine_app.command("fetch")
-def fetch(what: str = typer.Argument(..., help="coordinators | lines | timing | fantasy"),
+def fetch(what: str = typer.Argument(..., help="coordinators | lines | timing | fantasy | sleeper"),
           season: int = typer.Option(None, help="lines: one season"),
           first: int = typer.Option(2016), last: int = typer.Option(2026),
           out: Path = typer.Option(Path("m17data"))):  # fmt: skip
@@ -41,6 +41,9 @@ def fetch(what: str = typer.Argument(..., help="coordinators | lines | timing | 
     elif what == "timing":
         with _client("github_api", {"Accept": "application/vnd.github+json"}) as c:
             res = web.fetch_timing(c, out)
+    elif what == "sleeper":
+        with _client("sleeper") as c:
+            res = web.fetch_sleeper(c, range(max(first, 2020), min(last, 2025) + 1), out)
     elif what == "fantasy":
         res = web.fetch_fantasy(lambda name, h: _client(f"probe_{name}", h), out)
     else:

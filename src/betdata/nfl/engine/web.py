@@ -414,3 +414,49 @@ def fetch_fantasy(make_client, out: Path) -> dict:
 
 def today() -> date:
     return date.today()
+
+
+# --- Sleeper projections (Part F; read-only API, free for non-commercial use) -----------------
+
+SLEEPER = "https://api.sleeper.app"
+SLEEPER_STATS = ("rec_tgt", "rec", "rec_yd", "rush_att", "rush_yd", "pass_att", "pass_yd",
+                 "rec_td", "rush_td")
+
+
+def fetch_sleeper(client: SourceClient, seasons, out: Path) -> dict:
+    """Weekly regular-season projections (QB/RB/WR/TE) and Sleeper's player map (sleeper id ->
+    gsis id). Historical rows carry no publish time, so they are a benchmark, not an input."""
+    out.mkdir(parents=True, exist_ok=True)
+    res = {}
+    try:
+        r = client.get(f"{SLEEPER}/v1/players/nfl", None, est_cost=0, store_raw=False)
+        players = {pid: {"gsis_id": p.get("gsis_id"), "name": p.get("full_name"),
+                         "position": p.get("position")}
+                   for pid, p in json.loads(r.body).items()
+                   if p.get("position") in ("QB", "RB", "WR", "TE")}  # fmt: skip
+        (out / "sleeper_players.json").write_text(json.dumps(players))
+        res["players"] = len(players)
+    except (ApiError, SourceUnavailable) as e:
+        res["players"] = f"error: {e}"[:200]
+    for season in seasons:
+        rows = []
+        for week in range(1, 19):
+            try:
+                r = client.get(f"{SLEEPER}/projections/nfl/{season}/{week}",
+                               {"season_type": "regular",
+                                "position[]": ["QB", "RB", "WR", "TE"]},
+                               est_cost=0, store_raw=False)  # fmt: skip
+            except (ApiError, SourceUnavailable) as e:
+                log.warning("sleeper %s/%s: %s", season, week, e)
+                continue
+            for p in json.loads(r.body):
+                st = p.get("stats") or {}
+                if not any(k in st for k in SLEEPER_STATS):
+                    continue
+                rows.append({"season": season, "week": week, "sleeper_id": p.get("player_id"),
+                             "team": p.get("team"), "company": p.get("company"),
+                             "last_modified": p.get("last_modified"),
+                             **{k: st.get(k) for k in SLEEPER_STATS}})
+        (out / f"sleeper_proj_{season}.json").write_text(json.dumps(rows))
+        res[str(season)] = len(rows)
+    return res

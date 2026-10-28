@@ -1,0 +1,84 @@
+{
+ "rows": 352,
+ "missing": {
+  "head_coach": 0,
+  "oc": 51,
+  "dc": 52
+ },
+ "persistence": {
+  "neutral_pass_rate": {
+   "role": "oc",
+   "pairs_same": 119,
+   "pairs_changed": 102,
+   "r_same": 0.474,
+   "r_changed": 0.314,
+   "r_all": 0.406,
+   "used": true
+  },
+  "pace": {
+   "role": "oc",
+   "pairs_same": 119,
+   "pairs_changed": 102,
+   "r_same": 0.598,
+   "r_changed": 0.328,
+   "r_all": 0.446,
+   "used": true
+  },
+  "pressure_rate": {
+   "role": "dc",
+   "pairs_same": 132,
+   "pairs_changed": 86,
+   "r_same": 0.384,
+   "r_changed": 0.321,
+   "r_all": 0.31,
+   "used": false
+  },
+  "pass_epa_allowed": {
+   "role": "dc",
+   "pairs_same": 132,
+   "pairs_changed": 86,
+   "r_same": 0.202,
+   "r_changed": 0.229,
+   "r_all": 0.241,
+   "used": false
+  }
+ },
+ "persistence_2016_2022": {
+  "neutral_pass_rate": {
+   "role": "oc",
+   "pairs_same": 77,
+   "pairs_changed": 66,
+   "r_same": 0.458,
+   "r_changed": 0.347,
+   "r_all": 0.409,
+   "used": true
+  },
+  "pace": {
+   "role": "oc",
+   "pairs_same": 77,
+   "pairs_changed": 66,
+   "r_same": 0.548,
+   "r_changed": 0.278,
+   "r_all": 0.37,
+   "used": true
+  },
+  "pressure_rate": {
+   "role": "dc",
+   "pairs_same": 89,
+   "pairs_changed": 53,
+   "r_same": 0.316,
+   "r_changed": 0.289,
+   "r_all": 0.233,
+   "used": false
+  },
+  "pass_epa_allowed": {
+   "role": "dc",
+   "pairs_same": 89,
+   "pairs_changed": 53,
+   "r_same": 0.213,
+   "r_changed": 0.441,
+   "r_all": 0.313,
+   "used": false
+  }
+ }
+}
