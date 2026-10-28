@@ -177,6 +177,10 @@ class Sport(ABC):
         """An extra page section (M17 NFL engine vs market); none by default."""
         return None
 
+    def run_details(self) -> dict:
+        """Extra fields for the run log from the last predict (M17: the engine's rows/time)."""
+        return {}
+
     def engine_version(self) -> str | None:
         """A model family shown with its own season record beside the page's (M17)."""
         return None

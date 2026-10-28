@@ -146,6 +146,7 @@ def run_hourly(engine: Engine, settings: Settings, registry: dict, active: list[
             t = clock.monotonic()
             st["predicted"] = sport.predict(engine, as_of)
             st["predict_seconds"] = round(clock.monotonic() - t, 1)
+            st.update(sport.run_details())
             with engine.begin() as conn:
                 st["graded"] = sport.grade(conn, as_of)
             report.sports[sport.key] = st
