@@ -51,7 +51,11 @@ TEAMS = {
 }  # fmt: skip
 
 
+OLD_CODES = {"OAK": "LV", "SD": "LAC", "STL": "LA"}  # pre-move codes in older schedules
+
+
 def team_name(team: str, season: int) -> str:
+    team = OLD_CODES.get(team, team)
     if team == "LAC" and season < 2017:
         return "San Diego Chargers"
     if team == "LV" and season < 2020:
