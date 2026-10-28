@@ -1707,3 +1707,31 @@ Next-game targets of WR, TE and RB (15,545 player-games with at least two earlie
 - **The proxy costs 0.125 targets of MAE (7%).** Snap share counts run-blocking snaps as routes.
 - **Target share does as well as real routes** (+0.002) and needs no participation data.
 - **Decision:** step 4 uses **target share** (shrunk, padding 23 targets), not routes. This is not a timing workaround: it is as accurate on validation and available in season. Route share stays a candidate adjustment in B3's budget.
+
+## M17 A4 results: coordinators (`seeds/coordinators_nfl.csv`, `reports/nfl/m17_coordinators.json`)
+
+**Source:** English Wikipedia team-season articles, fetched on GitHub Actions through the MediaWiki API at one request a second (`betdata nfl engine fetch coordinators`). Text is CC BY-SA 4.0; the file's header attributes it, and every row carries the revision it was read from. Pro-Football-Reference was not used.
+
+**Coverage** (352 team-seasons, 2016-2026):
+- **Head coach:** all 352, from the infobox.
+- **Offensive coordinator:** 301 (189 infobox, 112 staff-list entry); 51 empty.
+- **Defensive coordinator:** 300 (184 infobox, 116 staff-list entry); 52 empty.
+
+A role is filled only from the infobox or a staff-list entry of the form "Role – [[Name]]". A first, looser pass also read prose lines and picked wrong names, for example 2022 CAR DC "Matt Rhule" (the head coach), so prose is never used. Roles the page does not state are left empty, not filled from memory. Mid-season changes (31 rows) are kept as `*_after`, with the week where the page states one.
+
+**Spot-checks:** 40 random rows were compared with the coach's own article.
+- 38 matched automatically.
+- 2 were checked by hand and are correct: Todd Bowles (TB DC 2020) and Chris Shula (LA DC 2025). Their articles state the years in a different format.
+
+**Persistence** (season-to-season r of team rates; same = same coordinator and head coach in consecutive seasons):
+
+| Rate (role) | 2016-2022: same / changed (pairs) | 2016-2025: same / changed | Rule met? |
+|---|---|---|---|
+| neutral pass rate (OC) | 0.46 / 0.35 (77 / 66) | 0.47 / 0.31 (119 / 102) | **yes** |
+| pace, neutral seconds per play (OC) | 0.55 / 0.28 (77 / 66) | 0.60 / 0.33 (119 / 102) | **yes** |
+| pressure rate (DC) | 0.32 / 0.29 (89 / 53) | 0.38 / 0.32 (132 / 86) | no |
+| EPA per dropback allowed (DC) | 0.21 / 0.44 (89 / 53) | 0.20 / 0.23 (132 / 86) | no |
+
+**Reading:**
+- **The offensive coordinator carries the offence's style.** With a new OC, last season's pass rate and pace predict much less. The DC makes no measurable difference to the defensive rates.
+- **Not used in nfle17.** By the fixed rule, the engine's prior for a new season should regress pass rate and pace harder after an OC change. But the coordinator table was complete only after the design was frozen and while the test seasons were being scored. Adding it then would have been an adjustment after the test, so nfle17 ships without it. It is the first change for the engine's next version (BACKLOG).
