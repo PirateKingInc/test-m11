@@ -1799,3 +1799,102 @@ A role is filled only from the infobox or a staff-list entry of the form "Role �
 **Reading:**
 - **The offensive coordinator carries the offence's style.** With a new OC, last season's pass rate and pace predict much less. The DC makes no measurable difference to the defensive rates.
 - **Not used in nfle17.** By the fixed rule, the engine's prior for a new season should regress pass rate and pace harder after an OC change. But the coordinator table was complete only after the design was frozen and while the test seasons were being scored. Adding it then would have been an adjustment after the test, so nfle17 ships without it. It is the first change for the engine's next version (BACKLOG).
+
+## M17 test: 2023-2025, scored once (`nfl/engine/final.py`, `reports/nfl/m17_final_test.json`)
+
+**Setup:**
+- The validated design (half-life 10, last season ×0.7) was refitted on 2016-2022: drive model and role priors, calibration on 2021-2022.
+- It was run once over 2023-2025 at both points: 1,710 game-points, 10,000 simulations each. P(over) was read at every ESPN BET prop line of 2024-2025, and the chain-step decomposition was run at prekick (4,000 simulations).
+- **Label:** repeat look (fourth for NFL sides). Nothing was changed after the run.
+- **Two crashes before any result** (counted as no look):
+  - the first launch stopped while loading prop lines, because older schedules use pre-move team codes (OAK, SD, STL); fixed;
+  - the analysis stopped on a missing P(over) list; fixed.
+
+### Sides
+
+| Margin MAE | 2023 | 2024 | 2025 | All | m13w (M13 test) |
+|---|---|---|---|---|---|
+| final report | 10.44 | 10.12 | 10.24 | **10.27** | 10.06 |
+| prekick | 10.44 | 10.11 | 10.25 | **10.27** | 9.99 |
+
+- **Other measures:**
+  - total MAE 10.41 (M12: 10.38/10.37); Brier 0.223; margin correlation 0.39;
+  - volume bias within 3% except rushing yards (+4.7%); points −2.1%, TDs −2.7%.
+- **Page rule (M15):** nfle17 was worse than m13w on validation (10.05 vs 9.82) and on test, so **the page stays on m13w**. The engine runs beside it with its own section and season record.
+- **Picks at the 4.0-point threshold** (prekick vs the nflverse close):
+  - **74-80-3, ROI −8.3%** (95%: −23.4% to +6.8%);
+  - by season: 2023 21-22, 2024 30-26, 2025 23-32;
+  - final report: 75-80-2, −7.6%.
+
+  The validation edge (+11.5%) did not hold. By the flag rule (flags need a positive test ROI), **the engine flags no sides**. Its picks at 4.0 are still graded and counted in its season record, and the page says so.
+
+### The three tests
+
+1. **Do gaps predict results?** No. The cover rate is 0.47-0.50 in every gap band from 0 to 6+ points, and the logistic slope is −0.014 per point (se 0.022). On validation it was +0.034 (se 0.021).
+2. **Do gaps predict line movement toward the engine?** Weakly at best. ESPN's opening lines exist only from mid-2023, so this test runs on 761 test games only:
+   - (close − open) toward the engine on the gap at the open: slope **+0.044** points per point of gap (se 0.025, about 1.8 se);
+   - of the lines that moved, 53% moved toward the engine when the gap was ≥ 1 point, and 59% when it was ≥ 4 (n = 78);
+   - by season: 2023 +0.073, 2024 +0.039, 2025 +0.023.
+3. **Which chain steps does the market agree with?** Each step's contribution is regressed against the closing market margin (1 = priced fully):
+
+| Step | Validation coef (se) | Test coef (se) | Cover margin, test (se) |
+|---|---|---|---|
+| passing offence | 1.22 (0.07) | 1.17 (0.04) | +0.17 (0.16) |
+| pass defence | 1.08 (0.13) | 1.36 (0.09) | −0.31 (0.36) |
+| rushing offence | 1.06 (0.22) | 0.97 (0.14) | +0.50 (0.55) |
+| run defence | 0.79 (0.23) | 0.70 (0.15) | +1.17 (0.59) |
+| injuries (availability) | −0.22 (0.44) | 1.46 (0.25) | +1.00 (1.00) |
+| home field | −0.91 (0.57) | −0.75 (0.45) | −1.34 (1.80) |
+| pace, pass rate, sacks | small, noisy | small, noisy | noise |
+
+**Reading the tests:**
+- The closing line prices the engine's efficiency steps about fully, and more: coefficients above 1 mean the market leans further on the same signal.
+- No step predicts the cover margin beyond about 2 se. Run defence (+1.17, se 0.59) is the only one near it, and it was −1.17 on validation.
+- The engine finds what the market already prices; it does not find what the market misses.
+
+### Props (`nflpe17`)
+
+**Accuracy against nflp15** (test 2023-2025, nflp15's populations, nflp15 refitted 2013-2022):
+
+| Market | n | Engine (median) | nflp15 |
+|---|---|---|---|
+| passing yards (MAE) | 3,554 | **63.7** | 69.7 |
+| receiving yards (MAE) | 19,233 | **20.97** | 21.61 |
+| receptions (MAE) | 19,233 | **1.578** | 1.591 |
+| rushing yards (MAE) | 8,996 | **21.05** | 21.11 |
+| anytime TD (Brier) | 19,738 | 0.1823 | 0.1821 |
+
+On test the engine beats nflp15 everywhere except anytime TD (even). Passing yards reversed from validation: the engine's volume came from the team, nflp15's from the player's history.
+
+**Against the ESPN BET closing line** (2024-2025):
+
+| Market | n | Brier engine | Brier no-vig line | MAE engine median | MAE line |
+|---|---|---|---|---|---|
+| passing yards | 896 | 0.271 | **0.248** | 63.2 | **56.2** |
+| receiving yards | 4,230 | 0.259 | **0.250** | 22.4 | **21.4** |
+| receptions | 4,556 | 0.257 | **0.245** | 1.585 | **1.555** |
+| rushing yards | 1,987 | 0.270 | **0.249** | 22.4 | **21.0** |
+
+The line is better in every market.
+
+**Betting thresholds** (chosen on 2024 by the Part D rule; 2025 scored once):
+
+| Market | Chosen on 2024 | 2025 result | Verdict |
+|---|---|---|---|
+| passing yards | 6 pp (2024 +1.4%) | −6.1% (243 bets) | not flagged |
+| receptions | 12 pp (2024 +0.7%) | +1.8% (854 bets; 95%: −4.7% to +8.3%) | info only (range includes zero) |
+| receiving yards | none (all ROIs negative) | – | not flagged |
+| rushing yards | none (all ROIs negative) | – | not flagged |
+
+**The engine flags no props;** every market is "info only" on the page.
+
+### Where the build departed from the Part B plan
+
+These are recorded here, not hidden:
+- **Step 4:** target share, not routes (A2 showed it is as accurate).
+- **Step 5:** catch rate and yards per reception per player, shrunk, with the opponent's yards per attempt allowed. There is no catch curve by aDOT.
+- **Step 6:** carry share and yards per carry per player; the team's line enters through team yards per carry, with no yards-before-contact term.
+- **Step 7:** as planned; field goals use the league curve with no kicker adjustment.
+- **Step 8:** kickoffs use the league's recent results (this captures the 2024-2025 rule changes); there is no team punt or return term.
+- **Step 10:** players with no history start from M12's role (from rosters and depth charts) × a position rate, not from draft-round priors.
+- **Coordinators (A4):** not used (see A4).

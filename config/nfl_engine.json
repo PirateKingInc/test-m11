@@ -8,6 +8,14 @@
   "decomposition_sims": 4000,
   "spread_threshold": 4.0,
   "prop_thresholds": {},
-  "prop_info_only": [],
-  "page": false
+  "prop_info_only": [
+    "pass_yds",
+    "rush_yds",
+    "rec_yds",
+    "receptions",
+    "anytime_td"
+  ],
+  "page": false,
+  "flag_sides": false,
+  "side_test_roi": -0.0826
 }

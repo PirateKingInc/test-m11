@@ -54,6 +54,10 @@ class EngineDesign:
     prop_thresholds: dict = field(default_factory=dict)  # market -> edge (probability)
     prop_info_only: list = field(default_factory=list)
     page: bool = False  # the M15 page rule moved the page to the engine
+    # side flags need a positive test ROI (the flag rule); picks at the threshold are graded
+    # and counted in the season record either way
+    flag_sides: bool = False
+    side_test_roi: float | None = None
 
     @classmethod
     def load(cls, path: Path = DESIGN_PATH) -> EngineDesign:
