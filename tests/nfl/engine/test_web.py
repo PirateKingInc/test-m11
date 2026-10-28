@@ -108,3 +108,24 @@ def test_prose_lines_never_fill_a_role():
              "|Offensive Coordinator=[[Joe Brady]]")
     assert web.role_from_text(staff, "dc")["name"] == "Phil Snow"
     assert web.role_from_text(staff, "oc")["name"] == "Joe Brady"
+
+
+def test_sleeper_projections_and_player_map(engine, tmp_path):
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/v1/players/nfl":
+            return httpx.Response(200, json={"4046": {"gsis_id": "00-0034796",
+                                                      "full_name": "Lamar Jackson",
+                                                      "position": "QB"},
+                                             "K1": {"position": "K"}})
+        week = int(req.url.path.rsplit("/", 1)[1])
+        return httpx.Response(200, json=[{"player_id": "4046", "team": "BAL",
+                                          "company": "rotowire",
+                                          "stats": {"pass_yd": 230.0 + week, "rush_yd": 55.0}},
+                                         {"player_id": "x", "stats": {"adp_dd_ppr": 1000}}])
+
+    c = SourceClient(engine, "sleeper", "", transport=httpx.MockTransport(handler),
+                     sleep=lambda s: None)
+    res = web.fetch_sleeper(c, [2021], tmp_path)
+    assert res == {"players": 1, "2021": 18}
+    rows = json.loads((tmp_path / "sleeper_proj_2021.json").read_text())
+    assert rows[0]["pass_yd"] == 231.0 and rows[0]["sleeper_id"] == "4046"

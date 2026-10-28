@@ -4,6 +4,7 @@
 #   coordinators  Wikipedia team-season infoboxes 2016-2026 (CC BY-SA 4.0) + 40 spot-checks
 #   timing        nflverse release asset update times (GitHub API)
 #   fantasy       Sleeper / ESPN fantasy / FantasyPros rankings / ff_opportunity probes
+#   sleeper       Sleeper weekly projections 2020-2025 and its player map (benchmark)
 #   lines         ESPN per-book opening and closing NFL lines, one season per job, one at a time
 # Files of jobs not re-run are kept on the branch.
 
@@ -30,7 +31,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        what: [coordinators, timing, fantasy]
+        what: [coordinators, timing, fantasy, sleeper]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
