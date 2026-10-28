@@ -1,0 +1,74 @@
+{
+ "sleeper_state": {
+  "status": 200,
+  "bytes": 211,
+  "content_type": "application/json; charset=utf-8",
+  "last_modified": null
+ },
+ "sleeper_proj_2021_w5": {
+  "status": 200,
+  "bytes": 1895303,
+  "content_type": "application/json; charset=utf-8",
+  "last_modified": null
+ },
+ "sleeper_proj_2026_w8": {
+  "status": 200,
+  "bytes": 1946141,
+  "content_type": "application/json; charset=utf-8",
+  "last_modified": null
+ },
+ "sleeper_proj_2016_w5": {
+  "status": 200,
+  "bytes": 771667,
+  "content_type": "application/json; charset=utf-8",
+  "last_modified": null
+ },
+ "espn_fantasy_2021_w5": {
+  "status": 200,
+  "bytes": 1019571,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": null
+ },
+ "espn_fantasy_2026_w8": {
+  "status": 200,
+  "bytes": 2475699,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": null
+ },
+ "ff_rankings_db_fpecr": {
+  "status": 200,
+  "bytes": 39394165,
+  "content_type": "application/octet-stream",
+  "last_modified": null
+ },
+ "ff_rankings_weekly": {
+  "status": 200,
+  "bytes": 141494,
+  "content_type": "text/plain; charset=utf-8",
+  "last_modified": null
+ },
+ "ff_opportunity_2024": {
+  "status": 200,
+  "bytes": 1125932,
+  "content_type": "application/octet-stream",
+  "last_modified": "Mon, 24 Feb 2025 02:02:06 GMT"
+ },
+ "ff_opportunity_2026": {
+  "status": 200,
+  "bytes": 476403,
+  "content_type": "application/octet-stream",
+  "last_modified": "Tue, 27 Oct 2026 11:06:34 GMT"
+ },
+ "sleeper_terms": {
+  "status": 200,
+  "bytes": 84121,
+  "content_type": "text/html; charset=utf-8",
+  "last_modified": "Wed, 21 Oct 2026 20:47:40 GMT"
+ },
+ "espn_terms": {
+  "status": 200,
+  "bytes": 111074,
+  "content_type": "text/html; charset=UTF-8",
+  "last_modified": null
+ }
+}

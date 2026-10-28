@@ -1,0 +1,1307 @@
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Sleeper API</title>
+
+    <style>
+      .highlight table td { padding: 5px; }
+.highlight table pre { margin: 0; }
+.highlight .gh {
+  color: #999999;
+}
+.highlight .sr {
+  color: #f6aa11;
+}
+.highlight .go {
+  color: #888888;
+}
+.highlight .gp {
+  color: #555555;
+}
+.highlight .gs {
+}
+.highlight .gu {
+  color: #aaaaaa;
+}
+.highlight .nb {
+  color: #f6aa11;
+}
+.highlight .cm {
+  color: #75715e;
+}
+.highlight .cp {
+  color: #75715e;
+}
+.highlight .c1 {
+  color: #75715e;
+}
+.highlight .cs {
+  color: #75715e;
+}
+.highlight .c, .highlight .cd {
+  color: #75715e;
+}
+.highlight .err {
+  color: #960050;
+}
+.highlight .gr {
+  color: #960050;
+}
+.highlight .gt {
+  color: #960050;
+}
+.highlight .gd {
+  color: #49483e;
+}
+.highlight .gi {
+  color: #49483e;
+}
+.highlight .ge {
+  color: #49483e;
+}
+.highlight .kc {
+  color: #66d9ef;
+}
+.highlight .kd {
+  color: #66d9ef;
+}
+.highlight .kr {
+  color: #66d9ef;
+}
+.highlight .no {
+  color: #66d9ef;
+}
+.highlight .kt {
+  color: #66d9ef;
+}
+.highlight .mf {
+  color: #ae81ff;
+}
+.highlight .mh {
+  color: #ae81ff;
+}
+.highlight .il {
+  color: #ae81ff;
+}
+.highlight .mi {
+  color: #ae81ff;
+}
+.highlight .mo {
+  color: #ae81ff;
+}
+.highlight .m, .highlight .mb, .highlight .mx {
+  color: #ae81ff;
+}
+.highlight .sc {
+  color: #ae81ff;
+}
+.highlight .se {
+  color: #ae81ff;
+}
+.highlight .ss {
+  color: #ae81ff;
+}
+.highlight .sd {
+  color: #e6db74;
+}
+.highlight .s2 {
+  color: #e6db74;
+}
+.highlight .sb {
+  color: #e6db74;
+}
+.highlight .sh {
+  color: #e6db74;
+}
+.highlight .si {
+  color: #e6db74;
+}
+.highlight .sx {
+  color: #e6db74;
+}
+.highlight .s1 {
+  color: #e6db74;
+}
+.highlight .s {
+  color: #e6db74;
+}
+.highlight .na {
+  color: #a6e22e;
+}
+.highlight .nc {
+  color: #a6e22e;
+}
+.highlight .nd {
+  color: #a6e22e;
+}
+.highlight .ne {
+  color: #a6e22e;
+}
+.highlight .nf {
+  color: #a6e22e;
+}
+.highlight .vc {
+  color: #ffffff;
+}
+.highlight .nn {
+  color: #ffffff;
+}
+.highlight .nl {
+  color: #ffffff;
+}
+.highlight .ni {
+  color: #ffffff;
+}
+.highlight .bp {
+  color: #ffffff;
+}
+.highlight .vg {
+  color: #ffffff;
+}
+.highlight .vi {
+  color: #ffffff;
+}
+.highlight .nv {
+  color: #ffffff;
+}
+.highlight .w {
+  color: #ffffff;
+}
+.highlight {
+  color: #ffffff;
+}
+.highlight .n, .highlight .py, .highlight .nx {
+  color: #ffffff;
+}
+.highlight .ow {
+  color: #f92672;
+}
+.highlight .nt {
+  color: #f92672;
+}
+.highlight .k, .highlight .kv {
+  color: #f92672;
+}
+.highlight .kn {
+  color: #f92672;
+}
+.highlight .kp {
+  color: #f92672;
+}
+.highlight .o {
+  color: #f92672;
+}
+    </style>
+    <link href="stylesheets/screen.css" rel="stylesheet" media="screen" />
+    <link href="stylesheets/print.css" rel="stylesheet" media="print" />
+      <script src="javascripts/all.js"></script>
+  </head>
+
+  <body class="index" data-languages="[&quot;shell&quot;]">
+    <a href="#" id="nav-button">
+      <span>
+        NAV
+        <img src="images/navbar.png" alt="Navbar" />
+      </span>
+    </a>
+    <div class="toc-wrapper">
+      <img src="images/logo.png" class="logo" alt="Logo" />
+        <div class="lang-selector">
+              <a href="#" data-language-name="shell">shell</a>
+        </div>
+        <div class="search">
+          <input type="text" class="search" id="input-search" placeholder="Search">
+        </div>
+        <ul class="search-results"></ul>
+      <div id="toc" class="toc-list-h1">
+          <li>
+            <a href="#introduction" class="toc-h1 toc-link" data-title="introduction">Introduction</a>
+          </li>
+          <li>
+            <a href="#user" class="toc-h1 toc-link" data-title="user">User</a>
+          </li>
+          <li>
+            <a href="#avatars" class="toc-h1 toc-link" data-title="avatars">Avatars</a>
+          </li>
+          <li>
+            <a href="#leagues" class="toc-h1 toc-link" data-title="leagues">Leagues</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#get-all-leagues-for-user" class="toc-h2 toc-link" data-title="get-all-leagues-for-user">Get all leagues for user</a>
+                  </li>
+                  <li>
+                    <a href="#get-a-specific-league" class="toc-h2 toc-link" data-title="get-a-specific-league">Get a specific league</a>
+                  </li>
+                  <li>
+                    <a href="#getting-rosters-in-a-league" class="toc-h2 toc-link" data-title="getting-rosters-in-a-league">Getting rosters in a league</a>
+                  </li>
+                  <li>
+                    <a href="#getting-users-in-a-league" class="toc-h2 toc-link" data-title="getting-users-in-a-league">Getting users in a league</a>
+                  </li>
+                  <li>
+                    <a href="#getting-matchups-in-a-league" class="toc-h2 toc-link" data-title="getting-matchups-in-a-league">Getting matchups in a league</a>
+                  </li>
+                  <li>
+                    <a href="#getting-the-playoff-bracket" class="toc-h2 toc-link" data-title="getting-the-playoff-bracket">Getting the playoff bracket</a>
+                  </li>
+                  <li>
+                    <a href="#get-transactions" class="toc-h2 toc-link" data-title="get-transactions">Get transactions</a>
+                  </li>
+                  <li>
+                    <a href="#get-traded-picks" class="toc-h2 toc-link" data-title="get-traded-picks">Get traded picks</a>
+                  </li>
+                  <li>
+                    <a href="#get-nfl-state" class="toc-h2 toc-link" data-title="get-nfl-state">Get NFL state</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#drafts" class="toc-h1 toc-link" data-title="drafts">Drafts</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#get-all-drafts-for-user" class="toc-h2 toc-link" data-title="get-all-drafts-for-user">Get all drafts for user</a>
+                  </li>
+                  <li>
+                    <a href="#get-all-drafts-for-a-league" class="toc-h2 toc-link" data-title="get-all-drafts-for-a-league">Get all drafts for a league</a>
+                  </li>
+                  <li>
+                    <a href="#get-a-specific-draft" class="toc-h2 toc-link" data-title="get-a-specific-draft">Get a specific draft</a>
+                  </li>
+                  <li>
+                    <a href="#get-all-picks-in-a-draft" class="toc-h2 toc-link" data-title="get-all-picks-in-a-draft">Get all picks in a draft</a>
+                  </li>
+                  <li>
+                    <a href="#get-traded-picks-in-a-draft" class="toc-h2 toc-link" data-title="get-traded-picks-in-a-draft">Get traded picks in a draft</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#players" class="toc-h1 toc-link" data-title="players">Players</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#fetch-all-players" class="toc-h2 toc-link" data-title="fetch-all-players">Fetch all players</a>
+                  </li>
+                  <li>
+                    <a href="#trending-players" class="toc-h2 toc-link" data-title="trending-players">Trending Players</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#errors" class="toc-h1 toc-link" data-title="errors">Errors</a>
+          </li>
+      </div>
+        <ul class="toc-footer">
+            <li><a href='https://sleeper.app'>Go to sleeper.app</a></li>
+        </ul>
+    </div>
+    <div class="page-wrapper">
+      <div class="dark-box"></div>
+      <div class="content">
+        <h1 id='introduction'>Introduction</h1>
+<p>The Sleeper API is a read-only HTTP API that is free to use for <strong>non-commercial purposes</strong> and allows access to a user&#39;s leagues, drafts, and rosters.</p>
+
+<p>For commercial use of the Sleeper API, please reach out to us directly at <a href="/cdn-cgi/l/email-protection#7f1e0f163f0c131a1a0f1a0d511e0f0f"><span class="__cf_email__" data-cfemail="3756475e77445b525247524519564747">[email&#160;protected]</span></a> to discuss licensing.</p>
+
+<p>No API Token is necessary, as you <strong>cannot modify</strong> contents via this API.</p>
+
+<p>Be mindful of the frequency of calls.  A general rule is to stay under 1000 API calls per minute, otherwise, you risk being IP-blocked.</p>
+<h1 id='user'>User</h1>
+<blockquote>
+<p>To fetch a user object, use this code:</p>
+</blockquote>
+<pre class="highlight shell tab-shell"><code><span class="c"># With shell, you can just curl the username or user_id</span>
+curl <span class="s2">"https://api.sleeper.app/v1/user/&lt;username&gt;"</span>
+curl <span class="s2">"https://api.sleeper.app/v1/user/&lt;user_id&gt;"</span>
+</code></pre>
+<blockquote>
+<p>You will get a JSON response that looks something like this:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sleeperuser"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"12345678"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"display_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SleeperUser"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"avatar"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cc12ec49965eb7856f84d71cf85306af"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>We do not perform authentication as our API is read-only and only contains league information.</p>
+
+<p>Via the <code>user</code> resource, you can GET the user object by either providing the <code>username</code> or <code>user_id</code> of the user.</p>
+
+<p><code>GET https://api.sleeper.app/v1/user/&lt;username&gt;</code></p>
+
+<p><code>GET https://api.sleeper.app/v1/user/&lt;user_id&gt;</code></p>
+
+<aside class="notice">
+Keep in mind that the <code>username</code> of a user can change over time, so if you are storing information, you'll want to hold onto the user_id.
+</aside>
+<h1 id='avatars'>Avatars</h1>
+<p>Users and leagues have <strong>avatar</strong> images.  There are thumbnail and full-size images for each avatar.</p>
+
+<p><strong>Full size URL</strong></p>
+
+<p><code>https://sleepercdn.com/avatars/&lt;avatar_id&gt;</code></p>
+
+<p><strong>Thumbnail URL</strong></p>
+
+<p><code>https://sleepercdn.com/avatars/thumbs/&lt;avatar_id&gt;</code></p>
+<h1 id='leagues'>Leagues</h1><h2 id='get-all-leagues-for-user'>Get all leagues for user</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/user/&lt;user_id&gt;/leagues/nfl/2018"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"total_rosters"</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"pre_draft"</span><span class="p">,</span> <span class="c1">// can also be "drafting", "in_season", or "complete"</span>
+    <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+    <span class="s2">"settings"</span><span class="p">:</span> <span class="p">{</span> <span class="nx">settings</span> <span class="nx">object</span> <span class="p">},</span>
+    <span class="s2">"season_type"</span><span class="p">:</span> <span class="s2">"regular"</span><span class="p">,</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2018"</span><span class="p">,</span>
+    <span class="s2">"scoring_settings"</span><span class="p">:</span> <span class="p">{</span> <span class="nx">scoring_settings</span> <span class="nx">object</span> <span class="p">},</span>
+    <span class="s2">"roster_positions"</span><span class="p">:</span> <span class="p">[</span> <span class="nx">roster</span> <span class="nx">positions</span> <span class="nx">array</span> <span class="p">],</span>
+    <span class="s2">"previous_league_id"</span><span class="p">:</span> <span class="s2">"198946952535085056"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Sleeperbot Friends League"</span><span class="p">,</span>
+    <span class="s2">"league_id"</span><span class="p">:</span> <span class="s2">"289646328504385536"</span><span class="p">,</span>
+    <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"289646328508579840"</span><span class="p">,</span>
+    <span class="s2">"avatar"</span><span class="p">:</span> <span class="s2">"efaefa889ae24046a53265a3c71b8b64"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"total_rosters"</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"in_season"</span><span class="p">,</span>
+    <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+    <span class="s2">"settings"</span><span class="p">:</span> <span class="p">{</span> <span class="nx">settings</span> <span class="nx">object</span> <span class="p">},</span>
+    <span class="s2">"season_type"</span><span class="p">:</span> <span class="s2">"regular"</span><span class="p">,</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2018"</span><span class="p">,</span>
+    <span class="s2">"scoring_settings"</span><span class="p">:</span> <span class="p">{</span> <span class="nx">scoring_settings</span> <span class="nx">object</span> <span class="p">},</span>
+    <span class="s2">"roster_positions"</span><span class="p">:</span> <span class="p">[</span> <span class="nx">roster</span> <span class="nx">positions</span> <span class="nx">array</span> <span class="p">],</span>
+    <span class="s2">"previous_league_id"</span><span class="p">:</span> <span class="s2">"198946952535085056"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Sleeperbot Dynasty"</span><span class="p">,</span>
+    <span class="s2">"league_id"</span><span class="p">:</span> <span class="s2">"289646328504385536"</span><span class="p">,</span>
+    <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"289646328508579840"</span><span class="p">,</span>
+    <span class="s2">"avatar"</span><span class="p">:</span> <span class="s2">"efaefa889ae24046a53265a3c71b8b64"</span>
+  <span class="p">},</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all leagues.</p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/user/&lt;user_id&gt;/leagues/&lt;sport&gt;/&lt;season&gt;</code></p>
+<h3 id='url-parameters'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>user_id</td>
+<td>The numerical ID of the user.</td>
+</tr>
+<tr>
+<td>sport</td>
+<td>We only support &quot;nfl&quot; right now.</td>
+</tr>
+<tr>
+<td>season</td>
+<td>Season can be 2017, 2018, etc...</td>
+</tr>
+</tbody></table>
+<h2 id='get-a-specific-league'>Get a specific league</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">{</span>
+  <span class="s2">"total_rosters"</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+  <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"in_season"</span><span class="p">,</span>
+  <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+  <span class="s2">"settings"</span><span class="p">:</span> <span class="p">{</span> <span class="nx">settings</span> <span class="nx">object</span> <span class="p">},</span>
+  <span class="s2">"season_type"</span><span class="p">:</span> <span class="s2">"regular"</span><span class="p">,</span>
+  <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2018"</span><span class="p">,</span>
+  <span class="s2">"scoring_settings"</span><span class="p">:</span> <span class="p">{</span> <span class="nx">scoring_settings</span> <span class="nx">object</span> <span class="p">},</span>
+  <span class="s2">"roster_positions"</span><span class="p">:</span> <span class="p">[</span> <span class="nx">roster</span> <span class="nx">positions</span> <span class="nx">array</span> <span class="p">],</span>
+  <span class="s2">"previous_league_id"</span><span class="p">:</span> <span class="s2">"198946952535085056"</span><span class="p">,</span>
+  <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Sleeperbot Dynasty"</span><span class="p">,</span>
+  <span class="s2">"league_id"</span><span class="p">:</span> <span class="s2">"289646328504385536"</span><span class="p">,</span>
+  <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"289646328508579840"</span><span class="p">,</span>
+  <span class="s2">"avatar"</span><span class="p">:</span> <span class="s2">"efaefa889ae24046a53265a3c71b8b64"</span>
+<span class="p">}</span>
+</code></pre>
+<p>This endpoint retrieves a specific league.</p>
+<h3 id='http-request-2'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;</code></p>
+<h3 id='url-parameters-2'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the league to retrieve</td>
+</tr>
+</tbody></table>
+<h2 id='getting-rosters-in-a-league'>Getting rosters in a league</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/rosters"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"starters"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"2307"</span><span class="p">,</span> <span class="s2">"2257"</span><span class="p">,</span> <span class="s2">"4034"</span><span class="p">,</span> <span class="s2">"147"</span><span class="p">,</span> <span class="s2">"642"</span><span class="p">,</span> <span class="s2">"4039"</span><span class="p">,</span> <span class="s2">"515"</span><span class="p">,</span> <span class="s2">"4149"</span><span class="p">,</span> <span class="s2">"DET"</span><span class="p">],</span>
+    <span class="s2">"settings"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"wins"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="s2">"waiver_position"</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+      <span class="s2">"waiver_budget_used"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="s2">"total_moves"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="s2">"ties"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="s2">"losses"</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+      <span class="s2">"fpts_decimal"</span><span class="p">:</span> <span class="mi">78</span><span class="p">,</span>
+      <span class="s2">"fpts_against_decimal"</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span>
+      <span class="s2">"fpts_against"</span><span class="p">:</span> <span class="mi">1670</span><span class="p">,</span>
+      <span class="s2">"fpts"</span><span class="p">:</span> <span class="mi">1617</span>
+    <span class="p">},</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"reserve"</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">"players"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"1046"</span><span class="p">,</span> <span class="s2">"138"</span><span class="p">,</span> <span class="s2">"147"</span><span class="p">,</span> <span class="s2">"2257"</span><span class="p">,</span> <span class="s2">"2307"</span><span class="p">,</span> <span class="s2">"2319"</span><span class="p">,</span> <span class="s2">"4034"</span><span class="p">,</span> <span class="s2">"4039"</span><span class="p">,</span> <span class="s2">"4040"</span><span class="p">,</span> <span class="s2">"4149"</span><span class="p">,</span> <span class="s2">"421"</span><span class="p">,</span> <span class="s2">"515"</span><span class="p">,</span> <span class="s2">"642"</span><span class="p">,</span> <span class="s2">"745"</span><span class="p">,</span> <span class="s2">"DET"</span><span class="p">],</span>
+    <span class="s2">"owner_id"</span><span class="p">:</span> <span class="s2">"188815879448829952"</span><span class="p">,</span>
+    <span class="s2">"league_id"</span><span class="p">:</span> <span class="s2">"206827432160788480"</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all rosters in a league.</p>
+<h3 id='http-request-3'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/rosters</code></p>
+<h3 id='url-parameters-3'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the league to retrieve rosters from</td>
+</tr>
+</tbody></table>
+<h2 id='getting-users-in-a-league'>Getting users in a league</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/users"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"user_id"</span><span class="p">:</span> <span class="s2">"&lt;user_id&gt;"</span><span class="p">,</span>
+    <span class="s2">"username"</span><span class="p">:</span> <span class="s2">"&lt;username&gt;"</span><span class="p">,</span>
+    <span class="s2">"display_name"</span><span class="p">:</span> <span class="s2">"&lt;display_name&gt;"</span><span class="p">,</span>
+    <span class="s2">"avatar"</span><span class="p">:</span> <span class="s2">"1233456789"</span><span class="p">,</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"team_name"</span><span class="p">:</span> <span class="s2">"Dezpacito"</span>
+    <span class="p">},</span>
+    <span class="s2">"is_owner"</span><span class="p">:</span> <span class="kc">true</span>   <span class="c1">// is commissioner (there can be multiple commissioners)</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all users in a league.</p>
+
+<p>This also includes each user&#39;s <strong>display_name</strong>, <strong>avatar</strong>, and their <strong>metadata</strong> which sometimes includes a nickname they gave their team.</p>
+<h3 id='http-request-4'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/users</code></p>
+<h3 id='url-parameters-4'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the league to retrieve rosters from</td>
+</tr>
+</tbody></table>
+<h2 id='getting-matchups-in-a-league'>Getting matchups in a league</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/matchups/&lt;week&gt;"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"starters"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"421"</span><span class="p">,</span> <span class="s2">"4035"</span><span class="p">,</span> <span class="s2">"3242"</span><span class="p">,</span> <span class="s2">"2133"</span><span class="p">,</span> <span class="s2">"2449"</span><span class="p">,</span> <span class="s2">"4531"</span><span class="p">,</span> <span class="s2">"2257"</span><span class="p">,</span> <span class="s2">"788"</span><span class="p">,</span> <span class="s2">"PHI"</span><span class="p">],</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"players"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"1352"</span><span class="p">,</span> <span class="s2">"1387"</span><span class="p">,</span> <span class="s2">"2118"</span><span class="p">,</span> <span class="s2">"2133"</span><span class="p">,</span> <span class="s2">"2182"</span><span class="p">,</span> <span class="s2">"223"</span><span class="p">,</span> <span class="s2">"2319"</span><span class="p">,</span> <span class="s2">"2449"</span><span class="p">,</span> <span class="s2">"3208"</span><span class="p">,</span> <span class="s2">"4035"</span><span class="p">,</span> <span class="s2">"421"</span><span class="p">,</span> <span class="s2">"4881"</span><span class="p">,</span> <span class="s2">"4892"</span><span class="p">,</span> <span class="s2">"788"</span><span class="p">,</span> <span class="s2">"CLE"</span><span class="p">],</span>
+    <span class="s2">"matchup_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">"points"</span><span class="p">:</span> <span class="mf">20.0</span> <span class="c1">// total points for team based on league settings</span>
+    <span class="s2">"custom_points"</span><span class="p">:</span> <span class="kc">null</span> <span class="c1">// if commissioner overrides points manually</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all matchups in a league for a given week.  Each object in the list represents one team.  The two teams with the same <code>matchup_id</code> match up against each other.</p>
+
+<p>The <code>starters</code> is in an ordered list of player_ids, and <code>players</code> is a list of all player_ids in this matchup.</p>
+
+<p>The bench can be deduced by removing the <code>starters</code> from the <code>players</code> field.</p>
+<h3 id='http-request-5'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/matchups/&lt;week&gt;</code></p>
+<h3 id='url-parameters-5'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the league to retrieve matchups from</td>
+</tr>
+<tr>
+<td>week</td>
+<td>The week these matchups take place</td>
+</tr>
+</tbody></table>
+<h2 id='getting-the-playoff-bracket'>Getting the playoff bracket</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/winners_bracket"</span>
+curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/losers_bracket"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span><span class="na">r</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="na">m</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>   <span class="na">t1</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>    <span class="na">t2</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>     <span class="na">w</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">l</span><span class="p">:</span> <span class="kc">null</span><span class="p">},</span>
+  <span class="p">{</span><span class="na">r</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="na">m</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>   <span class="na">t1</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>    <span class="na">t2</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>     <span class="na">w</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">l</span><span class="p">:</span> <span class="kc">null</span><span class="p">},</span>
+
+  <span class="p">{</span><span class="na">r</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="na">m</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>   <span class="na">t1</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>    <span class="na">t2</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>  <span class="na">t2_from</span><span class="p">:</span> <span class="p">{</span><span class="na">w</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>  <span class="na">w</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">l</span><span class="p">:</span> <span class="kc">null</span><span class="p">},</span>
+  <span class="p">{</span><span class="na">r</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="na">m</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>   <span class="na">t1</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>    <span class="na">t2</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>  <span class="na">t2_from</span><span class="p">:</span> <span class="p">{</span><span class="na">w</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>  <span class="na">w</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">l</span><span class="p">:</span> <span class="kc">null</span><span class="p">},</span>
+  <span class="p">{</span><span class="na">r</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="na">m</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>   <span class="na">t1</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">t2</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>  <span class="na">t1_from</span><span class="p">:</span> <span class="p">{</span><span class="na">l</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>  <span class="na">t2_from</span><span class="p">:</span> <span class="p">{</span><span class="na">l</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>  <span class="na">w</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">l</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">p</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
+
+  <span class="p">{</span><span class="na">r</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="na">m</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>   <span class="na">t1</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">t2</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>  <span class="na">t1_from</span><span class="p">:</span> <span class="p">{</span><span class="na">w</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>  <span class="na">t2_from</span><span class="p">:</span> <span class="p">{</span><span class="na">w</span><span class="p">:</span> <span class="mi">4</span><span class="p">},</span>  <span class="na">w</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">l</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">p</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+  <span class="p">{</span><span class="na">r</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="na">m</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>   <span class="na">t1</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">t2</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>  <span class="na">t1_from</span><span class="p">:</span> <span class="p">{</span><span class="na">l</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>  <span class="na">t2_from</span><span class="p">:</span> <span class="p">{</span><span class="na">l</span><span class="p">:</span> <span class="mi">4</span><span class="p">},</span>  <span class="na">w</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">l</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">p</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves the playoff bracket for a league for 4, 6, and 8 team playoffs.</p>
+
+<p>Each row represents a matchup between 2 teams.</p>
+
+<table><thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>r</td>
+<td>int</td>
+<td>The round for this matchup, 1st, 2nd, 3rd round, etc.</td>
+</tr>
+<tr>
+<td>m</td>
+<td>int</td>
+<td>The match <code>id</code> of the matchup, unique for all matchups within a bracket.</td>
+</tr>
+<tr>
+<td>t1</td>
+<td>int</td>
+<td>The <code>roster_id</code> of a team in this matchup OR <code>{w: 1}</code> which means the winner of match id <code>1</code></td>
+</tr>
+<tr>
+<td>t2</td>
+<td>int</td>
+<td>The <code>roster_id</code> of the other team in this matchup OR <code>{l: 1}</code> which means the loser of match id <code>1</code></td>
+</tr>
+<tr>
+<td>w</td>
+<td>int</td>
+<td>The <code>roster_id</code> of the winning team, if the match has been played.</td>
+</tr>
+<tr>
+<td>l</td>
+<td>int</td>
+<td>The <code>roster_id</code> of the losing team, if the match has been played.</td>
+</tr>
+<tr>
+<td>t1_from</td>
+<td>object</td>
+<td>Where t1 comes from, either winner or loser of the match <code>id</code>, necessary to show bracket progression.</td>
+</tr>
+<tr>
+<td>t2_from</td>
+<td>object</td>
+<td>Where t2 comes from, either winner or loser of the match <code>id</code>, necessary to show bracket progression.</td>
+</tr>
+</tbody></table>
+<h3 id='http-request-6'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/winners_bracket</code></p>
+
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/loses_bracket</code></p>
+<h3 id='url-parameters-6'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the league to retrieve matchups from</td>
+</tr>
+</tbody></table>
+<h2 id='get-transactions'>Get transactions</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/transactions/&lt;round&gt;"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"trade"</span><span class="p">,</span>
+    <span class="s2">"transaction_id"</span><span class="p">:</span> <span class="s2">"434852362033561600"</span><span class="p">,</span>
+    <span class="s2">"status_updated"</span><span class="p">:</span> <span class="mi">1558039402803</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"complete"</span><span class="p">,</span>
+    <span class="s2">"settings"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>     <span class="c1">// trades do not use this field</span>
+    <span class="s2">"roster_ids"</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="c1">// roster_ids involved in this transaction</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"leg"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>         <span class="c1">// in football, this is the week</span>
+    <span class="s2">"drops"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"draft_picks"</span><span class="p">:</span> <span class="p">[</span>  <span class="c1">// picks that were traded</span>
+      <span class="p">{</span>
+        <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2019"</span><span class="p">,</span><span class="c1">// the season this draft pick belongs to</span>
+        <span class="s2">"round"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>      <span class="c1">// which round this draft pick is</span>
+        <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1">// original owner's roster_id</span>
+        <span class="s2">"previous_owner_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1">// previous owner's roster id (in this trade)</span>
+        <span class="s2">"owner_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>   <span class="c1">// the new owner of this pick after the trade</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2019"</span><span class="p">,</span>
+        <span class="s2">"round"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">"previous_owner_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">"owner_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">"creator"</span><span class="p">:</span> <span class="s2">"160000000000000000"</span><span class="p">,</span>  <span class="c1">// user id who initiated the transaction</span>
+    <span class="s2">"created"</span><span class="p">:</span> <span class="mi">1558039391576</span><span class="p">,</span>
+    <span class="s2">"consenter_ids"</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="c1">// roster_ids of the people who agreed to this transaction</span>
+    <span class="s2">"adds"</span><span class="p">:</span> <span class="kc">null</span>
+    <span class="s2">"waiver_budget"</span><span class="p">:</span> <span class="p">[</span>   <span class="c1">// roster_id 2 sends 55 FAAB dollars to roster_id 3</span>
+      <span class="p">{</span>
+        <span class="s2">"sender"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">"receiver"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">"amount"</span><span class="p">:</span> <span class="mi">55</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"free_agent"</span><span class="p">,</span>  <span class="c1">// could be waiver or trade as well</span>
+    <span class="s2">"transaction_id"</span><span class="p">:</span> <span class="s2">"434890120798142464"</span><span class="p">,</span>
+    <span class="s2">"status_updated"</span><span class="p">:</span> <span class="mi">1558048393967</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"complete"</span><span class="p">,</span>
+    <span class="s2">"settings"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>   <span class="c1">// could be {'waiver_bid': 44} if it's FAAB waivers</span>
+    <span class="s2">"roster_ids"</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span>  <span class="c1">// roster_ids involved in this transaction</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>   <span class="c1">// can contain notes in waivers like why it didn't go through</span>
+    <span class="s2">"leg"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"drops"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"1736"</span><span class="p">:</span> <span class="mi">1</span>         <span class="c1">// player id 1736 dropped from roster_id 1</span>
+    <span class="p">},</span>
+    <span class="s2">"draft_picks"</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">"creator"</span><span class="p">:</span> <span class="s2">"160000000000000000"</span><span class="p">,</span>
+    <span class="s2">"created"</span><span class="p">:</span> <span class="mi">1558048393967</span><span class="p">,</span>
+    <span class="s2">"consenter_ids"</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="c1">// the roster_ids who agreed to this transaction</span>
+    <span class="s2">"adds"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"2315"</span><span class="p">:</span> <span class="mi">1</span>   <span class="c1">// player id 2315 added to roster_id 1</span>
+      <span class="p">...</span>
+    <span class="p">},</span>
+    <span class="s2">"waiver_budget"</span><span class="p">:</span> <span class="p">[]</span>  <span class="c1">// this used for trades only involving FAAB</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all free agent transactions, waivers and trades.</p>
+<h3 id='http-request-7'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/transactions/&lt;round&gt;</code></p>
+<h3 id='url-parameters-7'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the draft to retrieve picks for</td>
+</tr>
+<tr>
+<td>round</td>
+<td>The week you want to pull from</td>
+</tr>
+</tbody></table>
+<h2 id='get-traded-picks'>Get traded picks</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/traded_picks"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2019"</span><span class="p">,</span>        <span class="c1">// which season the pick is for</span>
+    <span class="s2">"round"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>              <span class="c1">// which round the pick is</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>          <span class="c1">// roster_id of ORIGINAL owner</span>
+    <span class="s2">"previous_owner_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1">// roster_id of the previous owner</span>
+    <span class="s2">"owner_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>           <span class="c1">// roster_id of current owner</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2020"</span><span class="p">,</span>        <span class="c1">// which season the pick is for</span>
+    <span class="s2">"round"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>              <span class="c1">// which round the pick is</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>          <span class="c1">// roster_id of original owner</span>
+    <span class="s2">"previous_owner_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1">// roster_id of previous owner</span>
+    <span class="s2">"owner_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>           <span class="c1">// roster_id of current owner</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all traded picks in a league, including future picks.</p>
+<h3 id='http-request-8'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/traded_picks</code></p>
+<h3 id='url-parameters-8'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the league to retrieve traded picks for</td>
+</tr>
+</tbody></table>
+<h2 id='get-nfl-state'>Get NFL state</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/state/nfl"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">{</span>
+  <span class="s2">"week"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="c1">// week</span>
+  <span class="s2">"season_type"</span><span class="p">:</span> <span class="s2">"regular"</span><span class="p">,</span> <span class="c1">// pre, post, regular</span>
+  <span class="s2">"season_start_date"</span><span class="p">:</span> <span class="s2">"2020-09-10"</span><span class="p">,</span> <span class="c1">// regular season start</span>
+  <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2020"</span><span class="p">,</span> <span class="c1">// current season</span>
+  <span class="s2">"previous_season"</span><span class="p">:</span> <span class="s2">"2019"</span><span class="p">,</span>
+  <span class="s2">"leg"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="c1">// week of regular season</span>
+  <span class="s2">"league_season"</span><span class="p">:</span> <span class="s2">"2021"</span><span class="p">,</span> <span class="c1">// active season for leagues</span>
+  <span class="s2">"league_create_season"</span><span class="p">:</span> <span class="s2">"2021"</span><span class="p">,</span> <span class="c1">// flips in December</span>
+  <span class="s2">"display_week"</span><span class="p">:</span> <span class="mi">3</span> <span class="c1">// Which week to display in UI, can be different than week</span>
+<span class="p">}</span>
+</code></pre>
+<p>This endpoint returns information about the current state for any sport.</p>
+<h3 id='http-request-9'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/state/&lt;sport&gt;</code></p>
+<h3 id='url-parameters-9'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>sport</td>
+<td>nfl, nba, lcs, etc...</td>
+</tr>
+</tbody></table>
+<h1 id='drafts'>Drafts</h1><h2 id='get-all-drafts-for-user'>Get all drafts for user</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/user/&lt;user_id&gt;/drafts/nfl/2018"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"snake"</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"complete"</span><span class="p">,</span>
+    <span class="s2">"start_time"</span><span class="p">:</span> <span class="mi">1515700800000</span><span class="p">,</span>
+    <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+    <span class="s2">"settings"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"teams"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+      <span class="s2">"slots_wr"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="s2">"slots_te"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_rb"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="s2">"slots_qb"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_k"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_flex"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="s2">"slots_def"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_bn"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="s2">"rounds"</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+      <span class="s2">"pick_timer"</span><span class="p">:</span> <span class="mi">120</span>
+    <span class="p">},</span>
+    <span class="s2">"season_type"</span><span class="p">:</span> <span class="s2">"regular"</span><span class="p">,</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2017"</span><span class="p">,</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"scoring_type"</span><span class="p">:</span> <span class="s2">"ppr"</span><span class="p">,</span>
+      <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"My Dynasty"</span><span class="p">,</span>
+      <span class="s2">"description"</span><span class="p">:</span> <span class="s2">""</span>
+    <span class="p">},</span>
+    <span class="s2">"league_id"</span><span class="p">:</span> <span class="s2">"257270637750382592"</span><span class="p">,</span>
+    <span class="s2">"last_picked"</span><span class="p">:</span> <span class="mi">1515700871182</span><span class="p">,</span>
+    <span class="s2">"last_message_time"</span><span class="p">:</span> <span class="mi">1515700942674</span><span class="p">,</span>
+    <span class="s2">"last_message_id"</span><span class="p">:</span> <span class="s2">"257272036450111488"</span><span class="p">,</span>
+    <span class="s2">"draft_order"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"257270643320426496"</span><span class="p">,</span>
+    <span class="s2">"creators"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"created"</span><span class="p">:</span> <span class="mi">1515700610526</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all drafts by a user.</p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/user/&lt;user_id&gt;/drafts/&lt;sport&gt;/&lt;season&gt;</code></p>
+<h3 id='url-parameters'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>user_id</td>
+<td>The numerical ID of the user.</td>
+</tr>
+<tr>
+<td>sport</td>
+<td>We only support &quot;nfl&quot; right now.</td>
+</tr>
+<tr>
+<td>season</td>
+<td>Season can be 2017, 2018, etc...</td>
+</tr>
+</tbody></table>
+<h2 id='get-all-drafts-for-a-league'>Get all drafts for a league</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/league/&lt;league_id&gt;/drafts"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"snake"</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"complete"</span><span class="p">,</span>
+    <span class="s2">"start_time"</span><span class="p">:</span> <span class="mi">1515700800000</span><span class="p">,</span>
+    <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+    <span class="s2">"settings"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"teams"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+      <span class="s2">"slots_wr"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="s2">"slots_te"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_rb"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="s2">"slots_qb"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_k"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_flex"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="s2">"slots_def"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">"slots_bn"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="s2">"rounds"</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+      <span class="s2">"pick_timer"</span><span class="p">:</span> <span class="mi">120</span>
+    <span class="p">},</span>
+    <span class="s2">"season_type"</span><span class="p">:</span> <span class="s2">"regular"</span><span class="p">,</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2017"</span><span class="p">,</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"scoring_type"</span><span class="p">:</span> <span class="s2">"ppr"</span><span class="p">,</span>
+      <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"My Dynasty"</span><span class="p">,</span>
+      <span class="s2">"description"</span><span class="p">:</span> <span class="s2">""</span>
+    <span class="p">},</span>
+    <span class="s2">"league_id"</span><span class="p">:</span> <span class="s2">"257270637750382592"</span><span class="p">,</span>
+    <span class="s2">"last_picked"</span><span class="p">:</span> <span class="mi">1515700871182</span><span class="p">,</span>
+    <span class="s2">"last_message_time"</span><span class="p">:</span> <span class="mi">1515700942674</span><span class="p">,</span>
+    <span class="s2">"last_message_id"</span><span class="p">:</span> <span class="s2">"257272036450111488"</span><span class="p">,</span>
+    <span class="s2">"draft_order"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"257270643320426496"</span><span class="p">,</span>
+    <span class="s2">"creators"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"created"</span><span class="p">:</span> <span class="mi">1515700610526</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all drafts for a league.  Keep in mind that a league can have multiple drafts, especially dynasty leagues.  </p>
+
+<p>Drafts are sorted by most recent to earliest.  Most leagues should only have one draft.</p>
+<h3 id='http-request-2'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/league/&lt;league_id&gt;/drafts</code></p>
+<h3 id='url-parameters-2'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>league_id</td>
+<td>The ID of the league for which you are trying to retrieve drafts.</td>
+</tr>
+</tbody></table>
+<h2 id='get-a-specific-draft'>Get a specific draft</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/draft/&lt;draft_id&gt;"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">{</span>
+  <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"snake"</span><span class="p">,</span>
+  <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"complete"</span><span class="p">,</span>
+  <span class="s2">"start_time"</span><span class="p">:</span> <span class="mi">1515700800000</span><span class="p">,</span>
+  <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+  <span class="s2">"settings"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"teams"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="s2">"slots_wr"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">"slots_te"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"slots_rb"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">"slots_qb"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"slots_k"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"slots_flex"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">"slots_def"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"slots_bn"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="s2">"rounds"</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+    <span class="s2">"pick_timer"</span><span class="p">:</span> <span class="mi">120</span>
+  <span class="p">},</span>
+  <span class="s2">"season_type"</span><span class="p">:</span> <span class="s2">"regular"</span><span class="p">,</span>
+  <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2017"</span><span class="p">,</span>
+  <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"scoring_type"</span><span class="p">:</span> <span class="s2">"ppr"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"My Dynasty"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="s2">""</span>
+  <span class="p">},</span>
+  <span class="s2">"league_id"</span><span class="p">:</span> <span class="s2">"257270637750382592"</span><span class="p">,</span>
+  <span class="s2">"last_picked"</span><span class="p">:</span> <span class="mi">1515700871182</span><span class="p">,</span>
+  <span class="s2">"last_message_time"</span><span class="p">:</span> <span class="mi">1515700942674</span><span class="p">,</span>
+  <span class="s2">"last_message_id"</span><span class="p">:</span> <span class="s2">"257272036450111488"</span><span class="p">,</span>
+
+  <span class="c1">// this is the user_id to draft slot mapping</span>
+  <span class="s2">"draft_order"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"12345678"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"23434332"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">...</span>
+  <span class="p">},</span>
+
+  <span class="c1">// this is the draft slot to roster_id mapping</span>
+  <span class="c1">// leagues have rosters, which have roster_ids</span>
+  <span class="c1">// this means draft slot 1 (column 1) will go to roster 10, slot 2 will go to roster_id 3, etc</span>
+  <span class="s2">"slot_to_roster_id"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"1"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="s2">"2"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">"3"</span><span class="p">:</span> <span class="mi">5</span>
+  <span class="p">},</span>
+
+  <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"257270643320426496"</span><span class="p">,</span>
+  <span class="s2">"creators"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="s2">"created"</span><span class="p">:</span> <span class="mi">1515700610526</span>
+<span class="p">}</span>
+</code></pre>
+<p>This endpoint retrieves a specific draft.</p>
+<h3 id='http-request-3'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/draft/&lt;draft_id&gt;</code></p>
+<h3 id='url-parameters-3'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>draft_id</td>
+<td>The ID of the draft to retrieve</td>
+</tr>
+</tbody></table>
+<h2 id='get-all-picks-in-a-draft'>Get all picks in a draft</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/draft/&lt;draft_id&gt;/picks"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"player_id"</span><span class="p">:</span> <span class="s2">"2391"</span><span class="p">,</span>
+    <span class="s2">"picked_by"</span><span class="p">:</span> <span class="s2">"234343434"</span><span class="p">,</span> <span class="c1">// user_id this pick will go to (not all leagues have users in every slot, this can be "")</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">,</span> <span class="c1">// roster_id this pick will go to</span>
+    <span class="s2">"round"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="s2">"draft_slot"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="c1">// which column this is on the draftboard</span>
+    <span class="s2">"pick_no"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"team"</span><span class="p">:</span> <span class="s2">"ARI"</span><span class="p">,</span>
+      <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"Injured Reserve"</span><span class="p">,</span>
+      <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+      <span class="s2">"position"</span><span class="p">:</span> <span class="s2">"RB"</span><span class="p">,</span>
+      <span class="s2">"player_id"</span><span class="p">:</span> <span class="s2">"2391"</span><span class="p">,</span>
+      <span class="s2">"number"</span><span class="p">:</span> <span class="s2">"31"</span><span class="p">,</span>
+      <span class="s2">"news_updated"</span><span class="p">:</span> <span class="s2">"1513007102037"</span><span class="p">,</span>
+      <span class="s2">"last_name"</span><span class="p">:</span> <span class="s2">"Johnson"</span><span class="p">,</span>
+      <span class="s2">"injury_status"</span><span class="p">:</span> <span class="s2">"Out"</span><span class="p">,</span>
+      <span class="s2">"first_name"</span><span class="p">:</span> <span class="s2">"David"</span>
+    <span class="p">},</span>
+    <span class="s2">"is_keeper"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"257270643320426496"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"player_id"</span><span class="p">:</span> <span class="s2">"1408"</span><span class="p">,</span>
+    <span class="s2">"picked_by"</span><span class="p">:</span> <span class="s2">"234343434"</span><span class="p">,</span> <span class="c1">// user_id this pick will go to (not all leagues have users in every slot, this can be "")</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">,</span> <span class="c1">// roster_id this pick will go to</span>
+    <span class="s2">"round"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="s2">"draft_slot"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="s2">"pick_no"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"team"</span><span class="p">:</span> <span class="s2">"PIT"</span><span class="p">,</span>
+      <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"Active"</span><span class="p">,</span>
+      <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+      <span class="s2">"position"</span><span class="p">:</span> <span class="s2">"RB"</span><span class="p">,</span>
+      <span class="s2">"player_id"</span><span class="p">:</span> <span class="s2">"1408"</span><span class="p">,</span>
+      <span class="s2">"number"</span><span class="p">:</span> <span class="s2">"26"</span><span class="p">,</span>
+      <span class="s2">"news_updated"</span><span class="p">:</span> <span class="s2">"1515698101257"</span><span class="p">,</span>
+      <span class="s2">"last_name"</span><span class="p">:</span> <span class="s2">"Bell"</span><span class="p">,</span>
+      <span class="s2">"injury_status"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+      <span class="s2">"first_name"</span><span class="p">:</span> <span class="s2">"Le'Veon"</span>
+    <span class="p">},</span>
+    <span class="s2">"is_keeper"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"257270643320426496"</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"player_id"</span><span class="p">:</span> <span class="s2">"536"</span><span class="p">,</span>
+    <span class="s2">"picked_by"</span><span class="p">:</span> <span class="s2">"667279356739584"</span><span class="p">,</span>
+    <span class="s2">"pick_no"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">"team"</span><span class="p">:</span> <span class="s2">"PIT"</span><span class="p">,</span>
+      <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"Active"</span><span class="p">,</span>
+      <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+      <span class="s2">"position"</span><span class="p">:</span> <span class="s2">"WR"</span><span class="p">,</span>
+      <span class="s2">"player_id"</span><span class="p">:</span> <span class="s2">"536"</span><span class="p">,</span>
+      <span class="s2">"number"</span><span class="p">:</span> <span class="s2">"84"</span><span class="p">,</span>
+      <span class="s2">"news_updated"</span><span class="p">:</span> <span class="s2">"1515673801292"</span><span class="p">,</span>
+      <span class="s2">"last_name"</span><span class="p">:</span> <span class="s2">"Brown"</span><span class="p">,</span>
+      <span class="s2">"injury_status"</span><span class="p">:</span> <span class="s2">"Probable"</span><span class="p">,</span>
+      <span class="s2">"first_name"</span><span class="p">:</span> <span class="s2">"Antonio"</span>
+    <span class="p">},</span>
+    <span class="s2">"is_keeper"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"draft_id"</span><span class="p">:</span> <span class="s2">"257270643320426496"</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all picks in a draft.</p>
+<h3 id='http-request-4'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/draft/&lt;draft_id&gt;/picks</code></p>
+<h3 id='url-parameters-4'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>draft_id</td>
+<td>The ID of the draft to retrieve picks for</td>
+</tr>
+</tbody></table>
+<h2 id='get-traded-picks-in-a-draft'>Get traded picks in a draft</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/draft/&lt;draft_id&gt;/traded_picks"</span>
+</code></pre>
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2019"</span><span class="p">,</span>
+    <span class="s2">"round"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>              <span class="c1">// which round the pick is</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>          <span class="c1">// roster_id of ORIGINAL owner</span>
+    <span class="s2">"previous_owner_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1">// roster_id of the previous owner</span>
+    <span class="s2">"owner_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>           <span class="c1">// roster_id of current owner</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">"season"</span><span class="p">:</span> <span class="s2">"2019"</span><span class="p">,</span>
+    <span class="s2">"round"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>              <span class="c1">// which round the pick is</span>
+    <span class="s2">"roster_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>          <span class="c1">// roster_id of original owner</span>
+    <span class="s2">"previous_owner_id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1">// roster_id of previous owner</span>
+    <span class="s2">"owner_id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>           <span class="c1">// roster_id of current owner</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<p>This endpoint retrieves all traded picks in a draft.</p>
+<h3 id='http-request-5'>HTTP Request</h3>
+<p><code>GET https://api.sleeper.app/v1/draft/&lt;draft_id&gt;/traded_picks</code></p>
+<h3 id='url-parameters-5'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>draft_id</td>
+<td>The ID of the draft to retrieve picks for</td>
+</tr>
+</tbody></table>
+<h1 id='players'>Players</h1><h2 id='fetch-all-players'>Fetch all players</h2>
+<blockquote>
+<p>To fetch all players, use this code:</p>
+</blockquote>
+<pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/players/nfl"</span>
+</code></pre>
+<blockquote>
+<p>You can also filter by position, by active status, or both:</p>
+</blockquote>
+<pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/players/nfl?position=QB"</span>
+curl <span class="s2">"https://api.sleeper.app/v1/players/nfl?active=true"</span>
+curl <span class="s2">"https://api.sleeper.app/v1/players/nfl?position=QB&amp;active=true"</span>
+</code></pre>
+<blockquote>
+<p>You will get a JSON response that looks something like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">{</span>
+  <span class="s2">"3086"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"hashtag"</span><span class="p">:</span> <span class="s2">"#TomBrady-NFL-NE-12"</span><span class="p">,</span>
+    <span class="s2">"depth_chart_position"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"Active"</span><span class="p">,</span>
+    <span class="s2">"sport"</span><span class="p">:</span> <span class="s2">"nfl"</span><span class="p">,</span>
+    <span class="s2">"fantasy_positions"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"QB"</span><span class="p">],</span>
+    <span class="s2">"number"</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="s2">"search_last_name"</span><span class="p">:</span> <span class="s2">"brady"</span><span class="p">,</span>
+    <span class="s2">"injury_start_date"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"weight"</span><span class="p">:</span> <span class="s2">"220"</span><span class="p">,</span>
+    <span class="s2">"position"</span><span class="p">:</span> <span class="s2">"QB"</span><span class="p">,</span>
+    <span class="s2">"practice_participation"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"sportradar_id"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="s2">"team"</span><span class="p">:</span> <span class="s2">"NE"</span><span class="p">,</span>
+    <span class="s2">"last_name"</span><span class="p">:</span> <span class="s2">"Brady"</span><span class="p">,</span>
+    <span class="s2">"college"</span><span class="p">:</span> <span class="s2">"Michigan"</span><span class="p">,</span>
+    <span class="s2">"fantasy_data_id"</span><span class="p">:</span><span class="mi">17836</span><span class="p">,</span>
+    <span class="s2">"injury_status"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"player_id"</span><span class="p">:</span><span class="s2">"3086"</span><span class="p">,</span>
+    <span class="s2">"height"</span><span class="p">:</span> <span class="s2">"6'4\""</span><span class="p">,</span>
+    <span class="s2">"search_full_name"</span><span class="p">:</span> <span class="s2">"tombrady"</span><span class="p">,</span>
+    <span class="s2">"age"</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span>
+    <span class="s2">"stats_id"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="s2">"birth_country"</span><span class="p">:</span> <span class="s2">"United States"</span><span class="p">,</span>
+    <span class="s2">"espn_id"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="s2">"search_rank"</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+    <span class="s2">"first_name"</span><span class="p">:</span> <span class="s2">"Tom"</span><span class="p">,</span>
+    <span class="s2">"depth_chart_order"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"years_exp"</span><span class="p">:</span> <span class="mi">14</span><span class="p">,</span>
+    <span class="s2">"rotowire_id"</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="s2">"rotoworld_id"</span><span class="p">:</span> <span class="mi">8356</span><span class="p">,</span>
+    <span class="s2">"search_first_name"</span><span class="p">:</span> <span class="s2">"tom"</span><span class="p">,</span>
+    <span class="s2">"yahoo_id"</span><span class="p">:</span> <span class="kc">null</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">}</span>
+</code></pre>
+<aside class="notice">
+Please use this call sparingly, as it is intended only to be used once per day at most to keep your player IDs updated.  The average size of this query is <code>5MB</code>.
+</aside>
+
+<p>Since rosters and draft picks contain <code>Player IDs</code> which look like <code>&quot;1042&quot;</code>, <code>&quot;2403&quot;</code>, <code>&quot;CAR&quot;</code>, etc, you will need to know what those IDs map to.  The <code>/players</code> call provides you the map necessary to look up any player.</p>
+
+<p>You should <strong>save this information on your own servers</strong> as this is not intended to be called every time you need to look up players due to the filesize being close to 5MB in size.  You do not need to call this endpoint more than once per day.</p>
+
+<p><code>GET https://api.sleeper.app/v1/players/&lt;sport&gt;?position=&lt;position&gt;&amp;active=&lt;true&gt;</code></p>
+<h3 id='query-parameters'>Query Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>position</td>
+<td>Only return players whose fantasy positions include this position, such as <code>QB</code> - optional</td>
+</tr>
+<tr>
+<td>active</td>
+<td>Set to <code>true</code> to only return active players; any other value is ignored - optional</td>
+</tr>
+</tbody></table>
+
+<p>Both parameters can be used individually or combined.  Filtered responses are much smaller than the full 5MB player map, so they are a good fit if you only need a subset of players.</p>
+<h2 id='trending-players'>Trending Players</h2>
+<blockquote>
+<p>To get a list of trending players based on add/drop activity:</p>
+</blockquote>
+<pre class="highlight shell tab-shell"><code>curl <span class="s2">"https://api.sleeper.app/v1/players/nfl/trending/add"</span>
+</code></pre>
+<blockquote>
+<p>You will get a JSON response that looks something like this:</p>
+</blockquote>
+<pre class="highlight javascript tab-javascript"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">"player_id"</span><span class="p">:</span> <span class="s2">"1111"</span><span class="p">,</span> <span class="c1">// the player_id</span>
+    <span class="s2">"count"</span><span class="p">:</span> <span class="mi">45</span>         <span class="c1">// number or adds</span>
+  <span class="p">},</span>
+  <span class="p">...</span>
+<span class="p">]</span>
+</code></pre>
+<blockquote>
+<p>Want to embed this on your app? Copy the code below:</p>
+</blockquote>
+<pre class="highlight plaintext"><code>&lt;iframe src="https://sleeper.app/embed/players/nfl/trending/add?lookback_hours=24&amp;limit=25" width="350" height="500" allowtransparency="true" frameborder="0"&gt;&lt;/iframe&gt;
+</code></pre>
+<aside class="notice">
+Please give attribution to Sleeper you are using our trending data.  If you'd like to embed our trending list on your website or blog, please use the embed code on the right.
+</aside>
+
+<p>You can use this endpoint to get a list of trending players based on adds or drops in the past 24 hours.</p>
+
+<p><code>GET https://api.sleeper.app/v1/players/&lt;sport&gt;/trending/&lt;type&gt;?lookback_hours=&lt;hours&gt;&amp;limit=&lt;int&gt;</code></p>
+<h3 id='url-parameters'>URL Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>sport</td>
+<td>The sport, such as <code>nfl</code></td>
+</tr>
+<tr>
+<td>type</td>
+<td>Either <code>add</code> or <code>drop</code></td>
+</tr>
+<tr>
+<td>lookback_hours</td>
+<td>Number of hours to look back (default is 24) - optional</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>Number of results you want, (default is 25) - optional</td>
+</tr>
+</tbody></table>
+<h1 id='errors'>Errors</h1>
+<p>The Sleeper API uses the following error codes:</p>
+
+<table><thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>400</td>
+<td>Bad Request -- Your request is invalid.</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Not Found -- The specified kitten could not be found.</td>
+</tr>
+<tr>
+<td>429</td>
+<td>Too Many Requests -- You&#39;re requesting too many kittens! Slow down!</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Internal Server Error -- We had a problem with our server. Try again later.</td>
+</tr>
+<tr>
+<td>503</td>
+<td>Service Unavailable -- We&#39;re temporarily offline for maintenance. Please try again later.</td>
+</tr>
+</tbody></table>
+
+      </div>
+      <div class="dark-box">
+          <div class="lang-selector">
+                <a href="#" data-language-name="shell">shell</a>
+          </div>
+      </div>
+    </div>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>

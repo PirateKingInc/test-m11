@@ -1,0 +1,362 @@
+[
+ {
+  "season": 2022,
+  "team": "GB",
+  "role": "head_coach",
+  "name": "Matt LaFleur",
+  "article": "Matt LaFleur",
+  "revid": 1382114818,
+  "result": "match"
+ },
+ {
+  "season": 2021,
+  "team": "BUF",
+  "role": "head_coach",
+  "name": "Sean McDermott",
+  "article": "Sean McDermott",
+  "revid": 1382189018,
+  "result": "match"
+ },
+ {
+  "season": 2025,
+  "team": "NYG",
+  "role": "head_coach",
+  "name": "Brian Daboll",
+  "article": "Brian Daboll",
+  "revid": 1374910976,
+  "result": "match"
+ },
+ {
+  "season": 2019,
+  "team": "NYG",
+  "role": "head_coach",
+  "name": "Pat Shurmur",
+  "article": "Pat Shurmur",
+  "revid": 1367139264,
+  "result": "match"
+ },
+ {
+  "season": 2020,
+  "team": "JAX",
+  "role": "head_coach",
+  "name": "Doug Marrone",
+  "article": "Doug Marrone",
+  "revid": 1365995958,
+  "result": "match"
+ },
+ {
+  "season": 2019,
+  "team": "LAC",
+  "role": "head_coach",
+  "name": "Anthony Lynn",
+  "article": "Anthony Lynn",
+  "revid": 1368053787,
+  "result": "match"
+ },
+ {
+  "season": 2018,
+  "team": "BUF",
+  "role": "oc",
+  "name": "Brian Daboll",
+  "article": "Brian Daboll",
+  "revid": 1374910976,
+  "result": "match"
+ },
+ {
+  "season": 2025,
+  "team": "CLE",
+  "role": "dc",
+  "name": "Jim Schwartz",
+  "article": "Jim Schwartz",
+  "revid": 1379072103,
+  "result": "match"
+ },
+ {
+  "season": 2024,
+  "team": "LA",
+  "role": "oc",
+  "name": "Mike LaFleur",
+  "article": "Mike LaFleur",
+  "revid": 1382111170,
+  "result": "match"
+ },
+ {
+  "season": 2024,
+  "team": "LA",
+  "role": "head_coach",
+  "name": "Sean McVay",
+  "article": "Sean McVay",
+  "revid": 1381997349,
+  "result": "match"
+ },
+ {
+  "season": 2022,
+  "team": "LV",
+  "role": "head_coach",
+  "name": "Josh McDaniels",
+  "article": "Josh McDaniels",
+  "revid": 1378049916,
+  "result": "match"
+ },
+ {
+  "season": 2024,
+  "team": "ARI",
+  "role": "dc",
+  "name": "Nick Rallis",
+  "article": "Nick Rallis",
+  "revid": 1339355460,
+  "result": "match"
+ },
+ {
+  "season": 2019,
+  "team": "IND",
+  "role": "head_coach",
+  "name": "Frank Reich",
+  "article": "Frank Reich",
+  "revid": 1378780635,
+  "result": "match"
+ },
+ {
+  "season": 2017,
+  "team": "DET",
+  "role": "dc",
+  "name": "Teryl Austin",
+  "article": "Teryl Austin",
+  "revid": 1377694818,
+  "result": "match"
+ },
+ {
+  "season": 2026,
+  "team": "TEN",
+  "role": "oc",
+  "name": "Brian Daboll",
+  "article": "Brian Daboll",
+  "revid": 1374910976,
+  "result": "match"
+ },
+ {
+  "season": 2016,
+  "team": "DET",
+  "role": "oc",
+  "name": "Jim Bob Cooter",
+  "article": "Jim Bob Cooter",
+  "revid": 1381920390,
+  "result": "match"
+ },
+ {
+  "season": 2019,
+  "team": "ATL",
+  "role": "oc",
+  "name": "Dirk Koetter",
+  "article": "Dirk Koetter",
+  "revid": 1376814065,
+  "result": "match"
+ },
+ {
+  "season": 2020,
+  "team": "NO",
+  "role": "head_coach",
+  "name": "Sean Payton",
+  "article": "Sean Payton",
+  "revid": 1382233114,
+  "result": "match"
+ },
+ {
+  "season": 2025,
+  "team": "PIT",
+  "role": "dc",
+  "name": "Teryl Austin",
+  "article": "Teryl Austin",
+  "revid": 1377694818,
+  "result": "match"
+ },
+ {
+  "season": 2025,
+  "team": "ARI",
+  "role": "oc",
+  "name": "Drew Petzing",
+  "article": "Drew Petzing",
+  "revid": 1380495607,
+  "result": "match"
+ },
+ {
+  "season": 2021,
+  "team": "CHI",
+  "role": "head_coach",
+  "name": "Matt Nagy",
+  "article": "Matt Nagy",
+  "revid": 1379231723,
+  "result": "match"
+ },
+ {
+  "season": 2019,
+  "team": "BUF",
+  "role": "head_coach",
+  "name": "Sean McDermott",
+  "article": "Sean McDermott",
+  "revid": 1382189018,
+  "result": "match"
+ },
+ {
+  "season": 2026,
+  "team": "DET",
+  "role": "oc",
+  "name": "Drew Petzing",
+  "article": "Drew Petzing",
+  "revid": 1380495607,
+  "result": "match"
+ },
+ {
+  "season": 2022,
+  "team": "BUF",
+  "role": "head_coach",
+  "name": "Sean McDermott",
+  "article": "Sean McDermott",
+  "revid": 1382189018,
+  "result": "match"
+ },
+ {
+  "season": 2025,
+  "team": "NE",
+  "role": "oc",
+  "name": "Josh McDaniels",
+  "article": "Josh McDaniels",
+  "revid": 1378049916,
+  "result": "match"
+ },
+ {
+  "season": 2019,
+  "team": "TB",
+  "role": "head_coach",
+  "name": "Bruce Arians",
+  "article": "Bruce Arians",
+  "revid": 1379953010,
+  "result": "match"
+ },
+ {
+  "season": 2023,
+  "team": "NYJ",
+  "role": "oc",
+  "name": "Nathaniel Hackett",
+  "article": "Nathaniel Hackett",
+  "revid": 1380452871,
+  "result": "match"
+ },
+ {
+  "season": 2026,
+  "team": "CHI",
+  "role": "dc",
+  "name": "Dennis Allen",
+  "article": "Dennis Allen (American football)",
+  "revid": 1374790483,
+  "result": "match"
+ },
+ {
+  "season": 2024,
+  "team": "DAL",
+  "role": "dc",
+  "name": "Mike Zimmer",
+  "article": "Mike Zimmer",
+  "revid": 1382177809,
+  "result": "match"
+ },
+ {
+  "season": 2024,
+  "team": "NYG",
+  "role": "dc",
+  "name": "Shane Bowen",
+  "article": "Shane Bowen",
+  "revid": 1353086649,
+  "result": "match"
+ },
+ {
+  "season": 2020,
+  "team": "TB",
+  "role": "dc",
+  "name": "Todd Bowles",
+  "article": "Todd Bowles",
+  "revid": 1380752334,
+  "result": "no match"
+ },
+ {
+  "season": 2017,
+  "team": "MIN",
+  "role": "dc",
+  "name": "George Edwards",
+  "article": "George Edwards (American football)",
+  "revid": 1345796013,
+  "result": "match"
+ },
+ {
+  "season": 2022,
+  "team": "NO",
+  "role": "dc",
+  "name": "Ryan Nielsen",
+  "article": "Ryan Nielsen",
+  "revid": 1381193648,
+  "result": "match"
+ },
+ {
+  "season": 2016,
+  "team": "NYG",
+  "role": "head_coach",
+  "name": "Ben McAdoo",
+  "article": "Ben McAdoo",
+  "revid": 1358849990,
+  "result": "match"
+ },
+ {
+  "season": 2017,
+  "team": "NE",
+  "role": "dc",
+  "name": "Matt Patricia",
+  "article": "Matt Patricia",
+  "revid": 1377145491,
+  "result": "match"
+ },
+ {
+  "season": 2025,
+  "team": "PIT",
+  "role": "head_coach",
+  "name": "Mike Tomlin",
+  "article": "Mike Tomlin",
+  "revid": 1382052055,
+  "result": "match"
+ },
+ {
+  "season": 2025,
+  "team": "LA",
+  "role": "dc",
+  "name": "Chris Shula",
+  "article": "Chris Shula",
+  "revid": 1380751755,
+  "result": "no match"
+ },
+ {
+  "season": 2026,
+  "team": "KC",
+  "role": "dc",
+  "name": "Steve Spagnuolo",
+  "article": "Steve Spagnuolo",
+  "revid": 1381205000,
+  "result": "match"
+ },
+ {
+  "season": 2018,
+  "team": "GB",
+  "role": "dc",
+  "name": "Mike Pettine",
+  "article": "Mike Pettine",
+  "revid": 1379958878,
+  "result": "match"
+ },
+ {
+  "season": 2017,
+  "team": "PIT",
+  "role": "head_coach",
+  "name": "Mike Tomlin",
+  "article": "Mike Tomlin",
+  "revid": 1382052055,
+  "result": "match"
+ }
+]

@@ -1,0 +1,538 @@
+{
+ "pbp": [
+  {
+   "name": "play_by_play_2024.csv",
+   "updated_at": "2026-08-13T12:26:29Z",
+   "created_at": "2026-08-13T12:26:26Z",
+   "size": 99483794
+  },
+  {
+   "name": "play_by_play_2024.parquet",
+   "updated_at": "2026-08-13T12:26:27Z",
+   "created_at": "2026-08-13T12:26:26Z",
+   "size": 20597560
+  },
+  {
+   "name": "play_by_play_2025.csv",
+   "updated_at": "2026-08-13T12:26:11Z",
+   "created_at": "2026-08-13T12:26:08Z",
+   "size": 97951481
+  },
+  {
+   "name": "play_by_play_2025.parquet",
+   "updated_at": "2026-08-13T12:26:09Z",
+   "created_at": "2026-08-13T12:26:08Z",
+   "size": 20337029
+  },
+  {
+   "name": "play_by_play_2026.csv",
+   "updated_at": "2026-10-27T15:19:49Z",
+   "created_at": "2026-10-27T15:19:46Z",
+   "size": 37595599
+  },
+  {
+   "name": "play_by_play_2026.parquet",
+   "updated_at": "2026-10-27T15:19:48Z",
+   "created_at": "2026-10-27T15:19:46Z",
+   "size": 7976267
+  }
+ ],
+ "pbp_participation": [
+  {
+   "name": "pbp_participation_2024.csv",
+   "updated_at": "2025-09-04T10:24:49Z",
+   "created_at": "2025-09-04T10:24:47Z",
+   "size": 49688308
+  },
+  {
+   "name": "pbp_participation_2024.parquet",
+   "updated_at": "2025-09-04T10:24:48Z",
+   "created_at": "2025-09-04T10:24:47Z",
+   "size": 4644767
+  },
+  {
+   "name": "pbp_participation_2025.csv",
+   "updated_at": "2026-02-10T18:54:08Z",
+   "created_at": "2026-02-10T18:54:06Z",
+   "size": 49094943
+  },
+  {
+   "name": "pbp_participation_2025.parquet",
+   "updated_at": "2026-02-10T18:54:07Z",
+   "created_at": "2026-02-10T18:54:06Z",
+   "size": 4741443
+  }
+ ],
+ "ftn_charting": [
+  {
+   "name": "ftn_charting_2024.csv",
+   "updated_at": "2025-09-01T01:29:37Z",
+   "created_at": "2025-09-01T01:29:36Z",
+   "size": 8254908
+  },
+  {
+   "name": "ftn_charting_2024.parquet",
+   "updated_at": "2025-09-01T01:29:36Z",
+   "created_at": "2025-09-01T01:29:36Z",
+   "size": 563180
+  },
+  {
+   "name": "ftn_charting_2025.csv",
+   "updated_at": "2026-09-23T03:14:31Z",
+   "created_at": "2026-09-23T03:14:30Z",
+   "size": 8128926
+  },
+  {
+   "name": "ftn_charting_2025.parquet",
+   "updated_at": "2026-09-23T03:14:30Z",
+   "created_at": "2026-09-23T03:14:30Z",
+   "size": 556492
+  },
+  {
+   "name": "ftn_charting_2026.csv",
+   "updated_at": "2026-10-27T21:49:12Z",
+   "created_at": "2026-10-27T21:49:12Z",
+   "size": 3086641
+  },
+  {
+   "name": "ftn_charting_2026.parquet",
+   "updated_at": "2026-10-27T21:49:12Z",
+   "created_at": "2026-10-27T21:49:12Z",
+   "size": 228709
+  }
+ ],
+ "pfr_advstats": [
+  {
+   "name": "advstats_week_def_2024.csv",
+   "updated_at": "2025-02-13T07:17:35Z",
+   "created_at": "2025-02-13T07:17:35Z",
+   "size": 923854
+  },
+  {
+   "name": "advstats_week_def_2024.parquet",
+   "updated_at": "2025-02-13T07:17:35Z",
+   "created_at": "2025-02-13T07:17:35Z",
+   "size": 156075
+  },
+  {
+   "name": "advstats_week_def_2025.csv",
+   "updated_at": "2026-02-11T13:24:19Z",
+   "created_at": "2026-02-11T13:24:19Z",
+   "size": 917430
+  },
+  {
+   "name": "advstats_week_def_2025.parquet",
+   "updated_at": "2026-02-11T13:24:19Z",
+   "created_at": "2026-02-11T13:24:19Z",
+   "size": 155798
+  },
+  {
+   "name": "advstats_week_def_2026.csv",
+   "updated_at": "2026-10-26T11:17:05Z",
+   "created_at": "2026-10-26T11:17:05Z",
+   "size": 311970
+  },
+  {
+   "name": "advstats_week_def_2026.parquet",
+   "updated_at": "2026-10-26T11:17:05Z",
+   "created_at": "2026-10-26T11:17:05Z",
+   "size": 74261
+  },
+  {
+   "name": "advstats_week_pass_2024.csv",
+   "updated_at": "2025-02-13T07:17:28Z",
+   "created_at": "2025-02-13T07:17:28Z",
+   "size": 73095
+  },
+  {
+   "name": "advstats_week_pass_2024.parquet",
+   "updated_at": "2025-02-13T07:17:28Z",
+   "created_at": "2025-02-13T07:17:28Z",
+   "size": 27663
+  },
+  {
+   "name": "advstats_week_pass_2025.csv",
+   "updated_at": "2026-02-11T13:24:09Z",
+   "created_at": "2026-02-11T13:24:09Z",
+   "size": 71483
+  },
+  {
+   "name": "advstats_week_pass_2025.parquet",
+   "updated_at": "2026-02-11T13:24:09Z",
+   "created_at": "2026-02-11T13:24:09Z",
+   "size": 28520
+  },
+  {
+   "name": "advstats_week_pass_2026.csv",
+   "updated_at": "2026-10-26T11:16:54Z",
+   "created_at": "2026-10-26T11:16:54Z",
+   "size": 22778
+  },
+  {
+   "name": "advstats_week_pass_2026.parquet",
+   "updated_at": "2026-10-26T11:16:54Z",
+   "created_at": "2026-10-26T11:16:54Z",
+   "size": 18296
+  },
+  {
+   "name": "advstats_week_rec_2024.csv",
+   "updated_at": "2025-02-13T07:17:33Z",
+   "created_at": "2025-02-13T07:17:33Z",
+   "size": 388683
+  },
+  {
+   "name": "advstats_week_rec_2024.parquet",
+   "updated_at": "2025-02-13T07:17:33Z",
+   "created_at": "2025-02-13T07:17:33Z",
+   "size": 50503
+  },
+  {
+   "name": "advstats_week_rec_2025.csv",
+   "updated_at": "2026-02-11T13:24:15Z",
+   "created_at": "2026-02-11T13:24:15Z",
+   "size": 396008
+  },
+  {
+   "name": "advstats_week_rec_2025.parquet",
+   "updated_at": "2026-02-11T13:24:15Z",
+   "created_at": "2026-02-11T13:24:15Z",
+   "size": 51764
+  },
+  {
+   "name": "advstats_week_rec_2026.csv",
+   "updated_at": "2026-10-26T11:17:01Z",
+   "created_at": "2026-10-26T11:17:01Z",
+   "size": 131700
+  },
+  {
+   "name": "advstats_week_rec_2026.parquet",
+   "updated_at": "2026-10-26T11:17:01Z",
+   "created_at": "2026-10-26T11:17:01Z",
+   "size": 28297
+  },
+  {
+   "name": "advstats_week_rush_2024.csv",
+   "updated_at": "2025-02-13T07:17:31Z",
+   "created_at": "2025-02-13T07:17:30Z",
+   "size": 205511
+  },
+  {
+   "name": "advstats_week_rush_2024.parquet",
+   "updated_at": "2025-02-13T07:17:31Z",
+   "created_at": "2025-02-13T07:17:30Z",
+   "size": 42939
+  },
+  {
+   "name": "advstats_week_rush_2025.csv",
+   "updated_at": "2026-02-11T13:24:12Z",
+   "created_at": "2026-02-11T13:24:12Z",
+   "size": 205195
+  },
+  {
+   "name": "advstats_week_rush_2025.parquet",
+   "updated_at": "2026-02-11T13:24:12Z",
+   "created_at": "2026-02-11T13:24:12Z",
+   "size": 43492
+  },
+  {
+   "name": "advstats_week_rush_2026.csv",
+   "updated_at": "2026-10-26T11:16:58Z",
+   "created_at": "2026-10-26T11:16:57Z",
+   "size": 64744
+  },
+  {
+   "name": "advstats_week_rush_2026.parquet",
+   "updated_at": "2026-10-26T11:16:58Z",
+   "created_at": "2026-10-26T11:16:57Z",
+   "size": 22625
+  }
+ ],
+ "nextgen_stats": [],
+ "stats_player": [
+  {
+   "name": "stats_player_post_2024.csv",
+   "updated_at": "2026-08-13T16:49:34Z",
+   "created_at": "2026-08-13T16:49:34Z",
+   "size": 214818
+  },
+  {
+   "name": "stats_player_post_2024.parquet",
+   "updated_at": "2026-08-13T16:49:34Z",
+   "created_at": "2026-08-13T16:49:33Z",
+   "size": 108542
+  },
+  {
+   "name": "stats_player_post_2025.csv",
+   "updated_at": "2026-08-13T16:51:52Z",
+   "created_at": "2026-08-13T16:51:52Z",
+   "size": 229249
+  },
+  {
+   "name": "stats_player_post_2025.parquet",
+   "updated_at": "2026-08-13T16:51:52Z",
+   "created_at": "2026-08-13T16:51:51Z",
+   "size": 111414
+  },
+  {
+   "name": "stats_player_reg_2024.csv",
+   "updated_at": "2026-08-13T16:49:31Z",
+   "created_at": "2026-08-13T16:49:31Z",
+   "size": 872095
+  },
+  {
+   "name": "stats_player_reg_2024.parquet",
+   "updated_at": "2026-08-13T16:49:31Z",
+   "created_at": "2026-08-13T16:49:31Z",
+   "size": 287219
+  },
+  {
+   "name": "stats_player_reg_2025.csv",
+   "updated_at": "2026-08-13T16:51:50Z",
+   "created_at": "2026-08-13T16:51:49Z",
+   "size": 882104
+  },
+  {
+   "name": "stats_player_reg_2025.parquet",
+   "updated_at": "2026-08-13T16:51:50Z",
+   "created_at": "2026-08-13T16:51:49Z",
+   "size": 286768
+  },
+  {
+   "name": "stats_player_reg_2026.csv",
+   "updated_at": "2026-10-27T15:41:58Z",
+   "created_at": "2026-10-27T15:41:57Z",
+   "size": 731293
+  },
+  {
+   "name": "stats_player_reg_2026.parquet",
+   "updated_at": "2026-10-27T15:41:58Z",
+   "created_at": "2026-10-27T15:41:57Z",
+   "size": 235657
+  },
+  {
+   "name": "stats_player_regpost_2024.csv",
+   "updated_at": "2026-08-13T16:49:36Z",
+   "created_at": "2026-08-13T16:49:36Z",
+   "size": 877377
+  },
+  {
+   "name": "stats_player_regpost_2024.parquet",
+   "updated_at": "2026-08-13T16:49:36Z",
+   "created_at": "2026-08-13T16:49:36Z",
+   "size": 289425
+  },
+  {
+   "name": "stats_player_regpost_2025.csv",
+   "updated_at": "2026-08-13T16:51:54Z",
+   "created_at": "2026-08-13T16:51:54Z",
+   "size": 888037
+  },
+  {
+   "name": "stats_player_regpost_2025.parquet",
+   "updated_at": "2026-08-13T16:51:54Z",
+   "created_at": "2026-08-13T16:51:54Z",
+   "size": 289427
+  },
+  {
+   "name": "stats_player_regpost_2026.csv",
+   "updated_at": "2026-10-27T15:42:02Z",
+   "created_at": "2026-10-27T15:42:01Z",
+   "size": 731293
+  },
+  {
+   "name": "stats_player_regpost_2026.parquet",
+   "updated_at": "2026-10-27T15:42:02Z",
+   "created_at": "2026-10-27T15:42:01Z",
+   "size": 235691
+  },
+  {
+   "name": "stats_player_week_2024.csv",
+   "updated_at": "2026-08-13T16:49:11Z",
+   "created_at": "2026-08-13T16:49:10Z",
+   "size": 8470040
+  },
+  {
+   "name": "stats_player_week_2024.parquet",
+   "updated_at": "2026-08-13T16:49:10Z",
+   "created_at": "2026-08-13T16:49:10Z",
+   "size": 849243
+  },
+  {
+   "name": "stats_player_week_2025.csv",
+   "updated_at": "2026-08-13T16:51:22Z",
+   "created_at": "2026-08-13T16:51:21Z",
+   "size": 8656387
+  },
+  {
+   "name": "stats_player_week_2025.parquet",
+   "updated_at": "2026-08-13T16:51:22Z",
+   "created_at": "2026-08-13T16:51:21Z",
+   "size": 855077
+  },
+  {
+   "name": "stats_player_week_2026.csv",
+   "updated_at": "2026-10-27T15:41:37Z",
+   "created_at": "2026-10-27T15:41:36Z",
+   "size": 3315437
+  },
+  {
+   "name": "stats_player_week_2026.parquet",
+   "updated_at": "2026-10-27T15:41:37Z",
+   "created_at": "2026-10-27T15:41:36Z",
+   "size": 421590
+  }
+ ],
+ "depth_charts": [
+  {
+   "name": "depth_charts_2024.csv",
+   "updated_at": "2025-02-13T07:32:56Z",
+   "created_at": "2025-02-13T07:32:56Z",
+   "size": 3391616
+  },
+  {
+   "name": "depth_charts_2024.parquet",
+   "updated_at": "2025-02-13T07:32:56Z",
+   "created_at": "2025-02-13T07:32:56Z",
+   "size": 482923
+  },
+  {
+   "name": "depth_charts_2025.csv",
+   "updated_at": "2026-03-14T07:32:30Z",
+   "created_at": "2026-03-14T07:32:27Z",
+   "size": 52917870
+  },
+  {
+   "name": "depth_charts_2025.parquet",
+   "updated_at": "2026-03-14T07:32:28Z",
+   "created_at": "2026-03-14T07:32:27Z",
+   "size": 2584724
+  },
+  {
+   "name": "depth_charts_2026.csv",
+   "updated_at": "2026-10-27T13:09:12Z",
+   "created_at": "2026-10-27T13:09:09Z",
+   "size": 67446447
+  },
+  {
+   "name": "depth_charts_2026.parquet",
+   "updated_at": "2026-10-27T13:09:10Z",
+   "created_at": "2026-10-27T13:09:09Z",
+   "size": 3009209
+  }
+ ],
+ "weekly_rosters": [
+  {
+   "name": "roster_weekly_2024.csv",
+   "updated_at": "2025-03-14T07:16:07Z",
+   "created_at": "2025-03-14T07:16:06Z",
+   "size": 14926918
+  },
+  {
+   "name": "roster_weekly_2024.parquet",
+   "updated_at": "2025-03-14T07:16:07Z",
+   "created_at": "2025-03-14T07:16:06Z",
+   "size": 829272
+  },
+  {
+   "name": "roster_weekly_2025.csv",
+   "updated_at": "2026-03-14T07:33:06Z",
+   "created_at": "2026-03-14T07:33:05Z",
+   "size": 15385661
+  },
+  {
+   "name": "roster_weekly_2025.parquet",
+   "updated_at": "2026-03-14T07:33:06Z",
+   "created_at": "2026-03-14T07:33:05Z",
+   "size": 850871
+  },
+  {
+   "name": "roster_weekly_2026.csv",
+   "updated_at": "2026-10-27T13:10:48Z",
+   "created_at": "2026-10-27T13:10:47Z",
+   "size": 6469284
+  },
+  {
+   "name": "roster_weekly_2026.parquet",
+   "updated_at": "2026-10-27T13:10:47Z",
+   "created_at": "2026-10-27T13:10:47Z",
+   "size": 830646
+  }
+ ],
+ "injuries": [
+  {
+   "name": "injuries_2024.csv",
+   "updated_at": "2025-02-13T07:16:36Z",
+   "created_at": "2025-02-13T07:16:35Z",
+   "size": 816989
+  },
+  {
+   "name": "injuries_2024.parquet",
+   "updated_at": "2025-02-13T07:16:35Z",
+   "created_at": "2025-02-13T07:16:35Z",
+   "size": 139253
+  },
+  {
+   "name": "injuries_2025.csv",
+   "updated_at": "2026-09-07T12:23:41Z",
+   "created_at": "2026-09-07T12:23:41Z",
+   "size": 696006
+  },
+  {
+   "name": "injuries_2025.parquet",
+   "updated_at": "2026-09-07T12:23:41Z",
+   "created_at": "2026-09-07T12:23:41Z",
+   "size": 97472
+  },
+  {
+   "name": "injuries_2026.csv",
+   "updated_at": "2026-10-27T13:08:39Z",
+   "created_at": "2026-10-27T13:08:39Z",
+   "size": 244701
+  },
+  {
+   "name": "injuries_2026.parquet",
+   "updated_at": "2026-10-27T13:08:40Z",
+   "created_at": "2026-10-27T13:08:39Z",
+   "size": 51592
+  }
+ ],
+ "snap_counts": [
+  {
+   "name": "snap_counts_2024.csv",
+   "updated_at": "2025-10-06T06:51:21Z",
+   "created_at": "2025-10-06T06:51:20Z",
+   "size": 2402841
+  },
+  {
+   "name": "snap_counts_2024.parquet",
+   "updated_at": "2025-10-06T06:51:20Z",
+   "created_at": "2025-10-06T06:51:20Z",
+   "size": 240862
+  },
+  {
+   "name": "snap_counts_2025.csv",
+   "updated_at": "2026-09-24T12:50:32Z",
+   "created_at": "2026-09-24T12:50:31Z",
+   "size": 2401290
+  },
+  {
+   "name": "snap_counts_2025.parquet",
+   "updated_at": "2026-09-24T12:50:31Z",
+   "created_at": "2026-09-24T12:50:31Z",
+   "size": 242046
+  },
+  {
+   "name": "snap_counts_2026.csv",
+   "updated_at": "2026-10-27T11:08:33Z",
+   "created_at": "2026-10-27T11:08:32Z",
+   "size": 895438
+  },
+  {
+   "name": "snap_counts_2026.parquet",
+   "updated_at": "2026-10-27T11:08:33Z",
+   "created_at": "2026-10-27T11:08:32Z",
+   "size": 114192
+  }
+ ],
+ "schedules": []
+}
