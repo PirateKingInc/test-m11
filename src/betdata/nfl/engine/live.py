@@ -292,7 +292,19 @@ def _prop_lines(conn: Connection, game_ids, now: datetime, season: int) -> pd.Da
         return lines
     stats = pd.DataFrame(columns=["player_id", "name"])
     lines["gsis"] = espn_to_gsis(lines, data_dir(), (season - 1, season), stats)
+    names = roster_names(conn, season - 1)
+    lines["player_name"] = lines.player_name.fillna(lines.gsis.map(names))  # NFL lines: no name
     return lines
+
+
+def roster_names(conn: Connection, first_season: int) -> dict[str, str]:
+    """gsis id -> name from the stored rosters (the latest season's spelling wins)."""
+    from betdata.db.schema import roster_weeks as rw
+
+    rows = conn.execute(select(rw.c.gsis_id, rw.c.player_name)
+                        .where(rw.c.season >= first_season, rw.c.gsis_id.is_not(None))
+                        .order_by(rw.c.season, rw.c.week))  # fmt: skip
+    return {g: n for g, n in rows}
 
 
 def store(conn: Connection, run: EngineRun, now: datetime, design: EngineDesign) -> dict:
