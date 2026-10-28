@@ -1939,3 +1939,17 @@ The same Disney clause covers the keyless ESPN endpoints this project has read s
 **It lowers validation error, so it passes the Part F rule.** The gain is small (about 1-2%). Usage and expected efficiency carry information that the engine's shrunk rates lose, most of all for carries and rushing yards.
 
 **Not used in nfle17.** The test was run after the test seasons were scored, so adding it now would be an adjustment after the test. It goes to BACKLOG with the coordinator prior, as the next engine version's first two changes, to be judged on 2026 as an untouched test season.
+
+## NFL lines: DraftKings/FanDuel picks, Pinnacle close (decision 2026-10-28, `nfl/book_lines.py`)
+
+The sign audit of the 0-8 m13w run found no flip (PR #228). It did find that picks were graded against whichever book was fetched last, often an offshore book (MyBookie, LowVig, Bovada). From now on, for every NFL version (m12, m13w, m15, nfle17):
+
+- **Pick and grade:** DraftKings and FanDuel only, the best of the two for the side at the prediction's time. That is each book's latest polled quote at or before `predicted_at`.
+  - Spreads and totals: the better number for the side, then the better price.
+  - Moneyline: the book whose no-vig price gives the side the larger edge.
+  - The pick is graded at that book's actual price, not a flat −110.
+  - No DK/FD quote at pick time means no pick. This covers games before 2026-10-22, when only nflverse's line was stored.
+- **CLV:** against Pinnacle's last pre-game quote of the side, read from the poller's `quotes` and then `odds_snapshots`. Without one, it uses the best of DK/FD's last pre-game quotes; for the moneyline, the pick's own book first. The hourly job now restores the poller database, read-only, before the run. `nfl_bet_grades` records `book` and `close_book` (migration 0019).
+- **Page:** NFL cards and the engine section show the DK/FD line a pick would be taken at. With no pick they show DraftKings, else FanDuel. nflverse's line is no longer shown.
+
+Model inputs are unchanged. The stored `market_spread_home` and the model+market blend still use the line the model saw. NBA grading is unchanged.

@@ -11,8 +11,8 @@ from sqlalchemy import Connection, Engine, and_, func, select
 from betdata.core.matching import season_for, sport_id
 from betdata.db.schema import games, model_predictions, teams
 from betdata.moneyline import no_vig
+from betdata.nfl.book_lines import Board, page_quotes
 from betdata.nfl.grade import THRESHOLDS, grade_nfl, ml_calibration, ml_threshold, records
-from betdata.quotes import current_quotes
 from betdata.sports import Card, RecordRow, Sport
 
 log = logging.getLogger(__name__)
@@ -149,12 +149,14 @@ class NflSport(Sport):
                 .where(mp.c.model == model)
             ):  # fmt: skip
                 preds.setdefault(p.game_id, p)
-        quotes = current_quotes(conn, ids, now)
+        board = Board(conn, ids)  # DK/FD only, best of the two (nfl/book_lines.py)
         ml_t, calib = ml_threshold(), ml_calibration()
         out = []
         for r in rows:
             p = preds.get(r.game_id)
-            q = quotes.get(r.game_id, {})
+            q = page_quotes(board, r.game_id, now, p.pred_home_margin if p else None,
+                            p.pred_home_win_prob if p else None, THRESHOLDS["spread"], ml_t,
+                            calib)  # fmt: skip
             c = Card(r.game_id, r.start_time_utc, r.home or "?", r.away or "?",
                      p.prediction_point if p else "none", p.predicted_at if p else None,
                      market_spread=q.get("spread_home"), ml_home=q.get("ml_home"),

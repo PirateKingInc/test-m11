@@ -41,8 +41,8 @@ def p_cover(hist: list[int], spread_home: float) -> float | None:
 def rows(conn: Connection, now: datetime, days: int = 8) -> list[dict]:
     from betdata.core.matching import sport_id
     from betdata.db.schema import games, model_predictions, teams
+    from betdata.nfl.book_lines import Board
     from betdata.nfl.engine.live import MODEL
-    from betdata.quotes import current_quotes
 
     mp = model_predictions
     h, a = teams.alias("h"), teams.alias("a")
@@ -60,12 +60,33 @@ def rows(conn: Connection, now: datetime, days: int = 8) -> list[dict]:
          .join(a, a.c.team_id == games.c.away_team_id)
          .where(mp.c.model == MODEL).order_by(games.c.start_time_utc, mp.c.game_id))  # fmt: skip
     out = [dict(r) for r in conn.execute(q).mappings()]
-    quotes = current_quotes(conn, [r["game_id"] for r in out], now)
+    board = Board(conn, [r["game_id"] for r in out])
     for r in out:
-        qq = quotes.get(r["game_id"], {})
-        r["spread_now"] = qq.get("spread_home")
-        r["total_now"] = qq.get("total")
+        r["spread_now"], r["total_now"] = engine_lines(board, r["game_id"], now,
+                                                       r["pred_home_margin"])  # fmt: skip
     return out
+
+
+def engine_lines(board, game_id: int, now: datetime, margin: float):
+    """DK/FD only (nfl/book_lines.py): the spread at the book with the better number for the
+    side the engine favours (home-oriented), and DraftKings' total, else FanDuel's."""
+    from betdata.nfl.book_lines import PICK_BOOKS
+    from betdata.quotes import Quote
+
+    def q(x):
+        return None if x is None else Quote(x.line, x.price, x.book, x.source, x.fetched_at)
+
+    h = board.best(game_id, "spreads", "home", now)
+    a = board.best(game_id, "spreads", "away", now)
+    pick = None
+    if h is not None and a is not None:
+        pick = h.book if margin + h.line >= a.line - margin else a.book
+    elif h is not None or a is not None:
+        pick = (h or a).book
+    spread = None if pick is None else board.quote(game_id, "spreads", pick, "home", now)
+    total = next((t for b in PICK_BOOKS
+                  if (t := board.quote(game_id, "totals", b, "over", now)) is not None), None)
+    return q(spread), q(total)
 
 
 def props(conn: Connection, now: datetime, days: int = 8) -> dict[int, list[dict]]:

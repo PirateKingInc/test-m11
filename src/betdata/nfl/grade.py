@@ -1,17 +1,20 @@
 """`betdata grade nfl`: grade stored predictions once games are final.
 
 For every model version, the bet is taken from the last prediction stored before kickoff for
-each (game, prediction point): back the side the model prefers wherever it differs from the
-market line it was compared against by at least the threshold (the existing thresholds: 3
-points on spreads as in M10, 4 on totals as in M11). It is graded at that line at -110 (no
-price is stored with the line), and compared with the closing line for closing-line value
-(CLV, points better than the close). Postponed or cancelled games are void. Idempotent:
-re-running inserts only new grades and updates any whose inputs changed (score corrections).
+each (game, prediction point), against DraftKings/FanDuel only, the best of the two for the
+side at the prediction's time (nfl/book_lines.py; 2026-10-28): back a side wherever the model
+beats that line by at least the threshold (3 points on spreads as in M10, 4 on totals as in
+M11), at that book's price. No DK/FD quote then: no pick. CLV (points better than the close) is
+against Pinnacle's last pre-game quote of the side, else DK/FD's. Postponed or cancelled games
+are void. Idempotent: re-running inserts only new grades and updates any whose inputs changed
+(score corrections, a later close).
 
-Moneyline (M13): back the side whose model win probability beats the no-vig market moneyline
-stored with the prediction by at least the validated threshold (config/nfl_moneyline.json, in
-% points), at that price. A tie pushes. CLV is the side's no-vig probability at the close minus
-at the bet, in % points.
+Moneyline (M13): back the side whose model win probability beats a DK/FD no-vig moneyline by at
+least the validated threshold (config/nfl_moneyline.json, in % points), at that book's price; of
+the two books, the larger edge. A tie pushes. CLV is the side's no-vig probability at the close
+(Pinnacle, else DK/FD) minus at the bet, in % points.
+
+`bets_for` and `moneyline_bet` (one given line) stay for backtests at the close.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ from betdata.analysis.backtest import DEFAULT_PRICE, profit
 from betdata.analysis.dataset import v_closing_lines
 from betdata.core.matching import sport_id
 from betdata.db.schema import games, markets, model_predictions, nfl_bet_grades, results
+from betdata.nfl.book_lines import Board, close_for, poller_conn
 from betdata.nfl.selection import BET_THRESHOLDS
 
 THRESHOLDS = BET_THRESHOLDS
@@ -40,6 +44,8 @@ class Bet:
     line: float | None  # the side's own line: home/away spread, or the total; None: moneyline
     edge: float
     price: int = DEFAULT_PRICE
+    book: str | None = None  # where it was taken (live grading: draftkings / fanduel)
+    other_price: int | None = None  # moneyline: the other side's price at that book
 
 
 def ml_threshold() -> float:
@@ -91,6 +97,47 @@ def bets_for(pred_margin: float | None, pred_total: float | None, spread_home: f
         edge = pred_total - total
         if abs(edge) >= th["total"]:
             out.append(Bet("total", "over" if edge > 0 else "under", total, abs(edge)))
+    return out
+
+
+def book_bets(board, game_id: int, at, margin: float | None, total: float | None,
+              win_prob: float | None, thresholds: dict, ml_t: float | None,
+              calib: ml.Calibration | None) -> list[Bet]:  # fmt: skip
+    """The bets a prediction made at `at` gives against DK/FD (best of the two per side)."""
+    out = []
+    for market, key, pred, sides in (("spread", "spreads", margin, ("home", "away")),
+                                     ("total", "totals", total, ("over", "under"))):
+        if pred is None or thresholds.get(market) is None:
+            continue
+        cands = []
+        for side in sides:
+            q = board.best(game_id, key, side, at)
+            if q is None:
+                continue
+            if market == "spread":
+                edge = pred + q.line if side == "home" else q.line - pred
+            else:
+                edge = pred - q.line if side == "over" else q.line - pred
+            if edge >= thresholds[market]:
+                cands.append(Bet(market, side, q.line, round(edge, 2),
+                                 q.price if q.price is not None else DEFAULT_PRICE, q.book))
+        if cands:
+            out.append(max(cands, key=lambda b: b.edge))
+    if win_prob is not None and ml_t is not None:
+        from betdata.nfl.book_lines import PICK_BOOKS, better
+
+        cands = []
+        for book in PICK_BOOKS:
+            pr = board.pair(game_id, book, at)
+            if pr is None:
+                continue
+            b = moneyline_bet(win_prob, pr[0].price, pr[1].price, ml_t, calib)
+            if b is not None:
+                mine, other = (pr[0], pr[1]) if b.side == "home" else (pr[1], pr[0])
+                cands.append((b.edge, better(b.side, "h2h", mine),
+                              Bet(b.market, b.side, None, b.edge, b.price, book, other.price)))
+        if cands:
+            out.append(max(cands, key=lambda c: (c[0], c[1]))[2])
     return out
 
 
@@ -208,8 +255,8 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
             .order_by(results.c.source.desc())  # nflverse last, so it wins
         )
     }  # fmt: skip
-    closes = _closes(conn, ids)
-    ml_closes = _ml_closes(conn, ids)
+    board = Board(conn, ids)
+    poller = poller_conn()
     threshold, calib = ml_threshold(), ml_calibration()
     existing = {
         (r.prediction_id, r.market): r
@@ -221,34 +268,37 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
         is_engine = str(p["model_version"]).startswith("nfle17")
         if is_engine and eng_th is None:
             eng_th = engine_thresholds()
-        bets = bets_for(p["pred_home_margin"], p["pred_total"], p["market_spread_home"],
-                        p["market_total"], eng_th if is_engine else None)  # fmt: skip
-        mlb = None if is_engine else moneyline_bet(
-            p["pred_home_win_prob"], p["market_ml_home"], p["market_ml_away"], threshold,
-            calib)  # fmt: skip
-        if mlb is not None:
-            bets.append(mlb)
+        bets = book_bets(board, p["game_id"], p["predicted_at"], p["pred_home_margin"],
+                         p["pred_total"], None if is_engine else p["pred_home_win_prob"],
+                         eng_th if is_engine else THRESHOLDS, None if is_engine else threshold,
+                         calib)  # fmt: skip
         for bet in bets:
             void = p["status"] in VOID_STATUSES
             if not void and p["game_id"] not in finals:
                 run.pending += 1
                 continue
             result = "void" if void else result_of(bet, *finals[p["game_id"]])
+            key = {"spread": "spreads", "total": "totals", "moneyline": "h2h"}[bet.market]
+            c = close_for(conn, poller, board, p["game_id"], key, bet.side,
+                          p["start_time_utc"], bet.book)  # fmt: skip
             if bet.market == "moneyline":
-                mc = ml_closes.get(p["game_id"])
-                close = None
-                close_price = None if mc is None else mc[0 if bet.side == "home" else 1]
-                bet_clv = ml_clv(bet, (p["market_ml_home"], p["market_ml_away"]), mc)
+                close, close_price = None, None if c is None else c.price
+                pair = None if c is None or c.other_price is None else (
+                    (c.price, c.other_price) if bet.side == "home" else (c.other_price, c.price))
+                mine = ((bet.price, bet.other_price) if bet.side == "home"
+                        else (bet.other_price, bet.price))  # fmt: skip
+                bet_clv = ml_clv(bet, mine, pair)
                 won = ml.profit(result, bet.price)
             else:
-                close, close_price = closes.get((p["game_id"], bet.side)), None
+                close, close_price = (None, None) if c is None else (c.line, c.price)
                 bet_clv = clv(bet, close)
-                won = profit(result, DEFAULT_PRICE)
+                won = profit(result, bet.price)
             values = dict(
                 prediction_id=p["prediction_id"], model_version=p["model_version"],
                 game_id=p["game_id"], market=bet.market, side=bet.side, line=bet.line,
-                price_american=bet.price, edge=round(bet.edge, 2), close_line=close,
-                close_price_american=close_price, clv=None if void else bet_clv,
+                price_american=bet.price, edge=round(bet.edge, 2), book=bet.book,
+                close_line=close, close_price_american=close_price,
+                close_book=None if c is None else c.book, clv=None if void else bet_clv,
                 result=result, profit=0.0 if void else round(won, 4),
             )  # fmt: skip
             produced.add((p["prediction_id"], bet.market))
@@ -266,6 +316,8 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
         if key not in produced and old.game_id in finals:
             conn.execute(delete(nfl_bet_grades).where(nfl_bet_grades.c.grade_id == old.grade_id))
             run.updated += 1
+    if poller is not None:
+        poller.close()
     return run
 
 
