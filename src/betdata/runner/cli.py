@@ -68,7 +68,8 @@ def run_cmd(
     typer.echo(json.dumps({"run_id": report.run_id, "status": report.status,
                            "rebuilt": report.rebuilt, "seconds": report.seconds,
                            "sports": report.sports, "jobs": report.jobs,
-                           "missing_keys": status["missing_keys"]}, indent=1,
+                           "missing_keys": status["missing_keys"],
+                           "engine_sections": status.get("engine_sections")}, indent=1,
                           default=str))  # fmt: skip
 
 

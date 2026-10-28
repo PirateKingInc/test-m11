@@ -65,8 +65,11 @@ class NflSport(Sport):
             picks = []
         self.predict_15(engine, now, store)
         self.predict_props(engine, now)
-        self.predict_engine(engine, now, store)
+        self._engine_out = self.predict_engine(engine, now, store)
         return len(picks)
+
+    def run_details(self) -> dict:
+        return {"engine": getattr(self, "_engine_out", None) or {}}
 
     def predict_engine(self, engine: Engine, now: datetime, store=None) -> dict:
         """M17's market-free engine, nfle17 and nflpe17 (never breaks the run)."""

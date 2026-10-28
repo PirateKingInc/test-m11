@@ -462,13 +462,18 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
                active: list[Sport], out_dir: Path, now: datetime) -> dict:  # fmt: skip
     info = run_info(conn, now)
     book_names = {k: n for k, n in conn.execute(select(books.c.key, books.c.name))}
-    panels = {}
+    panels, engines = {}, {}
     for sport in active:
+        eng = _engine(sport, conn, now)
+        if eng is not None:  # the run log's proof that the section was published (M17)
+            engines[sport.key] = eng.count("<article class='game'>")
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
                                         book_names, info, _props(sport, conn, now),
-                                        _engine(sport, conn, now))  # fmt: skip
+                                        eng)  # fmt: skip
     status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
+    if engines:
+        status["engine_sections"] = engines
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(render(entries, panels, status))
     (out_dir / "status.json").write_text(json.dumps(status, indent=1))
