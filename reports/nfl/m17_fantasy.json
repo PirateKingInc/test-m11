@@ -1,0 +1,185 @@
+{
+ "sleeper": {
+  "note": "Sleeper (rotowire) projections, matched by gsis_id on player-weeks the player took a snap; last_modified is missing (2020) or after the game's kickoff for many rows (share below), so a projection's as-of time is unknown: benchmark only, never an input",
+  "share_modified_after_kickoff": 0.529,
+  "2020-2022": {
+   "player_weeks": 11841,
+   "targets": {
+    "n": 10568,
+    "engine_mean": 1.828,
+    "engine_median": 1.783,
+    "sleeper": 1.763
+   },
+   "receptions": {
+    "n": 10483,
+    "engine_mean": 1.409,
+    "engine_median": 1.358,
+    "sleeper": 1.391
+   },
+   "rec_yards": {
+    "n": 10486,
+    "engine_mean": 18.162,
+    "engine_median": 17.027,
+    "sleeper": 17.772
+   },
+   "carries": {
+    "n": 3607,
+    "engine_mean": 3.256,
+    "engine_median": 3.186,
+    "sleeper": 3.194
+   },
+   "rush_yards": {
+    "n": 4175,
+    "engine_mean": 18.629,
+    "engine_median": 17.84,
+    "sleeper": 17.275
+   }
+  },
+  "2023-2025": {
+   "player_weeks": 6135,
+   "targets": {
+    "n": 5296,
+    "engine_mean": 1.756,
+    "engine_median": 1.672,
+    "sleeper": 1.622
+   },
+   "receptions": {
+    "n": 5284,
+    "engine_mean": 1.344,
+    "engine_median": 1.282,
+    "sleeper": 1.273
+   },
+   "rec_yards": {
+    "n": 5285,
+    "engine_mean": 17.319,
+    "engine_median": 16.075,
+    "sleeper": 16.341
+   },
+   "carries": {
+    "n": 1829,
+    "engine_mean": 3.131,
+    "engine_median": 3.04,
+    "sleeper": 2.99
+   },
+   "rush_yards": {
+    "n": 2205,
+    "engine_mean": 17.386,
+    "engine_median": 16.392,
+    "sleeper": 15.558
+   }
+  }
+ },
+ "ff_opportunity": {
+  "note": "ff_opportunity expected stats are computed after each game from its play-by-play; usable pre-game only as the season-to-date mean through the previous week (x_*). Benchmark: that mean as a projection. Input test: does adding it to the engine's mean lower validation (2020-2022) MAE, leave-one-season-out within validation?",
+  "benchmark": {
+   "2020-2022": {
+    "targets": {
+     "n": 12863,
+     "engine_mean": 1.804,
+     "ffo_lag": 1.852
+    },
+    "receptions": {
+     "n": 12863,
+     "engine_mean": 1.421,
+     "ffo_lag": 1.463
+    },
+    "rec_yards": {
+     "n": 12863,
+     "engine_mean": 18.514,
+     "ffo_lag": 19.102
+    },
+    "carries": {
+     "n": 5315,
+     "engine_mean": 3.058,
+     "ffo_lag": 3.444
+    },
+    "rush_yards": {
+     "n": 6075,
+     "engine_mean": 17.612,
+     "ffo_lag": 17.937
+    }
+   },
+   "2023-2025": {
+    "targets": {
+     "n": 13095,
+     "engine_mean": 1.685,
+     "ffo_lag": 1.76
+    },
+    "receptions": {
+     "n": 13095,
+     "engine_mean": 1.334,
+     "ffo_lag": 1.379
+    },
+    "rec_yards": {
+     "n": 13095,
+     "engine_mean": 17.467,
+     "ffo_lag": 18.063
+    },
+    "carries": {
+     "n": 5392,
+     "engine_mean": 2.945,
+     "ffo_lag": 3.348
+    },
+    "rush_yards": {
+     "n": 6156,
+     "engine_mean": 17.452,
+     "ffo_lag": 17.491
+    }
+   }
+  },
+  "input_test_validation": {
+   "targets": {
+    "n": 12863,
+    "engine_recalibrated": 1.817,
+    "engine_plus_ffo": 1.792,
+    "diff": -0.025,
+    "diff_se": 0.003
+   },
+   "receptions": {
+    "n": 12863,
+    "engine_recalibrated": 1.431,
+    "engine_plus_ffo": 1.416,
+    "diff": -0.015,
+    "diff_se": 0.002
+   },
+   "rec_yards": {
+    "n": 12863,
+    "engine_recalibrated": 18.745,
+    "engine_plus_ffo": 18.634,
+    "diff": -0.111,
+    "diff_se": 0.022
+   },
+   "carries": {
+    "n": 5315,
+    "engine_recalibrated": 3.087,
+    "engine_plus_ffo": 3.032,
+    "diff": -0.055,
+    "diff_se": 0.011
+   },
+   "rush_yards": {
+    "n": 6075,
+    "engine_recalibrated": 17.687,
+    "engine_plus_ffo": 17.395,
+    "diff": -0.292,
+    "diff_se": 0.048
+   }
+  }
+ },
+ "ff_rankings": {
+  "note": "FantasyPros weekly PPR WR/RB/TE expert consensus ranks (nflverse ff_rankings), snapshot taken < 7 days before the week's first kickoff; matched by name+team. Mean Spearman rank correlation with actual PPR points within each position-week, engine expected PPR points vs ECR (lower ECR = better). Benchmark only.",
+  "2020-2022": {
+   "position_weeks": 132,
+   "player_weeks": 5280,
+   "engine_rho": 0.377,
+   "ecr_rho": 0.407,
+   "engine_better_share": 0.379
+  },
+  "2023-2025": {
+   "position_weeks": 138,
+   "player_weeks": 5520,
+   "engine_rho": 0.407,
+   "ecr_rho": 0.438,
+   "engine_better_share": 0.377
+  }
+ }
+}

@@ -86,3 +86,15 @@ Items deliberately left out of M12, with the reason. Newest first.
   - minutes restrictions from report text.
 - **NBA side groups `integ` and `style`** added nothing after RAPM; revisit with lineup-level style data.
 - **NFL group `lines`** was dropped after 3 adjustments. Revisit when 2026 participation is published.
+
+## M17 additions
+- **Engine v2 inputs that passed their rule after the freeze** (judge on 2026, never on 2023-2025):
+  - the coordinator prior: regress pass rate and pace harder after an OC change (A4);
+  - ff_opportunity season-to-date expected stats in the player step (Part F: about 1-2% lower validation MAE).
+- **Kicking and punting terms:** field goals use the league curve, with no kicker; there are no team punt or return terms (Part B departures).
+- **The engine's props lose to the line.** The no-vig ESPN line beats the engine's Brier in every market. The engine beats nflp15 on MAE, but no market earned a flag. Better player volume (FantasyPros ECR and Sleeper both beat it) comes before any prop flag.
+- **Sides:** the 4-pt validated threshold lost on 2023-2025 (−8.3%). The CLV slope is +0.044 (se 0.025): weak evidence that the market moves toward the engine. Track nfle17's live CLV on 2026 before any flag.
+- **ESPN terms (owner decision):** the Disney Terms of Use forbid automated extraction, and that covers the keyless ESPN endpoints used since M14 (scoreboards, box scores, injuries, prop and line history). M17 dropped ESPN fantasy for this reason. The rest is unchanged pending the owner's call.
+- **Fit file size:** `config/fits/nfle17_2016_2025.json` is 2.9 MB of JSON. Move it to a compressed or binary format if more engine versions are added.
+- **Live engine proof in the run log:** `engine_sections` and `sports.nfl.engine` were added for M17 verification. Keep them; the M16 poller has no equivalent yet.
+

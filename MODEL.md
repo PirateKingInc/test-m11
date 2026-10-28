@@ -1898,3 +1898,44 @@ These are recorded here, not hidden:
 - **Step 8:** kickoffs use the league's recent results (this captures the 2024-2025 rule changes); there is no team punt or return term.
 - **Step 10:** players with no history start from M12's role (from rosters and depth charts) × a position rate, not from draft-round priors.
 - **Coordinators (A4):** not used (see A4).
+
+## M17 F results: fantasy data (`nfl/engine/fantasy.py`, `reports/nfl/m17_fantasy.json`)
+
+**Sources: reachability and terms** (fetched from GitHub Actions, `nfl-fetch` workflow, files on the `m17-data` branch):
+
+| Source | Reached | Terms | As-of | Use |
+|---|---|---|---|---|
+| nflverse `ff_opportunity` (ffverse) | yes | nflverse data, CC BY 4.0 | built after each game from its play-by-play | benchmark (season-to-date mean through last week) and input test |
+| nflverse `ff_rankings` (FantasyPros ECR via DynastyProcess) | yes | nflverse data | dated snapshots (`scrape_date`) | benchmark only, by the plan |
+| Sleeper API (rotowire projections) | yes | "The Sleeper API is a read-only HTTP API that is free to use for non-commercial purposes" (docs.sleeper.com) | `last_modified` missing (2020) or after kickoff for 53% of matched rows | benchmark only |
+| ESPN fantasy projections | yes | **dropped.** The Disney Terms of Use forbid to "access, monitor, copy or extract the Disney Products using a robot, spider, script, or other automated means, including … data mining or web scraping or otherwise compiling … any collection of data" | – | not used |
+
+The same Disney clause covers the keyless ESPN endpoints this project has read since M14: scoreboards, box scores, NBA injuries, prop and line history. That is recorded in BACKLOG as a question for the owner. M17 did not change those sources.
+
+**Benchmarks** (MAE on player-weeks where the player took a snap and the source has a projection; the engine at prekick):
+
+| Stat | 2020-2022 engine mean / median / Sleeper | 2023-2025 engine mean / median / Sleeper |
+|---|---|---|
+| targets | 1.83 / 1.78 / **1.76** | 1.76 / 1.67 / **1.62** |
+| receptions | 1.41 / **1.36** / 1.39 | 1.34 / 1.28 / **1.27** |
+| receiving yards | 18.2 / **17.0** / 17.8 | 17.3 / **16.1** / 16.3 |
+| carries | 3.26 / **3.19** / 3.19 | 3.13 / 3.04 / **2.99** |
+| rushing yards | 18.6 / 17.8 / **17.3** | 17.4 / 16.4 / **15.6** |
+
+- **Sleeper:** the engine's median roughly ties Sleeper/rotowire on receiving and trails it on volume and rushing. The comparison flatters Sleeper, because many of its projections were updated after kickoff.
+- **ff_opportunity** (season-to-date expected stats as a projection): worse than the engine in every stat and both periods. For example, test targets 1.76 vs the engine's 1.69, and carries 3.35 vs 2.95.
+- **FantasyPros weekly ECR** (Spearman rank correlation with actual PPR points within each position-week; up to 40 ranked players; the snapshot taken < 7 days before the week's first kickoff): ECR 0.41 vs the engine 0.38 (2020-2022), and 0.44 vs 0.41 (2023-2025). The engine ranks better in 38% of position-weeks. **The experts rank players better than the engine.**
+
+**Input test (ff_opportunity, validation 2020-2022, leave-one-season-out):** the engine's mean, linearly recalibrated, against the same with the season-to-date expected stat added:
+
+| Stat | engine (recalibrated) | + ff_opportunity | change (se) |
+|---|---|---|---|
+| targets | 1.817 | 1.792 | −0.025 (0.003) |
+| receptions | 1.431 | 1.416 | −0.015 (0.002) |
+| receiving yards | 18.75 | 18.63 | −0.11 (0.02) |
+| carries | 3.087 | 3.032 | −0.055 (0.011) |
+| rushing yards | 17.69 | 17.40 | −0.29 (0.05) |
+
+**It lowers validation error, so it passes the Part F rule.** The gain is small (about 1-2%). Usage and expected efficiency carry information that the engine's shrunk rates lose, most of all for carries and rushing yards.
+
+**Not used in nfle17.** The test was run after the test seasons were scored, so adding it now would be an adjustment after the test. It goes to BACKLOG with the coordinator prior, as the next engine version's first two changes, to be judged on 2026 as an untouched test season.
