@@ -160,6 +160,9 @@ class RateStore:
 
     tables: dict[str, pd.DataFrame]
     p: RateParams = field(default_factory=RateParams)
+    # Training-season priors frozen in the fit file (live has no 2016-2019 tables): position
+    # means and the league fallback rates; None = compute them from `tables`.
+    priors: dict | None = None
 
     def __post_init__(self):
         tg = _team_tables(self.tables)
@@ -174,6 +177,8 @@ class RateStore:
 
     def _fallback(self, num: str, den: str) -> float:
         """The 2016-2019 league rate, for instants with no earlier team-games (early 2016)."""
+        if self.priors is not None:
+            return float(self.priors["fallback"].get(f"{num}/{den}", np.nan))
         g = self.team_games[self.team_games.season.between(2016, 2019)]
         return float(g[num].sum() / max(g[den].sum(), 1e-9))
 
@@ -227,6 +232,10 @@ class RateStore:
         """Training-season (2016-2019) means by position: the prior of a player's rates."""
         if hasattr(self, "_means"):
             return self._means
+        if self.priors is not None:
+            self._means = {k: (pd.Series(v) if isinstance(v, dict) else float(v))
+                           for k, v in self.priors["means"].items()}  # fmt: skip
+            return self._means
         pl = self.players[self.players.season.between(2016, 2019)].copy()
         pl["position"] = pl.player.map(S.positions())
         means = {}
@@ -238,3 +247,12 @@ class RateStore:
             means[f"qb_{name}"] = float(qb[num].sum() / qb[den].sum())
         self._means = means
         return means
+
+
+def export_priors(store: RateStore) -> dict:
+    """The training-season priors as plain JSON (for the frozen fit)."""
+    means = {k: (v.dropna().to_dict() if isinstance(v, pd.Series) else float(v))
+             for k, v in store.position_means().items()}  # fmt: skip
+    pairs = {(num, den) for num, den, *_ in (*TEAM_RATES.values(), *DEF_RATES.values())}
+    return {"means": means,
+            "fallback": {f"{n}/{d}": store._fallback(n, d) for n, d in sorted(pairs)}}

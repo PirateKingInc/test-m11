@@ -65,7 +65,18 @@ class NflSport(Sport):
             picks = []
         self.predict_15(engine, now, store)
         self.predict_props(engine, now)
+        self.predict_engine(engine, now, store)
         return len(picks)
+
+    def predict_engine(self, engine: Engine, now: datetime, store=None) -> dict:
+        """M17's market-free engine, nfle17 and nflpe17 (never breaks the run)."""
+        from betdata.nfl.engine.live import run as run_engine
+
+        try:
+            return run_engine(engine, now, store)
+        except Exception as e:  # the engine must not stop the page or the other versions
+            log.warning("nfle17 skipped: %s: %s", type(e).__name__, e)
+            return {}
 
     def predict_15(self, engine: Engine, now: datetime, store=None) -> int:
         """The M15 side version m15 (background unless the switch rule moved the page)."""
@@ -182,6 +193,16 @@ class NflSport(Sport):
                       r.ties)
             for r in records(conn) if r.market in PAGE_MARKETS
         ]  # fmt: skip
+
+    def engine_html(self, conn: Connection, now: datetime, et) -> str | None:
+        from betdata.nfl.engine.page import engine_html
+
+        return engine_html(conn, now, et)
+
+    def engine_version(self) -> str | None:
+        from betdata.nfl.engine.live import DESIGN_PATH, MODEL
+
+        return MODEL if DESIGN_PATH.exists() else None
 
     def thresholds(self) -> dict[str, str]:
         return {"spread": f"model and market differ by ≥ {THRESHOLDS['spread']:g} pts",

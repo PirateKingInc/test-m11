@@ -1708,6 +1708,70 @@ Next-game targets of WR, TE and RB (15,545 player-games with at least two earlie
 - **Target share does as well as real routes** (+0.002) and needs no participation data.
 - **Decision:** step 4 uses **target share** (shrunk, padding 23 targets), not routes. This is not a timing workaround: it is as accurate on validation and available in season. Route share stays a candidate adjustment in B3's budget.
 
+## M17 engine: build and validation (2020-2022), logged before any test season was scored
+
+**Engine** (`nfl/engine/`):
+- **Rates:** `rates.py`, as-of, shrunk with the A1 paddings toward the era's league mean.
+- **Drive model:** `drives.py`, fitted on 2016-2019.
+- **Simulation:** `sim.py`.
+- **Inputs:** `inputs.py`, from M12's play probabilities, filtered by the depth chart known at the point.
+
+**Two bugs found and fixed during the full build** (not counted as adjustments):
+- **QB order.** M12's `role` is a share on a player's previous team. In 2020, Dalton (1.00 from Cincinnati) outranked Prescott (0.99) at Dallas. QBs are now ordered by the depth chart known at the point, and candidates must be on that chart or have played for the team in its last three games.
+- **Yard split.** Splitting each drive's yards by expectation biased yards toward runs, because incompletions cluster on failed drives. The split is now made once per team-game.
+
+**Calibration** (training seasons only; 2018-2019 for selection, the last two fit seasons for the test and live fits): three constants, fitted by simulation.
+- template time scale 1.04 (drive time of possession leaves out kicks);
+- TD intercept (points per team-game);
+- pass intercept (dropback share).
+
+**Selection** (2,000 simulations a game, both points, 1,676 game-points; m13w's model-only validation MAE is 9.819):
+
+| Variant | Margin MAE | Kept |
+|---|---|---|
+| Full build (half-life 6 games, last season ×0.5, paddings ×1, QB weight 0.5) | 10.063 | baseline |
+| 1. Longer memory: half-life 10, last season ×0.7 | **10.049** | yes |
+| 2. Less shrinkage: paddings ×0.5 | 10.061 | no |
+| 3. QB weight 1.0 | 10.062 | no |
+
+**Final design:** half-life 10, last season ×0.7, paddings ×1, QB weight 0.5.
+
+**Validation results of the final design:**
+- **Sides:**
+  - total MAE 11.04; Brier score 0.223; margin correlation 0.38;
+  - volume bias within 5% (plays +1.2%, dropbacks +2.2%, points +3.5%; the 2020 scoring boom carried into 2021-2022).
+- **Side threshold** (Part D rule; prekick prediction against the nflverse closing line, best ROI at −110 with at least 100 picks):
+
+| Edge ≥ | 1.0 | 1.5 | 2.0 | 2.5 | 3.0 | **4.0** |
+|---|---|---|---|---|---|---|
+| Picks | 623 | 511 | 408 | 340 | 265 | **164** |
+| ROI | −2.4% | +3.2% | +4.2% | +3.4% | +7.1% | **+11.5%** (95%: −3.1% to +26.0%) |
+
+  The chosen threshold is 4.0 points. Its range includes zero, so no edge is claimed before the test. Moneyline and totals have no engine threshold, so the engine flags spreads only.
+- **Test 1 on validation** (do gaps predict results?): the cover rate rises with the gap, weakly. The logistic slope is +0.034 per point (se 0.021); the cover rate at gaps of 4-6 points is 0.62 (n = 100).
+- **Props vs nflp15** (validation, nflp15's populations, the same player-games; MAE, TD Brier):
+
+| Market | n | Engine (median) | nflp15 |
+|---|---|---|---|
+| receiving yards | 19,712 | **21.30** | 21.76 |
+| rushing yards | 8,700 | **21.86** | 21.99 |
+| receptions | 19,712 | 1.641 | **1.637** |
+| passing yards | 3,345 | 70.2 | **65.2** |
+| anytime TD (Brier) | 20,197 | 0.1848 | **0.1822** |
+
+  Passing yards lose most. The engine predicts 0 when another QB starts (QB identity is a draw), and when a backup does play it gets the full team volume rather than a share.
+
+**ESPN line history** (`betdata nfl engine fetch lines`, per book; games matched to nflverse):
+
+| Season | NFL games | Close lines | Open lines |
+|---|---|---|---|
+| 2016-2022 | 267-285 a season | 267-286 (every game) | **none** |
+| 2023 | 285 | 285 | 192 (ESPN BET/Caesars, from mid-season) |
+| 2024 | 285 | 284 | 284 |
+| 2025 | 285 | 285 | 285 |
+
+ESPN keeps no opening lines before late 2023, and offers no separate "opening" pseudo-book. Test 2 (line movement toward the engine) is therefore possible only on 2023-2025, which are test seasons. ESPN also lists projection sites (consensus, numberfire, teamrankings, accuscore) beside the books; they are excluded.
+
 ## M17 A4 results: coordinators (`seeds/coordinators_nfl.csv`, `reports/nfl/m17_coordinators.json`)
 
 **Source:** English Wikipedia team-season articles, fetched on GitHub Actions through the MediaWiki API at one request a second (`betdata nfl engine fetch coordinators`). Text is CC BY-SA 4.0; the file's header attributes it, and every row carries the revision it was read from. Pro-Football-Reference was not used.

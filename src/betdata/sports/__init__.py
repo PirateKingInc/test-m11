@@ -173,6 +173,14 @@ class Sport(ABC):
         """Player props with a stored line for upcoming games (M15); none by default."""
         return []
 
+    def engine_html(self, conn: Connection, now: datetime, et) -> str | None:
+        """An extra page section (M17 NFL engine vs market); none by default."""
+        return None
+
+    def engine_version(self) -> str | None:
+        """A model family shown with its own season record beside the page's (M17)."""
+        return None
+
     def moneyline_final_roi(self) -> float | None:
         """The final test's moneyline ROI (None: not scored). The page flags moneyline bets only
         when it is positive; otherwise moneyline edges are information only."""

@@ -92,8 +92,10 @@ RATES = (
 def positions(data_dir=None) -> pd.Series:
     from betdata.nfl.engine.plays import root
 
-    p = pd.read_parquet(root(data_dir) / "nflverse" / "players" / "players.parquet",
-                        columns=["gsis_id", "position"])  # fmt: skip
+    path = root(data_dir) / "nflverse" / "players" / "players.parquet"
+    if not path.exists():  # live runner: positions fall back to M12's groups
+        return pd.Series(dtype=object)
+    p = pd.read_parquet(path, columns=["gsis_id", "position"])
     return p.dropna().drop_duplicates("gsis_id").set_index("gsis_id").position
 
 

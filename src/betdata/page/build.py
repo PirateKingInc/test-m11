@@ -259,7 +259,8 @@ def _is_version(model_version: str, page_version: str | None) -> bool:
 
 
 def records_html(rows: list[RecordRow], page_version: str | None = None,
-                 markets: tuple[str, ...] = ("spread", "moneyline")) -> str:  # fmt: skip
+                 markets: tuple[str, ...] = ("spread", "moneyline"),
+                 engine_version: str | None = None) -> str:  # fmt: skip
     """The season record of the version the page shows: one row per market, spread and
     moneyline, under one counting rule; every other version and market in a collapsed
     section of background comparisons (M15.1)."""
@@ -278,8 +279,18 @@ def records_html(rows: list[RecordRow], page_version: str | None = None,
                  "</div>")  # fmt: skip
     else:
         table = "<p class='meta'>No graded picks for this model version yet.</p>"
+    eng = ""
+    if engine_version:
+        er = [r for r in rows if _is_version(r.model_version, engine_version)
+              and r.market == "spread"]  # fmt: skip
+        body = "".join(f"<tr>{_rec_cells(r)}</tr>" for r in er)
+        eng = (f"<p class='meta'>Engine (market-free) {escape(er[0].model_version)}, spread: "
+               "same counting rule</p><div class='recwrap'><table class='rec'>"
+               f"{REC_HEAD}{body}</table></div>" if er else
+               "<p class='meta'>Engine (market-free): no graded spread picks yet.</p>")
     others = [r for r in rows if not (_is_version(r.model_version, page_version)
-                                      and r.market in markets)]  # fmt: skip
+                                      and r.market in markets)
+              and not (engine_version and _is_version(r.model_version, engine_version))]
     other = ""
     if others:
         body = "".join(f"<tr>{_rec_cells(r)}<td class='ver'>{escape(r.model_version)}</td></tr>"
@@ -291,8 +302,8 @@ def records_html(rows: list[RecordRow], page_version: str | None = None,
                  f"{REC_HEAD.replace('</tr>', '<th>Model</th></tr>')}{body}</table></div>"
                  "</details>")  # fmt: skip
     if not rows:
-        return rule + "<p class='meta'>No graded picks yet.</p>"
-    return rule + table + other
+        return rule + "<p class='meta'>No graded picks yet.</p>" + eng
+    return rule + table + eng + other
 
 
 def jobs_html(last: dict | None, sport: str) -> str:
@@ -369,7 +380,7 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
 
 def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[RecordRow],
                 book_names: dict, info: RunInfo, props: list[PropRow] | None = None,
-                ) -> str:  # fmt: skip
+                engine: str | None = None) -> str:  # fmt: skip
     roi = sport.moneyline_final_roi()
     ml_flags = roi is not None and roi > 0
     note = version_note(sport)
@@ -385,10 +396,12 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
     legend = "".join(f"<li>{escape(k)}: {escape(v)}</li>" for k, v in legend_items.items())
     return f"""
 <section class="games">{games}</section>
+{engine or ""}
 {props_html(props or [], book_names) if props is not None else ""}
 <section class="legend"><h2>Flags</h2><p>A pick is flagged when it clears the threshold chosen
   on validation seasons:</p><ul>{legend}</ul></section>
-<section><h2>Season record</h2>{records_html(records, sport.page_version())}</section>
+<section><h2>Season record</h2>{records_html(records, sport.page_version(),
+                                             engine_version=sport.engine_version())}</section>
 {jobs_html(info.last, sport.key)}"""
 
 
@@ -453,13 +466,23 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     for sport in active:
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
-                                        book_names, info, _props(sport, conn, now))  # fmt: skip
+                                        book_names, info, _props(sport, conn, now),
+                                        _engine(sport, conn, now))  # fmt: skip
     status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(render(entries, panels, status))
     (out_dir / "status.json").write_text(json.dumps(status, indent=1))
     (out_dir / ".nojekyll").write_text("")
     return status
+
+
+def _engine(sport: Sport, conn: Connection, now: datetime) -> str | None:
+    """The sport's extra engine section (M17); a failure only drops it."""
+    try:
+        return sport.engine_html(conn, now, et)
+    except Exception as e:  # never lose the page over the engine section
+        log.warning("%s engine section skipped: %s", sport.key, e)
+        return None
 
 
 def _props(sport: Sport, conn: Connection, now: datetime) -> list[PropRow] | None:

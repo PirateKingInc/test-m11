@@ -67,18 +67,29 @@ def moneyline_bet(win_prob: float | None, ml_home: int | None, ml_away: int | No
     return Bet("moneyline", side, None, round(abs(edge), 2), ml_home if side == "home" else ml_away)
 
 
+def engine_thresholds() -> dict[str, float | None]:
+    """nfle17 (M17) is graded at its own validated spread threshold and nothing else (no
+    total or moneyline threshold was chosen); None = no picks."""
+    from betdata.nfl.engine.live import DESIGN_PATH, EngineDesign
+
+    if not DESIGN_PATH.exists():
+        return {"spread": None, "total": None}
+    return {"spread": EngineDesign.load().spread_threshold, "total": None}
+
+
 def bets_for(pred_margin: float | None, pred_total: float | None, spread_home: float | None,
-             total: float | None) -> list[Bet]:  # fmt: skip
+             total: float | None, thresholds: dict | None = None) -> list[Bet]:  # fmt: skip
+    th = THRESHOLDS if thresholds is None else thresholds
     out = []
-    if pred_margin is not None and spread_home is not None:
+    if pred_margin is not None and spread_home is not None and th["spread"] is not None:
         edge = pred_margin + spread_home  # the market expects the home team to win by -spread
-        if abs(edge) >= THRESHOLDS["spread"]:
+        if abs(edge) >= th["spread"]:
             side = "home" if edge > 0 else "away"
             out.append(Bet("spread", side, spread_home if side == "home" else -spread_home,
                            abs(edge)))  # fmt: skip
-    if pred_total is not None and total is not None:
+    if pred_total is not None and total is not None and th["total"] is not None:
         edge = pred_total - total
-        if abs(edge) >= THRESHOLDS["total"]:
+        if abs(edge) >= th["total"]:
             out.append(Bet("total", "over" if edge > 0 else "under", total, abs(edge)))
     return out
 
@@ -205,11 +216,16 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
         for r in conn.execute(select(nfl_bet_grades).where(nfl_bet_grades.c.game_id.in_(ids)))
     }
     produced: set[tuple[int, str]] = set()
+    eng_th = None
     for p in preds:
+        is_engine = str(p["model_version"]).startswith("nfle17")
+        if is_engine and eng_th is None:
+            eng_th = engine_thresholds()
         bets = bets_for(p["pred_home_margin"], p["pred_total"], p["market_spread_home"],
-                        p["market_total"])  # fmt: skip
-        mlb = moneyline_bet(p["pred_home_win_prob"], p["market_ml_home"], p["market_ml_away"],
-                            threshold, calib)  # fmt: skip
+                        p["market_total"], eng_th if is_engine else None)  # fmt: skip
+        mlb = None if is_engine else moneyline_bet(
+            p["pred_home_win_prob"], p["market_ml_home"], p["market_ml_away"], threshold,
+            calib)  # fmt: skip
         if mlb is not None:
             bets.append(mlb)
         for bet in bets:
