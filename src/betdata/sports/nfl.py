@@ -194,6 +194,16 @@ class NflSport(Sport):
             for r in records(conn) if r.market in PAGE_MARKETS
         ]  # fmt: skip
 
+    def engine_html(self, conn: Connection, now: datetime, et) -> str | None:
+        from betdata.nfl.engine.page import engine_html
+
+        return engine_html(conn, now, et)
+
+    def engine_version(self) -> str | None:
+        from betdata.nfl.engine.live import DESIGN_PATH, MODEL
+
+        return MODEL if DESIGN_PATH.exists() else None
+
     def thresholds(self) -> dict[str, str]:
         return {"spread": f"model and market differ by ≥ {THRESHOLDS['spread']:g} pts",
                 "moneyline": f"model win chance beats the no-vig market by ≥ {ml_threshold():g} "

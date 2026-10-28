@@ -1,0 +1,13 @@
+{
+  "fit": "config/fits/nfle17_2016_2025.json",
+  "rates": {
+    "half_life": 10.0,
+    "last_season_w": 0.7
+  },
+  "sims": 10000,
+  "decomposition_sims": 4000,
+  "spread_threshold": 4.0,
+  "prop_thresholds": {},
+  "prop_info_only": [],
+  "page": false
+}
