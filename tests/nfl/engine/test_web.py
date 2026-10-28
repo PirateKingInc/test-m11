@@ -98,6 +98,12 @@ def test_staff_lines_fill_a_role_the_infobox_lacks():
     assert row["head_coach_from"] == "infobox"
 
 
+def test_old_franchise_codes_map_to_their_names():
+    assert web.team_name("OAK", 2018) == "Oakland Raiders"
+    assert web.team_name("SD", 2016) == "San Diego Chargers"
+    assert web.team_name("STL", 2015) == "Los Angeles Rams"
+
+
 def test_prose_lines_never_fill_a_role():
     prose = ("Head coach [[Matt Rhule]] fired defensive coordinator [[Phil Snow]] after "
              "the season.\n* Special teams coordinator – [[John Fassel]]\n"

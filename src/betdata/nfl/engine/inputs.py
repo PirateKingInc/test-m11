@@ -99,15 +99,19 @@ class Depth:
     """nflverse depth charts as known at an instant (`nflverse_files.load_depth_charts` as-of
     rules): per team, the snapshot times and, per snapshot, gsis -> QB rank / on the chart."""
 
-    def __init__(self, seasons, data_dir=None):
-        from betdata.nfl.cli import _engine
-        from betdata.nfl.nflverse_files import kickoffs, load_depth_charts
+    def __init__(self, seasons=None, data_dir=None, charts: pd.DataFrame | None = None):
+        if charts is None:
+            from betdata.nfl.cli import _engine
+            from betdata.nfl.nflverse_files import kickoffs, load_depth_charts
 
-        with _engine().connect() as c:
-            kick = kickoffs(c)
-        ch = load_depth_charts(seasons, kickoffs=kick, data_dir=data_dir)
-        ch = ch[ch.as_of.notna() & ch.gsis_id.notna()]
+            with _engine().connect() as c:
+                kick = kickoffs(c)
+            charts = load_depth_charts(seasons, kickoffs=kick, data_dir=data_dir)
+        ch = charts
         self.times, self.members, self.qb_rank = {}, {}, {}
+        if ch.empty:
+            return
+        ch = ch[ch.as_of.notna() & ch.gsis_id.notna()]
         for team, g in ch.groupby("team"):
             snaps = sorted(g.as_of.unique())
             self.times[team] = np.array([pd.Timestamp(x).tz_convert(None) for x in snaps],
@@ -117,6 +121,10 @@ class Depth:
                 qb = x[x.position == "QB"].sort_values("rank")
                 self.qb_rank[(team, t)] = {gid: int(r) for gid, r in zip(qb.gsis_id, qb["rank"],
                                                                          strict=True)}
+
+    @classmethod
+    def from_frame(cls, charts: pd.DataFrame) -> Depth:
+        return cls(charts=charts)
 
     def at(self, team: str, t: pd.Timestamp):
         ts = self.times.get(team)

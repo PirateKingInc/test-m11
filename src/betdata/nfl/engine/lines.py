@@ -122,6 +122,7 @@ def props(store, ids: pd.DataFrame, seasons=(2024, 2025), ref: str = "origin/pro
     df["date"] = pd.to_datetime(df.start_time_utc, utc=True).dt.tz_convert(
         "America/New_York").dt.date
     games = _nflverse_games(ids, store)
+    games = games[games.season.isin(list(seasons))]
     games["home_name"] = [team_name(h, int(s)) for h, s in zip(games.home, games.season,
                                                                strict=True)]
     df = df.merge(games[["game_id", "home_name", "date"]], left_on=["home", "date"],
