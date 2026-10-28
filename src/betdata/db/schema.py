@@ -580,7 +580,9 @@ nfl_bet_grades = Table(
     Column("line", Float),  # the side's line when the prediction was made; null for moneyline
     Column("price_american", Integer, nullable=False),
     Column("edge", Float, nullable=False),  # points; moneyline: % points of win probability
+    Column("book", String(32)),  # where the pick was taken: draftkings / fanduel (0019)
     Column("close_line", Float),  # the same side's closing line; null if none known
+    Column("close_book", String(32)),  # pinnacle, else draftkings / fanduel (0019)
     # Spreads/totals: points better (+) or worse (-) than the close. Moneyline: the side's
     # no-vig probability at the close minus at the bet, in % points (+ = beat the close).
     Column("clv", Float),

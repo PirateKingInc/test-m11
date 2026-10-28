@@ -97,6 +97,15 @@ jobs:
             data/reports
           key: betdata-state-v1-${{ github.run_id }}
           restore-keys: betdata-state-v1-
+      # The poller's own database, read only (never saved by this job): NFL grading reads
+      # Pinnacle's pre-game close from it (nfl/book_lines.py), the Alerts step its alerts.
+      - name: Restore poller database
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: data/poller.sqlite
+          key: betdata-poller-v1-${{ github.run_id }}
+          restore-keys: betdata-poller-v1-
       - name: Run
         id: run
         continue-on-error: true
@@ -123,16 +132,8 @@ jobs:
           msg=$(grep -m1 '^run failed:' run.log | cut -c13- || true)
           uv run --no-dev betdata runner failed-page --message "${msg:-the hourly run failed}" \
             --url "$RUN_URL"
-      # M16 Alerts section: an isolated post-step on the built page. The poller's own database
-      # is only read here (never saved by this job); any failure leaves the page as built.
-      - name: Restore poller database
-        if: steps.run.outputs.skipped != 'true'
-        continue-on-error: true
-        uses: actions/cache/restore@v4
-        with:
-          path: data/poller.sqlite
-          key: betdata-poller-v1-${{ github.run_id }}
-          restore-keys: betdata-poller-v1-
+      # M16 Alerts section: an isolated post-step on the built page (the poller database is
+      # restored before the run; any failure leaves the page as built).
       - name: Alerts section
         if: steps.run.outputs.skipped != 'true'
         continue-on-error: true
