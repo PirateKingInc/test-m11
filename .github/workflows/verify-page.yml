@@ -52,6 +52,18 @@ jobs:
                                           "height": min(height, 1400)})
                       print(f"{sport} props rows:", sec.first.locator("li.prop").count())
               props_shot("nfl")
+              # M17: the NFL engine section ("Engine vs market"), top 1,600 px.
+              eng = pg.locator("#tab-nfl section.engine")
+              if eng.count():
+                  top, height = eng.first.evaluate(
+                      "e => [e.getBoundingClientRect().top + window.scrollY, e.offsetHeight]")
+                  pg.screenshot(path="proof/nfl_engine_phone.png", full_page=True,
+                                clip={"x": 0, "y": top, "width": 390,
+                                      "height": min(height, 1600)})
+                  print("engine games:", eng.first.locator("article.game").count())
+                  print("engine:", eng.first.inner_text()[:900])
+              else:
+                  print("engine: no section")
               # M14: the NBA tab, opened the way a reader would.
               nba = pg.locator('button[data-tab="nba"]')
               if nba.count():
