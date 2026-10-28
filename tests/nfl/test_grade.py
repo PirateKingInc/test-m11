@@ -4,7 +4,7 @@ postponed game; idempotent re-runs and score corrections."""
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import insert, select, update
 
 from betdata.db.schema import (
     game_source_ids,
