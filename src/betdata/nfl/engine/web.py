@@ -152,13 +152,22 @@ NOT_ROLE = re.compile(r"assistant|quality control|associate|special teams|senior
                       r"offensive|former|run game|pass game|co-", re.I)
 
 
+ROLE_LABEL = {"head_coach": r"head coach", "oc": r"offensive coordinator",
+              "dc": r"defensive coordinator"}
+# a staff-list label then the link: "* Defensive coordinator – [[Name]]", "|Offensive
+# Coordinator=[[Name]]" (bold quotes and a parenthesis allowed between)
+STAFF_ENTRY = (r"^\s*[*|#]?[^\[\]]{0,40}?\b{label}s?\b\s*(?:'{2,3})?\s*(?:\([^)]*\)\s*)?"
+               r"[-–—:=]+\s*(?:'{2,3})?\[\[([^\]|#]+)(?:\|([^\]]+))?\]\]")
+
+
 def role_from_text(wikitext: str, role: str) -> dict | None:
-    """The first linked name on a line that names the role (staff lists and staff templates
-    write "Offensive coordinator – [[Name]]"), skipping assistants and similar titles."""
+    """A staff-list entry naming the role, its link directly after the label (a dash, colon
+    or equals sign between). Prose lines and titles such as "assistant" never count."""
+    pat = re.compile(STAFF_ENTRY.replace("{label}", ROLE_LABEL[role]), re.I)
     for line in wikitext.splitlines():
-        if not ROLE_LINE[role].search(line) or NOT_ROLE.search(line):
+        if NOT_ROLE.search(line.split("[[")[0]):
             continue
-        m = LINK.search(line)
+        m = pat.search(line)
         if m and not re.search(r"season|coordinator|coach|football|league", m.group(1), re.I):
             return {"name": (m.group(2) or m.group(1)).strip(), "article": m.group(1).strip()}
     return None
