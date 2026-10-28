@@ -70,7 +70,7 @@ def rows(conn: Connection, now: datetime, days: int = 8) -> list[dict]:
 
 def props(conn: Connection, now: datetime, days: int = 8) -> dict[int, list[dict]]:
     from betdata.db.schema import games, prop_predictions
-    from betdata.nfl.engine.live import PROP_MODEL
+    from betdata.nfl.engine.live import PROP_MODEL, roster_names
 
     pp = prop_predictions
     last = (select(pp.c.game_id, pp.c.player_id, pp.c.market,
@@ -86,9 +86,19 @@ def props(conn: Connection, now: datetime, days: int = 8) -> dict[int, list[dict
                                     last.c.at == pp.c.predicted_at))
          .where(pp.c.model == PROP_MODEL).order_by(pp.c.player_name, pp.c.market))  # fmt: skip
     out: dict[int, list[dict]] = {}
+    names = roster_names(conn, now.year - 1)
     for r in conn.execute(q).mappings():
-        out.setdefault(r["game_id"], []).append(dict(r))
+        out.setdefault(r["game_id"], []).append(display_name(dict(r), names))
     return out
+
+
+def display_name(row: dict, names: dict[str, str]) -> dict:
+    """Rows stored before names were filled carry the ESPN id as the name; show the roster
+    name of the row's gsis id instead (the stored row is not changed)."""
+    if row["player_name"] in (None, row["player_id"]):
+        gsis = (row.get("dist") or {}).get("gsis_id")
+        row["player_name"] = names.get(gsis) or row["player_name"]
+    return row
 
 
 def section_html(game_rows: list[dict], prop_rows: dict[int, list[dict]], design,
