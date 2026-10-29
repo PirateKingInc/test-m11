@@ -583,6 +583,9 @@ nfl_bet_grades = Table(
     Column("book", String(32)),  # where the pick was taken: draftkings / fanduel (0019)
     Column("close_line", Float),  # the same side's closing line; null if none known
     Column("close_book", String(32)),  # pinnacle, else draftkings / fanduel (0019)
+    # spreads: agreement signals that held at pick time, "move", "pinnacle", "move+pinnacle"
+    # or "" (none); null on other markets (0020)
+    Column("agree", String(32)),
     # Spreads/totals: points better (+) or worse (-) than the close. Moneyline: the side's
     # no-vig probability at the close minus at the bet, in % points (+ = beat the close).
     Column("clv", Float),
@@ -757,6 +760,7 @@ nba_bet_grades = Table(
     Column("result", String(8), nullable=False),
     Column("profit", Float, nullable=False),
     Column("graded_at", UTCDateTime, nullable=False),
+    Column("agree", String(32)),  # spreads: agreement signals at pick time (0020)
     UniqueConstraint("prediction_id", "market"),
     Index("ix_nba_bet_grades_version", "model_version"),
 )

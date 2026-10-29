@@ -8,10 +8,12 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import Connection, Engine, and_, func, select
 
+from betdata.agreement import AGREE_TEXT, card_agreement
 from betdata.core.matching import season_for, sport_id
 from betdata.db.schema import games, model_predictions, teams
 from betdata.moneyline import no_vig
 from betdata.nba.live import DAYS, MODEL, Design, load_fit
+from betdata.nfl.book_lines import Board, poller_conn
 from betdata.quotes import current_quotes
 from betdata.sports import Card, RecordRow, Sport
 
@@ -95,6 +97,7 @@ class NbaSport(Sport):
                     .where(mp.c.model == model)):  # fmt: skip
                 preds.setdefault(p.game_id, p)
         quotes = current_quotes(conn, ids, now)
+        board, poller = Board(conn, ids), poller_conn()  # the spread agreement rule
         design = self._design()
         out = []
         for r in rows:
@@ -122,7 +125,10 @@ class NbaSport(Sport):
                 missing = f.get("missing") or {}
                 c.missing = {c.home: missing.get("home", []), c.away: missing.get("away", [])}
                 c.notes = list(f.get("notes") or [])
+            card_agreement(c, board, conn, poller, "nba", now, dkfd_line=False)
             out.append(c)
+        if poller is not None:
+            poller.close()
         return out
 
     def grade(self, conn: Connection, now: datetime) -> dict[str, int]:
@@ -155,7 +161,7 @@ class NbaSport(Sport):
 
     def thresholds(self) -> dict[str, str]:
         d = self._design()
-        return {"spread": f"model and market differ by ≥ {d.spread_threshold:g} pts",
+        return {"spread": f"model and market differ by ≥ {d.spread_threshold:g} pts" + AGREE_TEXT,
                 "moneyline": f"model win chance beats the no-vig market by ≥ "
                              f"{d.ml_threshold:g} % pts"}  # fmt: skip
 

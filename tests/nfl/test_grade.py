@@ -15,19 +15,8 @@ from betdata.db.schema import (
     results,
 )
 from betdata.nfl.grade import Bet, bets_for, clv, grade_nfl, records, result_of
-from betdata.sources.nflverse import NflverseSource
-from tests.conftest import fixture_bytes
 
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
-
-
-@pytest.fixture
-def db(engine, settings, fake_api, clock):
-    nfl = NflverseSource(engine, settings.source("nflverse"), transport=fake_api.transport,
-                         sleep=lambda s: None, clock=clock)  # fmt: skip
-    fake_api.add(body=fixture_bytes("nflverse", "games_sample.csv"))
-    assert nfl.run("schedules", seasons="all").status == "ok"
-    return engine
 
 
 def gid(conn, nflverse_id):
@@ -80,15 +69,6 @@ def two_way(conn, game, book, market, home_line, home_price, away_price, at):
     other = home_line if market == "totals" else (None if home_line is None else -home_line)
     quote(conn, game, book, market, sides[0], home_line, home_price, at)
     quote(conn, game, book, market, sides[1], other, away_price, at)
-
-
-@pytest.fixture
-def poller(tmp_path, monkeypatch):
-    """A poller database (Pinnacle's pre-game quotes) where grading looks for it."""
-    from betdata.alerts.db import engine_for
-
-    monkeypatch.setenv("BETDATA_DATA_DIR", str(tmp_path))
-    return engine_for(tmp_path / "poller.sqlite")
 
 
 def pin(poller, game, market, outcome, line, price, at):

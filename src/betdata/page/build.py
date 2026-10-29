@@ -137,12 +137,22 @@ def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
               ml_flags: bool = True, version_note: str | None = None) -> str:  # fmt: skip
     e = escape
     bets = []
+    agree_note = ""
     if c.spread_pick:
         line = ""
         if c.market_spread is not None:
             home_line = c.market_spread.line
             line = f" {home_line if c.spread_pick == c.home else -home_line:+g}"
-        bets.append(f"Spread: {e(c.spread_pick)}{line}")
+        # The agreement rule (agreement.py): a threshold pick is flagged only with an
+        # agreeing signal; otherwise the card says so and shows no flag.
+        if c.spread_agree:
+            bets.append(f"Spread: {e(c.spread_pick)}{line}")
+            agree_note = ("<div class='agree'>Spread flag agreed: "
+                          + "; ".join(e(n) for n in c.spread_agree.notes) + "</div>")
+        else:
+            agree_note = (f"<div class='agree no'>Spread {e(c.spread_pick)}{line} clears the "
+                          "threshold but no signal agrees (line move, Pinnacle): not "
+                          "flagged</div>")
     if c.ml_pick and ml_flags:
         q = c.ml_home if c.ml_pick == c.home else c.ml_away
         bets.append(f"Moneyline: {e(c.ml_pick)}{' ' + american(q.price) if q else ''}")
@@ -167,6 +177,7 @@ def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
 <article class="game{' bet' if bets else ''}">
   <header><h3>{e(c.away)} @ {e(c.home)}</h3><time>{e(et(c.kickoff))}</time></header>
   {f'<div class="flags">{flag}</div>' if flag else ''}
+  {agree_note}
   <table class="lines">
     <tr><th></th><th>Model</th><th>Market</th><th>Edge</th></tr>{"".join(rows)}
   </table>
@@ -259,7 +270,7 @@ def _is_version(model_version: str, page_version: str | None) -> bool:
 
 
 def records_html(rows: list[RecordRow], page_version: str | None = None,
-                 markets: tuple[str, ...] = ("spread", "moneyline"),
+                 markets: tuple[str, ...] = ("spread", "spread agreement", "moneyline"),
                  engine_version: str | None = None) -> str:  # fmt: skip
     """The season record of the version the page shows: one row per market, spread and
     moneyline, under one counting rule; every other version and market in a collapsed
@@ -564,7 +575,8 @@ margin:10px 0}}
 .game>header{{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
 flex-wrap:wrap}}
 .game time{{color:var(--mut);font-size:.9rem}}
-.flags{{margin:6px 0}} .flag{{display:inline-block;background:var(--flag);color:var(--acc);
+.flags{{margin:6px 0}} .agree{{font-size:.78rem;color:var(--acc);margin:2px 0 6px}}
+.agree.no{{color:var(--mut)}} .flag{{display:inline-block;background:var(--flag);color:var(--acc);
 border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.85rem;font-weight:700}}
 table{{width:100%;border-collapse:collapse;font-size:.9rem}}
 th,td{{text-align:left;padding:4px 4px;border-bottom:1px solid var(--line);vertical-align:top}}

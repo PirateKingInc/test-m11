@@ -8,16 +8,19 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import Connection, Engine, and_, func, select
 
+from betdata.agreement import AGREE_TEXT, card_agreement
 from betdata.core.matching import season_for, sport_id
 from betdata.db.schema import games, model_predictions, teams
 from betdata.moneyline import no_vig
-from betdata.nfl.book_lines import Board, page_quotes
+from betdata.nfl.book_lines import Board, page_quotes, poller_conn
 from betdata.nfl.grade import THRESHOLDS, grade_nfl, ml_calibration, ml_threshold, records
 from betdata.sports import Card, RecordRow, Sport
 
 log = logging.getLogger(__name__)
 DAYS = 8  # games predicted and shown: the next 8 days
-PAGE_MARKETS = ("spread", "moneyline")  # totals stay in the CLI (they lost money in testing)
+# Totals stay in the CLI (they lost money in testing); "spread agreement" (2026-10-29) is the
+# subset of counted spread picks the agreement rule would flag.
+PAGE_MARKETS = ("spread", "spread agreement", "moneyline")
 FIRST_HISTORY_SEASON = 2010  # what the M12 store reads
 
 
@@ -150,6 +153,7 @@ class NflSport(Sport):
             ):  # fmt: skip
                 preds.setdefault(p.game_id, p)
         board = Board(conn, ids)  # DK/FD only, best of the two (nfl/book_lines.py)
+        poller = poller_conn()  # Pinnacle, for the spread agreement rule (agreement.py)
         ml_t, calib = ml_threshold(), ml_calibration()
         out = []
         for r in rows:
@@ -179,7 +183,10 @@ class NflSport(Sport):
                 c.factors = [(str(k), float(v)) for k, v in (f.get("margin") or [])[:3]]
                 missing = f.get("missing") or {}
                 c.missing = {c.home: missing.get("home", []), c.away: missing.get("away", [])}
+            card_agreement(c, board, conn, poller, "nfl", now, dkfd_line=True)
             out.append(c)
+        if poller is not None:
+            poller.close()
         return out
 
     def grade(self, conn: Connection, now: datetime) -> dict[str, int]:
@@ -210,7 +217,7 @@ class NflSport(Sport):
         return MODEL if DESIGN_PATH.exists() else None
 
     def thresholds(self) -> dict[str, str]:
-        return {"spread": f"model and market differ by ≥ {THRESHOLDS['spread']:g} pts",
+        return {"spread": f"model and market differ by ≥ {THRESHOLDS['spread']:g} pts" + AGREE_TEXT,
                 "moneyline": f"model win chance beats the no-vig market by ≥ {ml_threshold():g} "
                              "% pts"}  # fmt: skip
 
