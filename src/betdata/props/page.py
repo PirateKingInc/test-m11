@@ -52,5 +52,6 @@ def prop_rows(conn: Connection, now: datetime, model: str, days: int,
             r["under_price"], r["p_over"], r["edge"], list(r["factors"] or []), r["book"],
             src.get(r["book_id"]), r["line_fetched_at"], r["prediction_point"],
             research(r["market"]), flag,
-            bool(info_only and info_only(r["market"]))))  # fmt: skip
+            bool(info_only and info_only(r["market"])),
+            (r["dist"] or {}).get("median")))  # fmt: skip
     return out

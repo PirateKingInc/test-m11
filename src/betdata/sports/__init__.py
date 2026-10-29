@@ -113,6 +113,7 @@ class PropRow:
     research: bool = True
     flag: str | None = None
     info: bool = False  # backtested, but the ROI's 95% range includes zero: never flagged
+    median: float | None = None  # M18 Part D: the distribution's median (shown, not the mean)
 
 
 @dataclass

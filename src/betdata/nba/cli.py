@@ -497,6 +497,19 @@ def props_final_test_cmd(again: bool = typer.Option(False, help="Score again (re
     typer.echo(json.dumps(res, indent=1, default=float)[:6000])
 
 
+@nba_app.command("props-median-backtest")
+def props_median_backtest_cmd():
+    """M18 Part D: the median-anchored variant beside nbap15 on rebounds and assists at the
+    opening lines of the test seasons (a repeat look). Writes
+    reports/nba/props_median_backtest.json."""
+    from betdata.nba.props.median import backtest
+
+    _, engine = _engine()
+    with engine.connect() as conn:
+        res = backtest(conn)
+    typer.echo(json.dumps(res, indent=1, default=float)[:8000])
+
+
 @nba_app.command("props-freeze")
 def props_freeze_cmd():
     """Fit the prop model on every completed season and write the live fit and design."""

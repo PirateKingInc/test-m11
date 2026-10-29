@@ -2104,6 +2104,11 @@ The repriced fair price is the consensus moved by the model's change:
   - A median regression (quantile 0.5, same features, same training seasons) gives a median projection.
   - The negative binomial's mean is solved so that its median equals that projection, with the frozen dispersion.
 - **Backtest:** the nbap15 rebound and assist backtest is re-run at opening lines with the median-anchored probabilities, beside the original. It is labelled a repeat look.
+- **Implemented** (`props/dist.py`, `nba/props/median.py`):
+  - **Live outputs:** nbap15 and nflp15 predictions store `median`, `q10`, `q25`, `q75` and `q90` in `dist`, from the same distribution as P(over): negative binomial; NFL yards normal (floored at 0) or negative binomial; anytime TD Poisson. The page shows "Median x (mean y)". nflpe17's engine section already shows the simulated median.
+  - **Median regression:** IRLS for least absolute deviations, with nbap15's ridge penalty λ = 10 on the same stat terms.
+  - **Anchoring:** the anchored mean is solved by bisection on the smooth median (the CDF linearly interpolated between whole numbers, a count read at x + 0.5).
+  - **Backtest:** `betdata nba props-median-backtest`, run on Actions by the `m18-research` workflow. The fit uses 2015-16 to 2022-23, as nbap15's final test; scoring uses the test seasons at opening lines with props_tune.json's thresholds; output goes to reports/nba/props_median_backtest.json.
 
 ## Part E: our own line archive
 

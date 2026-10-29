@@ -28,6 +28,7 @@ from betdata.nba.props.live import PropDesign
 from betdata.nba.props.live import store as store_picks
 from betdata.nfl.props import model as M
 from betdata.nfl.props.grade import DESIGN_PATH, MODEL
+from betdata.props.dist import quantiles
 from betdata.props.lines import latest_lines
 
 DAYS = 8
@@ -164,7 +165,8 @@ def predict(conn: Connection, now: datetime, design: PropDesign | None = None,
                 under_price=_int(r.under_price), book_id=int(r.book_id),
                 line_fetched_at=r.fetched_at.to_pydatetime(), p_over=round(float(p[i]), 4),
                 edge=round(100 * (float(p[i]) - nv[0]), 1) if nv else None,
-                dist={**dist, "mean": round(float(mu[i]), 3), "gsis_id": r.gsis},
+                dist={**dist, "mean": round(float(mu[i]), 3), "gsis_id": r.gsis,
+                      **quantiles(mod.dists.get(market), float(mu[i]))},  # M18 Part D
                 factors=fac[i]))  # fmt: skip
     return [dict(p, model=MODEL, model_version=version) for p in picks]
 
