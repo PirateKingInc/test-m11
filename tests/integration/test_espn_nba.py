@@ -1,5 +1,5 @@
 """M14 NBA data from ESPN and sportsdataverse, on saved real payloads: the live scoreboard
-(games, scores, DraftKings lines), box scores (season file and per-game summary), and historical
+(games, scores; since M18 no lines), box scores (season file and per-game summary), and historical
 opening/closing lines."""
 
 import json
@@ -27,6 +27,15 @@ def espn(engine, settings, fake_api, clock):
                          sleep=lambda s: None, clock=clock)  # fmt: skip
 
 
+@pytest.fixture
+def espn_odds_allowed(monkeypatch):
+    """M18: ESPN odds/prop fetches refuse to run. These tests keep the retired fetch code's
+    regression coverage (it documents the stored history's format) with the guard lifted."""
+    import betdata.core.espn_odds as g
+
+    monkeypatch.setattr(g, "ALLOWED", True)
+
+
 def count(engine, table, *where):
     with engine.connect() as conn:
         return conn.execute(select(func.count()).select_from(table).where(*where)).scalar()
@@ -40,7 +49,8 @@ def espn_game(engine, espn_id):
         ).mappings().one()  # fmt: skip
 
 
-def test_scoreboard_games_and_draftkings_lines(espn, engine, fake_api):
+def test_scoreboard_games_and_no_lines(espn, engine, fake_api):
+    """M18 Part E: the scoreboard gives games and scores; its embedded odds are not stored."""
     fake_api.add(body=fixture_bytes("espn_nba", "scoreboard_20261021.json"))
     res = espn.run("scoreboard", dates="20261021")
     assert res.status == "ok", res.message
@@ -52,11 +62,7 @@ def test_scoreboard_games_and_draftkings_lines(espn, engine, fake_api):
             select(odds_snapshots.c.snapshot_kind, odds_snapshots.c.outcome,
                    odds_snapshots.c.line, odds_snapshots.c.price_american)
             .where(odds_snapshots.c.game_id == g["game_id"])).all()  # fmt: skip
-    by = {(r.snapshot_kind, r.outcome, r.line): r.price_american for r in rows}
-    assert by[("poll", "home", -3.5)] == -108 and by[("poll", "away", 3.5)] == -112
-    assert by[("poll", "home", None)] == -142 and by[("poll", "away", None)] == 120
-    assert by[("source_opening", "home", -2.5)] == -110  # the opening spread
-    assert by[("poll", "over", 236.5)] == -105
+    assert rows == []
 
 
 def test_old_scoreboard_final_scores(espn, engine, fake_api):
@@ -103,7 +109,7 @@ def test_box_scores_from_game_summary(espn, engine, fake_api, clock):
     assert len(fake_api.requests) == before
 
 
-def test_odds_history_open_and_close(espn, engine, fake_api, clock):
+def test_odds_history_open_and_close(espn, engine, fake_api, clock, espn_odds_allowed):
     tip = datetime(2024, 3, 17, 0, 30, tzinfo=UTC)
     clock.now = datetime(2024, 3, 20, tzinfo=UTC)
     gid = _game(engine, "401585601", "Los Angeles Lakers", "Golden State Warriors", tip)
@@ -139,7 +145,8 @@ def test_odds_history_2015_has_opening_pseudo_book():
     assert "consensus" not in {p.book_key for p in parsed.prices}
 
 
-def test_history_export_and_load_round_trip(espn, engine, fake_api, clock, tmp_path):
+def test_history_export_and_load_round_trip(espn, engine, fake_api, clock, tmp_path,
+                                            espn_odds_allowed):  # fmt: skip
     from sqlalchemy import delete
 
     from betdata.db.schema import nba_injury_reports

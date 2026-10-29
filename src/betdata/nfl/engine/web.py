@@ -302,6 +302,9 @@ def season_events(client: SourceClient, season: int) -> list[dict]:
 
 
 def fetch_lines(client: SourceClient, season: int, out: Path) -> dict:
+    from betdata.core.espn_odds import refuse
+
+    refuse("ESPN NFL line history")
     from betdata.sources.espn_nba import core_odds
 
     core = client
