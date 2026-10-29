@@ -2177,6 +2177,12 @@ This is a separate signal with its own 200-alert gate.
 - At **60 graded alerts**, an "early read" is reported with the same statistics, labelled "early".
 - No threshold or rule changes during a signal's 200-alert test.
 
+**Implemented** (`alerts/gates.py`):
+- **When:** every poller job grades each started alert against its consensus close (`consensus_grades`; final once a close is found).
+- **Close time:** the last poll before tip is the latest poll mark or quote for the game before tip.
+- **Prop close:** taken at the alerted line if one is quoted there; otherwise the most-quoted line, carried with the prop σ.
+- **Gates:** computed per M18 signal name (C-NBA, C-NFL, F, G1, G2). They appear in `betdata alerts report` and on the page's Value section.
+
 ## Page
 
 - **Value section:** each sport's tab opens with a "Value" section. It shows the live alerts and, per signal, the running CLV vs the consensus close, the count toward 200 and the ROI.

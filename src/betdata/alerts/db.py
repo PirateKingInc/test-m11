@@ -259,3 +259,20 @@ poll_marks = Table(
     Column("polled_at", UTCDateTime, nullable=False),
     Index("ix_poll_marks_game", "game_id", "source", "book", "polled_at"),
 )
+
+
+# M18 Part H: each alert graded against the consensus close (MODEL.md "M18 Part H").
+consensus_grades = Table(
+    "consensus_grades",
+    metadata,
+    Column("alert_id", ForeignKey("alerts.alert_id"), primary_key=True),
+    Column("close_at", UTCDateTime),  # the last poll before tip
+    Column("close_method", String(16)),  # pinnacle, median
+    Column("close_n", Integer),
+    Column("close_two_book", Boolean),
+    Column("close_fair", Float),  # L*, T*, p_home, or the prop over probability
+    Column("close_line", Float),  # props: the line of close_fair
+    Column("close_prob", Float),  # the consensus close's probability of the side at the line
+    Column("clv", Float),  # close_prob - the alerted book's no-vig probability at alert time
+    Column("graded_at", UTCDateTime, nullable=False),
+)
