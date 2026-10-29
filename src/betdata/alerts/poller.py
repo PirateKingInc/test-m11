@@ -581,6 +581,10 @@ class Poller:
 
         self._guard("grade", G.grade_all, self.main, self.pdb, now)
 
+        from betdata.alerts.gates import grade_consensus  # M18 Part H
+
+        self._guard("consensus grades", grade_consensus, self.main, self.pdb, now)
+
         def _decide():
             with self.pdb.begin() as p, self.main.connect() as m:
                 return L.decide(p, m, now)

@@ -389,7 +389,10 @@ def _f(x, fmt: str, scale: float = 1.0) -> str:
 def report_lines(p: Connection) -> list[str]:
     rows = graded_rows(p)
     if not rows:
-        return ["no graded alerts yet"]
+        from betdata.alerts.gates import gates
+
+        return ["no graded alerts yet"] + [f"M18 {k}: {v['alerts']} alerts, {v['status']}"
+                                           for k, v in gates(p).items()]
     out = ["CLV no-vig in % points (95% range); CLV points for spreads, totals and props; "
            "ROI per 1-unit paper bet at the alerted price (voids excluded)",
            f"{'signal':6} {'sport':5} {'market':10} {'n':>4} {'CLV pts':>8} {'n nv':>5} "
@@ -407,4 +410,11 @@ def report_lines(p: Connection) -> list[str]:
     for sig in sorted({r["signal"] for r in rows}):
         s = group_stats([r for r in rows if r["signal"] == sig])
         out.append(f"{sig}: {verdict(s)}")
+    from betdata.alerts.gates import gates
+
+    for name, g in gates(p).items():  # M18 Part H: CLV against the consensus close
+        rng = "-" if g["lo"] is None else f"[{100 * g['lo']:+.2f}, {100 * g['hi']:+.2f}]"
+        out.append(f"M18 {name}: {g['alerts']} alerts, {g['n']} graded vs the consensus close, "
+                   f"CLV {_f(g['clv'], '+.2f', 100)} pp {rng}, {g['wins']}-{g['losses']}, "
+                   f"ROI {_f(g['roi'], '+.1%')}: {g['status']}")
     return out
