@@ -510,6 +510,18 @@ def props_median_backtest_cmd():
     typer.echo(json.dumps(res, indent=1, default=float)[:8000])
 
 
+@nba_app.command("g1-backtest")
+def g1_backtest_cmd():
+    """M18 Part G1: unders in each team's first four home games when the close is at least
+    0.5 below the open, on every stored season (reports/nba/g1_backtest.json)."""
+    from betdata.nba.g1 import backtest
+
+    _, engine = _engine()
+    with engine.connect() as conn:
+        res = backtest(conn)
+    typer.echo(json.dumps(res, indent=1, default=float))
+
+
 @nba_app.command("props-freeze")
 def props_freeze_cmd():
     """Fit the prop model on every completed season and write the live fit and design."""
