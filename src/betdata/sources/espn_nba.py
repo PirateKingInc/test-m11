@@ -167,16 +167,16 @@ def _scoreboard_prices(gid: str, odds: dict) -> list[ParsedPrice]:
 def parse_scoreboard(body: bytes, fetched_at: datetime) -> ParsedOdds:
     try:
         data = json.loads(body)
+        # M18 Part E: the scoreboard is read for the schedule and scores only. Its embedded
+        # odds are not stored (no ESPN odds; Disney's terms), and no markets are "requested",
+        # so the stored ESPN lines are kept as history, never marked removed.
         out = ParsedOdds(sport="nba", fetched_at=fetched_at, schedule_authority=True,
-                         requested_markets=("h2h", "spreads", "totals"))  # fmt: skip
+                         requested_markets=())  # fmt: skip
         for e in data.get("events", []):
             ev = _event(e)
             if ev is None:
                 continue
             out.events.append(ev)
-            if ev.status == "scheduled":  # pre-game lines only
-                for odds in e["competitions"][0].get("odds") or []:
-                    out.prices.extend(_scoreboard_prices(ev.source_game_id, odds))
     except (ValueError, KeyError, TypeError, IndexError) as e:
         raise ParseError(f"{NAME}: unexpected scoreboard shape: {e!r}") from e
     return out
@@ -408,6 +408,9 @@ class EspnNbaSource(Source):
             return self._compact("/summary" if box else "/summary/stints", {"games": out},
                                  run_id)  # fmt: skip
         if job == "odds_history":
+            from betdata.core.espn_odds import refuse
+
+            refuse(f"{NAME} odds_history")
             ids = self._needing_odds(int(params["season"]), int(params.get("limit", 500)))
             out = []
             for espn_id in ids:

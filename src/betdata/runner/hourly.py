@@ -109,6 +109,31 @@ def run_job(engine: Engine, settings: Settings, registry: dict, job: JobDef, now
             "seconds": round(clock.monotonic() - t, 1)}  # fmt: skip
 
 
+def import_sharp_props(engine: Engine, now: datetime) -> dict[str, Any]:
+    """M18 Part E: DK/FD props from the poller's archive into `prop_lines` (no ESPN props)."""
+    from betdata.nfl.book_lines import poller_conn
+    from betdata.props.sharp_import import import_props
+
+    out: dict[str, Any] = {"sport": "all", "id": "sharp-props", "source": "sharpapi",
+                           "job": "props from the poller archive"}  # fmt: skip
+    t = clock.monotonic()
+    poller = poller_conn()
+    try:
+        with engine.begin() as conn:
+            wall = utcnow()
+            n = import_props(conn, poller, max(now, wall) if wall - now < LIVE_SLACK else now)
+        out.update(status="ok" if poller is not None else "skipped", rows=n,
+                   message=None if poller is not None else "no poller database")
+    except Exception as e:  # noqa: BLE001 - the page keeps the last stored lines
+        log.exception("sharp props import failed")
+        out.update(status="failed", message=f"{type(e).__name__}: {e}"[:300])
+    finally:
+        if poller is not None:
+            poller.close()
+    out["seconds"] = round(clock.monotonic() - t, 1)
+    return out
+
+
 def run_hourly(engine: Engine, settings: Settings, registry: dict, active: list[Sport],
                now: datetime, *, trigger: str = "local", source_kwargs: dict | None = None,
                fail: str | None = None) -> RunReport:  # fmt: skip
@@ -134,6 +159,7 @@ def run_hourly(engine: Engine, settings: Settings, registry: dict, active: list[
                 if due(job, slot_at):
                     report.jobs.append({"sport": sport.key, **run_job(
                         engine, settings, registry, job, now, source_kwargs)})  # fmt: skip
+        report.jobs.append(import_sharp_props(engine, now))
         # Data fetched during this run is stamped with the time it arrived, after `now`;
         # predict, grade and publish as of the end of the refresh so it is all used. A run for
         # a past instant (`--at`, tests) moves on by the elapsed time only, not to today.

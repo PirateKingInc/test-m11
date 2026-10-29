@@ -31,6 +31,15 @@ def props(engine, settings, fake_api, clock):
                            sleep=lambda s: None, clock=clock)  # fmt: skip
 
 
+@pytest.fixture
+def espn_odds_allowed(monkeypatch):
+    """M18: ESPN odds/prop fetches refuse to run. These tests keep the retired fetch code's
+    regression coverage (it documents the stored history's format) with the guard lifted."""
+    import betdata.core.espn_odds as g
+
+    monkeypatch.setattr(g, "ALLOWED", True)
+
+
 def _game(engine, sport, home, away, tip, status="scheduled", espn=None, season=2026):
     with engine.begin() as conn:
         sid = sport_id(conn, sport)
@@ -78,7 +87,7 @@ def _nba_live(fake_api, p58="props_58.json"):
     fake_api.add(body=fx("props_100_p1.json")).add(body=fx("props_100_p2.json"))
 
 
-def test_nba_lines_paging_and_change_only(props, engine, fake_api, clock):
+def test_nba_lines_paging_and_change_only(props, engine, fake_api, clock, espn_odds_allowed):
     gid = _game(engine, "nba", "Los Angeles Lakers", "Golden State Warriors",
                 datetime(2026, 10, 16, 2, 0, tzinfo=UTC), espn="401900001")  # fmt: skip
     _game(engine, "nba", "Boston Celtics", "New York Knicks",
@@ -115,7 +124,7 @@ def test_nba_lines_paging_and_change_only(props, engine, fake_api, clock):
     assert stored(engine)[1][-1]["under_price"] == -125
 
 
-def test_one_failing_game_does_not_stop_the_others(props, engine, fake_api):
+def test_one_failing_game_does_not_stop_the_others(props, engine, fake_api, espn_odds_allowed):
     for hour, eid in ((20, "401900001"), (23, "401900002")):
         _game(engine, "nba", "Boston Celtics", "New York Knicks",
               datetime(2026, 10, 15, hour, tzinfo=UTC), espn=eid)  # fmt: skip
@@ -125,7 +134,8 @@ def test_one_failing_game_does_not_stop_the_others(props, engine, fake_api):
     assert len(fake_api.requests) == 5 and len(stored(engine)[1]) == 4
 
 
-def test_nba_history_open_close_two_books_and_404(props, engine, fake_api, clock):
+def test_nba_history_open_close_two_books_and_404(props, engine, fake_api, clock,
+                                                  espn_odds_allowed):
     clock.now = datetime(2025, 4, 20, tzinfo=UTC)
     _game(engine, "nba", "Los Angeles Lakers", "Golden State Warriors",
           datetime(2025, 3, 16, 2, 30, tzinfo=UTC), status="final", espn="401705001",
@@ -151,7 +161,8 @@ def test_nba_history_open_close_two_books_and_404(props, engine, fake_api, clock
     assert props.run("history", sport="nba", season=2024).status == "skipped"  # done: resumable
 
 
-def test_nfl_lines_match_scoreboard_and_unpriced_lines(props, engine, fake_api, clock):
+def test_nfl_lines_match_scoreboard_and_unpriced_lines(props, engine, fake_api, clock,
+                                                       espn_odds_allowed):
     clock.now = datetime(2026, 10, 21, 15, 0, tzinfo=UTC)  # 11 ET: games 2-8 days out refresh
     gid = _game(engine, "nfl", "Kansas City Chiefs", "Washington Commanders",
                 datetime(2026, 10, 25, 17, 0, tzinfo=UTC))  # fmt: skip

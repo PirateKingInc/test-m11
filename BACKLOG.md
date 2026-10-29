@@ -98,3 +98,18 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **Fit file size:** `config/fits/nfle17_2016_2025.json` is 2.9 MB of JSON. Move it to a compressed or binary format if more engine versions are added.
 - **Live engine proof in the run log:** `engine_sections` and `sports.nfl.engine` were added for M17 verification. Keep them; the M16 poller has no equivalent yet.
 
+
+## M18 additions
+
+- **ESPN schedules, scores and box scores (owner decision, open):** M18 stopped every ESPN odds and prop call (Part E):
+  - the `espn_props` jobs are removed;
+  - the NBA scoreboard's embedded odds are no longer stored;
+  - `odds_history` and the NFL line-history fetch refuse to run (`core/espn_odds.py`).
+
+  Still called, as before:
+  - the NBA scoreboard (schedule, scores);
+  - NBA box scores and stints (game summaries);
+  - the poller's NFL status reads (summary, rosters, scoreboard ids).
+
+  The same Disney clause covers these. Free replacements would be nba_api / cdn.nba.com (box scores, schedule; already a source for some data) and nflverse (NFL, already primary). The owner decides whether to switch.
+- **Score cross-check:** The Odds API `/scores` with `daysFrom` costs 2 credits a call. A weekly NBA + NFL check is about 16 credits a month on top of about 405 of 450 already used, so it is left out until the quota proof (#243) shows room. balldontlie needs an API key (no new keys), so it is not used.
