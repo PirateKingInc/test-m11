@@ -186,6 +186,11 @@ def test_run_skips_cycles_while_the_hourly_job_runs(setup, monkeypatch):
 def test_idle_hour_exits_at_once(setup, monkeypatch):
     p, gids, _ = setup
     monkeypatch.setattr(nba, "active", lambda c, t: False)
+    from betdata.alerts.archive import sweep_slot
+    from betdata.alerts.db import set_state
+
+    with p.pdb.begin() as c:  # this hour's M18 opener sweep already ran
+        set_state(c, "sweep:slot", sweep_slot(NOW), NOW)
     assert p.run(NOW + timedelta(minutes=50)) == 0
     assert p.notes and "idle" in p.notes[0]
 
