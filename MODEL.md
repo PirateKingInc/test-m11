@@ -2099,6 +2099,11 @@ The repriced fair price is the consensus moved by the model's change:
   - No ESPN odds or prop endpoint is called (Disney's terms forbid automated access); stored history is kept.
   - ESPN-derived box scores and schedules are unchanged this phase; that is an open owner decision (BACKLOG).
   - The Odds API scores endpoint is a weekly score cross-check if the budget allows. balldontlie needs an API key, so it is not used.
+- **Implemented (E2):**
+  - **Removed or refused:** the `nfl-props`/`nba-props` (ESPN) jobs are removed. The NBA scoreboard stores games and scores only: its odds are dropped, and no markets are "requested", so stored ESPN lines are never marked removed. `espn_props`, `espn_nba odds_history` and the NFL line-history fetch call `core/espn_odds.refuse` and raise.
+  - **Props now come from the poller:** every hourly run copies new SharpAPI DK/FD prop quotes from the poller archive into `prop_lines` (`props/sharp_import.py`; source "sharpapi", kind "poll"). Over and under are paired at the same line, rows are change-only, and NBA names map to ESPN athlete ids (unique names in `nba_player_games`); others are stored as "name:<normalised>".
+  - **NBA game lines** now come only from SharpAPI (hourly `nba-sharp`, poller) and The Odds API.
+  - **Score cross-check:** deferred until the quota proof shows room (BACKLOG).
 - **Implemented (E1, `alerts/archive.py`):**
   - `openers` lives in the poller database; the first price per key is inserted with on-conflict-do-nothing.
   - Sweeps use a slot key per ET date and slot, and a queue of games polled 3 a poller cycle (≤ 9 SharpAPI calls a minute with 6 s spacing).

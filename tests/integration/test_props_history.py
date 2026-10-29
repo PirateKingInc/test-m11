@@ -8,14 +8,20 @@ from sqlalchemy import delete, select
 from betdata.db.schema import game_source_ids, prop_lines
 from betdata.props.history import export, load
 from tests.conftest import fixture_bytes
-from tests.integration.test_espn_props import _game, props, stored  # noqa: F401
+from tests.integration.test_espn_props import (  # noqa: F401
+    _game,
+    espn_odds_allowed,
+    props,
+    stored,
+)
 
 
 def vals(engine):
     return {k: (r["line"], r["over_price"], r["under_price"]) for k, r in stored(engine)[0].items()}
 
 
-def test_export_then_load(props, engine, fake_api, clock, tmp_path):  # noqa: F811
+def test_export_then_load(props, engine, fake_api, clock, tmp_path,  # noqa: F811
+                          espn_odds_allowed):  # noqa: F811
     clock.now = datetime(2026, 10, 30, tzinfo=UTC)
     gid = _game(engine, "nfl", "Kansas City Chiefs", "Washington Commanders",
                 datetime(2026, 10, 25, 17, 0, tzinfo=UTC), status="final")  # fmt: skip

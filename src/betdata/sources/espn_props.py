@@ -396,6 +396,9 @@ class EspnPropsSource(Source):
         return events
 
     def fetch(self, job: str, params: dict[str, Any], *, priority: str, run_id: int) -> RawInput:
+        from betdata.core.espn_odds import refuse
+
+        refuse(f"{NAME} {job}")
         sport = str(params.get("sport", ""))
         if sport not in LEAGUE:
             raise ConfigError(f"{NAME}: --sport must be nba or nfl, not {sport!r}")
