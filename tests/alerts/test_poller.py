@@ -7,6 +7,7 @@ was replayed on real data, PROJECT.md "M16 replay"); this tests the poller's own
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from statistics import NormalDist
 
 import httpx
 import pytest
@@ -82,9 +83,13 @@ def _spread_quotes(gid, home_line=-1.5):
 
 
 def test_star_out_one_cycle_one_game_one_alert(setup, monkeypatch):
+    """M18 Part C (the value signal replaces Signal 1 for the NBA): a qualifying change is acted
+    on in one cycle; only its game is re-predicted; DK/FD prices unchanged since the report's
+    stated time are compared with the repriced consensus; exactly one alert, pushed once."""
     p, gids, ntfy = setup
     g1, g2 = gids[0], gids[1]
-    rep = nba.Report("Injury-Report_2021-10-20_01_45PM.pdf", NOW - timedelta(minutes=15), NOW)
+    stated = NOW - timedelta(minutes=15)
+    rep = nba.Report("Injury-Report_2021-10-20_01_45PM.pdf", stated, NOW)
     monkeypatch.setattr(nba, "active", lambda c, t: True)
     monkeypatch.setattr(nba, "newest_report", lambda http, now, last: (rep.name, b"%PDF"))
     monkeypatch.setattr(nba, "load_new_report", lambda e, n, pdf, now: rep)
@@ -92,6 +97,8 @@ def test_star_out_one_cycle_one_game_one_alert(setup, monkeypatch):
         _change(g1, True), _change(g2, False, "Bench, B")])
     p._nba_models = FakeModels()
     FakeModels.calls = []
+    # the board before the news (home -1.5 at both books), and the same prices now: stale
+    p.store_quotes(_spread_quotes(g1), stated - timedelta(minutes=20), change_only=True)
     monkeypatch.setattr(p, "poll_game", lambda sport, gid, now, ev: _spread_quotes(gid))
     p.cycle(NOW)  # one cycle
     with p.pdb.connect() as c:
@@ -100,23 +107,32 @@ def test_star_out_one_cycle_one_game_one_alert(setup, monkeypatch):
         assert [r.game_id for r in c.execute(select(repredictions))] == [g1]
         al = c.execute(select(alerts)).all()
     assert FakeModels.calls == [g1]  # only the affected game was re-predicted
-    # Margin 3.0 -> -1.0 (home), home -1.5: away covers by 2.5 < 3.0 (NBA): no side alert...
-    assert al == []
-    # ...but at home -4.5 the away side covers by 3.5: exactly one alert, pushed once.
+    # Pre-news consensus L* = -1.5 (DK/FD, two-book); margin 3.0 -> -1.0 moves it 4 points to
+    # +2.5, so the away side at +1.5 is worth ~63% against 50% no-vig: above the 4.5 pp bar.
+    assert len(al) == 1
+    a = al[0]
+    assert (a.signal, a.market, a.side, a.line, a.book, a.sent) == (
+        "value", "spreads", "away", 1.5, "draftkings", True)
+    assert a.fair_prob == pytest.approx(1 - NormalDist().cdf((-1.5 - 2.5) / 12.0))
+    assert a.details["consensus_before"]["two_book"] and a.details["minutes_since_report"] == 15
+    assert "unchanged since the report" in a.reason and "Star" in a.reason
+    assert len(ntfy.posts) == 1 and "topic-x" in ntfy.posts[0][0]
+    assert "not advice" in ntfy.posts[0][2]
+    # A later report: the books moved to -4.5 after its stated time, so they are not stale.
     monkeypatch.setattr(p, "poll_game", lambda sport, gid, now, ev: _spread_quotes(gid, -4.5))
+    p.store_quotes(_spread_quotes(g1, -4.5), NOW + timedelta(minutes=2, seconds=30),
+                   change_only=True)
+    rep2 = nba.Report("next.pdf", NOW + timedelta(minutes=2), NOW + timedelta(minutes=3))
     monkeypatch.setattr(nba, "newest_report", lambda http, now, last: ("next.pdf", b"%PDF"))
-    rep2 = nba.Report("next.pdf", NOW, NOW)
     monkeypatch.setattr(nba, "load_new_report", lambda e, n, pdf, now: rep2)
     monkeypatch.setattr(nba, "detect", lambda e, s, r, now: [
-        _change(g1, True, name="Star, B", new="Out", old="Doubtful", report_at=NOW)])
+        _change(g1, True, name="Star, B", report_at=rep2.report_at)])
     p._due = lambda key, every, now: True
     p.cycle(NOW + timedelta(minutes=3))
     p.cycle(NOW + timedelta(minutes=6))  # the same report again: nothing new
     with p.pdb.connect() as c:
-        al = c.execute(select(alerts)).all()
-    assert len(al) == 1 and (al[0].side, al[0].line, al[0].sent) == ("away", 4.5, True)
-    assert len(ntfy.posts) == 1 and "topic-x" in ntfy.posts[0][0]
-    assert "Star" in ntfy.posts[0][2] and "not advice" in ntfy.posts[0][2]
+        assert len(c.execute(select(alerts)).all()) == 1
+    assert len(ntfy.posts) == 1
 
 
 def _alert(gid, key="k1"):
