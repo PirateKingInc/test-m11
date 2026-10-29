@@ -1,35 +1,36 @@
-"""Spread flags need an agreeing signal (owner decision 2026-10-29, MODEL.md "Spread flags: the
-agreement rule"; NFL and NBA). A threshold spread pick is flagged only when, at pick time:
+"""Independent votes on a model's spread pick (MODEL.md "M18 Part A"; NFL and NBA). Since M18
+no model-vs-market pick is flagged (research only); these votes are recorded on the grade
+(`agree`) and feed the consensus work. At pick time:
 
-  (a) move      the DK/FD line moved toward the picked side since the book's first stored
-                line (the pick's book; the other book when the pick's book has no earlier quote);
-  (b) Pinnacle  Pinnacle's no-vig line sides with the model against the DK/FD line: carried to
-                the DK/FD number of the side (normal, sigma per sport), Pinnacle's no-vig chance
-                that the side covers is above 50%.
+  Pinnacle  Pinnacle's no-vig line sides with the model against the DK/FD line: carried to the
+            DK/FD number of the side (normal, sigma per sport), Pinnacle's no-vig chance that
+            the side covers is above 50%.
+  Kalshi    Kalshi's fresh (<= 10 min) yes-ask probability that the picked team wins beats the
+            DK/FD no-vig moneyline probability for that team (mean of the books quoting it).
 
-Every threshold pick is still graded; `agree` on the grade records which signals held.
+The M17-era "line moved toward the side since open" vote was dropped (Moskowitz 2021: such
+moves overreact; live 0-6 for m13w).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import Connection
+from sqlalchemy import Connection, select
 
-from betdata.moneyline import no_vig
-from betdata.nfl.book_lines import PICK_BOOKS, Board, Quote
+from betdata.moneyline import implied, no_vig
+from betdata.nfl.book_lines import PICK_BOOKS, Board
 
-MOVE, PINNACLE = "move", "pinnacle"
-AGREE_TEXT = (", and an independent signal agrees at pick time: the DraftKings/FanDuel line "
-              "moved toward the side since its first quote, or Pinnacle's no-vig line sides with "
-              "the model against it")
-BOOK_NAMES = {"draftkings": "DK", "fanduel": "FD", "pinnacle": "Pinnacle"}
+PINNACLE, KALSHI = "pinnacle", "kalshi"
+FRESH = timedelta(minutes=10)
+AGREE_TEXT = (". Research only since M18: never flagged; the card notes whether Pinnacle's "
+              "no-vig line or Kalshi sides with the pick")
 
 
 @dataclass(frozen=True)
 class Agreement:
-    signals: tuple[str, ...]  # subset of (MOVE, PINNACLE), in that order
+    signals: tuple[str, ...]  # subset of (PINNACLE, KALSHI), in that order
     notes: tuple[str, ...]  # one plain-language line per signal that held
 
     def __bool__(self) -> bool:
@@ -37,7 +38,7 @@ class Agreement:
 
     @property
     def code(self) -> str:
-        """Stored on the grade: "", "move", "pinnacle" or "move+pinnacle"."""
+        """Stored on the grade: "", "pinnacle", "kalshi" or "pinnacle+kalshi"."""
         return "+".join(self.signals)
 
 
@@ -46,29 +47,6 @@ NONE = Agreement((), ())
 
 def _fmt(x: float) -> str:
     return "pk" if x == 0 else f"{x:+g}"
-
-
-def _first(board: Board, game_id: int, book: str) -> Quote | None:
-    rows = board._rows.get((game_id, "spreads", book, "home"))
-    return rows[0][1] if rows else None
-
-
-def moved(board: Board, game_id: int, side: str, at: datetime, team: str,
-          book: str | None = None) -> str | None:  # fmt: skip
-    """Signal (a): a note when the book's home line at `at` moved toward `side` from its first
-    stored line, else None."""
-    order = [book] + [b for b in PICK_BOOKS if b != book] if book else list(PICK_BOOKS)
-    for b in order:
-        now, first = board.quote(game_id, "spreads", b, "home", at), _first(board, game_id, b)
-        if now is None or first is None or first.fetched_at >= now.fetched_at:
-            continue
-        toward = now.line < first.line if side == "home" else now.line > first.line
-        if toward:
-            sgn = 1 if side == "home" else -1
-            return (f"{BOOK_NAMES[b]} line moved toward {team}: {team} {_fmt(sgn * first.line)}"
-                    f" → {_fmt(sgn * now.line)}")
-        return None  # the pick's book has a history and it did not move toward the side
-    return None
 
 
 def pinnacle_sides(main: Connection, poller, game_id: int, side: str, side_line: float,
@@ -97,10 +75,38 @@ def pinnacle_sides(main: Connection, poller, game_id: int, side: str, side_line:
             f"{_fmt(side_line)}")
 
 
+def kalshi_sides(poller, board: Board, game_id: int, side: str, at: datetime,
+                team: str) -> str | None:  # fmt: skip
+    """Kalshi vote: a note when Kalshi's latest yes ask for the side, polled within FRESH before
+    `at`, gives the team a higher win probability than DK/FD's no-vig moneyline; else None."""
+    if poller is None:
+        return None
+    from betdata.alerts.db import quotes as q
+
+    row = poller.execute(select(q.c.price, q.c.polled_at)
+                         .where(q.c.game_id == game_id, q.c.book == "kalshi", q.c.market == "h2h",
+                                q.c.outcome == side, q.c.polled_at <= at,
+                                q.c.polled_at >= at - FRESH)
+                         .order_by(q.c.polled_at.desc()).limit(1)).first()  # fmt: skip
+    if row is None or row.price is None:
+        return None
+    ps = []
+    for b in PICK_BOOKS:
+        pr = board.pair(game_id, b, at)
+        if pr is not None and (nv := no_vig(pr[0].price, pr[1].price)) is not None:
+            ps.append(nv[0] if side == "home" else nv[1])
+    if not ps:
+        return None
+    k, dkfd = implied(row.price), sum(ps) / len(ps)
+    if k <= dkfd:
+        return None
+    return f"Kalshi gives {team} {100 * k:.0f}% to win vs DK/FD no-vig {100 * dkfd:.0f}%"
+
+
 def spread_agreement(board: Board, main: Connection, poller, sport: str, game_id: int,
                      side: str, at: datetime, team: str, book: str | None = None,
                      side_line: float | None = None) -> Agreement:  # fmt: skip
-    """Both signals for a spread pick of `side` at `at`. `book`/`side_line`: the DK/FD book and
+    """Both votes for a spread pick of `side` at `at`. `book`/`side_line`: the DK/FD book and
     number the pick was taken at (NFL); without them the best DK/FD number for the side then."""
     if side_line is None or book is None:
         q = board.best(game_id, "spreads", side, at)
@@ -108,11 +114,11 @@ def spread_agreement(board: Board, main: Connection, poller, sport: str, game_id
             return NONE
         book, side_line = q.book, q.line
     sig, notes = [], []
-    if (n := moved(board, game_id, side, at, team, book)) is not None:
-        sig.append(MOVE)
-        notes.append(n)
     if (n := pinnacle_sides(main, poller, game_id, side, side_line, at, sport, team)) is not None:
         sig.append(PINNACLE)
+        notes.append(n)
+    if (n := kalshi_sides(poller, board, game_id, side, at, team)) is not None:
+        sig.append(KALSHI)
         notes.append(n)
     return Agreement(tuple(sig), tuple(notes))
 

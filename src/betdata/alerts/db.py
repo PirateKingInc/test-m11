@@ -203,3 +203,25 @@ def set_state(conn, key: str, value, now) -> None:
     stmt = sqlite_insert(state).values(key=key, value=value, updated_at=now)
     conn.execute(stmt.on_conflict_do_update(index_elements=["key"],
                                             set_={"value": value, "updated_at": now}))  # fmt: skip
+
+
+# M18 Part E: the first price ever seen for each (source, book, game, market, player, side),
+# written once and never overwritten (MODEL.md "M18 Part E").
+openers = Table(
+    "openers",
+    metadata,
+    Column("opener_id", Integer, primary_key=True),
+    Column("sport", String(8), nullable=False),
+    Column("game_id", Integer, nullable=False),
+    Column("source", String(32), nullable=False),
+    Column("book", String(32), nullable=False),
+    Column("market", String(32), nullable=False),
+    Column("player_key", String(128), nullable=False),  # normalised player name; "" for games
+    Column("player_name", String(128)),
+    Column("outcome", String(16), nullable=False),
+    Column("line", Float),
+    Column("price", Integer),
+    Column("first_seen", UTCDateTime, nullable=False),
+    UniqueConstraint("source", "book", "game_id", "market", "player_key", "outcome",
+                     name="uq_openers"),
+)

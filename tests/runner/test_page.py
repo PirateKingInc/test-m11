@@ -44,7 +44,7 @@ def test_page(engine, settings, tmp_path):
     html = (tmp_path / "s" / "index.html").read_text()
     assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in html
     assert "DummyBall" in html and "NBA <small>coming soon</small>" in html
-    assert "AWAYX @ HOMEX" in html and "Spread: HOMEX" in html
+    assert "AWAYX @ HOMEX" in html and "spread HOMEX" in html and 'class="flag"' not in html
     assert "stub factor" in html and "Player Zed" in html
     assert "Line movement today (2 runs)" in html  # one row per successful run today
     assert "7-3-0" in html and "+36.0%" in html and "dummy:v1" in html
@@ -81,8 +81,8 @@ def test_moneyline_flags_only_when_the_final_test_made_money(engine, settings, t
         with engine.connect() as conn:
             build_site(conn, settings, ens, active_sports(ens), tmp_path / "s", NOW)
         html = (tmp_path / "s" / "index.html").read_text()
-        assert ("Moneyline: HOMEX" in html) == flagged, roi
-        assert "Spread: HOMEX" in html  # spread flags unchanged
+        assert ("moneyline HOMEX" in html) == flagged, roi  # listed as a research pick
+        assert "spread HOMEX" in html and 'class="flag"' not in html  # M18: never flagged
         assert "+5.0 pp" in html  # the edge is shown either way
         assert ("information only" in html) == (not flagged)
     monkeypatch.setattr(DummySport, "ML_ROI", -0.092)

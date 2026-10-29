@@ -29,6 +29,7 @@ from sqlalchemy import Engine, insert, select, update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from betdata.alerts import rules as R
+from betdata.alerts.archive import sweep_pending, sweep_slot
 from betdata.alerts.db import (
     alerts,
     get_state,
@@ -178,6 +179,10 @@ class Poller:
                     alerts.c.tip > start,
                     alerts.c.tip <= end + timedelta(minutes=CLOSING_MIN))).first():  # fmt: skip
                 return True
+            if self.sharp is not None and sweep_pending(get_state(p, "sweep:slot"),
+                                                         get_state(p, "sweep:queue", []),
+                                                         start, end):  # fmt: skip
+                return True
         t = start
         with self.main.connect() as c:
             while t <= end:
@@ -200,6 +205,7 @@ class Poller:
         self._guard("lag polls", self.lag_polls, now)
         self._guard("sharp boards", self.sharp_boards, now)
         self._guard("closing polls", self.closing_polls, now)
+        self._guard("sweep", self.sweep, now)
 
     # --- NBA news ---------------------------------------------------------------------------
 
@@ -340,10 +346,20 @@ class Poller:
 
     # --- polling prices -----------------------------------------------------------------------
 
-    def store_quotes(self, qs: list[Quote], now: datetime, event_id: int | None = None) -> None:
+    def store_quotes(self, qs: list[Quote], now: datetime, event_id: int | None = None,
+                     change_only: bool = False) -> None:  # fmt: skip
+        """Append the quotes (with `change_only`, only those whose line or price changed) and
+        record any first-seen key in `openers` (M18 Part E)."""
+        from betdata.alerts.archive import changed_only, record_openers
+
         if not qs:
             return
         with self.pdb.begin() as p:
+            record_openers(p, qs, now)
+            if change_only:
+                qs = changed_only(p, qs)
+                if not qs:
+                    return
             p.execute(insert(quotes), [dict(
                 polled_at=now, sport=q.sport, game_id=q.game_id, event_id=event_id,
                 source=q.source, book=q.book, market=q.market, player_name=q.player_name,
@@ -479,6 +495,48 @@ class Poller:
                 if aid is not None:
                     out.append(aid)
         return out
+
+    # --- M18 Part E: opener sweeps ------------------------------------------------------------
+
+    def sweep(self, now: datetime) -> int:
+        """Start a new sweep when a slot begins (queue every game with a tip in the next 36
+        hours), then poll up to SWEEP_GAMES_PER_CYCLE queued games: DK/FD main lines and props,
+        stored change-only. Returns games polled."""
+        from betdata.alerts.archive import SWEEP_GAMES_PER_CYCLE, SWEEP_HORIZON, SWEEP_SPORTS
+        from betdata.core.matching import sport_id
+
+        if self.sharp is None:
+            return 0
+        slot = sweep_slot(now)
+        with self.pdb.begin() as p:
+            cur, queue = get_state(p, "sweep:slot"), get_state(p, "sweep:queue", [])
+        if slot is not None and slot != cur:
+            queue = []
+            with self.main.connect() as c:
+                for sport in SWEEP_SPORTS:
+                    queue += [[sport, gid] for gid in c.execute(select(games.c.game_id).where(
+                        games.c.sport_id == sport_id(c, sport),
+                        games.c.status.notin_(("postponed", "cancelled")),
+                        games.c.start_time_utc > now,
+                        games.c.start_time_utc <= now + SWEEP_HORIZON)
+                        .order_by(games.c.start_time_utc)).scalars()]  # fmt: skip
+            with self.pdb.begin() as p:
+                set_state(p, "sweep:slot", slot, now)
+                log_ = get_state(p, "sweep:log", [])[-49:]
+                log_.append({"slot": slot, "games": len(queue), "at": now.isoformat()})
+                set_state(p, "sweep:log", log_, now)
+        done = 0
+        while queue and done < SWEEP_GAMES_PER_CYCLE:
+            sport, gid = queue.pop(0)
+            qs: list[Quote] = []
+            with self.main.connect() as c:
+                for ev in self.sharp.event_ids(c, gid):
+                    qs += [q for q in self.sharp.game(c, sport, ev) if q.game_id == gid]
+            self.store_quotes(qs, now, None, change_only=True)
+            done += 1
+        with self.pdb.begin() as p:
+            set_state(p, "sweep:queue", queue, now)
+        return done
 
     # --- closing polls and grading ----------------------------------------------------------------
 
