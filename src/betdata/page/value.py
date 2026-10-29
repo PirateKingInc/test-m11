@@ -49,6 +49,15 @@ def value_html(sport: str, p: Connection | None, now: datetime, et) -> str:
             f"(an early read at {EARLY_N}).</p>")  # fmt: skip
     if p is None:
         return head + "<p class='meta'>Value alerts unavailable: no poller database.</p></section>"
+    from sqlalchemy import inspect
+
+    if not {"alerts", "alert_grades", "consensus_grades"} <= set(inspect(p).get_table_names()):
+        # The read-only copy predates M18's tables (the poller adds them on its next job):
+        # there can be no M18 alert in it yet.
+        return (head + "<h3>Live</h3><p class='meta'>No live value alerts for upcoming games."
+                "</p><h3>Signals</h3><ul>" + "".join(
+                    f"<li><b>{escape(n)}</b> {escape(SIGNAL_TEXT[n])}: no alerts yet "
+                    f"(0 of {GATE_N}).</li>" for n in _names(sport)) + "</ul></section>")
     rows = p.execute(
         select(alerts, consensus_grades.c.clv, consensus_grades.c.close_prob,
                consensus_grades.c.close_method, consensus_grades.c.close_two_book,
