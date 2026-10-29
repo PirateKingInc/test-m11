@@ -2144,6 +2144,9 @@ This is a separate signal with its own 200-alert gate.
 - **Bet:** the under in each team's first four home games of the season, when the closing total is at least 0.5 points below the opening total.
 - **Backtest:** on stored seasons with openers, with n and a 95% range.
 - **Live:** paper-traded for the rest of this season.
+- **Implemented** (`nba/g1.py`, `Poller.g1_check`):
+  - **Backtest:** one book per game (DraftKings first), ESPN source open/close or first/last poll. Graded at the closing total and under price (−110 when missing). `betdata nba g1-backtest` runs on Actions (`m18-research`, task g1).
+  - **Live:** 5-15 minutes before tip, the poller polls each qualifying game. The open is the first DK/FD total in `openers`; the alert goes on the best DK/FD under (highest line, then price) when it is ≥ 0.5 below. Signal "g1", once per game, labelled `study` (paper).
 
 **G2. NFL alternate and first-half rungs:** priced from the M17 engine's simulated margin and total distributions (key numbers 3 and 7 included).
 - **Paper alert:** when the engine and the Pinnacle-implied full-game number agree, but a DK/FD rung disagrees by at least 4 pp.

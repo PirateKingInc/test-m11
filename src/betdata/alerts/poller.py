@@ -51,6 +51,7 @@ CLOSING_MIN = 10
 # next 3 hours; NFL once per kickoff window, 75 minutes before it. ~220 credits a month.
 NBA_BOARDS_ET = ((17, 30), (18, 45))
 NFL_BOARD_BEFORE = timedelta(minutes=75)
+G1_BEFORE = timedelta(minutes=10)  # M18 G1: the early-season totals check, ten minutes out
 
 
 def utc(t: datetime) -> datetime:
@@ -183,6 +184,9 @@ class Poller:
                                                          get_state(p, "sweep:queue", []),
                                                          start, end):  # fmt: skip
                 return True
+        if self.sharp is not None and any(start <= tip - G1_BEFORE <= end + timedelta(minutes=5)
+                                          for _, tip in self.g1_games(start)):  # fmt: skip
+            return True
         t = start
         with self.main.connect() as c:
             while t <= end:
@@ -206,6 +210,7 @@ class Poller:
         self._guard("sharp boards", self.sharp_boards, now)
         self._guard("closing polls", self.closing_polls, now)
         self._guard("sweep", self.sweep, now)
+        self._guard("g1", self.g1_check, now)
 
     # --- NBA news ---------------------------------------------------------------------------
 
@@ -644,6 +649,71 @@ class Poller:
                     C.store(p, c)
                     n += 1
         return n
+
+    # --- M18 Part G1: early-season NBA totals (paper) -----------------------------------------
+
+    def g1_games(self, now: datetime) -> list[tuple[int, datetime]]:
+        """(game, tip) of this season's NBA games that are a team's first four home games
+        (computed once per job)."""
+        if getattr(self, "_g1", None) is None:
+            from betdata.core.matching import season_for
+            from betdata.nba.g1 import early_home_games
+
+            with self.main.connect() as c:
+                g = early_home_games(c, season_for("nba", now))
+            import pandas as pd
+
+            self._g1 = [(int(r.game_id), utc(pd.Timestamp(r.tip).to_pydatetime()))
+                        for r in g.itertuples()]  # fmt: skip
+        return self._g1
+
+    def g1_check(self, now: datetime) -> list[int]:
+        """Ten minutes before tip (5-15): poll the game, and alert the best DK/FD under when
+        the current total is at least 0.5 below the first stored total (MODEL.md G1)."""
+        from betdata.alerts.db import openers
+        from betdata.nba.g1 import DROP
+
+        if self.sharp is None:
+            return []
+        out = []
+        for gid, tip in self.g1_games(now):
+            if not (tip - timedelta(minutes=15) < now <= tip - timedelta(minutes=5)):
+                continue
+            with self.pdb.begin() as p:
+                if get_state(p, f"g1:{gid}"):
+                    continue
+                set_state(p, f"g1:{gid}", now.isoformat(), now)
+                op = p.execute(select(openers.c.line, openers.c.first_seen).where(
+                    openers.c.game_id == gid, openers.c.market == "totals",
+                    openers.c.outcome == "under", openers.c.book.in_(("draftkings", "fanduel")))
+                    .order_by(openers.c.first_seen)).first()  # fmt: skip
+            if op is None or op.line is None:
+                self.notes.append(f"g1 {gid}: no stored opening total")
+                continue
+            qs = self.poll_game("nba", gid, now, None)
+            unders = [q for q in qs if q.market == "totals" and q.outcome == "under"
+                      and q.book in ("draftkings", "fanduel") and q.line is not None
+                      and q.price is not None]  # fmt: skip
+            if not unders:
+                continue
+            best = max(unders, key=lambda q: (q.line, R.decimal(q.price)))
+            if best.line > op.line - DROP:
+                continue
+            over = next((q for q in qs if q.market == "totals" and q.outcome == "over"
+                         and q.book == best.book and q.line == best.line), None)  # fmt: skip
+            from betdata.moneyline import no_vig
+
+            nv = no_vig(best.price, over.price) if over and over.price is not None else None
+            label, tip_ = self.game_label(gid)
+            a = Alert("g1", "nba", gid, label, tip_, "totals", "under", best.line, best.price,
+                      best.book, f"Early-season total: home team's first 4 home games; total "
+                      f"opened {op.line:g} and is {best.line:g} at {best.book} "
+                      f"({op.line - best.line:g} lower). Paper test (Baryla et al. 2007).",
+                      f"g1:{gid}", None,
+                      None if nv is None else nv[1], None, None, True,
+                      {"open": op.line, "open_at": utc(op.first_seen).isoformat()})  # fmt: skip
+            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+        return [x for x in out if x is not None]
 
     # --- closing polls and grading ----------------------------------------------------------------
 
