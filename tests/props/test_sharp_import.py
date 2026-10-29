@@ -61,6 +61,20 @@ def test_import_pairs_sides_maps_ids_and_is_change_only(engine, tmp_path):
     assert all(r.game_id == gid and r.market == "rebounds" for r in rows)
 
 
+def test_a_pulled_side_stops_pairing(engine, tmp_path):
+    gid = synth(engine, n_days=2)[0]
+    pdb = engine_for(tmp_path / "poller.sqlite")
+    t1 = T0
+    _put(pdb, [
+        ("nba", gid, "fanduel", "points", "Some One", "over", 20.5, -110, t1),
+        ("nba", gid, "fanduel", "points", "Some One", "under", 20.5, -110, t1),
+        ("nba", gid, "fanduel", "points", "Some One", "under", 20.5, None, t1 + timedelta(1 / 24)),
+        ("nba", gid, "fanduel", "points", "Some One", "over", 21.5, -105, t1 + timedelta(1 / 12)),
+    ])
+    with engine.begin() as m, pdb.connect() as p:
+        assert import_props(m, p, T0 + timedelta(hours=3)) == 1  # 21.5 has no under: no row
+
+
 def test_no_poller_database_is_a_no_op(engine):
     with engine.begin() as m:
         assert import_props(m, None, T0) == 0

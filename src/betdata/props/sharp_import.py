@@ -76,6 +76,9 @@ def import_props(main: Connection, poller: Connection | None, now: datetime) -> 
         pid = (ids.get(k) if sport_of[r.game_id] == "nba" else None) or f"name:{k}"
         key = (r.game_id, books.resolve(r.book), MARKETS[r.market], pid)
         s = state.setdefault(key, {})
+        if r.price is None:  # a removal row (M18 Part B): the side is no longer listed
+            s.pop(r.outcome, None)
+            continue
         s[r.outcome] = (r.line, r.price)
         o, u = s.get("over"), s.get("under")
         if o is None or u is None or o[0] != u[0]:
