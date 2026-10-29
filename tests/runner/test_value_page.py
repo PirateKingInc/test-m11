@@ -50,3 +50,14 @@ def test_value_section(tmp_path):
 
 def test_no_poller_database():
     assert "Value alerts unavailable" in value_html("nba", None, NOW, et)
+
+
+def test_a_poller_database_without_the_m18_tables(tmp_path):
+    from sqlalchemy import create_engine, text
+
+    eng = create_engine(f"sqlite:///{tmp_path / 'old.sqlite'}")
+    with eng.begin() as c:
+        c.execute(text("create table alerts (alert_id integer primary key)"))
+    with eng.connect() as c:
+        html = value_html("nba", c, NOW, et)
+    assert "No live value alerts" in html and "C-NBA" in html and "0 of 200" in html
