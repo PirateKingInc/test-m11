@@ -93,6 +93,7 @@ def event_lags(p: Connection, main: Connection | None, ev) -> list[Lag]:
     rows = p.execute(select(quotes.c.polled_at, quotes.c.book, quotes.c.market, quotes.c.outcome,
                             quotes.c.line, quotes.c.price)
                      .where(quotes.c.game_id == ev.game_id, quotes.c.player_name.is_(None),
+                            quotes.c.price.is_not(None),
                             quotes.c.market.in_(MAIN_MARKETS),
                             quotes.c.polled_at <= end)
                      .order_by(quotes.c.polled_at)).mappings().all()  # fmt: skip

@@ -158,7 +158,8 @@ def _poller_obs(p: Connection, a, book: str, tip: datetime) -> list[tuple]:
     rows = p.execute(select(q.c.source, q.c.polled_at, q.c.outcome, q.c.line, q.c.price,
                             q.c.player_name)
                      .where(q.c.game_id == a.game_id, q.c.book == book, q.c.market == a.market,
-                            q.c.source.in_(QUOTE_SOURCES), q.c.polled_at < tip)).all()  # fmt: skip
+                            q.c.source.in_(QUOTE_SOURCES), q.c.polled_at < tip,
+                            q.c.price.is_not(None))).all()  # fmt: skip
     want = _norm(a.player_name) if a.player_name else None
     return [(("poller", r.source), utc(r.polled_at), r.outcome, r.line, r.price) for r in rows
             if (_norm(r.player_name) if r.player_name else None) == want]  # fmt: skip

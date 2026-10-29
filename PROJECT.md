@@ -316,3 +316,11 @@ The dev copy of the NBA history was used at 2026-02-11 22:05 UTC: the poller rea
 - In one cycle the poller loaded the report and found **one** qualifying change: Mobley, 34.1 min per game played, play probability 0.50 → 0.005.
 - It re-predicted **only** WAS @ CLE with nba15 (CLE margin 16.5 → 15.5, morning point), in 76 s including the store reload.
 - The CI test `tests/alerts/test_poller.py` covers the same chain with stubbed models: one cycle, one re-predicted game, exactly one alert pushed. It also covers de-duplication, quiet hours and Signal 2 re-alerting only after the gap closes.
+
+## M18 sources (measured from GitHub Actions)
+
+| Source | Checked | Finding | Use |
+|---|---|---|---|
+| The Odds API player props (`/events/{id}/odds`, `markets=player_rebounds`, `regions=us`) | 2026-10-29 19:00 UTC, probe-env run 40936005095 | **Reachable on the free plan.** The events list costs 0 credits; one market for one event costs **1 credit** (`x-requests-last: 1`). It returned 5 books (BetMGM, BetRivers, Bovada, DraftKings, FanDuel) with 20-76 outcomes each. The month stood at 95 used, 405 remaining. | **Not polled.** One NBA slate of 4 prop markets × about 8 games is about 32 credits a board, against 500 a month that the hourly job and Pinnacle boards already share. Prop consensus stays DK/FD (two-book). |
+| SharpAPI DK/FD props (sweeps) | M16 (PROJECT.md "M16 sources"), and live in the poller since the M18 E1 merge | Reachable. No daily cap; 12 calls a minute. | Opener sweeps, the prop archive and the prop consensus. |
+| ESPN odds and props | none | Not called since M18 Part E (Disney's terms) | Stored history only |

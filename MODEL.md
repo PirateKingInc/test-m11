@@ -2047,6 +2047,13 @@ Each book's number is put on a common scale before the median:
 - **Inputs:** DK and FD from SharpAPI, and Odds API books only if its free plan includes props at an affordable cost. Measured and recorded in PROJECT.md before use.
 - **Two-book:** with only DK and FD, the prop consensus is "two-book".
 
+**Implemented** (`alerts/consensus.py`):
+- **Inputs:** the poller's `quotes`, and The Odds API boards in the main `odds_snapshots` (every bookmaker).
+- **Sweep storage:** sweep quotes are change-only, so freshness comes from `poll_marks`, one row per (game, source, book) answer. A book's board as of its latest answer within 10 minutes is every key's latest row up to then.
+- **Pulled lines:** a key a book stops listing gets a removal row (price NULL), so it is no longer on the board. Grading and the lag study ignore removal rows.
+- **When it runs:** after each sweep poll of a game, the poller stores the consensus of the three main markets and of every polled prop (`consensus` table, inputs as JSON).
+- **`Consensus.prob(side, line)`** gives the side's probability at any line: game markets carry it on the fair scale; props must use the consensus line.
+
 **Quota.** A 30-day projection of every new poll must fit every free limit (`betdata alerts quota`): The Odds API 500 credits a month with a 50-credit margin; SharpAPI at most 10 calls a minute.
 
 ## Part C: news → reprice → compare (the core product)
