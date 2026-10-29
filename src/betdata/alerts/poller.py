@@ -292,8 +292,10 @@ class Poller:
                         f"{c.new_status or 'not listed'}" for _, c in evs)  # fmt: skip
         stated = report.report_at.astimezone(R.EASTERN).strftime("%-I:%M %p ET")
         reason = f"{why} (report {stated})"
-        self.signal_news("nba", gid, first_event, report.name, rp, qs, players, reason, now,
-                         models.p_over)
+        # M18 Part C: the value signal (news -> reprice -> compare with DK/FD and the consensus)
+        # replaces M16's Signal 1 for the NBA.
+        self.signal_value("nba", gid, first_event, report.name, rp, qs, players, reason,
+                          report.report_at, now, models.p_over)
 
     # --- Signal 1 -----------------------------------------------------------------------------
 
@@ -341,6 +343,89 @@ class Poller:
                       f"{change_key}", pick.fair_prob, pick.book_prob, x["player_name"],
                       event_id, study, {"mean_before": x["mean_before"],
                                         "mean_after": x["mean_after"]})  # fmt: skip
+            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+        return [x for x in out if x is not None]
+
+    # --- M18 Part C: the value signal ----------------------------------------------------------
+
+    def signal_value(self, sport, gid, event_id, change_key, rp, qs: list[Quote], players: dict,
+                     reason: str, stated: datetime, now: datetime,
+                     p_over_fn) -> list[int]:  # fmt: skip
+        """Reprice the game and every affected teammate prop from the pre-news consensus and
+        alert DK/FD prices still unchanged since the report's stated time (alerts/value.py)."""
+        from betdata.alerts import consensus as C
+        from betdata.alerts import value as V
+
+        with self.pdb.begin() as p:
+            if get_state(p, "signal1:off"):
+                return []
+            study = get_state(p, "signal1:decision") is None
+        label, tip = self.game_label(gid)
+        cands: list = []
+        with self.pdb.connect() as p, self.main.connect() as m:
+            t_pre = V.pre_news_time(p, gid, stated)
+            for market in C.GAME:
+                cons = C.game_consensus(p, m, sport, gid, market, t_pre) if t_pre else None
+                rep = V.game_repricing(sport, market, cons, rp)
+                if rep is not None:
+                    cands.append(V.evaluate(p, m, sport, gid, market, None, rep, qs, stated,
+                                            now))  # fmt: skip
+            affected = set(players)
+            for x in rp.props:
+                changed = players.get(x["player_name"])
+                mates = any(c.team_id == x["team_id"] for c in players.values())
+                self_ok = changed is not None and changed.new_status in ("Questionable",
+                                                                          "Available")
+                if not mates or (x["player_name"] in affected and not self_ok):
+                    continue
+                name, market = x["player_name"], x["market"]
+
+                def cons_at(line, name=name, market=market):
+                    if t_pre is None or line is None:
+                        return None
+                    return C.prop_consensus(p, sport, gid, market, name, t_pre, line)
+
+                rep = V.Repriced(sport, market, prop_cons=cons_at,
+                                 prop_p_before=lambda ln, x=x: None if ln is None else
+                                 p_over_fn(x["market"], x["mean_before"], ln),
+                                 prop_p_after=lambda ln, x=x: None if ln is None else
+                                 p_over_fn(x["market"], x["mean_after"], ln))  # fmt: skip
+                c = V.evaluate(p, m, sport, gid, market, name, rep, qs, stated, now)
+                if c is not None:
+                    c.details = {"mean_before": x["mean_before"], "mean_after": x["mean_after"]}
+                cands.append(c)
+        out = []
+        mins = V.minutes_since(stated, now)
+        stated_txt = stated.astimezone(R.EASTERN).strftime("%-I:%M %p ET")
+        for c in cands:
+            if c is None:
+                continue
+            cb = c.cons_before
+            cons_txt = ("model only (no pre-news consensus)" if cb is None else
+                        f"consensus {cb.method}{' two-book' if cb.two_book else ''} "
+                        f"n={cb.n}")  # fmt: skip
+            model_txt = (f"projection {c.details['mean_before']:.1f} -> "
+                         f"{c.details['mean_after']:.1f}" if c.details else
+                         f"model margin {rp.margin_before:+.1f} -> {rp.margin_after:+.1f}"
+                         + ("" if c.market != "totals" or rp.total_after is None else
+                            f", total {rp.total_before:.1f} -> {rp.total_after:.1f}"))
+            text = (f"{reason}; {model_txt}; fair {100 * c.fair:.1f}% vs {c.book} no-vig "
+                    f"{100 * c.book_prob:.1f}% (edge {100 * c.edge:.1f} pp); {cons_txt}; "
+                    f"{c.book} unchanged since the report ({stated_txt}, {mins} min ago)"
+                    + (f"; {c.confirmed}" if c.confirmed else ""))  # fmt: skip
+            pkey = _norm(c.player_name) if c.player_name else ""
+            details = {"stated": stated.isoformat(), "minutes_since_report": mins,
+                       "fair": c.fair, "edge": c.edge, "two_book_or_model_only": c.solo,
+                       "confirmed": c.confirmed, "consensus_before": None if cb is None else
+                       {"fair": cb.fair, "method": cb.method, "n": cb.n,
+                        "two_book": cb.two_book, "line": cb.line, "at": cb.at.isoformat()},
+                       **(c.details or {"margin_before": rp.margin_before,
+                                                           "margin_after": rp.margin_after,
+                                                           "total_before": rp.total_before,
+                                                           "total_after": rp.total_after})}
+            a = Alert("value", sport, gid, label, tip, c.market, c.side, c.line, c.price,
+                      c.book, text, f"value:{gid}:{c.market}:{pkey}:{c.side}:{change_key}",
+                      c.fair, c.book_prob, c.player_name, event_id, study, details)  # fmt: skip
             out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
         return [x for x in out if x is not None]
 

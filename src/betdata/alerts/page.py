@@ -26,7 +26,8 @@ from betdata.alerts.rules import EASTERN
 log = logging.getLogger(__name__)
 START, END = "<!-- alerts:start -->", "<!-- alerts:end -->"
 RECENT = 30
-SIGNALS = {"news": "News (Signal 1)", "sharp": "Soft vs sharp (Signal 2)"}
+SIGNALS = {"value": "Stale price after news (M18)", "news": "News (Signal 1, M16)",
+           "sharp": "Soft vs sharp (Signal 2)"}
 LABEL = "Paper alerts, not advice."
 CAVEAT = (f"No signal is judged before {VERDICT_N} graded alerts; until then the running CLV is "
           "noise as much as signal.")  # fmt: skip

@@ -2081,6 +2081,14 @@ The repriced fair price is the consensus moved by the model's change:
 
 **Every alert carries:** game, market, book, price, line, the news, minutes since the report's stated time, the repriced fair price, the consensus (value, source, n), and a link to the page.
 
+**Implemented for the NBA** (`alerts/value.py`, `Poller.signal_value`; signal "value", which replaces M16 Signal 1 for the NBA):
+- **Pre-news consensus:** the consensus as of the latest poll answered at or before the report's stated time, at most 3 hours earlier. Sweeps are hourly, so freshness is judged at that poll, not at the stated time.
+- **Moneyline repricing:** the model gives a margin, not a win probability, so Δp_home = Φ(margin_after/σ) − Φ(margin_before/σ), with the spread σ (NBA 12). The model-only price is Φ(margin_after/σ).
+- **Prop consensus:** taken at each book's own line, so a DK line and an FD line can each have their own consensus (or none, which makes that line model only).
+- **"Moved toward the side":** the other book's no-vig chance of the side, carried to S's line on the fair scale, rose since the stated time; or the consensus's chance at S's line rose since the pre-news consensus.
+- **Kill switch and study label:** the M16 decision state still applies. `signal1:off` stops the signal, and alerts are labelled "study" while the M16 decision is open.
+- **Alert fields:** the reason text and `details` carry every required field: report stated time, minutes since it, fair price, edge, the consensus before (method, n, two-book, line, time) or "model only", the projection or margin before and after, and what confirmed a two-book or model-only price. The page link is added by `notify`.
+
 **NFL.**
 - **Polling:** the poller also runs on Sundays from T−100 to T−60 minutes before each kickoff window (inactives) and on Fridays 16:00-20:00 ET (final injury reports).
 - **Lag study:** a 4-week NFL lag study is run exactly like M16's: DK/FD minutes to move after inactives and reports, a 60-minute window, and the pooled DK+FD median. NFL alerts are paper bets labelled "lag study" until it ends.
@@ -2096,6 +2104,11 @@ The repriced fair price is the consensus moved by the model's change:
   - A median regression (quantile 0.5, same features, same training seasons) gives a median projection.
   - The negative binomial's mean is solved so that its median equals that projection, with the frozen dispersion.
 - **Backtest:** the nbap15 rebound and assist backtest is re-run at opening lines with the median-anchored probabilities, beside the original. It is labelled a repeat look.
+- **Implemented** (`props/dist.py`, `nba/props/median.py`):
+  - **Live outputs:** nbap15 and nflp15 predictions store `median`, `q10`, `q25`, `q75` and `q90` in `dist`, from the same distribution as P(over): negative binomial; NFL yards normal (floored at 0) or negative binomial; anytime TD Poisson. The page shows "Median x (mean y)". nflpe17's engine section already shows the simulated median.
+  - **Median regression:** IRLS for least absolute deviations, with nbap15's ridge penalty λ = 10 on the same stat terms.
+  - **Anchoring:** the anchored mean is solved by bisection on the smooth median (the CDF linearly interpolated between whole numbers, a count read at x + 0.5).
+  - **Backtest:** `betdata nba props-median-backtest`, run on Actions by the `m18-research` workflow. The fit uses 2015-16 to 2022-23, as nbap15's final test; scoring uses the test seasons at opening lines with props_tune.json's thresholds; output goes to reports/nba/props_median_backtest.json.
 
 ## Part E: our own line archive
 
