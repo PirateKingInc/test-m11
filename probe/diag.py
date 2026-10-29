@@ -16,40 +16,6 @@ pd.set_option("display.width", 250)
 pd.set_option("display.max_rows", 400)
 
 out_json: dict = {}
-# --- (1) NBA backtest ---------------------------------------------------------------------------
-try:
-    from betdata.nba.pipeline import TEST, TRAIN, VALIDATE, columns
-    from betdata.nba.select15 import rows15
-    from betdata.nba.selection import fits_for, market_frame, predictions
-
-    d = json.load(open("config/nba15_model.json"))
-    store, out, rows, _ = rows15()
-    m, t = columns(rows, d["groups"])
-    parts = []
-    for fit_s, test_s in ((TRAIN, VALIDATE), (TRAIN + VALIDATE, TEST)):
-        fits = fits_for(rows, out, m, t, fit_s, d["lam_m"], d["lam_t"])
-        parts.append(predictions(rows, out, fits, test_s))
-    pred = pd.concat(parts).join(market_frame(store, rows.game_id.unique()), on="game_id")
-    pred = pred[pred.point == "pretip"]
-    bt_in = pd.DataFrame({"season": pred.season, "margin": pred.pred,
-                          "open_spread": pred.open_spread_home,
-                          "close_spread": pred.close_spread_home, "act_margin": pred.margin})
-    print("NBA games with model + open + close:", int(bt_in.dropna().shape[0]), "of",
-          len(bt_in))
-    for label, ss in (("validation 2021-22..2022-23 (fit 2015-16..2020-21)", VALIDATE),
-                      ("test 2023-24..2025-26 (fit 2015-16..2022-23)", TEST),
-                      ("both", VALIDATE + TEST)):
-        x = bt_in[bt_in.season.isin(ss)]
-        res = summarize(picks(x, d["spread_threshold"]))
-        res["games"] = int(x.dropna().shape[0])
-        out_json[f"nba {label}"] = res
-        print(f"\n== NBA {label}: games {res['games']}")
-        for k in ("all_threshold", "agreement", "no_agreement"):
-            print(f"  {k:14s} {res[k]}")
-except Exception as e:  # noqa: BLE001
-    traceback.print_exc()
-    print("NBA backtest failed:", e)
-
 # --- (2) live sample ----------------------------------------------------------------------------
 from betdata.db.schema import (  # noqa: E402
     games,
@@ -106,4 +72,58 @@ for tbl, name in ((nfl_bet_grades, "nfl"), (nba_bet_grades, "nba")):
     out_json[f"live {name}"] = live
     print(g[["model_version", "start_time_utc", "away", "home", "side", "line", "agree",
              "result"]].to_string(index=False))
+# Historical NBA lines live on the nba-history branch (not in the runner state): load them into
+# this copy only after the live regrade above, so they cannot change the live sample.
+import subprocess  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from betdata.nba.history import load as load_history  # noqa: E402
+
+hist = Path("out/_nbahist")
+hist.mkdir(parents=True, exist_ok=True)
+subprocess.run(["git", "fetch", "-q", "--depth=1", "origin", "nba-history"], check=True)
+names = subprocess.run(["git", "ls-tree", "--name-only", "FETCH_HEAD"], check=True,
+                       capture_output=True, text=True).stdout.split()
+for n in names:
+    if n.startswith("odds_"):
+        (hist / n).write_bytes(subprocess.run(["git", "show", f"FETCH_HEAD:{n}"], check=True,
+                                              capture_output=True).stdout)
+print("\nloaded NBA history:", load_history(eng, hist))
+# --- (1) NBA backtest ---------------------------------------------------------------------------
+try:
+    from betdata.nba.pipeline import TEST, TRAIN, VALIDATE, columns
+    from betdata.nba.select15 import rows15
+    from betdata.nba.selection import fits_for, market_frame, predictions
+
+    d = json.load(open("config/nba15_model.json"))
+    store, out, rows, _ = rows15()
+    m, t = columns(rows, d["groups"])
+    parts = []
+    for fit_s, test_s in ((TRAIN, VALIDATE), (TRAIN + VALIDATE, TEST)):
+        fits = fits_for(rows, out, m, t, fit_s, d["lam_m"], d["lam_t"])
+        parts.append(predictions(rows, out, fits, test_s))
+    pred = pd.concat(parts).join(market_frame(store, rows.game_id.unique()), on="game_id")
+    pred = pred[pred.point == "pretip"]
+    bt_in = pd.DataFrame({"season": pred.season, "margin": pred.pred,
+                          "open_spread": pred.open_spread_home,
+                          "close_spread": pred.close_spread_home, "act_margin": pred.margin})
+    print("NBA games with model + open + close:", int(bt_in.dropna().shape[0]), "of",
+          len(bt_in))
+    for label, ss in (("validation 2021-22..2022-23 (fit 2015-16..2020-21)", VALIDATE),
+                      ("test 2023-24..2025-26 (fit 2015-16..2022-23)", TEST),
+                      ("both", VALIDATE + TEST)):
+        x = bt_in[bt_in.season.isin(ss)]
+        res = summarize(picks(x, d["spread_threshold"]))
+        res["games"] = int(x.dropna().shape[0])
+        out_json[f"nba {label}"] = res
+        print(f"\n== NBA {label}: games {res['games']}")
+        for k in ("all_threshold", "agreement", "no_agreement"):
+            print(f"  {k:14s} {res[k]}")
+except Exception as e:  # noqa: BLE001
+    traceback.print_exc()
+    print("NBA backtest failed:", e)
+
 json.dump(out_json, open("out/agreement.json", "w"), indent=1, default=float)
+import shutil  # noqa: E402
+
+shutil.rmtree(hist, ignore_errors=True)

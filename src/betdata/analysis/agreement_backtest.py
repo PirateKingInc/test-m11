@@ -65,3 +65,65 @@ def summarize(d: pd.DataFrame) -> dict:
         out["by_season"][str(s)] = {"all_threshold": record(x),
                                     "agreement": record(x[x.moved_toward])}
     return out
+
+
+def nfl() -> dict:
+    """m13w (the page model, frozen design refitted on 2013-2022) on 2023-2025 at the prekick
+    point; ESPN's opening and closing line of the first listed book that has both (m17-data
+    branch; ESPN keeps no openers before late 2023)."""
+    from sqlalchemy import select
+
+    from betdata.db.schema import game_source_ids
+    from betdata.nfl.cli import _engine, _wx_inputs
+    from betdata.nfl.engine import inputs as I
+    from betdata.nfl.engine import lines as L
+    from betdata.nfl.engine import plays as P
+    from betdata.nfl.engine import rates as R
+    from betdata.nfl.pipeline import TEST, TRAIN, VALIDATE
+    from betdata.nfl.selection import BET_THRESHOLDS, Design, fit_design, predict_rows
+    from betdata.nfl.weather import WX_DESIGN_PATH
+
+    _, _, rows, out = _wx_inputs()
+    fits = fit_design(rows, out, Design.load(WX_DESIGN_PATH), (*TRAIN, *VALIDATE))
+    pred = predict_rows(rows[rows.season.isin(TEST)], fits)
+    pred = pred[pred.point == "prekick"][["game_id", "margin"]]
+    with _engine().connect() as c:
+        nid = dict(c.execute(select(game_source_ids.c.game_id, game_source_ids.c.source_game_id)
+                             .where(game_source_ids.c.source == "nflverse")).all())  # fmt: skip
+    pred["nid"] = pred.game_id.map(nid)
+    es = L.espn(R.RateStore(P.load(range(2022, 2026))), I.team_ids(), TEST)
+    d = pred.merge(es, left_on="nid", right_index=True).merge(
+        out.rename(columns={"margin": "act_margin"})[["act_margin"]], left_on="game_id",
+        right_index=True)  # fmt: skip
+    d["season"] = d.nid.str[:4].astype(int)
+    return {"sport": "nfl", "model": "m13w (refit 2013-2022)", "point": "prekick",
+            "seasons": list(TEST), "lines": "ESPN, first listed book with open and close",
+            "games": int(len(d)), "threshold": BET_THRESHOLDS["spread"],
+            **summarize(picks(d, BET_THRESHOLDS["spread"]))}  # fmt: skip
+
+
+def nba() -> dict:
+    """nba15 (the page model) out of sample at the pretip point: 2021-22..2022-23 fitted on
+    2015-16..2020-21 and 2023-24..2025-26 fitted on 2015-16..2022-23; the stored opening and
+    closing lines (`market_frame`)."""
+    import json
+
+    from betdata.config import PROJECT_ROOT
+    from betdata.nba.pipeline import TEST, TRAIN, VALIDATE, columns
+    from betdata.nba.select15 import rows15
+    from betdata.nba.selection import fits_for, market_frame, predictions
+
+    d = json.loads((PROJECT_ROOT / "config" / "nba15_model.json").read_text())
+    store, out, rows, _ = rows15()
+    m, t = columns(rows, d["groups"])
+    parts = [predictions(rows, out, fits_for(rows, out, m, t, f, d["lam_m"], d["lam_t"]), s)
+             for f, s in ((TRAIN, VALIDATE), (TRAIN + VALIDATE, TEST))]  # fmt: skip
+    p = pd.concat(parts).join(market_frame(store, rows.game_id.unique()), on="game_id")
+    p = p[p.point == "pretip"]
+    x = pd.DataFrame({"season": p.season, "margin": p.pred, "open_spread": p.open_spread_home,
+                      "close_spread": p.close_spread_home, "act_margin": p.margin})
+    res = {"sport": "nba", "model": "nba15", "point": "pretip",
+           "threshold": d["spread_threshold"], "games": int(x.dropna().shape[0])}
+    for label, ss in (("validation", VALIDATE), ("test", TEST), ("both", VALIDATE + TEST)):
+        res[label] = summarize(picks(x[x.season.isin(ss)], d["spread_threshold"]))
+    return res
