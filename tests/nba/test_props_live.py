@@ -81,3 +81,28 @@ def test_flag_rule():
                      research_only=["pra"])  # fmt: skip
     assert d.flag_allowed("points") and not d.flag_allowed("rebounds")
     assert not d.flag_allowed("pra") and not d.flag_allowed("assists")
+
+
+def test_prices_lines_passed_in(setup, engine):
+    """M18 Part F: a line that has just posted (not yet in prop_lines) is priced directly, with
+    the distribution's median and quantiles."""
+    import pandas as pd
+
+    gid, tip, home = setup
+    now = tip - timedelta(hours=3)
+    with engine.connect() as conn:
+        from betdata.db.schema import teams
+        from tests.nba.synth import TEAMS
+
+        name = conn.execute(select(teams.c.canonical_name).where(teams.c.team_id == home)
+                            ).scalar()  # fmt: skip
+        k = TEAMS.index(name)
+        df = pd.DataFrame([dict(game_id=gid, player_id=f"{k}2", player_name="P x",
+                                market="rebounds", line=3.5, over_price=-110, under_price=-110,
+                                book="draftkings", book_id=1, fetched_at=pd.Timestamp(now),
+                                source="sharpapi")])  # fmt: skip
+        out = L.predict(conn, now, Panel.load(conn), lines=df)
+        assert conn.execute(select(prop_lines)).first() is None  # nothing stored was used
+    assert len(out) == 1 and out[0]["line"] == 3.5 and 0 < out[0]["p_over"] < 1
+    d = out[0]["dist"]
+    assert d["q10"] <= d["median"] <= d["q90"]

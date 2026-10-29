@@ -33,23 +33,28 @@ def _pkey(name: str | None) -> str:
     return _norm(name) if name else ""
 
 
-def record_openers(p: Connection, qs: list[Quote], now: datetime) -> int:
-    """Insert the first price of each key not yet in `openers`; returns rows added."""
-    rows, seen = [], set()
+def record_openers(p: Connection, qs: list[Quote], now: datetime) -> list[Quote]:
+    """Insert the first price of each key not yet in `openers`; returns the quotes that were
+    new openers."""
+    rows, seen, by_key = [], set(), {}
     for q in qs:
         k = (q.source, q.book, q.game_id, q.market, _pkey(q.player_name), q.outcome)
         if k in seen:
             continue
         seen.add(k)
+        by_key[k] = q
         rows.append(dict(sport=q.sport, game_id=q.game_id, source=q.source, book=q.book,
                          market=q.market, player_key=k[4], player_name=q.player_name,
                          outcome=q.outcome, line=q.line, price=q.price, first_seen=now))
     if not rows:
-        return 0
-    before = p.execute(select(func.count()).select_from(openers)).scalar_one()
+        return []
+    have = set()
+    for gid in {q.game_id for q in qs}:
+        have |= {(r.source, r.book, r.game_id, r.market, r.player_key, r.outcome) for r in
+                 p.execute(select(openers).where(openers.c.game_id == gid))}  # fmt: skip
     for i in range(0, len(rows), 500):
         p.execute(sqlite_insert(openers).values(rows[i:i + 500]).on_conflict_do_nothing())
-    return p.execute(select(func.count()).select_from(openers)).scalar_one() - before
+    return [q for k, q in by_key.items() if k not in have]
 
 
 def changed_only(p: Connection, qs: list[Quote]) -> list[Quote]:

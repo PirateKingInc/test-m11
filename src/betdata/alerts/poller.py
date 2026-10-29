@@ -432,25 +432,26 @@ class Poller:
     # --- polling prices -----------------------------------------------------------------------
 
     def store_quotes(self, qs: list[Quote], now: datetime, event_id: int | None = None,
-                     change_only: bool = False) -> None:  # fmt: skip
+                     change_only: bool = False) -> list[Quote]:  # fmt: skip
         """Append the quotes (with `change_only`, only those whose line or price changed) and
-        record any first-seen key in `openers` (M18 Part E)."""
+        record any first-seen key in `openers` (M18 Part E); returns the new openers."""
         from betdata.alerts.archive import changed_only, mark_polls, record_openers
 
         if not qs:
-            return
+            return []
         with self.pdb.begin() as p:
-            record_openers(p, qs, now)
+            new = record_openers(p, qs, now)
             mark_polls(p, qs, now)
             if change_only:
                 qs = changed_only(p, qs)
                 if not qs:
-                    return
+                    return new
             p.execute(insert(quotes), [dict(
                 polled_at=now, sport=q.sport, game_id=q.game_id, event_id=event_id,
                 source=q.source, book=q.book, market=q.market, player_name=q.player_name,
                 outcome=q.outcome, line=q.line, price=q.price,
                 book_updated_at=q.book_updated_at) for q in qs])  # fmt: skip
+        return new
 
     def poll_game(self, sport: str, gid: int, now: datetime, event_id: int | None) -> list[Quote]:
         """DK/FD main lines and Signal 1 props for one game, plus Kalshi; stored."""
@@ -618,8 +619,10 @@ class Poller:
             with self.main.connect() as c:
                 for ev in self.sharp.event_ids(c, gid):
                     qs += [q for q in self.sharp.game(c, sport, ev) if q.game_id == gid]
-            self.store_quotes(qs, now, None, change_only=True)
+            new = self.store_quotes(qs, now, None, change_only=True)
             self._guard(f"consensus {gid}", self.store_consensus, sport, gid, qs, now)
+            if sport == "nba" and new:
+                self._guard(f"snipes {gid}", self.snipes, gid, new, now)
             done += 1
         with self.pdb.begin() as p:
             set_state(p, "sweep:queue", queue, now)
@@ -644,6 +647,79 @@ class Poller:
                     C.store(p, c)
                     n += 1
         return n
+
+    # --- M18 Part F: opening-line prop snipes --------------------------------------------------
+
+    def price_props(self, rows: list[dict], now: datetime) -> dict[tuple, dict]:
+        """nbap15 at the given lines: {(game_id, norm name, market, line): prediction}."""
+        import pandas as pd
+
+        from betdata.core.matching import season_for
+        from betdata.nba.props.live import predict as predict_props
+        from betdata.nba.props.panel import Panel
+        from betdata.props.sharp_import import nba_ids
+
+        if not rows:
+            return {}
+        models = self.nba_models(now)
+        with self.main.connect() as c:
+            ids = nba_ids(c)
+            from betdata.nfl.props.ids import norm_name
+
+            df = pd.DataFrame([dict(r, player_id=ids.get(norm_name(r["player_name"])))
+                               for r in rows])  # fmt: skip
+            df = df[df.player_id.notna()]
+            if df.empty:
+                return {}
+            if getattr(self, "_panel", None) is None:
+                self._panel = Panel.load(c, season_for("nba", now) - 1)
+            preds = predict_props(c, now, self._panel, models.prop_design, lines=df)
+        return {(p["game_id"], _norm(p["player_name"]), p["market"], p["line"]): p
+                for p in preds}
+
+    def snipes(self, gid: int, new: list[Quote], now: datetime) -> list[int]:
+        from betdata.alerts import consensus as C
+        from betdata.alerts import snipe as S
+
+        ops = S.openers_of(new)
+        if not ops:
+            return []
+        rows = [dict(game_id=o.game_id, player_name=o.player_name, market=o.market,
+                     line=o.line, over_price=o.over, under_price=o.under, book=o.book,
+                     book_id=0, fetched_at=pd_ts(now), source="sharpapi") for o in ops]
+        priced = self.price_props(rows, now)
+        label, tip = self.game_label(gid)
+        out = []
+        for o in ops:
+            pr = priced.get((o.game_id, _norm(o.player_name), o.market, o.line))
+            if pr is None:
+                continue
+            with self.pdb.connect() as p:
+                c = C.prop_consensus(p, "nba", gid, o.market, o.player_name, now, o.line)
+            others = None
+            if c is not None:
+                rest = [i for i in c.inputs if i.book != o.book]
+                if rest:
+                    import statistics
+
+                    others = statistics.median(i.fair for i in rest)
+            s = S.judge(o, pr["p_over"], others)
+            if s is None:
+                continue
+            med = (pr.get("dist") or {}).get("median")
+            reason = (f"New {o.book} {o.market} line {o.line:g} for {o.player_name}: nbap15 "
+                      f"median {med if med is not None else '?'} (mean {pr['mean']:.1f}), "
+                      f"P({s.side}) {100 * s.p_model:.1f}% vs no-vig {100 * s.p_book:.1f}% "
+                      f"(edge {100 * s.edge:.1f} pp)"
+                      + ("" if s.p_cons is None else
+                         f"; other books {100 * s.p_cons:.1f}%"))  # fmt: skip
+            a = Alert("snipe", "nba", gid, label, tip, o.market, s.side, o.line, s.price,
+                      o.book, reason, f"snipe:{gid}:{o.market}:{_norm(o.player_name)}:"
+                      f"{o.book}:{o.line:g}", s.p_model, s.p_book, o.player_name, None,
+                      False, {"mean": pr["mean"], "median": med, "p_cons": s.p_cons,
+                              "edge": s.edge})  # fmt: skip
+            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+        return [x for x in out if x is not None]
 
     # --- closing polls and grading ----------------------------------------------------------------
 
@@ -683,6 +759,12 @@ class Poller:
                           .join(a, a.c.team_id == games.c.away_team_id)
                           .where(games.c.game_id == gid)).one()  # fmt: skip
         return f"{r.away} @ {r.home}", utc(r.start_time_utc)
+
+
+def pd_ts(t: datetime):
+    import pandas as pd
+
+    return pd.Timestamp(t)
 
 
 def _norm(name: str) -> str:
