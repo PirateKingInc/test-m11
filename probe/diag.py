@@ -12,7 +12,7 @@ for cmd in (["uv", "run", "--no-dev", "betdata", "alerts", "quota", "--days", "3
             ["uv", "run", "--no-dev", "betdata", "scheduler", "plan", "--runner", "--days", "30"],
             ["uv", "run", "--no-dev", "betdata", "alerts", "replay-value", "--out",
              "out/m18_replay.json"],
-            ["uv", "run", "--no-dev", "betdata", "alerts", "report"]):
+            ["uv", "run", "--no-dev", "betdata", "alerts", "grade"]):
     print("$", " ".join(cmd[3:]))
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
     print(r.stdout[-6000:])
