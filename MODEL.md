@@ -1994,3 +1994,148 @@ These live samples are far too small to judge.
 - **Together:** 34-25 (58%) against 182-163 (53%) without agreement.
 
 Every range is wide, and the NBA subset is a small slice of one test window. So this is a weak hint at best: it neither proves the rule nor shows it hurts. Only signal (a) was testable. The rule is the owner's decision; the Spread agreement row lets it be compared with all threshold picks live.
+
+# M18: stale prices, not model edges (written 2026-10-29, before any live M18 data)
+
+**Why.** Five phases of models land close to the closing line but behind it, and they lose when they disagree with it. The one signal that has worked is timing. After an NBA injury report, DraftKings moved a median of 12 minutes later and FanDuel 48, while our alerts fired within 3 minutes (6-0, +4.07 pp CLV, too few to judge). The literature backs one structure:
+- **Kaunitz et al.**, and **Buchdahl's** ~18,000-bet forward record at about +3.7%: bet soft prices against the de-vigged consensus.
+- **Dare, Dennis & Paul (2015):** NBA openers are biased after player absences, while closing lines are unbiased.
+- **Moskowitz (2021):** open-to-close moves overreact and reverse.
+
+So M18 treats the **de-vigged market consensus as the true price**, uses our frozen models only to **reprice fast when news hits**, alerts on **soft-book prices that are stale**, and grades everything by **CLV against the consensus close**.
+
+No forecasting model, fit or version changes. The one exception is the median and quantile output of Part D. The rules below are fixed now and are not tuned during any signal's 200-alert test.
+
+## Part A: model-vs-market flags retired
+
+- **Research only:** every model-vs-market spread and moneyline flag (NFL m12/m13w/m15/nfle17, NBA nba14/nba15, both sports' props) is shown and graded but never flagged. Season records keep counting threshold picks, for research.
+- **The agreement rule changes:**
+  - **Dropped:** "the line moved toward the model since open". Moskowitz (2021) shows such moves overreact and reverse, and live it went 0-6 for m13w's threshold picks.
+  - **Kept:** "Pinnacle's no-vig line sides with the model against DK/FD".
+  - **Added:** Kalshi as a vote where it lists the market (game winners). Kalshi sides with the model when its yes-ask probability for the model's team beats the DK/FD no-vig probability for that team.
+- **Use:** these votes are inputs to Part B and are recorded on grades (`agree`: "pinnacle", "kalshi", "pinnacle+kalshi" or ""). They never make a flag by themselves.
+
+## Part B: the consensus price (the answer key)
+
+**No-vig.** For one book's two-way market, the proportional method: each side's implied probability divided by their sum (`moneyline.no_vig`).
+
+**Freshness.** A quote is fresh for 10 minutes after it was polled.
+
+**Game markets** (spread, total, moneyline). The consensus at time t is:
+1. Pinnacle's no-vig, if Pinnacle has a fresh quote at t (source "pinnacle");
+2. else the median no-vig across every fresh book: DK and FD from SharpAPI, every bookmaker on a fresh The Odds API board, and Kalshi as one more vote on the moneyline (source "median", with `n` books).
+
+Each book's number is put on a common scale before the median:
+- **Spreads:** the fair home line, where the home side is 50%: L* = L − σ·Φ⁻¹(p_home(L)).
+- **Totals:** the fair total, T* = T + σ·Φ⁻¹(p_over(T)).
+- **Moneyline:** the home win probability.
+- **Pricing another line:** spreads p_home(L) = Φ((L − L*)/σ); totals p_over(T) = Φ((T* − T)/σ).
+- **σ:** the fixed M16 sigmas (NBA spread 12, total 18; NFL spread 13.5, total 13).
+
+**Two-book.** A consensus with only DK and FD (plus Kalshi) is labelled "two-book".
+
+**Storage.** Each consensus is stored with its inputs (book, line, prices, polled time) and its time (poller table `consensus`).
+
+**Props** (points, rebounds, assists, threes; NFL receiving yards, rushing yards, receptions):
+- **Rule:** the median no-vig over-probability across fresh books quoting the same line. Pinnacle is not used: its prop prices are low-limit and often not its own.
+- **Inputs:** DK and FD from SharpAPI, and Odds API books only if its free plan includes props at an affordable cost. Measured and recorded in PROJECT.md before use.
+- **Two-book:** with only DK and FD, the prop consensus is "two-book".
+
+**Quota.** A 30-day projection of every new poll must fit every free limit (`betdata alerts quota`): The Odds API 500 credits a month with a 50-credit margin; SharpAPI at most 10 calls a minute.
+
+## Part C: news → reprice → compare (the core product)
+
+**Trigger.** The M16 qualifying-change rule, unchanged:
+- NBA: a starter-level player's play probability moves by the M16 amounts.
+- NFL: a qualifying position or snap share.
+
+**Repricing.** Frozen models only:
+- **NBA game:** nba15's margin and total.
+- **NBA props:** every teammate's points, rebounds, assists and threes, with nbap15 and its usage redistribution.
+- **NFL:** the M17 engine for team sides and teammate props, and m13w for sides.
+
+The repriced fair price is the consensus moved by the model's change:
+- **Game markets:** the pre-news consensus fair line L* (or T*, or home probability) is shifted by the model's change. That is Δmargin (or Δtotal) for spreads and totals, and for the moneyline Δ in the model's win probability. Without a pre-news consensus, the model's own number is used, labelled "model only".
+- **Props:** fair p_over(L) = consensus_before(L) + [p_model_after(L) − p_model_before(L)], each from the model's full distribution at the line (Part D). Without a pre-news consensus at that line, p_model_after(L), labelled "model only".
+
+**Alert rule** (each soft book S in {DK, FD}, each market and side):
+1. **Stale:** S has not moved since the report's stated time. S's current line and price equal its last quote stored at or before that time; with no such quote, there is no alert.
+2. **Edge:** the repriced fair probability of the side at S's line, minus S's no-vig probability of that side, is at least **6 pp on props** and at least **3 pp on spreads, totals and moneylines**.
+3. **Two-book or model-only:** with a two-book consensus, or a model-only price, the alert also needs either:
+   - the other book, or the consensus, to have already moved the same way since the report's stated time; or
+   - the edge to clear a higher bar: **9 pp props, 4.5 pp game markets** (1.5×).
+4. **Dedup:** one alert per (game, market, side, player, triggering change). The best price across DK/FD wins.
+
+**Every alert carries:** game, market, book, price, line, the news, minutes since the report's stated time, the repriced fair price, the consensus (value, source, n), and a link to the page.
+
+**NFL.**
+- **Polling:** the poller also runs on Sundays from T−100 to T−60 minutes before each kickoff window (inactives) and on Fridays 16:00-20:00 ET (final injury reports).
+- **Lag study:** a 4-week NFL lag study is run exactly like M16's: DK/FD minutes to move after inactives and reports, a 60-minute window, and the pooled DK+FD median. NFL alerts are paper bets labelled "lag study" until it ends.
+- **Decision:** at the end, NFL alerts go live only if the pooled median lag is at least 5 minutes, the M16 rule.
+
+## Part D: prop outputs on the median
+
+- **Outputs:** every prop model (nbap15, nflp15, nflpe17) outputs the median and quantiles (10/25/50/75/90) of its full distribution beside the mean.
+- **Over-probability:** at a line it always comes from the distribution, never from the mean.
+- **Comparisons:** mean-based projections are not used for prop comparisons. Pages show the median.
+- **nbap15:** its distribution is the negative binomial at the fitted mean.
+- **Median-anchored variant** (the only re-fit allowed this phase):
+  - A median regression (quantile 0.5, same features, same training seasons) gives a median projection.
+  - The negative binomial's mean is solved so that its median equals that projection, with the frozen dispersion.
+- **Backtest:** the nbap15 rebound and assist backtest is re-run at opening lines with the median-anchored probabilities, beside the original. It is labelled a repeat look.
+
+## Part E: our own line archive
+
+- **Every poll stored append-only:** DK/FD game lines and props (SharpAPI) and every Odds API board.
+- **Openers:** the first time each (source, book, game, market, player, side) is seen is written to `openers` and never overwritten.
+- **Opener sweeps:** each game in the next 36 hours is polled at 06:00 ET and 23:30 ET, and once an hour 07:00-23:00 ET, so that props are caught when they first post. That is a few calls a minute, within SharpAPI's limit.
+- **ESPN:**
+  - No ESPN odds or prop endpoint is called (Disney's terms forbid automated access); stored history is kept.
+  - ESPN-derived box scores and schedules are unchanged this phase; that is an open owner decision (BACKLOG).
+  - The Odds API scores endpoint is a weekly score cross-check if the budget allows. balldontlie needs an API key, so it is not used.
+
+## Part F: opening-line prop snipes (NBA rebounds, assists)
+
+When a DK or FD rebound or assist prop first posts (an `openers` row), the model's median-based over-probability at that line is compared with the book's no-vig.
+
+**Alert** when the edge is at least **6 pp**, and, if a consensus exists at that line (another book), it does not side against the model.
+
+This is a separate signal with its own 200-alert gate.
+
+## Part G: two cheap seasonal paper tests
+
+**G1. Early-season NBA totals** (Baryla, Borghesi, Dare & Dennis 2007):
+- **Bet:** the under in each team's first four home games of the season, when the closing total is at least 0.5 points below the opening total.
+- **Backtest:** on stored seasons with openers, with n and a 95% range.
+- **Live:** paper-traded for the rest of this season.
+
+**G2. NFL alternate and first-half rungs:** priced from the M17 engine's simulated margin and total distributions (key numbers 3 and 7 included).
+- **Paper alert:** when the engine and the Pinnacle-implied full-game number agree, but a DK/FD rung disagrees by at least 4 pp.
+- **Condition:** only if SharpAPI's free plan exposes these markets and the engine has the needed distribution. If not, it is logged and skipped.
+
+## Part H: grading and the gates
+
+**Signals:**
+
+| Signal | What |
+|---|---|
+| C-NBA | NBA news repricing (Part C) |
+| C-NFL | NFL news repricing (lag study) |
+| F | NBA opening-line prop snipes |
+| G1 | early-season NBA totals |
+| G2 | NFL alternate / first-half rungs |
+
+**CLV against the consensus close.**
+- **Consensus close:** the consensus at the last poll before tip, by the Part B rule: Pinnacle if fresh, else the multi-book median.
+- **CLV no-vig:** the consensus close's probability of the bet side at the alerted line, minus the alerted book's no-vig probability of that side at alert time.
+- **Also recorded:** the result, and ROI at the alerted price (1 unit).
+
+**Gate (fixed now, per signal):**
+- After **200 graded alerts**, a signal is "working" only if its average no-vig CLV is positive and its 95% range (mean ± 1.96·sd/√n) excludes zero.
+- At **60 graded alerts**, an "early read" is reported with the same statistics, labelled "early".
+- No threshold or rule changes during a signal's 200-alert test.
+
+## Page
+
+- **Value section:** each sport's tab opens with a "Value" section. It shows the live alerts and, per signal, the running CLV vs the consensus close, the count toward 200 and the ROI.
+- **Model sections:** they move below it, labelled research only.
