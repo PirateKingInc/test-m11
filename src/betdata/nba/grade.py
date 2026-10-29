@@ -15,9 +15,11 @@ from datetime import datetime
 from sqlalchemy import Connection, and_, delete, func, insert, select, update
 
 from betdata import moneyline as ml
+from betdata.agreement import spread_agreement
 from betdata.analysis.backtest import DEFAULT_PRICE, profit
 from betdata.core.matching import sport_id
 from betdata.db.schema import games, model_predictions, nba_bet_grades, results
+from betdata.nfl.book_lines import Board, poller_conn
 from betdata.nfl.grade import (
     VOID_STATUSES,
     Bet,
@@ -78,6 +80,7 @@ def grade_nba(conn: Connection, now: datetime, spread_threshold: float,
     existing = {(r.prediction_id, r.market): r for r in conn.execute(
         select(nba_bet_grades).where(nba_bet_grades.c.game_id.in_(ids)))}  # fmt: skip
     produced: set[tuple[int, str]] = set()
+    board, poller = Board(conn, ids), poller_conn()
     for p in preds:
         bets = [b for b in (spread_bet(p["pred_home_margin"], p["market_spread_home"],
                                        spread_threshold),
@@ -99,7 +102,12 @@ def grade_nba(conn: Connection, now: datetime, spread_threshold: float,
                 close, close_price = closes.get((p["game_id"], bet.side)), None
                 bet_clv = clv(bet, close)
                 won = profit(result, DEFAULT_PRICE)
+            agree = None
+            if bet.market == "spread":  # the agreement rule (agreement.py) at the best DK/FD
+                agree = spread_agreement(board, conn, poller, "nba", p["game_id"], bet.side,
+                                         p["predicted_at"], bet.side).code  # fmt: skip
             values = dict(prediction_id=p["prediction_id"], model_version=p["model_version"],
+                          agree=agree,
                           game_id=p["game_id"], market=bet.market, side=bet.side,
                           line=bet.line, price_american=bet.price, edge=round(bet.edge, 2),
                           close_line=close, close_price_american=close_price,
@@ -120,6 +128,8 @@ def grade_nba(conn: Connection, now: datetime, spread_threshold: float,
         if key not in produced and old.game_id in finals:
             conn.execute(delete(nba_bet_grades).where(nba_bet_grades.c.grade_id == old.grade_id))
             run.updated += 1
+    if poller is not None:
+        poller.close()
     return run
 
 

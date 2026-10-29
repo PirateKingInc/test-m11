@@ -48,6 +48,8 @@ class Card:
     market_spread: Quote | None = None
     spread_edge: float | None = None
     spread_pick: str | None = None  # team, when the edge clears the validated threshold
+    # agreement.Agreement for a threshold spread pick: the card flags it only when it holds
+    spread_agree: Any = None
     model_win_home: float | None = None
     ml_home: Quote | None = None
     ml_away: Quote | None = None

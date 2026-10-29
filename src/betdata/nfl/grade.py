@@ -26,6 +26,7 @@ from datetime import datetime
 from sqlalchemy import Connection, and_, delete, func, insert, select, update
 
 from betdata import moneyline as ml
+from betdata.agreement import spread_agreement
 from betdata.analysis.backtest import DEFAULT_PRICE, profit
 from betdata.analysis.dataset import v_closing_lines
 from betdata.core.matching import sport_id
@@ -34,6 +35,7 @@ from betdata.nfl.book_lines import Board, close_for, poller_conn
 from betdata.nfl.selection import BET_THRESHOLDS
 
 THRESHOLDS = BET_THRESHOLDS
+AGREEMENT_MARKET = "spread agreement"  # the record row of threshold picks with an agreeing signal
 VOID_STATUSES = ("postponed", "cancelled")
 
 
@@ -293,8 +295,13 @@ def grade_nfl(conn: Connection, now: datetime) -> GradeRun:
                 close, close_price = (None, None) if c is None else (c.line, c.price)
                 bet_clv = clv(bet, close)
                 won = profit(result, bet.price)
+            agree = None
+            if bet.market == "spread":
+                agree = spread_agreement(
+                    board, conn, poller, "nfl", p["game_id"], bet.side, p["predicted_at"],
+                    bet.side, bet.book, bet.line).code  # fmt: skip
             values = dict(
-                prediction_id=p["prediction_id"], model_version=p["model_version"],
+                prediction_id=p["prediction_id"], model_version=p["model_version"], agree=agree,
                 game_id=p["game_id"], market=bet.market, side=bet.side, line=bet.line,
                 price_american=bet.price, edge=round(bet.edge, 2), book=bet.book,
                 close_line=close, close_price_american=close_price,
@@ -368,11 +375,15 @@ def records(conn: Connection, table=None) -> list[VersionRecord]:
         lambda: {"win": 0, "loss": 0, "push": 0, "void": 0, "profit": 0.0, "clv": []}
     )
     for (mv, market, _), r in last.items():
-        a = acc[(mv, market)]
-        a[r.result] += 1
-        a["profit"] += r.profit
-        if r.clv is not None and r.result != "void":
-            a["clv"].append(r.clv)
+        # The counted spread pick also counts under "spread agreement" when an agreement
+        # signal held at its pick time (the flag rule since 2026-10-29), for comparison.
+        keys = [market] + ([AGREEMENT_MARKET] if market == "spread" and r.agree else [])
+        for k in keys:
+            a = acc[(mv, k)]
+            a[r.result] += 1
+            a["profit"] += r.profit
+            if r.clv is not None and r.result != "void":
+                a["clv"].append(r.clv)
     out = []
     for (mv, market), a in sorted(acc.items()):
         c = a["clv"]

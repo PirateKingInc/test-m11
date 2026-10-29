@@ -1953,3 +1953,44 @@ The sign audit of the 0-8 m13w run found no flip (PR #228). It did find that pic
 - **Page:** NFL cards and the engine section show the DK/FD line a pick would be taken at. With no pick they show DraftKings, else FanDuel. nflverse's line is no longer shown.
 
 Model inputs are unchanged. The stored `market_spread_home` and the model+market blend still use the line the model saw. NBA grading is unchanged.
+
+## Spread flags: the agreement rule (decision 2026-10-29, `agreement.py`; NFL and NBA)
+
+Flags only. No model, threshold or calibration changed.
+
+**Rule.** A spread flag shows only when the model's edge clears its existing threshold (NFL 3 points, NBA 6) and at least one independent signal agrees at pick time:
+- **(a) line move:** the DraftKings/FanDuel home line moved toward the picked side since that book's first stored line. It uses the pick's book, or the other book when the pick's book has no earlier quote. Toward home means the home spread fell; toward away means it rose.
+- **(b) Pinnacle:** Pinnacle's last quote before the pick, made no-vig and carried to the DK/FD number of the side (normal, σ 13.5 NFL / 12 NBA), gives the side over 50% to cover.
+
+Each flagged card says which signal agreed, for example "DK line moved toward BOS: BOS −2 → −2.5". A threshold pick without agreement shows "clears the threshold but no signal agrees: not flagged".
+
+**Grading.** Every threshold pick is still graded as before. `agree` on the grade records the signals ("move", "pinnacle", "move+pinnacle" or ""; migration 0020). The season record adds a row, **Spread agreement**: the same counted picks, one per game (the last before the start), restricted to those with an agreeing signal. NBA picks are still taken at their stored line; the agreement signals for NBA use DK/FD and Pinnacle only.
+
+**Backtest** (`analysis/agreement_backtest.py`, `reports/agreement_backtest_*.json`). Only signal (a) can be tested on history; Pinnacle has been polled only since 2026-10-23. Picks are taken at the close, the backtest's pick time: a threshold pick against the closing line, which agrees when the close moved from the open toward the side. Graded at −110. These are repeat looks at test seasons, and the rule was not tuned on them.
+
+| Sport, sample | Threshold picks | Agreement (line moved toward the side) | No agreement |
+|---|---|---|---|
+| NFL m13w, 2023-2025 at prekick, ESPN open and close (761 games) | 97-83, ROI +2.9% (95% −11% to +17%) | **20-21, −6.9%** (win 49%, 95% 34-64%) | 77-62, +5.8% |
+| NBA nba15, 2023-24 to 2025-26 at pretip, stored open and close (3,931 games) | 119-105-1, +1.4% (95% −11% to +14%) | **14-4, +48%** (win 78%, 95% 55-91%) | 105-101-1, −2.7% |
+
+By season, agreement picks:
+- NFL: 2023 4-3, 2024 13-8, 2025 3-10.
+- NBA: 2023-24 2-1, 2024-25 7-0, 2025-26 5-3.
+
+The NBA validation seasons (2021-22, 2022-23) have no stored openers, so NBA is test seasons only.
+
+**Live sample** (2026-10-20 to 10-28, the copy regraded with the rule, one counted pick per game):
+
+| Version | Spread, all | Agreement picks | Signals |
+|---|---|---|---|
+| m13w | 0-6 | 0-4 | Pinnacle ×4 |
+| nba15 | 5-5 | 1-2 | move ×2, move+Pinnacle ×1 |
+
+These live samples are far too small to judge.
+
+**Reading.** The two sports disagree:
+- **NFL:** picks with an agreeing line move did worse than those without (20-21 against 77-62).
+- **NBA:** they did much better (14-4 against 105-101). That is only 18 picks; the 95% range is wide but excludes break-even.
+- **Together:** 34-25 (58%) against 182-163 (53%) without agreement.
+
+Every range is wide, and the NBA subset is a small slice of one test window. So this is a weak hint at best: it neither proves the rule nor shows it hurts. Only signal (a) was testable. The rule is the owner's decision; the Spread agreement row lets it be compared with all threshold picks live.
