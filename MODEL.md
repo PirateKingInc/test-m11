@@ -2093,6 +2093,11 @@ The repriced fair price is the consensus moved by the model's change:
 - **Polling:** the poller also runs on Sundays from T−100 to T−60 minutes before each kickoff window (inactives) and on Fridays 16:00-20:00 ET (final injury reports).
 - **Lag study:** a 4-week NFL lag study is run exactly like M16's: DK/FD minutes to move after inactives and reports, a 60-minute window, and the pooled DK+FD median. NFL alerts are paper bets labelled "lag study" until it ends.
 - **Decision:** at the end, NFL alerts go live only if the pooled median lag is at least 5 minutes, the M16 rule.
+- **Implemented** (`alerts/nfl.py`, `alerts/lag.py`):
+  - **Windows:** T−100..T−60 every 5 minutes before each kickoff window, and Fridays 16:00-20:00 ET for every game of the next four days.
+  - **Alerts:** qualifying changes go to the same value signal as the NBA, with m13w repricing sides and nflp15 repricing teammate props. They are labelled "[lag study]" and `study` until `decide_nfl` rules.
+  - **Decision:** taken once, 28 days after the first NFL qualifying change from 2026-10-29. "Live" needs a pooled DK+FD median lag ≥ 5 minutes; no measured lag counts as off.
+  - **Not built:** repricing with the M17 engine. A per-change 10,000-run simulation with the news injected is not wired into the as-of store (BACKLOG). NFL repricing uses m13w and nflp15.
 
 ## Part D: prop outputs on the median
 

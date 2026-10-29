@@ -161,7 +161,7 @@ def setup(engine, tmp_path, monkeypatch):
                http=Http(transport=httpx.MockTransport(espn), sleep=lambda s: None),
                lock=lambda: False, nfl_handler=handler)  # fmt: skip
     news = []
-    monkeypatch.setattr(p, "signal_news", lambda *a: news.append(a) or [])
+    monkeypatch.setattr(p, "signal_value", lambda *a: news.append(a) or [])  # M18 Part C
     return p, handler, espn, ids, news
 
 
@@ -173,12 +173,12 @@ def _events(p):
 # --- windows -----------------------------------------------------------------------------------
 
 
-def test_window_is_120_to_60_minutes_before_each_kickoff(engine):
+def test_window_is_100_to_60_minutes_before_each_kickoff(engine):
     ids = _db(engine)
     h = N.NflHandler()
     with engine.connect() as c:
-        assert not h.active(c, KICK - timedelta(minutes=121))
-        assert h.active(c, KICK - timedelta(minutes=120))
+        assert not h.active(c, KICK - timedelta(minutes=101))
+        assert h.active(c, KICK - timedelta(minutes=100))
         assert h.active(c, KICK - timedelta(minutes=61))
         assert not h.active(c, KICK - timedelta(minutes=60))
         on = {r.game_id for r in h.window_games(c, KICK - timedelta(minutes=90))}
@@ -190,15 +190,15 @@ def test_window_is_120_to_60_minutes_before_each_kickoff(engine):
 
 def test_polls_every_five_minutes_only_inside_windows(setup):
     p, h, espn, ids, _ = setup
-    h.cycle(p, KICK - timedelta(minutes=130))
+    h.cycle(p, KICK - timedelta(minutes=105))
     assert espn.urls == []
-    t0 = KICK - timedelta(minutes=110)
+    t0 = KICK - timedelta(minutes=100)
     h.cycle(p, t0)
     h.cycle(p, t0 + timedelta(minutes=1))  # not due yet
     assert espn.count("/summary") == 1  # the other game in the window has no ESPN id
-    h.cycle(p, t0 + timedelta(minutes=5))
-    assert espn.count("/summary") == 2
     assert espn.count("/roster") == 0  # inactives are not read before 95 minutes out
+    h.cycle(p, t0 + timedelta(minutes=5))  # 95 minutes out: the rosters are read too
+    assert espn.count("/summary") == 2 and espn.count("/roster") == 2
 
 
 def test_scoreboard_finds_a_missing_espn_id(engine, tmp_path):
@@ -208,7 +208,7 @@ def test_scoreboard_finds_a_missing_espn_id(engine, tmp_path):
                http=Http(transport=httpx.MockTransport(espn), sleep=lambda s: None),
                lock=lambda: False)  # fmt: skip
     h = N.NflHandler(models_factory=FakeModels)
-    h.cycle(p, KICK - timedelta(minutes=110))
+    h.cycle(p, KICK - timedelta(minutes=100))
     assert espn.count("/scoreboard") >= 1 and espn.count("/summary") == 1
     with engine.connect() as c:
         assert c.execute(select(game_source_ids.c.source_game_id).where(
@@ -220,7 +220,7 @@ def test_scoreboard_finds_a_missing_espn_id(engine, tmp_path):
 
 def test_baseline_records_only_what_m12_did_not_know(setup):
     p, h, espn, ids, news = setup
-    h.cycle(p, KICK - timedelta(minutes=110))
+    h.cycle(p, KICK - timedelta(minutes=100))
     ev = _events(p)
     # Allen: Questionable, as M12 knew. Reserve Guy: IR, as M12's roster knew (RES). Shakir:
     # Questionable, unknown to M12 (a change, not qualifying: 50% of snaps). Waddle: Out, no
@@ -237,7 +237,7 @@ def test_baseline_records_only_what_m12_did_not_know(setup):
 
 def test_change_across_cycles_qualifies_and_reaches_signal_1(setup):
     p, h, espn, ids, news = setup
-    t0 = KICK - timedelta(minutes=110)
+    t0 = KICK - timedelta(minutes=100)
     h.cycle(p, t0)
     espn.summary = "summary_out.json"
     h.cycle(p, t0 + timedelta(minutes=5))
@@ -275,7 +275,7 @@ def test_change_across_cycles_qualifies_and_reaches_signal_1(setup):
 def test_qualification_uses_the_models_own_play_probability(setup, models, qualifies):
     p, h, espn, ids, news = setup
     h._models_factory = models
-    t0 = KICK - timedelta(minutes=110)
+    t0 = KICK - timedelta(minutes=100)
     h.cycle(p, t0)
     espn.summary = "summary_out.json"
     h.cycle(p, t0 + timedelta(minutes=5))
@@ -310,7 +310,7 @@ def test_inactives_count_only_once_the_list_is_released(setup):
 def test_model_failure_still_records_and_opens_the_lag_window(setup):
     p, h, espn, ids, news = setup
     h._models_factory = BrokenModels
-    t0 = KICK - timedelta(minutes=110)
+    t0 = KICK - timedelta(minutes=100)
     h.cycle(p, t0)
     espn.summary = "summary_out.json"
     p.nfl_handler = h
@@ -326,7 +326,7 @@ def test_model_failure_still_records_and_opens_the_lag_window(setup):
 def test_a_failing_feed_never_stops_the_poller(setup):
     p, h, espn, ids, news = setup
     espn.summary = "missing.json"
-    p.cycle(KICK - timedelta(minutes=110))
+    p.cycle(KICK - timedelta(minutes=100))
     assert any(e.startswith(f"nfl game {ids['gid']}") for e in p.errors)
 
 
@@ -394,8 +394,38 @@ def test_model_play_probs_on_a_real_store():
 def test_a_player_m12_does_not_use_never_qualifies(setup):
     p, h, espn, ids, news = setup
     h._models_factory = type("NoAllen", (KnewModels,), {"play_probs": lambda *a: {}})
-    t0 = KICK - timedelta(minutes=110)
+    t0 = KICK - timedelta(minutes=100)
     h.cycle(p, t0)
     espn.summary = "summary_out.json"
     h.cycle(p, t0 + timedelta(minutes=5))
     assert not _events(p)[("Josh Allen", "Out")].qualifies and news == []
+
+
+def test_friday_window_reads_the_weekends_games(engine):
+    """M18 Part C: Fridays 16:00-20:00 ET (final injury reports) cover every game of the next
+    four days; outside those hours only the T-100..T-60 windows."""
+    ids = _db(engine)
+    h = N.NflHandler()
+    fri = datetime(2026, 10, 23, 21, 0, tzinfo=UTC)  # Friday 5 PM ET, two days before KICK
+    with engine.connect() as c:
+        assert {ids["gid"], ids["same"], ids["late"]} <= {r.game_id for r in
+                                                          h.window_games(c, fri)}
+        assert not h.active(c, fri - timedelta(hours=2))  # 3 PM ET
+        assert not h.active(c, fri + timedelta(hours=3))  # 8 PM ET
+
+
+def test_nfl_lag_decision_after_four_weeks(engine, tmp_path):
+    from betdata.alerts import lag as L
+    from betdata.alerts.db import get_state
+
+    pdb = engine_for(tmp_path / "p.sqlite")
+    start = datetime(2026, 11, 1, 17, 0, tzinfo=UTC)
+    with pdb.begin() as p:
+        p.execute(insert(status_events).values(
+            sport="nfl", game_id=1, player_key="x", player_name="X", qualifies=True,
+            detected_at=start, report_at=start))  # fmt: skip
+    with pdb.begin() as p, engine.connect() as m:
+        assert L.decide_nfl(p, m, start + timedelta(days=27)) is None
+        d = L.decide_nfl(p, m, start + timedelta(days=28, minutes=1))
+        # no DK/FD lag measured: not shown to be at least 5 minutes -> off
+        assert d["nfl_value"].startswith("off") and get_state(p, "nfl_value:off")

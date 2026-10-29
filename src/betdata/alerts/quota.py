@@ -94,11 +94,18 @@ def project(conn: Connection, start: datetime, days: int = 30) -> Projection:
             continue
         c = pr.by_day[d]
         pr.nfl_windows += 1
-        c["espn"] += 12 * 3 * n
+        c["espn"] += 8 * 3 * n  # M18: T-100..T-60, every 5 minutes
         ch = QUALIFYING_PER_DAY["nfl"]
         c["sharpapi"] += ch * 12 * 2 + 2 + n * 3 * 2
         c["kalshi"] += ch * 12
         c["the_odds_api"] += 3
+    # M18 Part C: Fridays 16:00-20:00 ET, every 5 minutes, one ESPN summary per game of the
+    # next four days.
+    for d, c in pr.by_day.items():
+        if d.weekday() == 4:
+            fri = datetime.combine(d, time(16), EASTERN)
+            n = sum(1 for t in tips["nfl"] if fri < t <= fri + timedelta(days=4))
+            c["espn"] += 48 * n
     # M18 Part E sweeps: 18 a day (06:00, 07-23 hourly, 23:30 ET), each game with a tip in the
     # next 36 hours, SWEEP_CALLS SharpAPI calls a game (main lines + props, up to 3 pages).
     every = sorted(tips["nba"] + tips["nfl"])

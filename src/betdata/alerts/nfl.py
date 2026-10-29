@@ -65,11 +65,14 @@ from betdata.nfl.props.ids import norm_name
 log = logging.getLogger(__name__)
 
 CADENCE = timedelta(minutes=5)
-WINDOW_FROM = timedelta(minutes=120)  # window opens this long before kickoff
+WINDOW_FROM = timedelta(minutes=100)  # window opens this long before kickoff (M18: T-100)
 WINDOW_TO = timedelta(minutes=60)  # and closes this long before
 ROSTER_FROM = timedelta(minutes=95)  # inactives come out ~90 minutes before kickoff
 MIN_ACTIVES = 40  # active entries that show the inactive list was released
 SNAP_GAMES = 4
+# M18 Part C: Fridays 16:00-20:00 ET (final injury reports), for the weekend's games.
+FRIDAY_ET = (16, 20)
+FRIDAY_AHEAD = timedelta(days=4)
 
 SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary"
 SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
@@ -158,15 +161,20 @@ class NflHandler:
     # --- windows ---------------------------------------------------------------------------
 
     def _kickoffs(self, conn: Connection, t: datetime) -> list:
+        """Games in their kickoff window (T-100 to T-60), plus, on Fridays 16:00-20:00 ET, every
+        game of the next four days (final injury reports; M18 Part C)."""
         from betdata.core.matching import sport_id
 
+        local = t.astimezone(EASTERN)
+        friday = local.weekday() == 4 and FRIDAY_ET[0] <= local.hour < FRIDAY_ET[1]
+        lo, hi = (t + WINDOW_TO, t + FRIDAY_AHEAD) if friday else (t + WINDOW_TO,
+                                                                  t + WINDOW_FROM)
         return conn.execute(select(
             games.c.game_id, games.c.season, games.c.week, games.c.start_time_utc,
             games.c.home_team_id, games.c.away_team_id).where(
             games.c.sport_id == sport_id(conn, "nfl"),
             games.c.status.notin_(("postponed", "cancelled", "final")),
-            games.c.start_time_utc > t + WINDOW_TO,
-            games.c.start_time_utc <= t + WINDOW_FROM)).all()  # fmt: skip
+            games.c.start_time_utc > lo, games.c.start_time_utc <= hi)).all()  # fmt: skip
 
     def window_games(self, conn: Connection, t: datetime) -> list:
         """Games whose kickoff window is open at t (120 to 60 minutes before kickoff)."""
@@ -335,10 +343,12 @@ class NflHandler:
             for _, c in evs}  # fmt: skip
         why = "; ".join(f"{c.player_name} {c.old_status or 'not listed'} -> "
                         f"{c.new_status or 'not listed'}" for _, c in evs)  # fmt: skip
-        stated = evs[0][1].report_at.astimezone(EASTERN).strftime("%-I:%M %p ET")
+        stated_at = evs[0][1].report_at or now
+        stated = stated_at.astimezone(EASTERN).strftime("%-I:%M %p ET")
         reason = f"{why} (ESPN {stated})"
-        poller.signal_news("nfl", gid, first_event, f"ev{first_event}", rp, qs, players, reason,
-                           now, models.p_over)  # fmt: skip
+        # M18 Part C: the value signal, labelled "lag study" until the NFL lag decision
+        poller.signal_value("nfl", gid, first_event, f"ev{first_event}", rp, qs, players,
+                            reason, stated_at, now, models.p_over)  # fmt: skip
 
     def models(self, engine: Engine, now: datetime):
         if self._models is None:

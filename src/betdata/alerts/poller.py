@@ -356,10 +356,14 @@ class Poller:
         from betdata.alerts import consensus as C
         from betdata.alerts import value as V
 
+        off_key, decision_key = (("nfl_value:off", "nfl_value:decision") if sport == "nfl"
+                                 else ("signal1:off", "signal1:decision"))  # fmt: skip
         with self.pdb.begin() as p:
-            if get_state(p, "signal1:off"):
+            if get_state(p, off_key):
                 return []
-            study = get_state(p, "signal1:decision") is None
+            study = get_state(p, decision_key) is None
+        if sport == "nfl" and study:
+            reason = f"[lag study] {reason}"
         label, tip = self.game_label(gid)
         cands: list = []
         with self.pdb.connect() as p, self.main.connect() as m:
@@ -750,7 +754,12 @@ class Poller:
             with self.pdb.begin() as p, self.main.connect() as m:
                 return L.decide(p, m, now)
 
+        def _decide_nfl():
+            with self.pdb.begin() as p, self.main.connect() as m:
+                return L.decide_nfl(p, m, now)
+
         self._guard("lag decision", _decide)
+        self._guard("nfl lag decision", _decide_nfl)
 
     # --- helpers --------------------------------------------------------------------------------
 
