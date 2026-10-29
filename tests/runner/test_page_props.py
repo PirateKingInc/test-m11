@@ -31,7 +31,7 @@ def test_props_section():
     assert html.count("research only, not backtested") == 1  # PRA only
     assert "class=\"flag\"" not in html  # no flag unless the market earned it
     flagged = props_html([_row(flag="over")], {})
-    assert '<span class="flag">Over 25.5</span>' in flagged
+    assert 'class="flag"' not in flagged and "model leans over, research only" in flagged
     assert "No player prop lines" in props_html([], {})
     tiny = props_html([_row(factors=[["game script", 0.01, "rec"], ["wind", -3.0, "yds"]])], {})
     assert "game script" not in tiny and "wind -3.0 yds" in tiny

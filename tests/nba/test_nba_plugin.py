@@ -85,15 +85,14 @@ def test_cards(engine, design):
     html = card_html(c, {}, [], ml_flags=False)
     assert "2nd night of a back-to-back" in html and "55% to play" in html
     assert "Moneyline: BOS" not in html  # Part A: info only
-    # The agreement rule: one DK quote, no Pinnacle -> a threshold pick, but not flagged.
-    assert not c.spread_agree and "Spread: BOS" not in html and "not flagged" in html
-    # An earlier DK line of BOS -2 means the line moved toward BOS: now it is flagged.
+    # M18 Part A: a threshold pick is research only, never flagged, with its votes noted.
+    assert not c.spread_agree and "Spread: BOS" not in html and 'class="flag"' not in html
+    assert "research only (not flagged): spread BOS -2.5 · no Pinnacle or Kalshi vote" in html
+    # An earlier DK line of BOS -2 (a move toward BOS) is no longer a vote.
     with engine.begin() as conn:
         _quote(conn, gid, -2.0, -130, 110, NOW - timedelta(days=1))
         [c] = nba().cards(conn, NOW)
-    html = card_html(c, {}, [], ml_flags=False)
-    assert c.spread_agree.code == "move" and "Spread: BOS -2.5" in html
-    assert "DK line moved toward BOS: BOS -2 → -2.5" in html
+    assert not c.spread_agree and c.spread_agree.code == ""
 
 
 def test_no_market_line(engine, design):

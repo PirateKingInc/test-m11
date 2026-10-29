@@ -16,7 +16,7 @@ CALLS: list[str] = []
 class DummySport(Sport):
     ML_ROI: float | None = None  # final-test moneyline ROI the page sees
     # the spread agreement rule: the card flags its spread pick only with an agreeing signal
-    AGREE = Agreement(("move",), ("DK line moved toward HOMEX: HOMEX -1.5 → -2.5",))
+    AGREE = Agreement(("pinnacle",), ("Pinnacle HOMEX -3 no-vig gives HOMEX 55% to cover -2.5",))
 
     def predict(self, engine, now):
         CALLS.append("predict")

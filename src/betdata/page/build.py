@@ -136,26 +136,25 @@ def _edge(x: float | None, unit: str) -> str:
 def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
               ml_flags: bool = True, version_note: str | None = None) -> str:  # fmt: skip
     e = escape
-    bets = []
-    agree_note = ""
+    # M18 Part A: model-vs-market picks are research only, never flagged. A pick that clears
+    # its threshold is listed in a muted note with the independent votes (agreement.py).
+    picks, votes = [], ""
     if c.spread_pick:
         line = ""
         if c.market_spread is not None:
             home_line = c.market_spread.line
             line = f" {home_line if c.spread_pick == c.home else -home_line:+g}"
-        # The agreement rule (agreement.py): a threshold pick is flagged only with an
-        # agreeing signal; otherwise the card says so and shows no flag.
+        picks.append(f"spread {e(c.spread_pick)}{line}")
         if c.spread_agree:
-            bets.append(f"Spread: {e(c.spread_pick)}{line}")
-            agree_note = ("<div class='agree'>Spread flag agreed: "
-                          + "; ".join(e(n) for n in c.spread_agree.notes) + "</div>")
-        else:
-            agree_note = (f"<div class='agree no'>Spread {e(c.spread_pick)}{line} clears the "
-                          "threshold but no signal agrees (line move, Pinnacle): not "
-                          "flagged</div>")
+            votes = " · agrees: " + "; ".join(e(n) for n in c.spread_agree.notes)
+        elif c.spread_agree is not None:
+            votes = " · no Pinnacle or Kalshi vote"
     if c.ml_pick and ml_flags:
         q = c.ml_home if c.ml_pick == c.home else c.ml_away
-        bets.append(f"Moneyline: {e(c.ml_pick)}{' ' + american(q.price) if q else ''}")
+        picks.append(f"moneyline {e(c.ml_pick)}{' ' + american(q.price) if q else ''}")
+    agree_note = (f"<div class='agree no'>Model pick, research only (not flagged): "
+                  f"{', '.join(picks)}{votes}</div>" if picks else "")
+    bets: list[str] = []
     flag = "".join(f'<span class="flag">{b}</span>' for b in bets)
     changed = ("· model last changed " + e(et(c.predicted_at, "%a %-I:%M %p"))
                if c.predicted_at else "")  # fmt: skip
@@ -364,8 +363,9 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
                             [f for f in (r.factors or []) if abs(f[1]) >= 0.05][:2])
             book = book_names.get(r.book, r.book) if r.book else "?"
             src = SOURCE_TITLES.get(r.source, r.source) if r.source else "?"
-            badge = (f'<span class="flag">{e(r.flag.title())} {r.line:g}</span>' if r.flag
-                     else "")  # fmt: skip
+            # M18 Part A: prop model picks are research only, never flagged
+            badge = (f'<span class="research">model leans {e(r.flag)}, research only</span>'
+                     if r.flag else "")  # fmt: skip
             research = ('<span class="research">research only, not backtested</span>'
                         if r.research else
                         '<span class="research">info only (backtest ROI range includes 0)'
@@ -385,8 +385,8 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
                    f"<time>{e(et(g.kickoff))}</time></header><ul class='plist'>"
                    f"{''.join(items)}</ul></article>")  # fmt: skip
     return ("<section class='props'><h2>Props</h2><p class='meta'>Players with a stored prop "
-            "line. Edge = model P(over) minus the no-vig over probability. Flags only on "
-            "markets whose backtest earned them.</p>" + "".join(out) + "</section>")
+            "line. Edge = model P(over) minus the no-vig over probability. Research only: "
+            "model picks are never flagged (M18).</p>" + "".join(out) + "</section>")
 
 
 def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[RecordRow],
@@ -409,8 +409,9 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
 <section class="games">{games}</section>
 {engine or ""}
 {props_html(props or [], book_names) if props is not None else ""}
-<section class="legend"><h2>Flags</h2><p>A pick is flagged when it clears the threshold chosen
-  on validation seasons:</p><ul>{legend}</ul></section>
+<section class="legend"><h2>Model picks (research only)</h2><p>Since M18 no model-vs-market
+  pick is flagged. A pick is listed and graded, for research, when it clears the threshold
+  chosen on validation seasons:</p><ul>{legend}</ul></section>
 <section><h2>Season record</h2>{records_html(records, sport.page_version(),
                                              engine_version=sport.engine_version())}</section>
 {jobs_html(info.last, sport.key)}"""
