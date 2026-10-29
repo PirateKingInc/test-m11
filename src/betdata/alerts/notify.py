@@ -31,7 +31,7 @@ MARKETS = {"spreads": "Spread", "totals": "Total", "h2h": "Moneyline", "points":
 
 @dataclass
 class Alert:
-    signal: str  # news, sharp
+    signal: str  # news, sharp, value (M18)
     sport: str
     game_id: int
     game_label: str  # "CLE @ PHI"
@@ -77,7 +77,7 @@ def message(a: Alert, now: datetime) -> tuple[str, str]:
     tip = a.tip.astimezone(EASTERN).strftime("%a %-I:%M %p ET")
     title = (f"{a.sport.upper()} {a.game_label}: {selection(a)} {_fmt_price(a.price)} "
              f"at {BOOKS.get(a.book, a.book)}")  # fmt: skip
-    kind = "News" if a.signal == "news" else "Soft vs sharp"
+    kind = {"news": "News", "value": "Stale price after news"}.get(a.signal, "Soft vs sharp")
     body = (f"{kind} - {MARKETS.get(a.market, a.market)}, tip {tip}.\n{a.reason}\n"
             f"Paper alert, not advice. {page_url(now)}")  # fmt: skip
     return title, body
