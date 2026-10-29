@@ -210,6 +210,8 @@ def decompose(model, tr, pr, s: I.Slot, qb_weight: float, kick, pat, p: SM.SimPa
 def _game_row(gid: int, s: I.Slot, gs: SM.GameSim, steps: dict, checks: dict) -> dict:
     m, tot = gs.margin, gs.home_pts + gs.away_pts
     hist = np.bincount(np.clip(m.astype(int) + 60, 0, 120), minlength=121)
+    # M18 G2: the total's distribution too (totals 0-120), for alternate total rungs
+    thist = np.bincount(np.clip(tot.astype(int), 0, 120), minlength=121)
     return {"game_id": int(gid), "nflverse_game_id": s.game_id, "point": s.point,
             "margin": round(float(m.mean()), 2), "total": round(float(tot.mean()), 2),
             "win_prob": round(float((m > 0).mean() + 0.5 * (m == 0).mean()), 4),
@@ -219,7 +221,8 @@ def _game_row(gid: int, s: I.Slot, gs: SM.GameSim, steps: dict, checks: dict) ->
                        "total_median": float(np.median(tot)),
                        "total_p10": float(np.percentile(tot, 10)),
                        "total_p90": float(np.percentile(tot, 90)),
-                       "margin_hist": hist.tolist(), "sims": int(len(m)),
+                       "margin_hist": hist.tolist(), "total_hist": thist.tolist(),
+                       "sims": int(len(m)),
                        "consistency_ok": all(v <= 1e-6 for v in checks.values())},
             "steps": steps}  # fmt: skip
 

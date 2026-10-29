@@ -137,11 +137,13 @@ class SharpFeed:
     def __init__(self, http: Http, api_key: str):
         self.http, self.key = http, api_key
 
-    def _rows(self, params: dict, horizon: datetime | None = None) -> list[dict]:
+    def _rows(self, params: dict, horizon: datetime | None = None,
+              main: bool = True) -> list[dict]:  # fmt: skip
         out: list[dict] = []
         for page in range(SHARP_MAX_PAGES):
             r = self.http.get("sharpapi", f"{SHARP_BASE}/odds", headers={"X-API-Key": self.key},
-                              params={**params, "is_main_line": "true", "live": "false",
+                              params={**params, "is_main_line": "true" if main else "false",
+                                      "live": "false",
                                       "sportsbook": "draftkings,fanduel", "limit": 500,
                                       "offset": page * SHARP_PAGE})  # fmt: skip
             r.raise_for_status()
@@ -152,12 +154,23 @@ class SharpFeed:
             starts = [_when(d.get("event_start_time")) for d in data if d.get("event_start_time")]
             if horizon is not None and starts and max(starts) > horizon:
                 break
+        if not main:
+            return [d for d in out if d.get("is_main_line") is False]
         return [d for d in out if d.get("is_main_line") is not False]
 
     def board(self, conn: Connection, sport: str, horizon: datetime) -> list[Quote]:
         """Main full-game lines of every game up to `horizon` (one to a few calls)."""
         rows = self._rows({"league": sport, "market": ",".join(MAIN)}, horizon)
         return self._quotes(conn, sport, rows)
+
+    def alternates(self, conn: Connection, sport: str, horizon: datetime) -> list[Quote]:
+        """M18 G2: alternate full-game spread and total rungs (is_main_line=false), stored under
+        the markets "alt_spreads" / "alt_totals" so no main-line reader ever sees them."""
+        rows = self._rows({"league": sport, "market": "point_spread,total_points"}, horizon,
+                          main=False)  # fmt: skip
+        return [Quote(q.sport, q.game_id, q.source, q.book, "alt_" + q.market, q.outcome,
+                      q.line, q.price, None, q.book_updated_at)
+                for q in self._quotes(conn, sport, rows) if q.market in ("spreads", "totals")]
 
     def game(self, conn: Connection, sport: str, event_id: str) -> list[Quote]:
         """One game's main lines and the Signal 1 prop markets (a few calls)."""
