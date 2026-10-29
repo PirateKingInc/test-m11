@@ -2138,6 +2138,12 @@ When a DK or FD rebound or assist prop first posts (an `openers` row), the model
 
 This is a separate signal with its own 200-alert gate.
 
+**Implemented** (`alerts/snipe.py`, `Poller.snipes`):
+- **Trigger:** `record_openers` returns the keys first seen in a sweep poll. A DK/FD rebound or assist line whose over and under are both new is an opener.
+- **Pricing:** nbap15 prices that exact line at once (`nba/props/live.predict(..., lines=...)`) with its calibrated P(over | no push), from the distribution. The player id is the ESPN id of the unique `nba_player_games` name; unmatched names are skipped.
+- **"Does not side against":** when other books quote the same line, the median of their no-vig probabilities for the side must be at least the alerted book's.
+- **Alert:** signal "snipe" (gate name F), dedup per (game, market, player, book, line).
+
 ## Part G: two cheap seasonal paper tests
 
 **G1. Early-season NBA totals** (Baryla, Borghesi, Dare & Dennis 2007):
