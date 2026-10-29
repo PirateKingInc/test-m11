@@ -225,3 +225,37 @@ openers = Table(
     UniqueConstraint("source", "book", "game_id", "market", "player_key", "outcome",
                      name="uq_openers"),
 )
+
+
+# M18 Part B: each consensus price with its inputs (MODEL.md "M18 Part B").
+consensus = Table(
+    "consensus",
+    metadata,
+    Column("consensus_id", Integer, primary_key=True),
+    Column("sport", String(8), nullable=False),
+    Column("game_id", Integer, nullable=False),
+    Column("market", String(32), nullable=False),
+    Column("player_name", String(128)),  # props only
+    Column("at", UTCDateTime, nullable=False),
+    Column("method", String(16), nullable=False),  # pinnacle, median
+    Column("two_book", Boolean, nullable=False),
+    Column("n", Integer, nullable=False),
+    Column("fair", Float, nullable=False),  # L*, T*, p_home, or the prop over probability
+    Column("line", Float),  # props: the line of `fair`
+    Column("inputs", JSON, nullable=False),
+    Index("ix_consensus_game", "game_id", "market", "at"),
+)
+
+
+# M18 Part B: when each (game, source, book) was last polled and answered. Sweep quotes are
+# stored change-only, so a quote is fresh when its book's latest mark is (MODEL.md "M18 Part B").
+poll_marks = Table(
+    "poll_marks",
+    metadata,
+    Column("mark_id", Integer, primary_key=True),
+    Column("game_id", Integer, nullable=False),
+    Column("source", String(32), nullable=False),
+    Column("book", String(32), nullable=False),
+    Column("polled_at", UTCDateTime, nullable=False),
+    Index("ix_poll_marks_game", "game_id", "source", "book", "polled_at"),
+)

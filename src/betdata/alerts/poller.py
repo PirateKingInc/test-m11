@@ -350,12 +350,13 @@ class Poller:
                      change_only: bool = False) -> None:  # fmt: skip
         """Append the quotes (with `change_only`, only those whose line or price changed) and
         record any first-seen key in `openers` (M18 Part E)."""
-        from betdata.alerts.archive import changed_only, record_openers
+        from betdata.alerts.archive import changed_only, mark_polls, record_openers
 
         if not qs:
             return
         with self.pdb.begin() as p:
             record_openers(p, qs, now)
+            mark_polls(p, qs, now)
             if change_only:
                 qs = changed_only(p, qs)
                 if not qs:
@@ -533,10 +534,31 @@ class Poller:
                 for ev in self.sharp.event_ids(c, gid):
                     qs += [q for q in self.sharp.game(c, sport, ev) if q.game_id == gid]
             self.store_quotes(qs, now, None, change_only=True)
+            self._guard(f"consensus {gid}", self.store_consensus, sport, gid, qs, now)
             done += 1
         with self.pdb.begin() as p:
             set_state(p, "sweep:queue", queue, now)
         return done
+
+    def store_consensus(self, sport: str, gid: int, qs: list[Quote], now: datetime) -> int:
+        """M18 Part B: the consensus of the game's main markets and of every prop just polled,
+        stored with its inputs."""
+        from betdata.alerts import consensus as C
+
+        n = 0
+        props = sorted({(q.market, q.player_name) for q in qs if q.player_name})
+        with self.pdb.begin() as p, self.main.connect() as m:
+            for market in C.GAME:
+                c = C.game_consensus(p, m, sport, gid, market, now)
+                if c is not None:
+                    C.store(p, c)
+                    n += 1
+            for market, name in props:
+                c = C.prop_consensus(p, sport, gid, market, name, now)
+                if c is not None:
+                    C.store(p, c)
+                    n += 1
+        return n
 
     # --- closing polls and grading ----------------------------------------------------------------
 
