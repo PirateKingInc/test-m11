@@ -66,7 +66,7 @@ def test_dummy_sport_on_page_and_in_grading(engine, settings, tmp_path):
         build_site(conn, settings, entries, active, tmp_path / "site", NOW)
     html = (tmp_path / "site" / "index.html").read_text()
     assert "DummyBall" in html and "AWAYX @ HOMEX" in html
-    assert "Spread: HOMEX" in html  # flagged at its own threshold
+    assert "spread HOMEX" in html  # a research pick at its own threshold (M18: no flags)
     assert "stub factor" in html and "Player Zed" in html
     assert "7-3-0" in html and "dummy:v1" in html  # season record from its grading
     assert "NBA <small>coming soon</small>" in html

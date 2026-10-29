@@ -1956,6 +1956,8 @@ Model inputs are unchanged. The stored `market_spread_home` and the model+market
 
 ## Spread flags: the agreement rule (decision 2026-10-29, `agreement.py`; NFL and NBA)
 
+> **Superseded by M18 Part A (2026-10-29).** No model pick is flagged any more. The line-move vote was dropped and a Kalshi vote added. The votes are recorded on grades (`agree`: pinnacle, kalshi, pinnacle+kalshi) and counted in the "spread agreement" research row. The text below is the rule as it ran until M18.
+
 Flags only. No model, threshold or calibration changed.
 
 **Rule.** A spread flag shows only when the model's edge clears its existing threshold (NFL 3 points, NBA 6) and at least one independent signal agrees at pick time:
@@ -2014,6 +2016,10 @@ No forecasting model, fit or version changes. The one exception is the median an
   - **Kept:** "Pinnacle's no-vig line sides with the model against DK/FD".
   - **Added:** Kalshi as a vote where it lists the market (game winners). Kalshi sides with the model when its yes-ask probability for the model's team beats the DK/FD no-vig probability for that team.
 - **Use:** these votes are inputs to Part B and are recorded on grades (`agree`: "pinnacle", "kalshi", "pinnacle+kalshi" or ""). They never make a flag by themselves.
+- **Implemented** (`agreement.py`):
+  - Kalshi's vote needs a Kalshi quote polled within 10 minutes before the pick time. It is compared with the mean DK/FD no-vig moneyline probability for the picked team.
+  - The page lists a threshold pick in a muted "research only (not flagged)" note with its votes. Prop model leans are labelled "research only".
+  - The hourly regrade rewrites `agree` on stored grades, so earlier "move" codes clear.
 
 ## Part B: the consensus price (the answer key)
 
