@@ -666,12 +666,16 @@ class Poller:
             from betdata.core.matching import season_for
             from betdata.nba.g1 import early_home_games
 
-            with self.main.connect() as c:
-                g = early_home_games(c, season_for("nba", now))
             import pandas as pd
 
-            self._g1 = [(int(r.game_id), utc(pd.Timestamp(r.tip).to_pydatetime()))
-                        for r in g.itertuples()]  # fmt: skip
+            try:
+                with self.main.connect() as c:
+                    g = early_home_games(c, season_for("nba", now))
+                self._g1 = [(int(r.game_id), utc(pd.Timestamp(r.tip).to_pydatetime()))
+                            for r in g.itertuples()]  # fmt: skip
+            except Exception as e:  # noqa: BLE001 - has_work must never fail over G1
+                self.errors.append(f"g1 games: {type(e).__name__}: {str(e)[:200]}")
+                self._g1 = []
         return self._g1
 
     def g1_check(self, now: datetime) -> list[int]:
