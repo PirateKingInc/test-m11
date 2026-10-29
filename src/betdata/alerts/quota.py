@@ -30,6 +30,7 @@ from betdata.core.matching import sport_id
 from betdata.db.schema import games
 
 QUALIFYING_PER_DAY = {"nba": 12, "nfl": 8}
+SWEEPS_PER_DAY, SWEEP_CALLS = 18, 3
 ODDS_LIMIT = 500
 
 
@@ -98,6 +99,13 @@ def project(conn: Connection, start: datetime, days: int = 30) -> Projection:
         c["sharpapi"] += ch * 12 * 2 + 2 + n * 3 * 2
         c["kalshi"] += ch * 12
         c["the_odds_api"] += 3
+    # M18 Part E sweeps: 18 a day (06:00, 07-23 hourly, 23:30 ET), each game with a tip in the
+    # next 36 hours, SWEEP_CALLS SharpAPI calls a game (main lines + props, up to 3 pages).
+    every = sorted(tips["nba"] + tips["nfl"])
+    for d, c in pr.by_day.items():
+        noon = datetime.combine(d, time(12), EASTERN)
+        n = sum(1 for t in every if noon - timedelta(hours=6) < t <= noon + timedelta(hours=30))
+        c["sharpapi"] += SWEEPS_PER_DAY * SWEEP_CALLS * n
     for c in pr.by_day.values():
         pr.requests.update(c)
     return pr

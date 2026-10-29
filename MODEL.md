@@ -2093,6 +2093,11 @@ The repriced fair price is the consensus moved by the model's change:
   - No ESPN odds or prop endpoint is called (Disney's terms forbid automated access); stored history is kept.
   - ESPN-derived box scores and schedules are unchanged this phase; that is an open owner decision (BACKLOG).
   - The Odds API scores endpoint is a weekly score cross-check if the budget allows. balldontlie needs an API key, so it is not used.
+- **Implemented (E1, `alerts/archive.py`):**
+  - `openers` lives in the poller database; the first price per key is inserted with on-conflict-do-nothing.
+  - Sweeps use a slot key per ET date and slot, and a queue of games polled 3 a poller cycle (≤ 9 SharpAPI calls a minute with 6 s spacing).
+  - Sweep quotes are stored change-only per (source, book, game, market, player, side). Lag, signal and closing polls still store every poll.
+  - The quota projection adds 18 sweeps × 3 calls × games in the next 36 hours.
 
 ## Part F: opening-line prop snipes (NBA rebounds, assists)
 
