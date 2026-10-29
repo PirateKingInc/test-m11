@@ -77,6 +77,25 @@ def alerts_lag(
                            f"{x.player} ({x.change}) {x.book}: {lag} min {x.market or ''}")
 
 
+@alerts_app.command("replay-value")
+def alerts_replay_value(
+        db: Path = typer.Option(Path("data/poller.sqlite"), help="Poller database."),
+        out: Path = typer.Option(Path("data/reports/m18_replay.json"))):  # fmt: skip
+    """M18: replay the value rule on every stored NBA news event (a throwaway copy of the
+    poller database; nothing is pushed) and grade the replayed alerts vs the consensus close."""
+    import json
+
+    from betdata.alerts.replay import replay
+    from betdata.config import get_settings
+    from betdata.db.engine import make_engine
+
+    res = replay(make_engine(get_settings().db_url), db, out.with_suffix(".sqlite"),
+                 datetime.now(UTC))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(res, indent=1, default=str) + "\n")
+    typer.echo(json.dumps(res, indent=1, default=str)[:12000])
+
+
 @alerts_app.command("quota")
 def alerts_quota(days: int = typer.Option(30, help="Days ahead, on the stored schedule.")):
     """30-day request projection of the poller, with the hourly job's share of shared sources."""
