@@ -2159,6 +2159,12 @@ This is a separate signal with its own 200-alert gate.
 **G2. NFL alternate and first-half rungs:** priced from the M17 engine's simulated margin and total distributions (key numbers 3 and 7 included).
 - **Paper alert:** when the engine and the Pinnacle-implied full-game number agree, but a DK/FD rung disagrees by at least 4 pp.
 - **Condition:** only if SharpAPI's free plan exposes these markets and the engine has the needed distribution. If not, it is logged and skipped.
+- **Implemented** (`alerts/rungs.py`, `Poller.g2_rungs`, at each NFL Pinnacle board):
+  - **Markets** (probe-env 2026-10-29): SharpAPI's free plan lists DK/FD alternate full-game spreads and totals (`is_main_line=false`) and first-half spread, total and moneyline.
+  - **Alternates:** stored as `alt_spreads` / `alt_totals` so main-line readers never see them. Priced from the engine's `margin_hist`; nfle17 now also stores `total_hist`, a storage-only addition with no prediction change.
+  - **Agreement:** the engine's median margin or total must be within 1.5 points of Pinnacle's fair L*/T*. Pinnacle's normal carry must not price the side below the book's no-vig.
+  - **Alert:** signal "g2", `study` (paper), dedup per (game, market, side, line, book).
+  - **First-half rungs: skipped.** The engine does not record half-time scores (BACKLOG).
 
 ## Part H: grading and the gates
 

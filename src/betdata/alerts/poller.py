@@ -544,6 +544,8 @@ class Poller:
                 soft = self.sharp.board(c, sport, now + timedelta(hours=6))
             self.store_quotes(pin + soft, now)
             self.signal_sharp(sport, pin, soft, now)
+            if sport == "nfl":
+                self._guard("g2 rungs", self.g2_rungs, now)
 
     def signal_sharp(self, sport: str, pin: list[Quote], soft: list[Quote],
                      now: datetime) -> list[int]:  # fmt: skip
@@ -722,6 +724,52 @@ class Poller:
                       f"{o.book}:{o.line:g}", s.p_model, s.p_book, o.player_name, None,
                       False, {"mean": pr["mean"], "median": med, "p_cons": s.p_cons,
                               "edge": s.edge})  # fmt: skip
+            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+        return [x for x in out if x is not None]
+
+    # --- M18 Part G2: NFL alternate rungs from the engine (paper) -----------------------------
+
+    def g2_rungs(self, now: datetime) -> list[int]:
+        """At an NFL Pinnacle board: DK/FD alternate rungs priced by the engine's simulated
+        distributions, when the engine agrees with Pinnacle (alerts/rungs.py)."""
+        from betdata.alerts import consensus as C
+        from betdata.alerts import rungs as G
+        from betdata.db.schema import model_predictions as mp
+        from betdata.nfl.engine.live import MODEL as ENGINE
+
+        with self.main.connect() as c:
+            alts = self.sharp.alternates(c, "nfl", now + timedelta(hours=6))
+        if not alts:
+            return []
+        self.store_quotes(alts, now)
+        gids = sorted({q.game_id for q in alts})
+        engine: dict = {}
+        with self.main.connect() as c:
+            for r in c.execute(select(mp.c.game_id, mp.c.params, mp.c.predicted_at)
+                               .where(mp.c.model == ENGINE, mp.c.game_id.in_(gids),
+                                      mp.c.predicted_at <= now)
+                               .order_by(mp.c.predicted_at)):  # fmt: skip
+                engine[r.game_id] = r.params or {}
+        cons: dict = {}
+        with self.pdb.connect() as p, self.main.connect() as m:
+            for gid in gids:
+                for market in ("spreads", "totals"):
+                    cc = C.game_consensus(p, m, "nfl", gid, market, now)
+                    if cc is not None and cc.method == "pinnacle":
+                        cons[(gid, market)] = cc
+        found = G.judge(G.rung_pairs(alts), engine, {k: v.fair for k, v in cons.items()},
+                        lambda g, mk, side, ln: cons[(g, mk)].prob(side, ln))  # fmt: skip
+        out = []
+        for r in found:
+            label, tip = self.game_label(r.game_id)
+            pin = "" if r.pin_prob is None else f", Pinnacle carried {100 * r.pin_prob:.1f}%"
+            a = Alert("g2", "nfl", r.game_id, label, tip, r.market, r.side, r.line, r.price,
+                      r.book, f"Alternate rung: engine {100 * r.engine_prob:.1f}% vs {r.book} "
+                      f"no-vig {100 * r.book_prob:.1f}% (edge {100 * r.edge:.1f} pp){pin}; "
+                      "engine agrees with Pinnacle's main number. Paper test.",
+                      f"g2:{r.game_id}:{r.market}:{r.side}:{r.line:g}:{r.book}",
+                      r.engine_prob, r.book_prob, None, None, True,
+                      {"engine_prob": r.engine_prob, "pin_prob": r.pin_prob})  # fmt: skip
             out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
         return [x for x in out if x is not None]
 
