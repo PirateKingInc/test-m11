@@ -663,10 +663,10 @@ class Poller:
         """(game, tip) of this season's NBA games that are a team's first four home games
         (computed once per job)."""
         if getattr(self, "_g1", None) is None:
+            import pandas as pd
+
             from betdata.core.matching import season_for
             from betdata.nba.g1 import early_home_games
-
-            import pandas as pd
 
             try:
                 with self.main.connect() as c:
