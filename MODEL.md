@@ -2181,3 +2181,7 @@ This is a separate signal with its own 200-alert gate.
 
 - **Value section:** each sport's tab opens with a "Value" section. It shows the live alerts and, per signal, the running CLV vs the consensus close, the count toward 200 and the ROI.
 - **Model sections:** they move below it, labelled research only.
+- **Implemented** (`page/value.py`):
+  - **Data:** read from the poller database restored by the hourly job.
+  - **Sections:** live alerts for upcoming games; the 10 most recent other alerts with their consensus close and CLV; per signal (NBA: C-NBA, F, G1; NFL: C-NFL, G2) the alerts, graded count of 200, CLV with its 95% range, W-L, ROI and gate status.
+  - **Proof:** `status.json` records `value_sections` (alert rows per sport). `verify-page` screenshots each Value section at 390 px.

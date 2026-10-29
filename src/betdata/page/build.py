@@ -394,7 +394,7 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
 
 def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[RecordRow],
                 book_names: dict, info: RunInfo, props: list[PropRow] | None = None,
-                engine: str | None = None) -> str:  # fmt: skip
+                engine: str | None = None, value: str | None = None) -> str:  # fmt: skip
     roi = sport.moneyline_final_roi()
     ml_flags = roi is not None and roi > 0
     note = version_note(sport)
@@ -408,7 +408,12 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
             "edges shown for information only, never flagged: moneyline flags need a positive "
             "final-test ROI" + ("" if roi is None else f" (it was {100 * roi:+.1f}%)"))
     legend = "".join(f"<li>{escape(k)}: {escape(v)}</li>" for k, v in legend_items.items())
+    research = ("<h2 class='research-head'>Model picks (research only)</h2><p class='meta'>"
+                "The models below are research: no pick is flagged (M18). Value is above."
+                "</p>") if value else ""  # fmt: skip
     return f"""
+{value or ""}
+{research}
 <section class="games">{games}</section>
 {engine or ""}
 {props_html(props or [], book_names) if props is not None else ""}
@@ -477,23 +482,45 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
                active: list[Sport], out_dir: Path, now: datetime) -> dict:  # fmt: skip
     info = run_info(conn, now)
     book_names = {k: n for k, n in conn.execute(select(books.c.key, books.c.name))}
-    panels, engines = {}, {}
+    panels, engines, values = {}, {}, {}
+    from betdata.nfl.book_lines import poller_conn
+
+    poller = poller_conn()
     for sport in active:
         eng = _engine(sport, conn, now)
         if eng is not None:  # the run log's proof that the section was published (M17)
             engines[sport.key] = eng.count("<article class='game'>")
+        val = _value(sport, poller, now)
+        if val is not None:  # the run log's proof that the Value section was published (M18)
+            values[sport.key] = val.count("<li class='prop'>")
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
                                         book_names, info, _props(sport, conn, now),
-                                        eng)  # fmt: skip
+                                        eng, val)  # fmt: skip
+    if poller is not None:
+        poller.close()
     status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
     if engines:
         status["engine_sections"] = engines
+    status["value_sections"] = values
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(render(entries, panels, status))
     (out_dir / "status.json").write_text(json.dumps(status, indent=1))
     (out_dir / ".nojekyll").write_text("")
     return status
+
+
+def _value(sport: Sport, poller, now: datetime) -> str | None:
+    """The sport's Value section (M18); a failure only drops it."""
+    if sport.key not in ("nba", "nfl"):
+        return None
+    try:
+        from betdata.page.value import value_html
+
+        return value_html(sport.key, poller, now, et)
+    except Exception as e:  # never lose the page over the Value section
+        log.warning("%s value section failed: %s", sport.key, e)
+        return None
 
 
 def _engine(sport: Sport, conn: Connection, now: datetime) -> str | None:
@@ -580,7 +607,9 @@ margin:10px 0}}
 flex-wrap:wrap}}
 .game time{{color:var(--mut);font-size:.9rem}}
 .flags{{margin:6px 0}} .agree{{font-size:.78rem;color:var(--acc);margin:2px 0 6px}}
-.agree.no{{color:var(--mut)}} .flag{{display:inline-block;background:var(--flag);color:var(--acc);
+.agree.no{{color:var(--mut)}} .value{{border:2px solid var(--acc);border-radius:10px;
+padding:8px 12px;margin:8px 0 14px}} .research-head{{color:var(--mut)}}
+.flag{{display:inline-block;background:var(--flag);color:var(--acc);
 border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.85rem;font-weight:700}}
 table{{width:100%;border-collapse:collapse;font-size:.9rem}}
 th,td{{text-align:left;padding:4px 4px;border-bottom:1px solid var(--line);vertical-align:top}}
