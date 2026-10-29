@@ -51,6 +51,19 @@ jobs:
                                     clip={"x": 0, "y": top, "width": 390,
                                           "height": min(height, 1400)})
                       print(f"{sport} props rows:", sec.first.locator("li.prop").count())
+              def value_shot(sport):
+                  # M18: the tab's Value section, top 1,400 px, at phone width.
+                  sec = pg.locator(f"#tab-{sport} section.value")
+                  if sec.count():
+                      top, height = sec.first.evaluate(
+                          "e => [e.getBoundingClientRect().top + window.scrollY, e.offsetHeight]")
+                      pg.screenshot(path=f"proof/{sport}_value_phone.png", full_page=True,
+                                    clip={"x": 0, "y": top, "width": 390,
+                                          "height": min(height, 1400)})
+                      print(f"{sport} value:", sec.first.inner_text()[:900])
+                  else:
+                      print(f"{sport} value: no section")
+              value_shot("nfl")
               props_shot("nfl")
               # M17: the NFL engine section ("Engine vs market"), top 1,600 px.
               eng = pg.locator("#tab-nfl section.engine")
@@ -73,6 +86,7 @@ jobs:
                   pg.screenshot(path="proof/nba_phone_full.png", full_page=True)
                   print("nba tab:", pg.evaluate("document.getElementById('tab-nba').innerText.slice(0, 600)"))
                   print("nba scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
+                  value_shot("nba")
                   props_shot("nba")
               b.close()
           PY

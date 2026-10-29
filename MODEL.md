@@ -2093,6 +2093,11 @@ The repriced fair price is the consensus moved by the model's change:
 - **Polling:** the poller also runs on Sundays from T−100 to T−60 minutes before each kickoff window (inactives) and on Fridays 16:00-20:00 ET (final injury reports).
 - **Lag study:** a 4-week NFL lag study is run exactly like M16's: DK/FD minutes to move after inactives and reports, a 60-minute window, and the pooled DK+FD median. NFL alerts are paper bets labelled "lag study" until it ends.
 - **Decision:** at the end, NFL alerts go live only if the pooled median lag is at least 5 minutes, the M16 rule.
+- **Implemented** (`alerts/nfl.py`, `alerts/lag.py`):
+  - **Windows:** T−100..T−60 every 5 minutes before each kickoff window, and Fridays 16:00-20:00 ET for every game of the next four days.
+  - **Alerts:** qualifying changes go to the same value signal as the NBA, with m13w repricing sides and nflp15 repricing teammate props. They are labelled "[lag study]" and `study` until `decide_nfl` rules.
+  - **Decision:** taken once, 28 days after the first NFL qualifying change from 2026-10-29. "Live" needs a pooled DK+FD median lag ≥ 5 minutes; no measured lag counts as off.
+  - **Not built:** repricing with the M17 engine. A per-change 10,000-run simulation with the news injected is not wired into the as-of store (BACKLOG). NFL repricing uses m13w and nflp15.
 
 ## Part D: prop outputs on the median
 
@@ -2137,6 +2142,12 @@ When a DK or FD rebound or assist prop first posts (an `openers` row), the model
 **Alert** when the edge is at least **6 pp**, and, if a consensus exists at that line (another book), it does not side against the model.
 
 This is a separate signal with its own 200-alert gate.
+
+**Implemented** (`alerts/snipe.py`, `Poller.snipes`):
+- **Trigger:** `record_openers` returns the keys first seen in a sweep poll. A DK/FD rebound or assist line whose over and under are both new is an opener.
+- **Pricing:** nbap15 prices that exact line at once (`nba/props/live.predict(..., lines=...)`) with its calibrated P(over | no push), from the distribution. The player id is the ESPN id of the unique `nba_player_games` name; unmatched names are skipped.
+- **"Does not side against":** when other books quote the same line, the median of their no-vig probabilities for the side must be at least the alerted book's.
+- **Alert:** signal "snipe" (gate name F), dedup per (game, market, player, book, line).
 
 ## Part G: two cheap seasonal paper tests
 
@@ -2184,3 +2195,7 @@ This is a separate signal with its own 200-alert gate.
 
 - **Value section:** each sport's tab opens with a "Value" section. It shows the live alerts and, per signal, the running CLV vs the consensus close, the count toward 200 and the ROI.
 - **Model sections:** they move below it, labelled research only.
+- **Implemented** (`page/value.py`):
+  - **Data:** read from the poller database restored by the hourly job.
+  - **Sections:** live alerts for upcoming games; the 10 most recent other alerts with their consensus close and CLV; per signal (NBA: C-NBA, F, G1; NFL: C-NFL, G2) the alerts, graded count of 200, CLV with its 95% range, W-L, ROI and gate status.
+  - **Proof:** `status.json` records `value_sections` (alert rows per sport). `verify-page` screenshots each Value section at 390 px.

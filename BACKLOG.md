@@ -113,3 +113,4 @@ Items deliberately left out of M12, with the reason. Newest first.
 
   The same Disney clause covers these. Free replacements would be nba_api / cdn.nba.com (box scores, schedule; already a source for some data) and nflverse (NFL, already primary). The owner decides whether to switch.
 - **Score cross-check:** The Odds API `/scores` with `daysFrom` costs 2 credits a call. A weekly NBA + NFL check is about 16 credits a month on top of about 405 of 450 already used, so it is left out until the quota proof (#243) shows room. balldontlie needs an API key (no new keys), so it is not used.
+- **NFL news repricing with the M17 engine (M18 Part C):** the brief named the engine and m13w. Only m13w (sides) and nflp15 (props) are wired. Engine repricing needs ESPN statuses injected into the engine's as-of inputs and two 10,000-run simulations per change. Do it if the NFL lag study goes live.

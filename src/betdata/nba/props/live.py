@@ -103,13 +103,20 @@ def factors(mod: M.PropModel, f: pd.DataFrame, market: str, m_hat: np.ndarray,
 
 
 def predict(conn: Connection, now: datetime, panel: Panel | None = None,
-            design: PropDesign | None = None) -> list[dict]:  # fmt: skip
+            design: PropDesign | None = None,
+            lines: pd.DataFrame | None = None) -> list[dict]:  # fmt: skip
+    """Per stored live line (or per row of `lines`, same columns as `latest_lines`: M18's
+    opening-line snipes price a prop the moment it posts): projection, P(over | no push) at
+    the line, edge, the distribution's median and quantiles, factors."""
     design = design or PropDesign.load()
     mod, version = load_model(design)
     panel = panel or Panel.load(conn, season_for("nba", now) - 1)
     g = panel.g
     upcoming = g[(g.status == "scheduled") & (g.tip > now) & (g.tip <= now + timedelta(days=DAYS))]
-    lines = latest_lines(conn, upcoming.index, now)
+    if lines is None:
+        lines = latest_lines(conn, upcoming.index, now)
+    else:
+        lines = lines[lines.game_id.isin(upcoming.index)]
     lines = lines[lines.market.isin(list(MARKETS))]
     if lines.empty:
         return []

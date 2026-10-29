@@ -17,7 +17,7 @@ data. The decision is taken once and stored in the poller database.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from statistics import median
 
 from sqlalchemy import Connection, select
@@ -179,6 +179,40 @@ def decide(p: Connection, main: Connection | None, now: datetime) -> dict | None
     set_state(p, "signal1:decision", decision, now)
     if off:
         set_state(p, "signal1:off", True, now)
+    return decision
+
+
+NFL_STUDY_DAYS = 28  # M18 Part C: a 4-week NFL lag study
+NFL_STUDY_FROM = datetime(2026, 10, 29, tzinfo=UTC)  # M18 start: NFL changes from here count
+
+
+def nfl_study_start(p: Connection):
+    first = p.execute(select(status_events.c.detected_at).where(
+        status_events.c.qualifies.is_(True), status_events.c.sport == "nfl",
+        status_events.c.detected_at >= NFL_STUDY_FROM)
+        .order_by(status_events.c.detected_at)).first()  # fmt: skip
+    return _utc(first[0]) if first else None
+
+
+def decide_nfl(p: Connection, main: Connection | None, now: datetime) -> dict | None:
+    """M18: NFL value alerts go live only if, after four weeks, the pooled DK+FD median lag of
+    NFL changes is at least 5 minutes (the M16 rule); taken once."""
+    if get_state(p, "nfl_value:decision") is not None:
+        return get_state(p, "nfl_value:decision")
+    start = nfl_study_start(p)
+    if start is None or now < start + timedelta(days=NFL_STUDY_DAYS):
+        return None
+    lags = [x for x in all_lags(p, main, now)
+            if x.sport == "nfl" and x.published >= NFL_STUDY_FROM]  # fmt: skip
+    s = summary(lags)
+    off = s["soft_median"] is None or s["soft_median"] < R.LAG_RULE_MIN
+    decision = {"decided_at": now.isoformat(), "study_start": start.isoformat(),
+                "soft_events": s["soft_n"], "soft_median_min": s["soft_median"],
+                "nfl_value": "off: not viable on free data" if off else "live",
+                "by_book": s["by_book"]}  # fmt: skip
+    set_state(p, "nfl_value:decision", decision, now)
+    if off:
+        set_state(p, "nfl_value:off", True, now)
     return decision
 
 
