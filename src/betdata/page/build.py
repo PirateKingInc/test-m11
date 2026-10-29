@@ -371,12 +371,15 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
                         '<span class="research">info only (backtest ROI range includes 0)'
                         "</span>" if r.info else "")  # fmt: skip
             line = "–" if r.line is None else f"{r.line:g}"
+            # M18 Part D: the median of the model's distribution, the mean beside it
+            proj = (f"Median <b>{r.median:g}</b> (mean {r.mean:.1f})" if r.median is not None
+                    else f"Proj <b>{r.mean:.1f}</b>")  # fmt: skip
             p = "–" if r.p_over is None else f"{100 * r.p_over:.0f}%"
             edge = "–" if r.edge is None else f"{r.edge:+.1f} pp"
             items.append(
                 f"<li class='prop'><div><b>{e(r.player)}</b> · "
                 f"{e(MARKET_LABELS.get(r.market, r.market))} {badge}{research}</div>"
-                f"<div>Proj <b>{r.mean:.1f}</b> · line {line} (o {_price(r.over_price)} / "
+                f"<div>{proj} · line {line} (o {_price(r.over_price)} / "
                 f"u {_price(r.under_price)}) · P(over) {p} · edge {edge}</div>"
                 + (f"<div class='meta'>{e(fac)}</div>" if fac else "")
                 + f"<div class='src'>{e(book)} via {e(src)}, "

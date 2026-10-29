@@ -1,0 +1,62 @@
+# M18 research runs that need the full history (manual): the Part D median-anchored prop
+# backtest and the Part G1 early-season totals backtest. Works on a throwaway copy of the
+# hourly state plus the published history branches (nba-history, props-history); nothing is
+# saved back. Reports are pushed to the `m18-reports` branch.
+
+name: m18-research
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "d (median prop backtest), g1 (early-season totals) or all"
+        default: "all"
+
+permissions:
+  contents: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --no-dev
+      - name: Restore the runner's state (read only)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/betdata.sqlite
+            data/derived
+            data/site_last_good
+            data/reports
+          key: betdata-state-v1-${{ github.run_id }}
+          restore-keys: betdata-state-v1-
+      - name: Load the published histories
+        run: |
+          git fetch -q origin nba-history && mkdir -p history/nba && git archive FETCH_HEAD | tar -x -C history/nba
+          git fetch -q origin props-history && mkdir -p history/props && git archive FETCH_HEAD | tar -x -C history/props
+          uv run --no-dev betdata nba load-history history/nba
+          uv run --no-dev betdata props load-history history/props
+      - name: D - median-anchored prop backtest
+        if: inputs.task == 'd' || inputs.task == 'all'
+        continue-on-error: true
+        run: uv run --no-dev betdata nba props-median-backtest 2>&1 | tail -200 | tee out-d.txt
+      - name: G1 - early-season totals
+        if: inputs.task == 'g1' || inputs.task == 'all'
+        continue-on-error: true
+        run: uv run --no-dev betdata nba g1-backtest 2>&1 | tail -200 | tee out-g1.txt
+      - name: Push to the m18-reports branch
+        if: always()
+        run: |
+          mkdir -p out && cp -r reports/nba/props_median_backtest.json reports/nba/g1_*.json out-*.txt out/ 2>/dev/null || true
+          cd out
+          git init -q -b m18-reports
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "M18 research ${{ inputs.task }} (run ${{ github.run_id }})" || exit 0
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" m18-reports

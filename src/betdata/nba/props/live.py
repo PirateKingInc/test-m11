@@ -25,6 +25,7 @@ from betdata.nba.props import model as M
 from betdata.nba.props.grade import DESIGN_PATH, MODEL
 from betdata.nba.props.panel import MARKETS, Panel
 from betdata.nba.props.side import side_live
+from betdata.props.dist import quantiles
 from betdata.props.lines import latest_lines
 
 log = logging.getLogger(__name__)
@@ -150,7 +151,8 @@ def predict(conn: Connection, now: datetime, panel: Panel | None = None,
             line=float(r.line), over_price=_int(r.over_price), under_price=_int(r.under_price),
             book_id=int(r.book_id), line_fetched_at=r.fetched_at.to_pydatetime(),
             p_over=round(p, 4), edge=edge,
-            dist={**disp.to_dict(), "mean": round(mu, 3), "minutes": round(float(m_hat[0]), 1)},
+            dist={**disp.to_dict(), "mean": round(mu, 3), "minutes": round(float(m_hat[0]), 1),
+                  **quantiles(disp, mu)},  # M18 Part D: median and quantiles
             factors=factors(mod, row, r.market, m_hat, out_by_team.get(
                 (r.game_id, r.team_id, r.player_id), []))))  # fmt: skip
     return [dict(p, model=MODEL, model_version=version) for p in picks]
