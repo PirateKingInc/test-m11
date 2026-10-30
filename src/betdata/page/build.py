@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import shutil
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -173,7 +174,7 @@ def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
         for team, players in c.missing.items() if players
     )  # fmt: skip
     return f"""
-<article class="game{' bet' if bets else ''}">
+<article class="game{' bet' if bets else ''}" data-preview="{e(_card_preview(c))}">
   <header><h3>{e(c.away)} @ {e(c.home)}</h3><time>{e(et(c.kickoff))}</time></header>
   {f'<div class="flags">{flag}</div>' if flag else ''}
   {agree_note}
@@ -189,6 +190,13 @@ def card_html(c: Card, book_names: dict[str, str], movement: list[dict],
   {movement_html(c, movement)}{f"""
   <p class="meta ver">{e(version_note)}</p>""" if version_note else ''}
 </article>"""
+
+
+def _card_preview(c: Card) -> str:
+    """The compact row's one line: model and market spread."""
+    mkt = c.market_spread.line if c.market_spread else None
+    return (f"model {spread_txt(c.home, c.away, c.model_spread_home)} · market "
+            f"{spread_txt(c.home, c.away, mkt)}")
 
 
 def _flip(p: float | None) -> float | None:
@@ -270,10 +278,11 @@ def _is_version(model_version: str, page_version: str | None) -> bool:
 
 def records_html(rows: list[RecordRow], page_version: str | None = None,
                  markets: tuple[str, ...] = ("spread", "spread agreement", "moneyline"),
-                 engine_version: str | None = None) -> str:  # fmt: skip
+                 engine_version: str | None = None, split_others: bool = False) -> str:  # fmt: skip
     """The season record of the version the page shows: one row per market, spread and
     moneyline, under one counting rule; every other version and market in a collapsed
-    section of background comparisons (M15.1)."""
+    section of background comparisons (M15.1), or left out with `split_others` (the page shows
+    them in their own section, `other_versions_html`)."""
     from betdata.nfl.grade import RECORD_RULE
 
     main = {r.market: r for r in rows if _is_version(r.model_version, page_version)
@@ -298,28 +307,39 @@ def records_html(rows: list[RecordRow], page_version: str | None = None,
                "same counting rule</p><div class='recwrap'><table class='rec'>"
                f"{REC_HEAD}{body}</table></div>" if er else
                "<p class='meta'>Engine (market-free): no graded spread picks yet.</p>")
-    others = [r for r in rows if not (_is_version(r.model_version, page_version)
-                                      and r.market in markets)
-              and not (engine_version and _is_version(r.model_version, engine_version))]
-    other = ""
-    if others:
-        body = "".join(f"<tr>{_rec_cells(r)}<td class='ver'>{escape(r.model_version)}</td></tr>"
-                       for r in others)  # fmt: skip
+    other = "" if split_others else other_versions_html(rows, page_version, markets,
+                                                         engine_version)[1]  # fmt: skip
+    if other:
         other = ("<details class='other'><summary>Other model versions (background "
-                 "comparisons)</summary><p class='meta'>Graded live by the same rule but not "
-                 "shown on the cards; for comparison only.</p><div class='recwrap'>"
-                 "<table class='rec'>"
-                 f"{REC_HEAD.replace('</tr>', '<th>Model</th></tr>')}{body}</table></div>"
-                 "</details>")  # fmt: skip
+                 f"comparisons)</summary>{other}</details>")
     if not rows:
         return rule + "<p class='meta'>No graded picks yet.</p>" + eng
     return rule + table + eng + other
 
 
-def jobs_html(last: dict | None, sport: str) -> str:
-    if not last:
-        return ""
-    jobs = [j for j in last["details"].get("jobs", []) if j.get("sport") == sport]
+def other_versions_html(rows: list[RecordRow], page_version: str | None,
+                        markets: tuple[str, ...] = ("spread", "spread agreement", "moneyline"),
+                        engine_version: str | None = None) -> tuple[int, str]:  # fmt: skip
+    """(rows, HTML) of every record the main table and the engine line do not show."""
+    others = [r for r in rows if not (_is_version(r.model_version, page_version)
+                                      and r.market in markets)
+              and not (engine_version and _is_version(r.model_version, engine_version))]
+    if not others:
+        return 0, ""
+    body = "".join(f"<tr>{_rec_cells(r)}<td class='ver'>{escape(r.model_version)}</td></tr>"
+                   for r in others)  # fmt: skip
+    return len(others), ("<p class='meta'>Graded live by the same rule but not shown on the "
+                         "cards; for comparison only.</p><div class='recwrap'><table class='rec'>"
+                         f"{REC_HEAD.replace('</tr>', '<th>Model</th></tr>')}{body}</table>"
+                         "</div>")  # fmt: skip
+
+
+def _jobs(last: dict | None, sport: str) -> list[dict]:
+    return [j for j in (last or {}).get("details", {}).get("jobs", []) if j.get("sport") == sport]
+
+
+def jobs_html(last: dict | None, sport: str, folded: bool = True) -> str:
+    jobs = _jobs(last, sport)
     if not jobs:
         return ""
     items = "".join(
@@ -327,6 +347,8 @@ def jobs_html(last: dict | None, sport: str) -> str:
         f"{escape(j['status'])}{(' — ' + escape(j['message'])) if j.get('message') else ''}</li>"
         for j in jobs
     )  # fmt: skip
+    if not folded:
+        return f"<h4>Data refresh, last run</h4><ul>{items}</ul>"
     return (f"<details class='jobs'><summary>Data refresh, last run</summary><ul>{items}</ul>"
             "</details>")
 
@@ -394,7 +416,11 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
 
 def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[RecordRow],
                 book_names: dict, info: RunInfo, props: list[PropRow] | None = None,
-                engine: str | None = None, value: str | None = None) -> str:  # fmt: skip
+                engine: str | None = None, value: str | None = None,
+                picks: list[dict] | None = None, now: datetime | None = None) -> str:  # fmt: skip
+    """The Value section first, fully open; everything below it folded (one tap to open, the
+    choice remembered in the browser): past picks, model research, other model versions, data
+    sources and notes. Inside the folds each game card is a compact row that opens on tap."""
     roi = sport.moneyline_final_roi()
     ml_flags = roi is not None and roi > 0
     note = version_note(sport)
@@ -408,21 +434,108 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
             "edges shown for information only, never flagged: moneyline flags need a positive "
             "final-test ROI" + ("" if roi is None else f" (it was {100 * roi:+.1f}%)"))
     legend = "".join(f"<li>{escape(k)}: {escape(v)}</li>" for k, v in legend_items.items())
-    research = ("<h2 class='research-head'>Model picks (research only)</h2><p class='meta'>"
-                "The models below are research: no pick is flagged (M18). Value is above."
-                "</p>") if value else ""  # fmt: skip
-    return f"""
-{value or ""}
-{research}
-<section class="games">{games}</section>
+    research = ("<p class='meta'>The models below are research: no pick is flagged (M18). Value "
+                "is above.</p>") if value else ""  # fmt: skip
+    k = sport.key
+    out = [value or ""]
+    if picks is not None:
+        n, rec, body = past_picks_html(k, picks, now or datetime.now(UTC))
+        out.append(fold(f"{k}-past", "Past picks",
+                        f"{n} in the last 7 days" + (f" · {rec}" if rec else ""), body))
+    n_props = len({p.game_id for p in props or []})
+    preview = (f"{len(cards)} game{'s' if len(cards) != 1 else ''}"
+               + (", engine" if engine else "")
+               + (f", props for {n_props}" if n_props else ""))
+    out.append(fold(f"{k}-research", "Model research", preview, compact(
+        f"""{research}<section class="games">{games}</section>
 {engine or ""}
 {props_html(props or [], book_names) if props is not None else ""}
 <section class="legend"><h2>Model picks (research only)</h2><p>Since M18 no model-vs-market
   pick is flagged. A pick is listed and graded, for research, when it clears the threshold
   chosen on validation seasons:</p><ul>{legend}</ul></section>
 <section><h2>Season record</h2>{records_html(records, sport.page_version(),
-                                             engine_version=sport.engine_version())}</section>
-{jobs_html(info.last, sport.key)}"""
+                                             engine_version=sport.engine_version(),
+                                             split_others=True)}</section>""")))
+    n_other, other = other_versions_html(records, sport.page_version(),
+                                         engine_version=sport.engine_version())
+    if other:
+        out.append(fold(f"{k}-versions", "Other model versions",
+                        f"{n_other} records", other))
+    jobs = _jobs(info.last, k)
+    ok = sum(j.get("status") == "ok" for j in jobs)
+    out.append(fold(f"{k}-sources", "Data sources and notes",
+                    (f"refresh {ok}/{len(jobs)} ok" if jobs else "attributions"),
+                    jobs_html(info.last, k, folded=False) + FOOTER_NOTES))
+    return "\n".join(out)
+
+
+FOOTER_NOTES = "<!--footer-notes-->"  # render() puts the page's source notes here
+
+
+def fold(key: str, title: str, preview: str, body: str) -> str:
+    """A collapsed section: the title and a one-line preview; `key` is remembered in the
+    browser when opened."""
+    return (f"<details class='fold' data-fold='{escape(key)}'><summary><b>{escape(title)}</b>"
+            f" <span class='pv'>— {escape(preview)}</span></summary>"
+            f"<div class='foldbody'>{body}</div></details>")
+
+
+_CARD = re.compile(r"<article class=(['\"])game[^'\"]*\1[^>]*>.*?</article>", re.S)
+
+
+def compact(html: str) -> str:
+    """Each game card becomes a compact row (matchup, time, preview) that opens on tap."""
+    def row(m: re.Match) -> str:
+        a = m.group(0)
+        title = re.search(r"<h3>(.*?)</h3>", a, re.S)
+        when = re.search(r"<time>(.*?)</time>", a, re.S)
+        pv = re.search(r"data-preview=\"([^\"]*)\"", a)
+        bet = " bet" if re.match(r"<article class=['\"]game bet", a) else ""
+        return (f"<details class='gamerow{bet}'><summary><b>{title.group(1) if title else 'Game'}"
+                f"</b> <span class='pv'>{when.group(1) if when else ''}"
+                f"{' · ' + pv.group(1) if pv else ''}</span></summary>{a}</details>")
+    return _CARD.sub(row, html)
+
+
+def past_picks_html(sport: str, rows: list[dict], now: datetime) -> tuple[int, str, str]:
+    """(count, W-L-P, HTML) of the sport's ledger picks from the last 7 days, newest first;
+    every pick is in the CSV."""
+    from types import SimpleNamespace
+
+    from betdata.alerts.notify import BOOKS, selection
+    from betdata.ledger import counted, record
+
+    since = now - timedelta(days=7)
+    rs = [r for r in counted(rows) if r["sport"] == sport and r["created_at"]
+          and datetime.fromisoformat(r["created_at"]) >= since]  # fmt: skip
+    rs.sort(key=lambda r: r["created_at"], reverse=True)
+    link = "<a href='picks.csv'>Download all picks (CSV)</a>"
+    if not rs:
+        return 0, "", f"<p class='meta'>No picks in the last 7 days. {link}</p>"
+    rec = record(rs)
+    items = []
+    for r in rs:
+        a = SimpleNamespace(game_label=r["game"] or "? @ ?", side=r["side"],
+                            line=float(r["line"]) if r["line"] else None,
+                            player_name=r["player"] or None, market=r["market"])
+        try:
+            sel = selection(a)
+        except (ValueError, TypeError):
+            sel = f"{r['market']} {r['side']}"
+        odds = int(r["odds"]) if r["odds"] else None
+        res = r["result"] or "pending"
+        tail = "" if not r["result"] else f" {float(r['profit'] or 0):+.2f}u"
+        clv = "" if not r["clv_consensus"] else f" · CLV {100 * float(r['clv_consensus']):+.1f} pp"
+        items.append(
+            f"<li class='prop'><div><b>{escape(r['game'])}</b> · {escape(sel)} "
+            f"{escape(american(odds)) if odds is not None else ''} at "
+            f"{escape(BOOKS.get(r['book'], r['book']))} <span class='research'>"
+            f"{escape(r['signal_name'])}</span></div><div class='meta'>"
+            f"{escape(et(datetime.fromisoformat(r['created_at']), '%a %-I:%M %p'))} · "
+            f"{escape(res)}{tail}{clv}</div></li>")  # fmt: skip
+    return (len(rs), f"{rec.wins}-{rec.losses}-{rec.pushes}",
+            f"<p class='meta'>Every pick from the last 7 days, newest first. {link}</p>"
+            f"<ul class='plist'>{''.join(items)}</ul>")
 
 
 def movement_for(conn: Connection, sport: Sport, info: RunInfo) -> dict[int, list[dict]]:
@@ -469,11 +582,13 @@ def render(entries: list[SportEntry], panels: dict[str, str], status: dict) -> s
                  + ". " + ("Sources skipped because their key is not set: "
                            + escape(", ".join(keys)) + "." if keys else "No key is missing.")
                  + "</p>")  # fmt: skip
+    notes = keys_note + SOURCE_NOTES
+    panels_html = "".join(sections).replace(FOOTER_NOTES, notes)
     payload = json.dumps(status).replace("</", "<\\/")
     return PAGE.format(
         updated=escape(et(datetime.fromisoformat(status["last_ok_at"]))
                        if status.get("last_ok_at") else "never"),
-        tabs="".join(tabs), panels="".join(sections), footer=escape(FOOTER), keys=keys_note,
+        tabs="".join(tabs), panels=panels_html, footer=escape(FOOTER),
         status=f'{STATUS_MARK}<script id="status" type="application/json">{payload}</script>',
     )  # fmt: skip
 
@@ -486,7 +601,7 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     from betdata.nfl.book_lines import poller_conn
 
     poller = poller_conn()
-    record = _ledger(out_dir)
+    record, picks = _ledger(out_dir)
     for sport in active:
         eng = _engine(sport, conn, now)
         if eng is not None:  # the run log's proof that the section was published (M17)
@@ -497,7 +612,7 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
                                         book_names, info, _props(sport, conn, now),
-                                        eng, val)  # fmt: skip
+                                        eng, val, picks, now)  # fmt: skip
     if poller is not None:
         poller.close()
     status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
@@ -511,9 +626,9 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     return status
 
 
-def _ledger(out_dir: Path) -> str:
-    """The ledger's all-time record (HTML), and site/picks.csv: every pick with its result
-    fields, for the page's download link. A failure only drops them."""
+def _ledger(out_dir: Path) -> tuple[str, list[dict] | None]:
+    """The ledger's all-time record (HTML) and its rows, and site/picks.csv: every pick with its
+    result fields, for the page's download link. A failure only drops them."""
     try:
         import csv
 
@@ -528,10 +643,10 @@ def _ledger(out_dir: Path) -> str:
                                lineterminator="\n")
             w.writeheader()
             w.writerows(rows)
-        return record_html(rows)
+        return record_html(rows), rows
     except Exception as e:  # never lose the page over the ledger
         log.warning("ledger record failed: %s", e)
-        return ""
+        return "", None
 
 
 def _value(sport: Sport, poller, now: datetime, record: str = "") -> str | None:
@@ -599,6 +714,16 @@ def stale(status: dict, now: datetime) -> bool:
     return ok is None or now - datetime.fromisoformat(ok) > timedelta(hours=STALE_HOURS)
 
 
+SOURCE_NOTES = """
+<p>Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0), used
+non-commercially.</p>
+<p>NFL data: <a href="https://github.com/nflverse">nflverse</a> (CC BY 4.0); charting data:
+FTN Data via nflverse (CC BY-SA 4.0). NBA data: ESPN via sportsdataverse; injury reports: NBA.
+Prop lines: ESPN.</p>
+<p>Lines are paper picks from the M12 model; markets are the latest line each source had when
+the page was built. Spreads are listed with the favourite. Edges are from the home side's view.
+</p>"""
+
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -655,21 +780,23 @@ border-bottom:1px solid var(--line);font-size:.9rem}} .prop:last-child{{border-b
 .research{{display:inline-block;color:var(--mut);border:1px solid var(--line);border-radius:6px;
 padding:0 6px;margin-left:4px;font-size:.75rem}}
 footer{{color:var(--mut);font-size:.8rem;padding:24px 16px 32px}}
+details.fold{{margin:10px 0;border:1px solid var(--line);border-radius:10px;font-size:1rem}}
+.fold>summary{{padding:12px;color:var(--fg)}}
+.fold>summary .pv,.gamerow>summary .pv{{color:var(--mut);font-size:.85rem}}
+.fold[open]>summary{{border-bottom:1px solid var(--line)}}
+.foldbody{{padding:0 12px 12px;min-width:0}} .foldbody h2{{font-size:1rem}}
+details.gamerow{{background:var(--card);border:1px solid var(--line);border-radius:10px;
+margin:6px 0;font-size:1rem}} .gamerow.bet{{border-color:var(--acc)}}
+.gamerow>summary{{padding:10px 12px;color:var(--fg)}}
+.gamerow>.game{{border:0;margin:0;padding:0 12px 12px;background:none}}
+.gamerow>.game>header{{display:none}}
 </style></head>
 <body>
 <header class="top"><h1>betdata · lines</h1>
 <p class="updated">Last updated: <span id="updated">{updated}</span></p>
 <div id="warn" hidden></div></header>
 <main><nav role="tablist">{tabs}</nav>{panels}</main>
-<footer><p><b>{footer}</b></p>{keys}
-<p>Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0), used
-non-commercially.</p>
-<p>NFL data: <a href="https://github.com/nflverse">nflverse</a> (CC BY 4.0); charting data:
-FTN Data via nflverse (CC BY-SA 4.0). NBA data: ESPN via sportsdataverse; injury reports: NBA.
-Prop lines: ESPN.</p>
-<p>Lines are paper picks from the M12 model; markets are the latest line each source had when
-the page was built. Spreads are listed with the favourite. Edges are from the home side's view.
-</p></footer>
+<footer><p><b>{footer}</b> Data sources and notes are at the end of each tab.</p></footer>
 {status}
 <script>
 (function(){{
@@ -695,6 +822,15 @@ the page was built. Spreads are listed with the favourite. Edges are from the ho
       '; predictions and graded picks from before then are gone.');
     w.hidden=!msg.length; w.textContent=msg.join(' ');
   }}
+  var K='betdata-open',open={{}};
+  try{{open=JSON.parse(localStorage.getItem(K)||'{{}}')||{{}};}}catch(e){{}}
+  document.querySelectorAll('details[data-fold]').forEach(function(d){{
+    if(open[d.dataset.fold])d.open=true;
+    d.addEventListener('toggle',function(){{
+      if(d.open)open[d.dataset.fold]=1; else delete open[d.dataset.fold];
+      try{{localStorage.setItem(K,JSON.stringify(open));}}catch(e){{}}
+    }});
+  }});
   var s=JSON.parse(document.getElementById('status').textContent); show(s);
   fetch('status.json',{{cache:'no-store'}}).then(function(r){{return r.json();}})
     .then(show).catch(function(){{}});
