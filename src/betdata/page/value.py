@@ -226,7 +226,7 @@ def bank_html(rows: list[dict], title: str) -> str:
     for lab in (TAKE, LEAN):
         x = bank([r for r in rows if r.get("label") == lab])
         r_roi = "–" if x.roi is None else f"{100 * x.roi:+.1f}%"
-        clv = "–" if not x.clv else f"{100 * sum(x.clv) / len(x.clv):+.2f} pp"
+        clv = "–" if not x.clv else f"{100 * sum(x.clv) / len(x.clv):+.1f}"
         body.append(f"<tr><td>{label_badge(lab, 1.0 if lab == TAKE else 0.5)}</td>"
                     f"<td>{x.picks}</td><td>{x.wins}-{x.losses}-{x.pushes}</td>"
                     f"<td>{x.units:+.2f}u</td><td>{r_roi}</td><td>{clv}</td></tr>")
@@ -237,5 +237,5 @@ def bank_html(rows: list[dict], title: str) -> str:
             f"{STARTED.strftime('%b %-d, %Y')}; flat stakes (TAKE 1 unit, LEAN 0.5), no "
             "compounding; paper units, not advice. Earlier picks are unlabelled and not "
             "counted.</p><div class='tablewrap'><table class='lines record'><tr><th>Label</th>"
-            "<th>Picks</th><th>W-L-P</th><th>Units</th><th>ROI</th><th>CLV</th></tr>"
+            "<th>Picks</th><th>W-L-P</th><th>Units</th><th>ROI</th><th>CLV pp</th></tr>"
             + "".join(body) + "</table></div></div>")
