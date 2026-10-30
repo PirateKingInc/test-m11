@@ -138,7 +138,7 @@ def test_milestones_are_announced_once(pdb, tmp_path):
 
 def test_ledger_history_is_append_only():
     """Every committed version of each ledger file starts with the previous one."""
-    for name in ("picks.csv", "results.csv", "milestones.csv"):
+    for name in ("picks.csv", "results.csv", "milestones.csv", "annotations.csv"):
         rel = f"ledger/{name}"
         try:
             shas = subprocess.run(["git", "log", "--format=%H", "--reverse", "--", rel],
@@ -192,3 +192,48 @@ def test_page_record(pdb, tmp_path):
     assert "All-time record" in html and "Download all picks (CSV)" in html
     assert "too few to judge" in html and "+3.00 pp" in html and "1-0-0" in html
     assert "By signal" in html and "Props vs game markets" in html and "By sport" in html
+
+
+def test_m16_legacy_and_duplicates_stay_in_the_csv_but_out_of_the_record(pdb, tmp_path):
+    from betdata.page.value import record_html
+
+    out = tmp_path / "ledger"
+    # picks written before the rename: the M16 rows read "news-nba" and stay as written
+    keys = {"news:22853:spreads:away:Injury-Report_2026-10-25_06_45PM.pdf": "win",
+            "news:22853:spreads:away:Injury-Report_2026-10-25_07_00PM.pdf": "win"}
+    assert L.pick_id(list(keys)[1]) in L.M16_DUPLICATES
+    with pdb.begin() as p:
+        for k, res in keys.items():
+            _alert(p, k, signal="news", result=res, clv=0.02, market="spreads", player=None)
+        _alert(p, "k1", result="loss", clv=-0.01)
+    L.append_rows(out / "picks.csv", L.PICK_FIELDS, [
+        {**r, "signal_name": "news-nba"} if r["signal"] == "news" else r for r in _picks(pdb)])
+    picks = (out / "picks.csv").read_text()
+    with pdb.connect() as p:
+        L.sync(p, None, out, NOW)
+        L.sync(p, None, out, NOW)  # annotations are written once
+    assert (out / "picks.csv").read_text() == picks  # never rewritten
+    notes = L.read_rows(out / "annotations.csv")
+    assert sorted((n["field"], n["value"]) for n in notes) == [
+        ("duplicate", "true"), ("signal_name", "m16-legacy"), ("signal_name", "m16-legacy")]
+    rows = L.joined(out)
+    assert [(r["signal_name"], r["duplicate"]) for r in rows] == [
+        ("m16-legacy", ""), ("m16-legacy", "true"), ("F", "")]
+    assert [r["signal_name"] for r in L.counted(rows)] == ["F"]
+    html = record_html(rows)
+    assert "Excludes 2 M16 legacy alerts (pre-M18 rules), available in the CSV." in html
+    assert "m16-legacy" not in html and "0-1-0" in html and "1-0-0" not in html
+    md, summary = W.build(tmp_path, NOW, None, None)
+    assert "m16-legacy" not in md and "Excludes 2 M16 legacy alerts" in md
+    assert summary[1].startswith("All-time 0-1-0")
+    # a new M16 alert is named m16-legacy when written
+    with pdb.begin() as p:
+        _alert(p, "news:new", signal="news", market="spreads", player=None)
+    with pdb.connect() as p:
+        L.sync(p, None, out, NOW)
+    assert L.read_rows(out / "picks.csv")[-1]["signal_name"] == "m16-legacy"
+
+
+def _picks(pdb):
+    with pdb.connect() as p:
+        return [L.pick_row(p, None, a) for a in p.execute(select(alerts))]

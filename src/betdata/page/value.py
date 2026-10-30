@@ -143,11 +143,15 @@ def _cell_clv(r, pin: bool = False) -> str:
 def record_html(rows: list[dict], csv_href: str = "picks.csv") -> str:
     """The all-time record of every pick in the permanent ledger (betdata/ledger.py): overall,
     by sport, by signal, props vs game markets, and the C signals by edge source."""
-    from betdata.ledger import TOO_FEW, breakdowns
+    from betdata.ledger import LEGACY, TOO_FEW, breakdowns, counted
 
+    n_legacy = sum(r["signal_name"] == LEGACY for r in rows)
+    excl = ("" if not n_legacy else f"<p class='meta'>Excludes {n_legacy} M16 legacy alerts "
+            "(pre-M18 rules), available in the CSV.</p>")
+    rows = counted(rows)
     if not rows:
         return ("<h3>All-time record</h3><p class='meta'>No picks in the ledger yet. "
-                f"<a href='{escape(csv_href)}'>Download all picks (CSV)</a></p>")
+                f"<a href='{escape(csv_href)}'>Download all picks (CSV)</a></p>" + excl)
     b = breakdowns(rows)
     body = []
     for group, recs in b.items():
@@ -170,4 +174,4 @@ def record_html(rows: list[dict], csv_href: str = "picks.csv") -> str:
             "too few to judge. <a href='" + escape(csv_href) + "'>Download all picks (CSV)</a>"
             "</p><div class='tablewrap'><table class='lines record'><tr><th></th><th>Picks</th>"
             "<th>W-L-P</th><th>Units</th><th>ROI</th><th>CLV vs consensus</th>"
-            "<th>CLV vs Pinnacle</th></tr>" + "".join(body) + "</table></div>")
+            "<th>CLV vs Pinnacle</th></tr>" + "".join(body) + "</table></div>" + excl)
