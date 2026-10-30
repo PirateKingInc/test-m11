@@ -1,0 +1,60 @@
+now 2026-10-29T20:58:04.338599+00:00
+$ betdata alerts quota --days 30
+M16 poller, next 30 days: 28 NBA game days, 31 NFL kickoff windows (worst case)
+  espn             4248 requests  (peak day 672)
+  kalshi           9696 requests  (peak day 720)
+  nba_injury      15120 requests  (peak day 540)
+  sharpapi        39570 requests  (peak day 2714)
+  the_odds_api      261 credits  (peak day 21)
+  The Odds API: hourly 165 + poller 261 = 426 of 450 usable (500 less 10%) -> OK; the poller also keeps a live reserve (5.3/day for the hourly job + 50) and skips a board that would touch it
+  SharpAPI: <= 10 calls a minute by spacing (limit 12), none while an hourly run is in progress; no daily cap on the free plan
+  NBA report, ESPN, Kalshi: no quota; <= 1 request a second each
+
+$ betdata scheduler plan --runner --days 30
+job                            source          ticks  runs  units
+nfl-schedules                  nflverse          479   479      0
+nfl-injuries                   nflverse          479   479      0
+nfl-rosters                    nflverse          479   479      0
+nfl-sharp                      sharpapi          479   479    479
+nfl-odds-prekick               the_odds_api      479    27     81
+nfl-odds-events                the_odds_api       30    30      0
+nfl-papi                       oddspapi            4     4      4
+nfl-papi-primetime             oddspapi            9     9      9
+nfl-weather                    open_meteo        120   120   1440
+nfl-weather-archive            open_meteo          4     4      0
+nfl-pbp                        nflverse           30    30      0
+nfl-team-stats                 nflverse           30    30      0
+nfl-snaps                      nflverse           30    30      0
+nfl-player-stats               nflverse_extra     30    30      0
+nfl-depth-charts               nflverse_extra     30    30      0
+nfl-pfr-pass                   nflverse_extra     30    30      0
+nfl-ngs-passing                nflverse_extra     30    30      0
+nfl-participation              nflverse_extra     30    30      0
+nfl-derive                     nfl_model          30    30      0
+nfl-inputs15                   nfl_model          30    30      0
+nba-scoreboard                 espn_nba          479   479      0
+nba-boxscores                  espn_nba          479   479      0
+nba-injuries                   nba_injury        479   479      0
+nba-sharp                      sharpapi          479   479    479
+nba-odds-evening               the_odds_api       30    28     84
+nba-papi                       oddspapi           30    28     28
+
+nflverse: 0 units over 30 days (no quota)
+sharpapi: 958 units over 30 days ≈ 32 per day vs 3000 usable (3000 limit) -> OK
+the_odds_api: 165 units over 30 days ≈ 170 per month vs 450 usable (500 limit) -> OK
+oddspapi: 41 units over 30 days ≈ 42 per month vs 225 usable (250 limit) -> OK
+open_meteo: 1440 units over 30 days ≈ 48 per day vs 5000 usable (10000 limit) -> OK
+nflverse_extra: 0 units over 30 days (no quota)
+nfl_model: 0 units over 30 days (no quota)
+espn_nba: 0 units over 30 days (no quota)
+nba_injury: 0 units over 30 days (no quota)
+
+$ betdata alerts replay-value --out out/m18_replay.json
+at_detection": 284,
+   "alerts": 0
+  },
+  {
+   "event_id": 674,
+   "player": "Mikel Brown Jr.",
+   "change": "None -> Out",
+   "stated": "2026-10-25T17:15:00+00:00",
