@@ -119,6 +119,15 @@ def isolated_seeds(tmp_path, monkeypatch):
     return copy
 
 
+@pytest.fixture(autouse=True)
+def isolated_ledger(tmp_path, monkeypatch):
+    """The pick ledger is read from (and written to) an empty folder, never the repo's ledger/:
+    a fresh test poller database would otherwise reload every real pick."""
+    from betdata import ledger
+
+    monkeypatch.setattr(ledger, "ledger_dir", lambda: tmp_path / "ledger")
+
+
 @pytest.fixture
 def clock():
     return Clock(datetime(2026, 10, 15, 14, 0, tzinfo=UTC))
