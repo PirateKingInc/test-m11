@@ -125,3 +125,26 @@ def test_formatting():
     assert spread_txt("KC", "BUF", 0.0) == "pick'em"
     assert stale({"last_ok_at": NOW.isoformat()}, NOW + timedelta(hours=2, minutes=1))
     assert not stale({"last_ok_at": NOW.isoformat()}, NOW + timedelta(hours=1, minutes=59))
+
+
+def test_everything_below_the_value_section_is_folded(engine, settings, tmp_path):
+    """The panel opens with the sport's sections folded (one tap to open), each with a one-line
+    preview; game cards are compact rows; the source notes sit in the last fold of each tab."""
+    ens = entries(tmp_path)
+    runs(engine, (NOW, "ok", False))
+    with engine.connect() as conn:
+        build_site(conn, settings, ens, active_sports(ens), tmp_path / "s", NOW)
+    html = (tmp_path / "s" / "index.html").read_text()
+    panel = html[html.index('id="tab-ncaaf"'):html.index('id="tab-nba"')]
+    folds = re.findall(r"<details class='fold' data-fold='ncaaf-(\w+)'><summary><b>([^<]+)</b> "
+                       r"<span class='pv'>— ([^<]+)</span>", panel)
+    assert [(k, t) for k, t, _ in folds] == [
+        ("past", "Past picks"), ("research", "Model research"),
+        ("versions", "Other model versions"), ("sources", "Data sources and notes")]
+    previews = [p for _, _, p in folds]
+    assert previews[0] == "0 in the last 7 days" and previews[1].startswith("1 game")
+    assert previews[2].endswith(" records") and previews[3] == "refresh 0/1 ok"
+    assert " open" not in panel.split("<details class='fold'")[1][:80]  # closed by default
+    assert "<details class='gamerow'><summary><b>AWAYX @ HOMEX</b>" in panel
+    assert "<!--footer-notes-->" not in html and panel.count("Weather data by") == 1
+    assert "localStorage" in html and "try{" in html  # remembered, never required
