@@ -1,0 +1,9 @@
+key,pick_id,field,value,noted_at,note
+Pdb2ba96ef4ae:signal_name,Pdb2ba96ef4ae,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
+Pd985110a2b74:signal_name,Pd985110a2b74,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
+P95e47f86caf5:signal_name,P95e47f86caf5,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
+P89c0ffdfda99:signal_name,P89c0ffdfda99,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
+P89c0ffdfda99:duplicate,P89c0ffdfda99,duplicate,true,2026-10-30T12:17:14+00:00,repeat of an alerted change (REVIEW.md M16-4)
+P4a89a7a618aa:signal_name,P4a89a7a618aa,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
+Pddaf70680c30:signal_name,Pddaf70680c30,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
+Pddaf70680c30:duplicate,Pddaf70680c30,duplicate,true,2026-10-30T12:17:14+00:00,repeat of an alerted change (REVIEW.md M16-4)
