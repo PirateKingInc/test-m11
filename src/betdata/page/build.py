@@ -417,7 +417,8 @@ def props_html(rows: list[PropRow], book_names: dict[str, str]) -> str:
 def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[RecordRow],
                 book_names: dict, info: RunInfo, props: list[PropRow] | None = None,
                 engine: str | None = None, value: str | None = None,
-                picks: list[dict] | None = None, now: datetime | None = None) -> str:  # fmt: skip
+                picks: list[dict] | None = None, now: datetime | None = None,
+                card: str | None = None) -> str:  # fmt: skip
     """The Value section first, fully open; everything below it folded (one tap to open, the
     choice remembered in the browser): past picks, model research, other model versions, data
     sources and notes. Inside the folds each game card is a compact row that opens on tap."""
@@ -437,7 +438,7 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
     research = ("<p class='meta'>The models below are research: no pick is flagged (M18). Value "
                 "is above.</p>") if value else ""  # fmt: skip
     k = sport.key
-    out = [value or ""]
+    out = [card or "", value or ""]  # tonight's card first, then Value (unchanged)
     if picks is not None:
         n, rec, body = past_picks_html(k, picks, now or datetime.now(UTC))
         out.append(fold(f"{k}-past", "Past picks",
@@ -612,7 +613,8 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
                                         book_names, info, _props(sport, conn, now),
-                                        eng, val, picks, now)  # fmt: skip
+                                        eng, val, picks, now,
+                                        _card(sport, conn, poller, now, picks))  # fmt: skip
     if poller is not None:
         poller.close()
     status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
@@ -637,7 +639,9 @@ def _ledger(out_dir: Path) -> list[dict] | None:
         out_dir.mkdir(parents=True, exist_ok=True)
         with (out_dir / "picks.csv").open("w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=[*PICK_FIELDS, "duplicate", "label",
-                                                   "stake", *RESULT_FIELDS[1:]],
+                                                   "stake", "card", "card_label",
+                                                   "card_stake", "card_date",
+                                                   *RESULT_FIELDS[1:]],
                                lineterminator="\n")
             w.writeheader()
             w.writerows(rows)
@@ -667,6 +671,25 @@ def _value(sport: Sport, poller, now: datetime, picks: list[dict] | None = None)
         return value_html(sport.key, poller, now, et, record, top)
     except Exception as e:  # never lose the page over the Value section
         log.warning("%s value section failed: %s", sport.key, e)
+        return None
+
+
+def _card(sport: Sport, conn: Connection, poller, now: datetime,
+          picks: list[dict] | None) -> str | None:  # fmt: skip
+    """The sport's "Tonight's card" section (page/card.py); a failure only drops it."""
+    if sport.key not in ("nba", "nfl"):
+        return None
+    try:
+        from betdata.alerts.card import BEFORE, FIRST_DAY, first_tip
+        from betdata.page.card import card_html
+
+        today = now.astimezone(EASTERN).date()
+        ft = first_tip(conn, sport.key, today) if today >= FIRST_DAY else None
+        nxt = None if ft is None or ft - BEFORE <= now else ft - BEFORE
+        return card_html(sport.key, sport.name, picks, poller, now, et, nxt,
+                         picks if sport.key == "nba" else None)  # fmt: skip
+    except Exception as e:  # never lose the page over the card
+        log.warning("%s card section failed: %s", sport.key, e)
         return None
 
 
@@ -797,6 +820,8 @@ white-space:nowrap}} .lbl.take{{background:var(--acc);color:var(--bg)}}
 .bank{{background:var(--flag);border-radius:8px;padding:8px 10px;margin:8px 0}}
 .bank th,.bank td{{padding:4px 2px}} .bank h3{{margin:0}}
 .bankline{{margin:4px 0 0}} .bankline b{{font-size:1.15rem}}
+.cardsec{{border:2px solid var(--fg);border-radius:10px;padding:8px 12px;margin:8px 0 14px}}
+.gates{{margin:6px 0}}
 details.fold{{margin:10px 0;border:1px solid var(--line);border-radius:10px;font-size:1rem}}
 .fold>summary{{padding:12px;color:var(--fg)}}
 .fold>summary .pv,.gamerow>summary .pv{{color:var(--mut);font-size:.85rem}}

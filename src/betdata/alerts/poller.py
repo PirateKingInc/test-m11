@@ -187,6 +187,13 @@ class Poller:
         if self.sharp is not None and any(start <= tip - G1_BEFORE <= end + timedelta(minutes=5)
                                           for _, tip in self.g1_games(start)):  # fmt: skip
             return True
+        try:  # tonight's card is chosen 30 minutes before a sport's first game
+            from betdata.alerts.card import due_between
+
+            if due_between(self.main, start, end + timedelta(minutes=1)):
+                return True
+        except Exception as e:  # noqa: BLE001 - has_work must never fail over the card
+            self.errors.append(f"card due: {type(e).__name__}: {str(e)[:200]}")
         t = start
         with self.main.connect() as c:
             while t <= end:
@@ -211,6 +218,17 @@ class Poller:
         self._guard("closing polls", self.closing_polls, now)
         self._guard("sweep", self.sweep, now)
         self._guard("g1", self.g1_check, now)
+        self._guard("card", self.card, now)
+
+    def card(self, now: datetime) -> list[dict]:
+        """Tonight's card (alerts/card.py): chosen once per sport and day."""
+        from betdata.alerts.card import run
+
+        cards = run(self.pdb, self.main, now)
+        for c in cards:
+            self.notes.append(f"card {c['sport']} {c['day']}: "
+                              + ("missed" if c.get("missed") else f"{len(c['picks'])} picks"))
+        return cards
 
     # --- NBA news ---------------------------------------------------------------------------
 
