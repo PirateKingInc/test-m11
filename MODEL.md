@@ -2231,6 +2231,18 @@ No rule, threshold or model changes: the signals are frozen until their 200-pick
   - The 2 M16 alerts that repeated an already-alerted injury change (REVIEW.md M16-4) are marked `duplicate: true`.
   - Both stay in the CSV but are never counted: not in the page record, the weekly report or the milestones. The page notes "Excludes N M16 legacy alerts (pre-M18 rules), available in the CSV."
 
+**Pick labels and stakes** (owner request 2026-10-30; **fixed**, display only — no signal, threshold, model or grading change; `alerts/labels.py`). An in-house simulation of a pick service.
+- **When:** every new M18 pick (C-NBA, C-NFL, F, G1, G2) is labelled by the poller at the moment its alert is created, stored with the alert and written once to `ledger/labels.csv` (pick id, label, stake, time, edge, threshold, edge source, Pinnacle, available). It is never changed afterwards. Picks from before 2026-10-30 are not labelled (no backfill). The CSVs are append-only, so label and stake are a separate file joined by pick id rather than new columns in `picks.csv`; the downloadable CSV carries them as columns.
+- **TAKE (1 unit):** edge >= 1.5x the threshold the signal applied to the pick, AND (edge source "news" OR a fresh Pinnacle price sides with the pick), AND the price is still available at the latest poll.
+  - Thresholds: C 3 pp (game) / 6 pp (prop), or 4.5 / 9 pp for an unconfirmed two-book or model-only price; F 6 pp; G2 4 pp; G1 0.5 points below the opening total.
+  - "Pinnacle sides with the pick": Pinnacle's latest quote at the pick's line is at most 10 minutes old and its no-vig probability of the side beats the alerted price's break-even (Pinnacle makes the pick +EV).
+  - "Available": the book's latest stored quote is the alerted line (or better) at the alerted price (or better). With no stored quote it counts as available: the alert was priced from that poll.
+- **LEAN (0.5 unit):** clears the threshold and the price is available, but not TAKE. A pick whose edge is book disagreement against a two-book consensus is LEAN at most.
+- **PASS (0 units):** the price was gone at the latest poll (not expected; kept so every labelled pick has a stake).
+- **Display status** (each page build, never stored): Live (alerted price or better still up), Moved (worse than alerted but still better than fair), Gone (the book moved past fair value, or the line moved against the pick).
+- **Simulated bankroll:** 100 units from 2026-10-30, flat stakes (no compounding): bankroll = 100 + sum of stake x profit over settled labelled picks; ROI = units / stakes settled. Each sport's Value section shows its own bankroll and its record by label (TAKE vs LEAN); the top of the NBA tab also shows "All sports". The all-time record of every pick stays at the end of each Value section, per sport.
+- **Gate status:** under each signal's name, a small line with how proven it is: "C-NBA: 12/200 graded, CLV +0.4 pp", then alerts, record and gate status.
+
 **Page:** the Value section ends with an all-time record from the ledger, with "too few to judge" under 100 graded picks and a "Download all picks (CSV)" link (`site/picks.csv`). It shows:
 - overall W-L-P, units, ROI and average CLV (consensus and Pinnacle, 95% ranges);
 - the same by sport, by signal, props vs game markets, and the C signals by edge source.

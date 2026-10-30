@@ -601,12 +601,12 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     from betdata.nfl.book_lines import poller_conn
 
     poller = poller_conn()
-    record, picks = _ledger(out_dir)
+    picks = _ledger(out_dir)
     for sport in active:
         eng = _engine(sport, conn, now)
         if eng is not None:  # the run log's proof that the section was published (M17)
             engines[sport.key] = eng.count("<article class='game'>")
-        val = _value(sport, poller, now, record)
+        val = _value(sport, poller, now, picks)
         if val is not None:  # the run log's proof that the Value section was published (M18)
             values[sport.key] = val.count("<li class='prop'>")
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
@@ -626,30 +626,28 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     return status
 
 
-def _ledger(out_dir: Path) -> tuple[str, list[dict] | None]:
-    """The ledger's all-time record (HTML) and its rows, and site/picks.csv: every pick with its
-    result fields, for the page's download link. A failure only drops them."""
+def _ledger(out_dir: Path) -> list[dict] | None:
+    """The ledger's rows, and site/picks.csv: every pick with its label, stake and result
+    fields, for the page's download link. A failure only drops them."""
     try:
         import csv
 
         from betdata.ledger import PICK_FIELDS, RESULT_FIELDS, joined, ledger_dir
-        from betdata.page.value import record_html
-
         rows = joined(ledger_dir())
         out_dir.mkdir(parents=True, exist_ok=True)
         with (out_dir / "picks.csv").open("w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=[*PICK_FIELDS, "duplicate",
-                                                   *RESULT_FIELDS[1:]],
+            w = csv.DictWriter(f, fieldnames=[*PICK_FIELDS, "duplicate", "label",
+                                                   "stake", *RESULT_FIELDS[1:]],
                                lineterminator="\n")
             w.writeheader()
             w.writerows(rows)
-        return record_html(rows), rows
+        return rows
     except Exception as e:  # never lose the page over the ledger
         log.warning("ledger record failed: %s", e)
-        return "", None
+        return None
 
 
-def _value(sport: Sport, poller, now: datetime, record: str = "") -> str | None:
+def _value(sport: Sport, poller, now: datetime, picks: list[dict] | None = None) -> str | None:
     """The sport's Value section (M18) with the ledger's all-time record; a failure only drops
     it."""
     if sport.key not in ("nba", "nfl"):
@@ -657,7 +655,16 @@ def _value(sport: Sport, poller, now: datetime, record: str = "") -> str | None:
     try:
         from betdata.page.value import value_html
 
-        return value_html(sport.key, poller, now, et, record)
+        top = record = ""
+        if picks is not None:
+            from betdata.page.value import bank_html, record_html
+
+            own = [r for r in picks if r["sport"] == sport.key]
+            record = record_html(own)
+            # each tab: its own bankroll; the combined one once, at the top of the NBA tab
+            top = ((bank_html(picks, "All sports") if sport.key == "nba" else "")
+                   + bank_html(own, sport.name))  # fmt: skip
+        return value_html(sport.key, poller, now, et, record, top)
     except Exception as e:  # never lose the page over the Value section
         log.warning("%s value section failed: %s", sport.key, e)
         return None
@@ -780,6 +787,15 @@ border-bottom:1px solid var(--line);font-size:.9rem}} .prop:last-child{{border-b
 .research{{display:inline-block;color:var(--mut);border:1px solid var(--line);border-radius:6px;
 padding:0 6px;margin-left:4px;font-size:.75rem}}
 footer{{color:var(--mut);font-size:.8rem;padding:24px 16px 32px}}
+.lbl{{display:inline-block;border-radius:6px;padding:0 6px;font-size:.75rem;font-weight:700;
+white-space:nowrap}} .lbl.take{{background:var(--acc);color:var(--bg)}}
+.lbl.lean{{border:1px solid var(--acc);color:var(--acc)}}
+.lbl.pass{{border:1px solid var(--line);color:var(--mut)}}
+.st{{font-size:.75rem;font-weight:600;white-space:nowrap}} .st.live{{color:var(--acc)}}
+.st.moved{{color:var(--mut)}} .st.gone{{color:var(--warn)}}
+.gate{{font-size:.75rem;color:var(--mut);margin:1px 0 4px}}
+.bank{{background:var(--flag);border-radius:8px;padding:8px 10px;margin:8px 0}}
+.bank h3{{margin:0}} .bankline{{margin:4px 0 0}} .bankline b{{font-size:1.15rem}}
 details.fold{{margin:10px 0;border:1px solid var(--line);border-radius:10px;font-size:1rem}}
 .fold>summary{{padding:12px;color:var(--fg)}}
 .fold>summary .pv,.gamerow>summary .pv{{color:var(--mut);font-size:.85rem}}

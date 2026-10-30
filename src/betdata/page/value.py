@@ -40,14 +40,16 @@ def _pp(x: float | None) -> str:
     return "–" if x is None else f"{100 * x:+.1f} pp"
 
 
-def value_html(sport: str, p: Connection | None, now: datetime, et, extra: str = "") -> str:
-    """`extra`: HTML placed at the end of the section (the all-time record)."""
+def value_html(sport: str, p: Connection | None, now: datetime, et, extra: str = "",
+               top: str = "") -> str:  # fmt: skip
+    """`top`: HTML right under the intro (the simulated bankroll); `extra`: HTML at the end
+    of the section (the all-time record)."""
     head = ("<section class='value'><h2>Value</h2><p class='meta'>Paper alerts, not advice. "
             "A DK/FD price is alerted when it has not moved since the news and the repriced "
             "consensus (Pinnacle when fresh, else the median of fresh books) beats it by 3 pp "
             "(game markets) or 6 pp (props); more with a two-book or model-only price. Graded "
             f"by CLV against the consensus close; a signal is judged at {GATE_N} graded alerts "
-            f"(an early read at {EARLY_N}).</p>")  # fmt: skip
+            f"(an early read at {EARLY_N}).</p>{top}")  # fmt: skip
     if p is None:
         return (head + "<p class='meta'>Value alerts unavailable: no poller database.</p>"
                 + extra + "</section>")
@@ -58,8 +60,8 @@ def value_html(sport: str, p: Connection | None, now: datetime, et, extra: str =
         # there can be no M18 alert in it yet.
         return (head + "<h3>Live</h3><p class='meta'>No live value alerts for upcoming games."
                 "</p><h3>Signals</h3><ul>" + "".join(
-                    f"<li><b>{escape(n)}</b> {escape(SIGNAL_TEXT[n])}: no alerts yet "
-                    f"(0 of {GATE_N}).</li>" for n in _names(sport)) + "</ul>" + extra
+                    f"<li><b>{escape(n)}</b> {escape(SIGNAL_TEXT[n])}{gate_line(n, None)}</li>"
+                    for n in _names(sport)) + "</ul>" + extra
                 + "</section>")
     rows = p.execute(
         select(alerts, consensus_grades.c.clv, consensus_grades.c.close_prob,
@@ -73,7 +75,7 @@ def value_html(sport: str, p: Connection | None, now: datetime, et, extra: str =
     done = [r for r in rows if r not in live][:RECENT]
     out = [head, "<h3>Live</h3>"]
     if live:
-        out.append("<ul class='plist'>" + "".join(_alert_li(r, et, False) for r in live)
+        out.append("<ul class='plist'>" + "".join(_alert_li(r, et, False, p, now) for r in live)
                    + "</ul>")
     else:
         out.append("<p class='meta'>No live value alerts for upcoming games.</p>")
@@ -85,18 +87,35 @@ def value_html(sport: str, p: Connection | None, now: datetime, et, extra: str =
     for name in _names(sport):
         s = g.get(name)
         if s is None:
-            items.append(f"<li><b>{escape(name)}</b> {escape(SIGNAL_TEXT[name])}: no alerts "
-                         f"yet (0 of {GATE_N}).</li>")
+            items.append(f"<li><b>{escape(name)}</b> {escape(SIGNAL_TEXT[name])}"
+                         f"{gate_line(name, None)}</li>")
             continue
-        rng = ("" if s["lo"] is None else
-               f" (95% range {100 * s['lo']:+.1f} to {100 * s['hi']:+.1f})")
-        roi = "–" if s["roi"] is None else f"{100 * s['roi']:+.1f}%"
-        items.append(f"<li><b>{escape(name)}</b> {escape(SIGNAL_TEXT[name])}: "
-                     f"{s['alerts']} alerts, {s['n']} of {GATE_N} graded; CLV vs consensus "
-                     f"close {_pp(s['clv'])}{rng}; {s['wins']}-{s['losses']}, ROI {roi}. "
-                     f"{escape(s['status'])}.</li>")  # fmt: skip
+        items.append(f"<li><b>{escape(name)}</b> {escape(SIGNAL_TEXT[name])}"
+                     f"{gate_line(name, s)}</li>")
     out.append("<h3>Signals</h3><ul>" + "".join(items) + "</ul>" + extra + "</section>")
     return "".join(out)
+
+
+def gate_line(name: str, s: dict | None) -> str:
+    """The small line under a signal's name: how proven it is ("C-NBA: 12/200 graded, CLV
+    +0.4 pp"), then its alerts, record and gate status."""
+    if s is None:
+        return f"<div class='gate'>{escape(name)}: 0/{GATE_N} graded, no alerts yet</div>"
+    rng = ("" if s["lo"] is None else
+           f" (95% range {100 * s['lo']:+.1f} to {100 * s['hi']:+.1f})")
+    roi = "–" if s["roi"] is None else f"{100 * s['roi']:+.1f}%"
+    return (f"<div class='gate'>{escape(name)}: {s['n']}/{GATE_N} graded, CLV {_pp(s['clv'])}"
+            f"{rng} · {s['alerts']} alerts · {s['wins']}-{s['losses']}, ROI {roi} · "
+            f"{escape(s['status'])}</div>")  # fmt: skip
+
+
+def label_badge(label: str | None, stake) -> str:
+    """The pick's label and stake as a badge (alerts/labels.py); empty for unlabelled picks."""
+    if not label:
+        return ""
+    st = float(stake) if stake not in (None, "") else 0.0
+    return (f" <span class='lbl {escape(label.lower())}'>{escape(label)} "
+            f"{st:g}u</span>")
 
 
 def _names(sport: str) -> list[str]:
@@ -109,13 +128,30 @@ def _utc(t: datetime) -> datetime:
     return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
-def _alert_li(r, et, graded: bool) -> str:
+def _alert_li(r, et, graded: bool, p: Connection | None = None,
+              now: datetime | None = None) -> str:  # fmt: skip
     a = type("A", (), dict(r))  # selection() reads attributes
     sel = selection(a)
     book = BOOKS.get(r["book"], r["book"])
     name = signal_name(r["signal"], r["sport"])
     fair = "" if r["fair_prob"] is None else f" · fair {100 * r['fair_prob']:.0f}%"
     nv = "" if r["book_prob"] is None else f" vs no-vig {100 * r['book_prob']:.0f}%"
+    d = r["details"] or {}
+    if isinstance(d, str):
+        import json
+
+        d = json.loads(d)
+    lab = d.get("label") or {}
+    badge = label_badge(lab.get("label"), lab.get("stake"))
+    if not graded and badge and p is not None and now is not None:
+        from betdata.alerts.labels import status
+
+        try:
+            st = status(p, a, now)
+        except Exception:  # noqa: BLE001 - a status never drops the pick
+            st = None
+        if st:
+            badge += f" <span class='st {st.lower()}'>{st}</span>"
     tail = ""
     if graded:
         if r["clv"] is not None:
@@ -127,9 +163,10 @@ def _alert_li(r, et, graded: bool) -> str:
             tail += f" · {escape(r['result'])}"
     return (f"<li class='prop'><div><b>{escape(r['game_label'] or '')}</b> · "
             f"{escape(MARKETS.get(r['market'], r['market']))}: <b>{escape(sel)} "
-            f"{_price(r['price'])}</b> at {escape(book)} <span class='research'>{escape(name)}"
-            f"</span></div><div class='meta'>{escape(et(_utc(r['created_at']), '%a %-I:%M %p'))}"
-            f"{fair}{nv}{tail}</div><div class='meta'>{escape(r['reason'][:300])}</div></li>")
+            f"{_price(r['price'])}</b> at {escape(book)}{badge} <span class='research'>"
+            f"{escape(name)}</span></div><div class='meta'>"
+            f"{escape(et(_utc(r['created_at']), '%a %-I:%M %p'))}{fair}{nv}{tail}</div>"
+            f"<div class='meta'>{escape(r['reason'][:300])}</div></li>")
 
 
 def _cell_clv(r, pin: bool = False) -> str:
@@ -175,3 +212,30 @@ def record_html(rows: list[dict], csv_href: str = "picks.csv") -> str:
             "</p><div class='tablewrap'><table class='lines record'><tr><th></th><th>Picks</th>"
             "<th>W-L-P</th><th>Units</th><th>ROI</th><th>CLV vs consensus</th>"
             "<th>CLV vs Pinnacle</th></tr>" + "".join(body) + "</table></div>" + excl)
+
+
+def bank_html(rows: list[dict], title: str) -> str:
+    """The simulated bankroll of the labelled picks among `rows` (betdata/ledger.py `bank`):
+    current bankroll, units won or lost and ROI, then the record by label."""
+    from betdata.alerts.labels import LEAN, START_BANKROLL, STARTED, TAKE
+    from betdata.ledger import bank
+
+    b = bank(rows)
+    roi = "–" if b.roi is None else f"{100 * b.roi:+.1f}%"
+    body = []
+    for lab in (TAKE, LEAN):
+        x = bank([r for r in rows if r.get("label") == lab])
+        r_roi = "–" if x.roi is None else f"{100 * x.roi:+.1f}%"
+        clv = "–" if not x.clv else f"{100 * sum(x.clv) / len(x.clv):+.2f} pp"
+        body.append(f"<tr><td>{label_badge(lab, 1.0 if lab == TAKE else 0.5)}</td>"
+                    f"<td>{x.picks}</td><td>{x.wins}-{x.losses}-{x.pushes}</td>"
+                    f"<td>{x.units:+.2f}u</td><td>{r_roi}</td><td>{clv}</td></tr>")
+    return (f"<div class='bank'><h3>Simulated bankroll · {escape(title)}</h3>"
+            f"<p class='bankline'><b>{b.bankroll:.2f}u</b> · {b.units:+.2f}u · ROI {roi} · "
+            f"{b.picks} labelled picks ({b.wins}-{b.losses}-{b.pushes})</p>"
+            f"<p class='meta'>In-house simulation: started at {START_BANKROLL:g} units on "
+            f"{STARTED.strftime('%b %-d, %Y')}; flat stakes (TAKE 1 unit, LEAN 0.5), no "
+            "compounding; paper units, not advice. Earlier picks are unlabelled and not "
+            "counted.</p><div class='tablewrap'><table class='lines record'><tr><th>Label</th>"
+            "<th>Picks</th><th>W-L-P</th><th>Units</th><th>ROI</th><th>CLV</th></tr>"
+            + "".join(body) + "</table></div></div>")

@@ -42,9 +42,9 @@ def test_value_section(tmp_path):
     assert html.startswith("<section class='value'><h2>Value</h2>")
     assert "NYK +4.5 -110</b> at DraftKings" in html and "C-NBA" in html
     assert html.count("<li class='prop'>") == 3  # one live, two graded
-    assert "CLV +3.0 pp" in html and "3 alerts, 2 of 200 graded" in html
+    assert "C-NBA: 2/200 graded, CLV +1.0 pp" in html and "CLV +3.0 pp" in html  # gate line; a pick
     assert "1-1" in html and "no read before 60" in html
-    assert "F</b> NBA opening-line prop snipes" in html and "no alerts yet (0 of 200)" in html
+    assert "F</b> NBA opening-line prop snipes" in html and "F: 0/200 graded, no alerts yet" in html
     assert "No live value alerts" in nfl and "C-NFL" in nfl and "C-NBA" not in nfl
 
 
@@ -60,4 +60,24 @@ def test_a_poller_database_without_the_m18_tables(tmp_path):
         c.execute(text("create table alerts (alert_id integer primary key)"))
     with eng.connect() as c:
         html = value_html("nba", c, NOW, et)
-    assert "No live value alerts" in html and "C-NBA" in html and "0 of 200" in html
+    assert "No live value alerts" in html and "C-NBA: 0/200 graded" in html
+
+
+def test_live_pick_shows_its_label_stake_and_status(tmp_path):
+    from betdata.alerts.db import quotes
+
+    pdb = engine_for(tmp_path / "poller.sqlite")
+    with pdb.begin() as p:
+        aid = _alert(p, "live", NOW + timedelta(hours=3))
+        p.execute(alerts.update().where(alerts.c.alert_id == aid).values(
+            details={"label": {"label": "TAKE", "stake": 1.0}}))
+        for outcome, line in (("away", 4.5), ("home", -4.5)):
+            p.execute(insert(quotes).values(polled_at=NOW - timedelta(minutes=3), sport="nba",
+                                            game_id=1, source="sharpapi", book="draftkings",
+                                            market="spreads", outcome=outcome, line=line,
+                                            price=-110))  # fmt: skip
+    with pdb.connect() as p:
+        html = value_html("nba", p, NOW, et, top="<div class='bank'>B</div>")
+    assert "at DraftKings <span class='lbl take'>TAKE 1u</span> <span class='st live'>Live</span>" \
+        in html
+    assert html.index("<div class='bank'>B</div>") < html.index("<h3>Live</h3>")  # at the top
