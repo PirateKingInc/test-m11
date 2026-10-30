@@ -16,6 +16,15 @@ tests/test_ledger.py checks the files' git history. If the poller database is re
 `reload_alerts` puts every ledger pick back as an alert, so grading continues.
 
 **Pick id:** a hash of the alert's de-duplication key, stable across database rebuilds.
+
+**Annotations** (`ledger/annotations.csv`, owner decision 2026-10-30): pick rows are never
+rewritten, so a later correction to a pick is an append-only annotation (pick id, field, value)
+that `joined` lays over the pick. Two are written by `sync`:
+- the M16 paper alerts (signal `news`, pre-M18 rules) are renamed `m16-legacy`;
+- the 2 M16 alerts that repeated an injury change already alerted (REVIEW.md M16-4) are marked
+  `duplicate: true`.
+The record (page, weekly report, milestones) counts neither: legacy and duplicate picks stay in
+the CSV only.
 """
 
 from __future__ import annotations
@@ -41,6 +50,11 @@ PICK_FIELDS = ("pick_id", "dedup_key", "created_at", "sport", "game_id", "game",
 RESULT_FIELDS = ("pick_id", "result", "profit", "clv_consensus", "close_method",
                  "clv_pinnacle", "graded_at")  # fmt: skip
 MILESTONE_FIELDS = ("signal_name", "graded", "reached_at")
+ANNOTATION_FIELDS = ("key", "pick_id", "field", "value", "noted_at", "note")
+LEGACY = "m16-legacy"
+# REVIEW.md M16-4: the next injury report repeated a change already alerted (Edgecombe DET @ PHI
+# 7:00 PM; Zubac/Nembhard IND @ MIL 3:00 PM).
+M16_DUPLICATES = ("P89c0ffdfda99", "Pddaf70680c30")
 FINAL = ("win", "loss", "push", "void")
 MILESTONES = (60, 200)
 TOO_FEW = 100
@@ -195,7 +209,8 @@ def pick_row(p: Connection, m: Connection | None, a, p_over_fn=None) -> dict:
             "game": a.game_label or "", "tip": _iso(a.tip), "market": a.market,
             "player": a.player_name or "", "side": a.side, "line": _num(a.line, 2),
             "odds": a.price, "book": a.book, "signal": a.signal,
-            "signal_name": signal_name(a.signal, a.sport), "edge_source": tag or "",
+            "signal_name": LEGACY if a.signal == "news" else signal_name(a.signal, a.sport),
+            "edge_source": tag or "",
             "news_move": _num(news), "reason": " ".join((a.reason or "").split()),
             "fair_prob": _num(a.fair_prob), "book_prob": _num(a.book_prob),
             "consensus_at_pick": "" if cons is None else json.dumps(cons, sort_keys=True)}
@@ -253,20 +268,45 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
                 results.append(r)
     n_p = append_rows(out / "picks.csv", PICK_FIELDS, picks)
     n_r = append_rows(out / "results.csv", RESULT_FIELDS, results)
+    annotate(out, now)
     return {"picks": n_p, "results": n_r, "milestones": milestones(out, now)}
+
+
+def annotate(out: Path, now: datetime) -> int:
+    """Append the standing annotations (module docstring) for every pick that lacks them."""
+    rows = []
+    for pk in read_rows(out / "picks.csv"):
+        if pk["signal"] == "news" and pk["signal_name"] != LEGACY:
+            rows.append(("signal_name", LEGACY, "M16 paper alert (pre-M18 rules)", pk))
+        if pk["pick_id"] in M16_DUPLICATES:
+            rows.append(("duplicate", "true", "repeat of an alerted change (REVIEW.md M16-4)",
+                         pk))
+    return append_rows(out / "annotations.csv", ANNOTATION_FIELDS,
+                       [{"key": f"{pk['pick_id']}:{field}", "pick_id": pk["pick_id"],
+                         "field": field, "value": value, "noted_at": _iso(now), "note": note}
+                        for field, value, note, pk in rows], key="key")  # fmt: skip
 
 
 # --- the record ----------------------------------------------------------------------------------
 
 
 def joined(out: Path) -> list[dict]:
-    """Every pick with its result fields (empty until final)."""
+    """Every pick with its annotations laid over it and its result fields (empty until final)."""
     res = {r["pick_id"]: r for r in read_rows(out / "results.csv")}
+    notes: dict[str, dict] = {}
+    for n in read_rows(out / "annotations.csv"):
+        notes.setdefault(n["pick_id"], {})[n["field"]] = n["value"]
     rows = []
     for pk in read_rows(out / "picks.csv"):
         r = res.get(pk["pick_id"], {})
-        rows.append({**pk, **{f: r.get(f, "") for f in RESULT_FIELDS if f != "pick_id"}})
+        rows.append({**pk, "duplicate": "", **notes.get(pk["pick_id"], {}),
+                     **{f: r.get(f, "") for f in RESULT_FIELDS if f != "pick_id"}})
     return rows
+
+
+def counted(rows: list[dict]) -> list[dict]:
+    """The picks the record counts: not M16 legacy, not a duplicate."""
+    return [r for r in rows if r["signal_name"] != LEGACY and r.get("duplicate") != "true"]
 
 
 def _f(x: str) -> float | None:
@@ -354,7 +394,7 @@ def milestones(out: Path, now: datetime) -> list[dict]:
     path = out / "milestones.csv"
     done = {(r["signal_name"], r["graded"]) for r in read_rows(path)}
     by: dict[str, list] = {}
-    for r in joined(out):
+    for r in counted(joined(out)):
         by.setdefault(r["signal_name"], []).append(r)
     new = []
     for name, rs in sorted(by.items()):

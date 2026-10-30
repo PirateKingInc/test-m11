@@ -2226,6 +2226,10 @@ No rule, threshold or model changes: the signals are frozen until their 200-pick
   - `append_rows` refuses any write whose old text is not a prefix of the new;
   - `tests/test_ledger.py` checks every committed version of each file starts with the one before it (CI fetches the full history).
 - **Rebuilt poller database:** each poller job re-inserts every ledger pick missing from `alerts` (`reload_alerts`), so grading continues.
+- **Annotations** (`ledger/annotations.csv`, append-only; owner decision 2026-10-30): a correction to a written pick is a (pick id, field, value) row laid over the pick, never an edit.
+  - The M16 paper alerts (signal `news`, pre-M18 rules) are renamed `m16-legacy`; new ones are written with that name.
+  - The 2 M16 alerts that repeated an already-alerted injury change (REVIEW.md M16-4) are marked `duplicate: true`.
+  - Both stay in the CSV but are never counted: not in the page record, the weekly report or the milestones. The page notes "Excludes N M16 legacy alerts (pre-M18 rules), available in the CSV."
 
 **Page:** the Value section ends with an all-time record from the ledger, with "too few to judge" under 100 graded picks and a "Download all picks (CSV)" link (`site/picks.csv`). It shows:
 - overall W-L-P, units, ROI and average CLV (consensus and Pinnacle, 95% ranges);

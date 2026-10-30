@@ -523,7 +523,8 @@ def _ledger(out_dir: Path) -> str:
         rows = joined(ledger_dir())
         out_dir.mkdir(parents=True, exist_ok=True)
         with (out_dir / "picks.csv").open("w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=[*PICK_FIELDS, *RESULT_FIELDS[1:]],
+            w = csv.DictWriter(f, fieldnames=[*PICK_FIELDS, "duplicate",
+                                                   *RESULT_FIELDS[1:]],
                                lineterminator="\n")
             w.writeheader()
             w.writerows(rows)

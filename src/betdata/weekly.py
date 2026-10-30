@@ -20,7 +20,7 @@ import httpx
 from sqlalchemy import Connection, func, select
 
 from betdata.alerts.rules import EASTERN
-from betdata.ledger import TOO_FEW, Record, breakdowns, joined
+from betdata.ledger import LEGACY, TOO_FEW, Record, breakdowns, counted, joined
 
 log = logging.getLogger(__name__)
 NTFY = "https://ntfy.sh/"
@@ -96,7 +96,9 @@ def health(main: Connection | None, poller: Connection | None, since: datetime) 
 def build(root: Path, now: datetime, main: Connection | None,
           poller: Connection | None) -> tuple[str, list[str]]:  # fmt: skip
     """(report markdown, 5-line summary)."""
-    rows = joined(root / "ledger")
+    every = joined(root / "ledger")
+    rows = counted(every)
+    n_legacy = sum(r["signal_name"] == LEGACY for r in every)
     since = now - timedelta(days=7)
     week = [r for r in rows if r["created_at"] and datetime.fromisoformat(r["created_at"])
             >= since]  # fmt: skip
@@ -107,6 +109,8 @@ def build(root: Path, now: datetime, main: Connection | None,
           f"Written {now.isoformat(timespec='minutes')} by the hourly run. Reporting only; the "
           "signals are frozen until their 200-pick gates. Paper picks, not advice. Records "
           f"under {TOO_FEW} graded picks are too few to judge.",
+          *(["", f"Excludes {n_legacy} M16 legacy alerts (pre-M18 rules), available in the "
+               "CSV."] if n_legacy else []),
           "", "## All-time", "", HEAD]
     for group, recs in b_all.items():
         for k, r in recs.items():
@@ -150,7 +154,7 @@ def ntfy(topic: str | None, title: str, lines: list[str], client=None) -> str:
 
 
 def milestone_lines(ms: list[dict], root: Path) -> list[str]:
-    rows = joined(root / "ledger")
+    rows = counted(joined(root / "ledger"))
     out = []
     for m in ms:
         rs = [r for r in rows if r["signal_name"] == m["signal_name"]]
