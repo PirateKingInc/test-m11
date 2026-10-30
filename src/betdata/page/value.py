@@ -229,7 +229,7 @@ def bank_html(rows: list[dict], title: str) -> str:
         clv = "–" if not x.clv else f"{100 * sum(x.clv) / len(x.clv):+.1f}"
         body.append(f"<tr><td>{label_badge(lab, 1.0 if lab == TAKE else 0.5)}</td>"
                     f"<td>{x.picks}</td><td>{x.wins}-{x.losses}-{x.pushes}</td>"
-                    f"<td>{x.units:+.2f}u</td><td>{r_roi}</td><td>{clv}</td></tr>")
+                    f"<td>{x.units:+.2f}</td><td>{r_roi}</td><td>{clv}</td></tr>")
     return (f"<div class='bank'><h3>Simulated bankroll · {escape(title)}</h3>"
             f"<p class='bankline'><b>{b.bankroll:.2f}u</b> · {b.units:+.2f}u · ROI {roi} · "
             f"{b.picks} labelled picks ({b.wins}-{b.losses}-{b.pushes})</p>"
