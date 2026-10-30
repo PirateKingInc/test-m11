@@ -795,7 +795,7 @@ white-space:nowrap}} .lbl.take{{background:var(--acc);color:var(--bg)}}
 .st.moved{{color:var(--mut)}} .st.gone{{color:var(--warn)}}
 .gate{{font-size:.75rem;color:var(--mut);margin:1px 0 4px}}
 .bank{{background:var(--flag);border-radius:8px;padding:8px 10px;margin:8px 0}}
-.bank h3{{margin:0}} .bankline{{margin:4px 0 0}} .bankline b{{font-size:1.15rem}}
+.bank th,.bank td{{padding:4px 2px}} .bank h3{{margin:0}} .bankline{{margin:4px 0 0}} .bankline b{{font-size:1.15rem}}
 details.fold{{margin:10px 0;border:1px solid var(--line);border-radius:10px;font-size:1rem}}
 .fold>summary{{padding:12px;color:var(--fg)}}
 .fold>summary .pv,.gamerow>summary .pv{{color:var(--mut);font-size:.85rem}}
