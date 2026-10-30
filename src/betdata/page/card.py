@@ -47,7 +47,7 @@ def _row(r: dict, p, now: datetime, et) -> str:
         except Exception:  # noqa: BLE001 - a status never drops the pick
             s = None
         st = "" if not s else f"<span class='st {s.lower()}'>{s}</span>"
-    when = "" if a.tip is None else et(a.tip, "%a %-I:%M %p ET")
+    when = "" if a.tip is None else et(a.tip, "%a %-I:%M %p")
     return (f"<li class='prop'><div><b>{escape(a.game_label)}</b> · {escape(when)}</div>"
             f"<div><b>{escape(selection(a))} {_price(a.price)}</b> at "
             f"{escape(BOOKS.get(a.book, a.book))}"
@@ -95,7 +95,7 @@ def card_html(sport: str, name: str, rows: list[dict] | None, p, now: datetime, 
     today = now.astimezone(EASTERN).date().isoformat()
     if next_at is not None and (not days or days[-1] != today):
         out.append(f"<p class='meta'>Today's card is chosen at "
-                   f"{escape(et(next_at, '%-I:%M %p ET'))}.</p>")
+                   f"{escape(et(next_at, '%-I:%M %p'))}.</p>")
     names = _names(sport)
     if days:
         day = days[-1]

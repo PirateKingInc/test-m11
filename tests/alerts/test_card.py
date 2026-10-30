@@ -148,7 +148,7 @@ def test_card_section(pdb, tmp_path):
         rows = L.joined(out)
         html = card_html("nba", "NBA", rows, p, NOW + timedelta(minutes=5), et, None, rows)
     assert html.startswith("<section class='cardsec'><h2>Tonight's card</h2>")
-    assert "<h3>Sat Oct 31</h3>" in html and "NYK @ BOS</b> · Sat 8:00 PM ET" in html
+    assert "<h3>Sat Oct 31</h3>" in html and "NYK @ BOS</b> · Sat 8:00 PM ET</div>" in html
     assert "<span class='lbl take'>TAKE 1u</span>" in html  # the news pick
     assert "<span class='lbl lean'>LEAN 0.5u</span> <span class='st live'>Win +0.55u</span>" in html
     assert "Card bankroll · All sports" in html and "Card bankroll · NBA" in html
