@@ -222,12 +222,13 @@ class Poller:
 
     def card(self, now: datetime) -> list[dict]:
         """Tonight's card (alerts/card.py): chosen once per sport and day."""
-        from betdata.alerts.card import run
+        from betdata.alerts.card import push, run
 
         cards = run(self.pdb, self.main, now)
-        for c in cards:
-            self.notes.append(f"card {c['sport']} {c['day']}: "
-                              + ("missed" if c.get("missed") else f"{len(c['picks'])} picks"))
+        for c in cards:  # pushed right after selection, one message per sport
+            sent = push(self.pdb, c, now, self.keys.ntfy_topic, self.push_client)
+            self.notes.append(f"card {c['sport']} {c['day']}: {len(c['picks'])} picks, "
+                              f"push {sent}")
         return cards
 
     # --- NBA news ---------------------------------------------------------------------------

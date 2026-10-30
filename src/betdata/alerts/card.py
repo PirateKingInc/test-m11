@@ -1,11 +1,12 @@
 """Tonight's card (owner request 2026-10-30, MODEL.md "Tonight's card"): an in-house
 simulation of a pick service. Display only: no signal, threshold, model or grade changes.
 
-Once a day per sport, 30 minutes before that sport's first game (US Eastern day), the poller
-selects the card: the top 5 picks by expected value among that day's M18 picks (C, F, G2, G1)
-still "Live" (the alerted price, or better, is the book's latest stored quote) for games not yet
-started. Picks created after selection stay off the card; fewer than 5 qualifying means a
-shorter card. Each card pick gets a label and stake at selection:
+Once a day per sport, at 8:50 AM US Eastern on days that sport has games, the poller selects
+the card: the top 5 picks by expected value among that day's M18 picks (C, F, G2, G1) still
+"Live" (the alerted price, or better, is the book's latest stored quote) for games not yet
+started. If none is Live at 8:50, the card is selected at the first poll that day with any Live
+pick. Picks created after selection stay off the card; fewer than 5 qualifying means a shorter
+card. Each card pick gets a label and stake at selection:
 - **TAKE** (1 unit): edge >= 1.5x its signal's threshold AND (edge source "news" OR a fresh
   Pinnacle price sides with the pick);
 - **LEAN** (0.5 unit): every other card pick; book disagreement against a two-book consensus is
@@ -16,10 +17,12 @@ Expected value per unit staked = fair probability x decimal odds - 1. A pick wit
 probability (G1: its rule is a points drop, not a priced edge) has no expected value and is never
 on the card.
 
-The selection is stored once in the poller state (`card:<sport>:<day>`) and written once to the
-ledger (`ledger/card.csv`, betdata/ledger.py). A poller that misses the window (no cycle between
-selection time and the first game) records the day as missed: no card. Cards start on 2026-10-31
-(no backfill).
+Right after selection the card is pushed to ntfy, one message per sport. The selection is stored
+once in the poller state (`card:<sport>:<day>`), saved with the poller database at :56, and
+written once to the ledger (`ledger/card.csv`, betdata/ledger.py) by the next hourly run, which
+publishes it: an 8:50 card is on the 9:00 AM page. A card prop whose player does not play (ruled
+out) is graded void, as books do (alerts/grade.py `prop_actual`); a void is kept but stays out of
+W-L-P, units and ROI. Cards start on 2026-10-31 (no backfill).
 """
 
 from __future__ import annotations
@@ -34,7 +37,7 @@ from betdata.alerts.labels import LEAN, SIGNALS, STAKE, TAKE, available, label
 from betdata.alerts.rules import EASTERN, decimal
 
 SIZE = 5
-BEFORE = timedelta(minutes=30)
+AT = time(8, 50)  # Eastern
 FIRST_DAY = date(2026, 10, 31)
 SPORTS = ("nba", "nfl")
 
@@ -46,6 +49,11 @@ def key(sport: str, day: date) -> str:
 def day_bounds(day: date) -> tuple[datetime, datetime]:
     start = datetime.combine(day, time(0), EASTERN)
     return start, start + timedelta(days=1)
+
+
+def select_at(day: date) -> datetime:
+    """The card's selection time on the Eastern day: 8:50 AM ET."""
+    return datetime.combine(day, AT, EASTERN)
 
 
 def first_tip(main, sport: str, day: date) -> datetime | None:
@@ -121,7 +129,8 @@ def in_ledger(sport: str, day: date) -> bool:
 
 
 def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
-    """Choose each sport's card when due (once); returns the cards chosen or missed now."""
+    """Choose each sport's card when due (once): from 8:50 AM ET on a day the sport has games,
+    at the first poll with any Live pick. Returns the cards chosen now."""
     day = now.astimezone(EASTERN).date()
     if day < FIRST_DAY:
         return []
@@ -134,27 +143,68 @@ def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
             continue
         with main.connect() as m:
             ft = tip_fn(m, sport, day)
-        if ft is None or now < ft - BEFORE:
+        if ft is None or now < select_at(day):  # no games today, or not 8:50 yet
             continue
         with pdb.begin() as p:
-            if now >= ft:
-                card = {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
-                        "picks": [], "missed": True}  # fmt: skip
-            else:
-                card = choose(p, sport, day, now)
+            card = choose(p, sport, day, now)
+            if not card["picks"]:  # nothing Live yet: try again at the next poll
+                continue
             set_state(p, key(sport, day), card, now)
         out.append(card)
     return out
 
 
+def message(p, card: dict, now: datetime) -> tuple[str, str]:
+    """The ntfy push for one sport's card: (title, body), one line per pick."""
+    from betdata.alerts.notify import BOOKS, _fmt_price, selection
+
+    by_key = {a.dedup_key: a for a in day_picks(p, card["sport"],
+                                                datetime.fromisoformat(card["day"]).date())}
+    lines = []
+    for x in card["picks"]:
+        a = by_key.get(x["dedup_key"])
+        if a is None:
+            continue
+        when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET")
+        lines.append(f"{a.game_label} {when}: {selection(a)} {_fmt_price(a.price)} at "
+                     f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u")
+    day = datetime.fromisoformat(card["day"]).strftime("%a %b %-d")
+    return f"Tonight's card - {card['sport'].upper()} - {day}", "\n".join(lines)
+
+
+def push(pdb, card: dict, now: datetime, topic: str | None, client=None) -> str:
+    """Push one sport's card to ntfy and record the outcome on the stored card."""
+    import httpx
+
+    from betdata.alerts.notify import NTFY, PAGE
+
+    with pdb.connect() as p:
+        title, body = message(p, card, now)
+    if not topic:
+        status = "no NTFY_TOPIC"
+    else:
+        try:
+            r = (client or httpx.Client(timeout=15)).post(
+                NTFY + topic, content=body.encode(),
+                headers={"Title": title, "Click": PAGE, "Tags": "clipboard"})
+            status = f"http {r.status_code}"
+        except Exception as e:  # noqa: BLE001 - a failed push never loses the card
+            status = f"error {type(e).__name__}"
+    with pdb.begin() as p:
+        k = key(card["sport"], datetime.fromisoformat(card["day"]).date())
+        st = get_state(p, k) or card
+        set_state(p, k, {**st, "push": status}, now)
+    return status
+
+
 def due_between(main, start: datetime, end: datetime, tip_fn=first_tip) -> bool:
-    """Is a card selection due in [start, end] (keeps the poller awake for it)?"""
+    """Is an 8:50 AM ET selection due in [start, end] on a day with games (keeps the poller
+    awake for it)?"""
     for day in {start.astimezone(EASTERN).date(), end.astimezone(EASTERN).date()}:
-        if day < FIRST_DAY:
+        if day < FIRST_DAY or not start <= select_at(day) <= end:
             continue
         for sport in SPORTS:
             with main.connect() as m:
-                ft = tip_fn(m, sport, day)
-            if ft is not None and start <= ft - BEFORE <= end:
-                return True
+                if tip_fn(m, sport, day) is not None:
+                    return True
     return False

@@ -2244,13 +2244,16 @@ No rule, threshold or model changes: the signals are frozen until their 200-pick
 - **Gate status:** under each signal's name, a small line with how proven it is: "C-NBA: 12/200 graded, CLV +0.4 pp", then alerts, record and gate status.
 
 **Tonight's card** (owner request 2026-10-30; **fixed**, display only — no signal, threshold, model or grading change, and the Value section is left as it is; `alerts/card.py`, `page/card.py`). An in-house simulation of a pick service.
-- **Selection:** once per sport and US Eastern day, 30 minutes before that sport's first game. The poller chooses the top 5 picks by expected value among that day's M18 picks that are:
+- **Selection** (timing changed by the owner 2026-10-30): once per sport and US Eastern day, at 8:50 AM ET, on days that sport has games. The poller chooses the top 5 picks by expected value among that day's M18 picks that are:
   - for games not yet started;
   - created before selection;
   - still Live (the book's latest stored quote is the alerted line and price, or better).
 - **Shorter cards and exclusions:** fewer than 5 qualifying means a shorter card. Picks created after selection stay off it.
 - **Expected value** per unit = fair probability x decimal odds - 1. G1 has no fair probability (its rule is a points drop), so it is never on the card.
-- **Missed window:** a poller that has no cycle between selection time and the first game records the day as missed (no card).
+- **Nothing live at 8:50:** the card is selected at the first poll that day with any Live pick. If no pick is ever Live that day, there is no card.
+- **Push:** right after selection, the card goes to ntfy, one message per sport. The title is "Tonight's card - NBA - Sat Oct 31", with one line per pick: game, time ET, pick and line, odds, book, label, stake. The outcome is recorded on the stored card.
+- **Publication:** the poller is kept awake for 8:50, and its database is saved at :56. The 9:00 AM ET hourly run restores that database, writes the card to the ledger and builds the page, so the card is on the page by about 9:05 AM. A card selected later in the day is published by the next hourly run.
+- **Ruled-out players:** a card prop whose player does not play (ruled out) is graded void, as books do (`grade.prop_actual`: no minutes, or did not play; NFL: no snaps). A void is kept but stays out of W-L-P, units and ROI.
 - **Card labels at selection:**
   - TAKE (1 unit): edge >= 1.5x the signal's threshold AND (edge source "news" OR a fresh Pinnacle price sides with the pick).
   - LEAN (0.5 unit): every other card pick. Book disagreement against a two-book consensus is LEAN at most.
@@ -2262,7 +2265,6 @@ No rule, threshold or model changes: the signals are frozen until their 200-pick
   - a gate line per contributing signal;
   - the card bankroll: card picks only, 100 units, flat stakes, no compounding, with units, ROI, W-L-P and a record by label. Each tab shows its own sport; "All sports" appears once, on the NBA tab.
 - **Start:** the first card is Sat 2026-10-31 (no backfill).
-- **Timing:** the page is rebuilt by the hourly job, from the poller database saved at :56. So a card chosen at 6:30 PM ET first appears on the 7 PM page.
 
 **Page:** the Value section ends with an all-time record from the ledger, with "too few to judge" under 100 graded picks and a "Download all picks (CSV)" link (`site/picks.csv`). It shows:
 - overall W-L-P, units, ROI and average CLV (consensus and Pinnacle, 95% ranges);
