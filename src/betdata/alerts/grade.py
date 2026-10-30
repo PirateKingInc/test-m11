@@ -410,8 +410,12 @@ def report_lines(p: Connection) -> list[str]:
     for sig in sorted({r["signal"] for r in rows}):
         s = group_stats([r for r in rows if r["signal"] == sig])
         out.append(f"{sig}: {verdict(s)}")
-    from betdata.alerts.gates import gates
+    from betdata.alerts.gates import edge_split, gates
 
+    for tag, g in edge_split(p).items():  # C signals: news vs book disagreement
+        rng = "-" if g["lo"] is None else f"[{100 * g['lo']:+.2f}, {100 * g['hi']:+.2f}]"
+        out.append(f"C signals, {tag}: {g['alerts']} alerts, {g['n']} graded, CLV "
+                   f"{_f(g['clv'], '+.2f', 100)} pp {rng}")
     for name, g in gates(p).items():  # M18 Part H: CLV against the consensus close
         rng = "-" if g["lo"] is None else f"[{100 * g['lo']:+.2f}, {100 * g['hi']:+.2f}]"
         out.append(f"M18 {name}: {g['alerts']} alerts, {g['n']} graded vs the consensus close, "

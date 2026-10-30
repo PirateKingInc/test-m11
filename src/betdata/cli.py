@@ -11,6 +11,7 @@ from betdata.core.quota import QuotaManager
 from betdata.db import seed as seed_mod
 from betdata.db.engine import make_engine, upgrade
 from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
+from betdata.ledger_cli import ledger_app
 from betdata.nba.cli import nba_app
 from betdata.nfl.cli import nfl_app
 from betdata.props.cli import props_app
@@ -37,6 +38,7 @@ app.add_typer(runner_app, name="runner")
 app.add_typer(page_app, name="page")
 app.add_typer(poller_app, name="poller")
 app.add_typer(alerts_app, name="alerts")
+app.add_typer(ledger_app, name="ledger")
 
 
 @app.callback()

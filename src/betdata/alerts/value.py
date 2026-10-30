@@ -160,6 +160,7 @@ class Repriced:
     cons_before: C.Consensus | None = None  # game markets: the pre-news consensus
     shift: float = 0.0  # game markets: added to the consensus fair value
     model_fair: float | None = None  # game markets: the model's L*, T* or p_home
+    model_fair_before: float | None = None  # the same before the news (model-only base)
     prop_cons: Callable | None = None  # props: first-side line -> pre-news Consensus | None
     prop_p_before: Callable | None = None  # props: line -> model P(over) before the news
     prop_p_after: Callable | None = None  # props: line -> model P(over) after the news
@@ -190,6 +191,32 @@ class Repriced:
         return (p_over if side == "over" else 1 - p_over), cons
 
 
+    def base(self, side: str, line: float | None) -> float | None:
+        """The side's probability at its line without the news: the pre-news consensus (or,
+        model only, the model before the news). fair - base is what the repricer moved."""
+        if self.market in C.GAME:
+            if self.cons_before is None:
+                if self.model_fair_before is None:
+                    return None
+                c = C.Consensus(self.sport, 0, self.market, datetime.min, "model",
+                                self.model_fair_before)  # fmt: skip
+                return c.prob(side, line)
+            return self.cons_before.prob(side, line)
+        cons = self.prop_cons(line)
+        p_over = cons.prob("over", line) if cons is not None else self.prop_p_before(line)
+        if p_over is None:
+            return None
+        return p_over if side == "over" else 1 - p_over
+
+
+def edge_source(news_move: float | None, edge: float | None) -> str | None:
+    """Ledger tag of a C-signal pick: "news" when the repricer's move supplies at least half
+    the edge, else "book disagreement" (the book was off the consensus before the news)."""
+    if news_move is None or edge is None:
+        return None
+    return "news" if news_move >= edge / 2 else "book disagreement"
+
+
 @dataclass
 class Candidate:
     market: str
@@ -204,6 +231,7 @@ class Candidate:
     cons_before: C.Consensus | None  # None: model only
     confirmed: str | None  # what moved the same way, for a two-book or model-only price
     details: dict | None = None  # props: the projection before and after
+    news_move: float | None = None  # fair minus the no-news base (Repriced.base)
 
     @property
     def solo(self) -> bool:
@@ -243,6 +271,8 @@ def evaluate(p: Connection, main: Connection | None, sport: str, game_id: int, m
                 continue
             c = Candidate(market, player_name, side, book, ln, q.price(side, market), fair, bp,
                           edge, cons, None)  # fmt: skip
+            base = rep.base(side, ln)
+            c.news_move = None if base is None else fair - base
             if c.solo:  # 3. two-book or model only
                 c.confirmed = _moved_toward(sport, market, side, ln, book, cur, then, cons,
                                             cons_now(q.line) if cons is not None else None)
@@ -289,7 +319,8 @@ def game_repricing(sport: str, market: str, cons: C.Consensus | None, rp) -> Rep
     else:
         d = win_prob(sport, rp.margin_after) - win_prob(sport, rp.margin_before)
         own = win_prob(sport, rp.margin_after)
-    return Repriced(sport, market, cons_before=cons, shift=d, model_fair=own)
+    return Repriced(sport, market, cons_before=cons, shift=d, model_fair=own,
+                    model_fair_before=own - d)  # the model's own number before the news
 
 
 def minutes_since(stated: datetime, now: datetime) -> int:

@@ -425,6 +425,8 @@ class Poller:
             pkey = _norm(c.player_name) if c.player_name else ""
             details = {"stated": stated.isoformat(), "minutes_since_report": mins,
                        "fair": c.fair, "edge": c.edge, "two_book_or_model_only": c.solo,
+                       "news_move": c.news_move,
+                       "edge_source": V.edge_source(c.news_move, c.edge),
                        "confirmed": c.confirmed, "consensus_before": None if cb is None else
                        {"fair": cb.fair, "method": cb.method, "n": cb.n,
                         "two_book": cb.two_book, "line": cb.line, "at": cb.at.isoformat()},
@@ -866,6 +868,15 @@ class Poller:
         from betdata.alerts import grade as G
         from betdata.alerts import lag as L
 
+        def _reload():  # a rebuilt or lost poller database: picks come back from the ledger
+            from betdata.ledger import ledger_dir, reload_alerts
+
+            with self.pdb.begin() as p:
+                n = reload_alerts(p, ledger_dir())
+            if n:
+                self.notes.append(f"{n} picks reloaded from the ledger")
+
+        self._guard("ledger reload", _reload)
         self._guard("grade", G.grade_all, self.main, self.pdb, now)
 
         from betdata.alerts.gates import grade_consensus  # M18 Part H

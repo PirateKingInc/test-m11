@@ -486,11 +486,12 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     from betdata.nfl.book_lines import poller_conn
 
     poller = poller_conn()
+    record = _ledger(out_dir)
     for sport in active:
         eng = _engine(sport, conn, now)
         if eng is not None:  # the run log's proof that the section was published (M17)
             engines[sport.key] = eng.count("<article class='game'>")
-        val = _value(sport, poller, now)
+        val = _value(sport, poller, now, record)
         if val is not None:  # the run log's proof that the Value section was published (M18)
             values[sport.key] = val.count("<li class='prop'>")
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
@@ -510,14 +511,37 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     return status
 
 
-def _value(sport: Sport, poller, now: datetime) -> str | None:
-    """The sport's Value section (M18); a failure only drops it."""
+def _ledger(out_dir: Path) -> str:
+    """The ledger's all-time record (HTML), and site/picks.csv: every pick with its result
+    fields, for the page's download link. A failure only drops them."""
+    try:
+        import csv
+
+        from betdata.ledger import PICK_FIELDS, RESULT_FIELDS, joined, ledger_dir
+        from betdata.page.value import record_html
+
+        rows = joined(ledger_dir())
+        out_dir.mkdir(parents=True, exist_ok=True)
+        with (out_dir / "picks.csv").open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=[*PICK_FIELDS, *RESULT_FIELDS[1:]],
+                               lineterminator="\n")
+            w.writeheader()
+            w.writerows(rows)
+        return record_html(rows)
+    except Exception as e:  # never lose the page over the ledger
+        log.warning("ledger record failed: %s", e)
+        return ""
+
+
+def _value(sport: Sport, poller, now: datetime, record: str = "") -> str | None:
+    """The sport's Value section (M18) with the ledger's all-time record; a failure only drops
+    it."""
     if sport.key not in ("nba", "nfl"):
         return None
     try:
         from betdata.page.value import value_html
 
-        return value_html(sport.key, poller, now, et)
+        return value_html(sport.key, poller, now, et, record)
     except Exception as e:  # never lose the page over the Value section
         log.warning("%s value section failed: %s", sport.key, e)
         return None
@@ -609,6 +633,8 @@ flex-wrap:wrap}}
 .flags{{margin:6px 0}} .agree{{font-size:.78rem;color:var(--acc);margin:2px 0 6px}}
 .agree.no{{color:var(--mut)}} .value{{border:2px solid var(--acc);border-radius:10px;
 padding:8px 12px;margin:8px 0 14px}} .research-head{{color:var(--mut)}}
+.tablewrap{{overflow-x:auto}} .record td,.record th{{font-size:.8rem;white-space:nowrap}}
+.record tr.grp th{{text-align:left;padding-top:8px}}
 .flag{{display:inline-block;background:var(--flag);color:var(--acc);
 border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.85rem;font-weight:700}}
 table{{width:100%;border-collapse:collapse;font-size:.9rem}}
