@@ -1,6 +1,7 @@
-"""Tonight's card (alerts/card.py, MODEL.md "Tonight's card"): chosen once per sport and day,
-30 minutes before the first game, from that day's picks still live, top 5 by expected value;
-written once to the ledger (card yes/no, the card's label and stake); shown above Value."""
+"""Tonight's card (alerts/card.py, MODEL.md "Tonight's card"): chosen once per sport and day at
+8:50 AM ET on days with games (or at the first live pick after, if none is live then), from that
+day's picks still live, top 5 by expected value; pushed to ntfy right after selection; written
+once to the ledger (card yes/no, the card's label and stake); shown above Value."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -12,7 +13,7 @@ from betdata.alerts import card as CD
 from betdata.alerts.db import alert_grades, alerts, engine_for, get_state, quotes, set_state
 
 FIRST = datetime(2026, 11, 1, 0, 0, tzinfo=UTC)  # Sat Oct 31, 8:00 PM ET
-NOW = FIRST - timedelta(minutes=30)
+NOW = datetime(2026, 10, 31, 12, 50, tzinfo=UTC)  # Sat Oct 31, 8:50 AM ET (EDT)
 
 
 @pytest.fixture
@@ -75,12 +76,79 @@ def test_news_picks_at_one_and_a_half_thresholds_are_take(pdb):
         "news": ("TAKE", 1.0), "book": ("LEAN", 0.5)}
 
 
-def test_a_missed_window_records_no_card_and_cards_start_on_oct_31(pdb):
+def test_with_nothing_live_at_850_the_card_waits_for_the_first_live_pick(pdb):
+    with pdb.begin() as p:
+        _pick(p, "gone", 0.6, live=False)
+    assert CD.run(pdb, _Main(), NOW, tip_fn) == []  # nothing live: nothing stored yet
+    with pdb.connect() as p:
+        assert get_state(p, "card:nba:2026-10-31") is None
+    later = NOW + timedelta(hours=3)
+    with pdb.begin() as p:
+        _pick(p, "new", 0.6, created=later - timedelta(minutes=1), player="New")
+    [card] = CD.run(pdb, _Main(), later, tip_fn)
+    assert [x["dedup_key"] for x in card["picks"]] == ["new"]
+    assert card["selected_at"] == later.isoformat()
+
+
+def test_only_on_days_with_games_and_from_oct_31(pdb):
     with pdb.begin() as p:
         _pick(p, "k", 0.6)
-    [card] = CD.run(pdb, _Main(), FIRST + timedelta(minutes=1), tip_fn)
-    assert card["missed"] and card["picks"] == []
-    assert CD.run(pdb, _Main(), datetime(2026, 10, 30, 22, 0, tzinfo=UTC), tip_fn) == []
+    assert CD.run(pdb, _Main(), NOW, lambda m, s, d: None) == []  # no games today
+    assert CD.run(pdb, _Main(), datetime(2026, 10, 30, 12, 50, tzinfo=UTC), tip_fn) == []
+    # the poller is kept awake for 8:50 on a day with games, and only then
+    assert CD.due_between(_Main(), NOW - timedelta(minutes=1), NOW, tip_fn)
+    assert not CD.due_between(_Main(), NOW + timedelta(minutes=1), NOW + timedelta(minutes=2),
+                              tip_fn)  # fmt: skip
+    assert not CD.due_between(_Main(), NOW, NOW, lambda m, s, d: None)
+
+
+def test_the_card_is_pushed_right_after_selection(pdb):
+    import httpx
+
+    with pdb.begin() as p:
+        _pick(p, "news", 0.60, signal="value", edge_source="news")
+        _pick(p, "b", 0.58, player="Bea Player")
+    [card] = CD.run(pdb, _Main(), NOW, tip_fn)
+    posts = []
+    client = httpx.Client(transport=httpx.MockTransport(
+        lambda r: posts.append((str(r.url), r.headers["title"], r.content.decode()))
+        or httpx.Response(200)))  # fmt: skip
+    assert CD.push(pdb, card, NOW, "topic-x", client) == "http 200"
+    [(url, title, body)] = posts
+    assert url.endswith("/topic-x") and title == "Tonight's card - NBA - Sat Oct 31"
+    assert body.splitlines() == [
+        "NYK @ BOS 8:00 PM ET: A Player over 6.5 rebounds +110 at DraftKings, TAKE 1u",
+        "NYK @ BOS 8:00 PM ET: Bea Player over 6.5 rebounds +110 at DraftKings, LEAN 0.5u"]
+    with pdb.connect() as p:
+        assert get_state(p, "card:nba:2026-10-31")["push"] == "http 200"
+    assert CD.push(pdb, card, NOW, None) == "no NTFY_TOPIC"
+
+
+def test_a_card_prop_for_a_player_ruled_out_is_void_and_out_of_the_bankroll(pdb, tmp_path):
+    from betdata.alerts.grade import prop_actual
+
+    class _M:  # the box score: the player was ruled out (did not play)
+        def execute(self, _q):
+            row = {"player_name": "A Player", "did_not_play": True, "minutes": 0}
+            return type("R", (), {"mappings": lambda s: type("M", (), {
+                "all": lambda s: [row]})()})()
+
+    a = type("A", (), {"sport": "nba", "game_id": 7, "player_name": "A Player",
+                       "market": "rebounds"})
+    assert prop_actual(_M(), a, None) == "void"
+    out = tmp_path / "ledger"
+    with pdb.begin() as p:
+        aid = _pick(p, "out", 0.62)
+    CD.run(pdb, _Main(), NOW, tip_fn)
+    with pdb.begin() as p:
+        p.execute(insert(alert_grades).values(alert_id=aid, result="void", profit=0.0,
+                                              graded_at=FIRST))  # fmt: skip
+    with pdb.connect() as p:
+        L.sync(p, None, out, FIRST + timedelta(hours=4))
+    [r] = [r for r in L.joined(out) if r["card"] == "yes"]
+    assert r["result"] == "void"
+    b = L.bank([r], "card_label", "card_stake")
+    assert (b.picks, b.wins, b.losses, b.units, b.roi) == (1, 0, 0, 0.0, None)
 
 
 def test_card_label_and_stake_are_written_once_in_the_ledger(pdb, tmp_path):

@@ -680,12 +680,12 @@ def _card(sport: Sport, conn: Connection, poller, now: datetime,
     if sport.key not in ("nba", "nfl"):
         return None
     try:
-        from betdata.alerts.card import BEFORE, FIRST_DAY, first_tip
+        from betdata.alerts.card import FIRST_DAY, first_tip, select_at
         from betdata.page.card import card_html
 
         today = now.astimezone(EASTERN).date()
         ft = first_tip(conn, sport.key, today) if today >= FIRST_DAY else None
-        nxt = None if ft is None or ft - BEFORE <= now else ft - BEFORE
+        nxt = None if ft is None or select_at(today) <= now else select_at(today)
         return card_html(sport.key, sport.name, picks, poller, now, et, nxt,
                          picks if sport.key == "nba" else None)  # fmt: skip
     except Exception as e:  # never lose the page over the card

@@ -88,7 +88,8 @@ def card_html(sport: str, name: str, rows: list[dict] | None, p, now: datetime, 
 
     head = ("<section class='cardsec'><h2>Tonight's card</h2><p class='meta'>In-house simulation "
             "of a pick service: up to 5 Value picks still live, by expected value, chosen once "
-            "30 minutes before the first game. Paper units, not advice.</p>")  # fmt: skip
+            "at 8:50 AM ET (or at the day's first live pick, if none is live then). Paper "
+            "units, not advice.</p>")  # fmt: skip
     own = [r for r in rows or [] if r["sport"] == sport]
     days = sorted({r["card_date"] for r in own if r.get("card_date")})
     out = [head]
@@ -113,8 +114,8 @@ def card_html(sport: str, name: str, rows: list[dict] | None, p, now: datetime, 
     elif next_at is None:
         from betdata.alerts.card import FIRST_DAY
 
-        out.append("<p class='meta'>No card yet: the first is chosen 30 minutes before the "
-                   f"first game on {FIRST_DAY.strftime('%a %b %-d')}.</p>")
+        out.append("<p class='meta'>No card yet: the first is chosen at 8:50 AM ET on "
+                   f"{FIRST_DAY.strftime('%a %b %-d')}.</p>")
     g = {}
     if p is not None:
         try:
