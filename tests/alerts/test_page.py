@@ -72,6 +72,10 @@ def test_lag_line_shows_the_decision(tmp_path):
         set_state(p, "signal1:decision", {"signal1": "off: not viable on free data"}, NOW)
     frag = P.fragment(P.load(db, NOW))
     assert "Signal 1 off: not viable on free data." in frag
+    # folded like everything below the Value section: closed, with a one-line preview
+    assert frag.startswith(P.START + "<details class='fold' data-fold='alerts'><summary><b>"
+                           "Alert log</b> <span class='pv'>— ")
+    assert frag.endswith("</section></div></details>" + P.END)
 
 
 def test_missing_or_broken_db_never_breaks_the_page(tmp_path):

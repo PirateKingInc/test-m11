@@ -104,10 +104,21 @@ def _pp(x, sign=True) -> str:
     return "" if x is None else f"{100 * x:{'+' if sign else ''}.1f}"
 
 
+def _fold(preview: str) -> str:
+    """The section is folded like everything below the Value section (page/build.py `fold`):
+    one tap to open, remembered in the browser."""
+    return (f"<details class='fold' data-fold='alerts'><summary><b>Alert log</b> "
+            f"<span class='pv'>— {escape(preview)}</span></summary><div class='foldbody'>")
+
+
 def fragment(data: dict | None) -> str:
-    head = f'{START}<section id="alerts"><h2>Alerts</h2><p><b>{escape(LABEL)}</b></p>'
-    if not data or not data.get("available"):
-        return f"{head}<p class='meta'>Alerts unavailable.</p></section>{END}"
+    ok = bool(data and data.get("available"))
+    n = len(data["alerts"]) if ok else 0
+    head = (f"{START}{_fold(f'{n} recent alerts, every signal' if ok else 'unavailable')}"
+            f'<section id="alerts"><h2>Alerts</h2><p><b>{escape(LABEL)}</b></p>')
+    tail = f"</section></div></details>{END}"
+    if not ok:
+        return f"{head}<p class='meta'>Alerts unavailable.</p>{tail}"
     parts = [head, f"<p class='meta'>{escape(CAVEAT)} CLV no-vig in % points of the bet side's "
              "probability vs the pre-game close.</p>", "<h3>Running CLV</h3><table><tr>"
              "<th>Signal</th><th>Graded</th><th>Avg CLV no-vig (95% range)</th><th>ROI</th>"
@@ -150,7 +161,7 @@ def fragment(data: dict | None) -> str:
                 f"<td>{price}</td><td>{escape(reason)}</td><td>{a['delivery']}</td>"
                 f"<td>{escape(grade.strip()) or 'pending'}</td></tr>")  # fmt: skip
         parts.append("</table></div>")
-    return "".join(parts) + "</section>" + END
+    return "".join(parts) + tail
 
 
 def insert(html: str, frag: str) -> str:
