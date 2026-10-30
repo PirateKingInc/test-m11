@@ -13,9 +13,9 @@ def sh(*cmd):
 
 sh("uv", "run", "--no-dev", "betdata", "page", "build", "--site", "out/after")
 sh("git", "fetch", "-q", "--depth", "1", "origin", "main")
-sh("git", "checkout", "FETCH_HEAD", "--", "src/betdata/page")
+sh("git", "checkout", "FETCH_HEAD", "--", "src/betdata")
 sh("uv", "run", "--no-dev", "betdata", "page", "build", "--site", "out/before")
-sh("git", "checkout", "HEAD", "--", "src/betdata/page")
+sh("git", "checkout", "HEAD", "--", "src/betdata")
 
 from betdata.alerts import card as CD  # noqa: E402
 from betdata.alerts.db import engine_for, set_state  # noqa: E402
