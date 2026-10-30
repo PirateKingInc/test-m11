@@ -41,6 +41,14 @@ jobs:
               print("scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
               print("warning:", pg.evaluate("document.getElementById('warn').hidden ? '(none)' : document.getElementById('warn').textContent"))
               print("updated:", pg.evaluate("document.getElementById('updated').textContent"))
+              def open_folds(sport):
+                  # Everything below the Value section is folded (#265): list the folds as a
+                  # reader sees them, then open them so their sections can be shot.
+                  print(f"{sport} folds:", pg.evaluate(
+                      f"[...document.querySelectorAll('#tab-{sport} details.fold > summary')]"
+                      ".map(s => s.innerText).join(' | ')"))
+                  pg.evaluate(f"document.querySelectorAll('#tab-{sport} details.fold')"
+                              ".forEach(d => d.open = true)")
               def props_shot(sport):
                   # M15: the tab's props section, top 1,400 px, at phone width.
                   sec = pg.locator(f"#tab-{sport} section.props")
@@ -64,6 +72,7 @@ jobs:
                   else:
                       print(f"{sport} value: no section")
               value_shot("nfl")
+              open_folds("nfl")
               props_shot("nfl")
               # M17: the NFL engine section ("Engine vs market"), top 1,600 px.
               eng = pg.locator("#tab-nfl section.engine")
@@ -87,6 +96,7 @@ jobs:
                   print("nba tab:", pg.evaluate("document.getElementById('tab-nba').innerText.slice(0, 600)"))
                   print("nba scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
                   value_shot("nba")
+                  open_folds("nba")
                   props_shot("nba")
               b.close()
           PY
