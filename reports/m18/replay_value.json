@@ -1,0 +1,1108 @@
+{
+ "events": 95,
+ "replayed": [
+  {
+   "event_id": 32,
+   "player": "LeBron James",
+   "change": "None -> Questionable",
+   "stated": "2026-10-23T21:00:00+00:00",
+   "detected": "2026-10-23T21:03:00.000112+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 45,
+   "player": "Cameron Johnson",
+   "change": "None -> Out",
+   "stated": "2026-10-23T23:00:00+00:00",
+   "detected": "2026-10-23T23:04:00.000091+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 54,
+   "player": "De'Aaron Fox",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-23T23:45:00+00:00",
+   "detected": "2026-10-23T23:46:00.000132+00:00",
+   "quotes_at_detection": 298,
+   "alerts": 0
+  },
+  {
+   "event_id": 55,
+   "player": "De'Aaron Fox",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-24T00:00:00+00:00",
+   "detected": "2026-10-24T00:03:00.000107+00:00",
+   "quotes_at_detection": 114,
+   "alerts": 0
+  },
+  {
+   "event_id": 57,
+   "player": "Reed Sheppard",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-24T00:15:00+00:00",
+   "detected": "2026-10-24T00:18:00.000112+00:00",
+   "quotes_at_detection": 127,
+   "alerts": 0
+  },
+  {
+   "event_id": 67,
+   "player": "Oso Ighodaro",
+   "change": "None -> Doubtful",
+   "stated": "2026-10-24T00:15:00+00:00",
+   "detected": "2026-10-24T00:18:00.000112+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 111,
+   "player": "LeBron James",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-24T17:00:00+00:00",
+   "detected": "2026-10-24T17:04:00.000106+00:00",
+   "quotes_at_detection": 142,
+   "alerts": 0
+  },
+  {
+   "event_id": 146,
+   "player": "Steven Adams",
+   "change": "None -> Out",
+   "stated": "2026-10-24T17:00:00+00:00",
+   "detected": "2026-10-24T17:04:00.000106+00:00",
+   "quotes_at_detection": 316,
+   "alerts": 0
+  },
+  {
+   "event_id": 161,
+   "player": "Paolo Banchero",
+   "change": "None -> Out",
+   "stated": "2026-10-24T17:15:00+00:00",
+   "detected": "2026-10-24T17:16:00.000147+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 200,
+   "player": "Paolo Banchero",
+   "change": "None -> Out",
+   "stated": "2026-10-24T18:00:00+00:00",
+   "detected": "2026-10-24T18:03:00.000099+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 204,
+   "player": "Cooper Flagg",
+   "change": "None -> Out",
+   "stated": "2026-10-24T18:15:00+00:00",
+   "detected": "2026-10-24T18:18:00.000109+00:00",
+   "quotes_at_detection": 206,
+   "alerts": 0
+  },
+  {
+   "event_id": 238,
+   "player": "Kyrie Irving",
+   "change": "None -> Questionable",
+   "stated": "2026-10-24T19:00:00+00:00",
+   "detected": "2026-10-24T19:04:00.000130+00:00",
+   "quotes_at_detection": 117,
+   "alerts": 2
+  },
+  {
+   "event_id": 260,
+   "player": "Yves Missi",
+   "change": "None -> Out",
+   "stated": "2026-10-24T19:00:00+00:00",
+   "detected": "2026-10-24T19:04:00.000130+00:00",
+   "quotes_at_detection": 286,
+   "alerts": 0
+  },
+  {
+   "event_id": 280,
+   "player": "Marcus Smart",
+   "change": "None -> Questionable",
+   "stated": "2026-10-24T19:30:00+00:00",
+   "detected": "2026-10-24T19:31:00.000126+00:00",
+   "quotes_at_detection": 316,
+   "alerts": 0
+  },
+  {
+   "event_id": 281,
+   "player": "Marcus Smart",
+   "change": "None -> Questionable",
+   "stated": "2026-10-24T20:00:00+00:00",
+   "detected": "2026-10-24T20:04:00.000107+00:00",
+   "quotes_at_detection": 166,
+   "alerts": 0
+  },
+  {
+   "event_id": 283,
+   "player": "Stephen Curry",
+   "change": "None -> Out",
+   "stated": "2026-10-24T20:00:00+00:00",
+   "detected": "2026-10-24T20:04:00.000107+00:00",
+   "quotes_at_detection": 210,
+   "alerts": 0
+  },
+  {
+   "event_id": 303,
+   "player": "Kyrie Irving",
+   "change": "Questionable -> Doubtful",
+   "stated": "2026-10-24T21:45:00+00:00",
+   "detected": "2026-10-24T21:46:00.000104+00:00",
+   "quotes_at_detection": 288,
+   "alerts": 2
+  },
+  {
+   "event_id": 305,
+   "player": "Kyrie Irving",
+   "change": "Questionable -> Doubtful",
+   "stated": "2026-10-24T22:00:00+00:00",
+   "detected": "2026-10-24T22:03:00.000107+00:00",
+   "quotes_at_detection": 108,
+   "alerts": 2
+  },
+  {
+   "event_id": 315,
+   "player": "Max Christie",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-24T23:15:00+00:00",
+   "detected": "2026-10-24T23:16:00.000154+00:00",
+   "quotes_at_detection": 406,
+   "alerts": 0
+  },
+  {
+   "event_id": 402,
+   "player": "Ausar Thompson",
+   "change": "None -> Questionable",
+   "stated": "2026-10-24T23:15:00+00:00",
+   "detected": "2026-10-24T23:16:00.000154+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 411,
+   "player": "Marcus Smart",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-24T23:45:00+00:00",
+   "detected": "2026-10-24T23:46:00.000124+00:00",
+   "quotes_at_detection": 184,
+   "alerts": 0
+  },
+  {
+   "event_id": 413,
+   "player": "Reed Sheppard",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-25T00:00:00+00:00",
+   "detected": "2026-10-25T00:03:00.000138+00:00",
+   "quotes_at_detection": 41,
+   "alerts": 0
+  },
+  {
+   "event_id": 415,
+   "player": "Alpha Diallo",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-25T00:00:00+00:00",
+   "detected": "2026-10-25T00:03:00.000138+00:00",
+   "quotes_at_detection": 262,
+   "alerts": 3
+  },
+  {
+   "event_id": 508,
+   "player": "Jalen Duren",
+   "change": "None -> Out",
+   "stated": "2026-10-25T00:00:00+00:00",
+   "detected": "2026-10-25T00:03:00.000138+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 514,
+   "player": "Keegan Murray",
+   "change": "None -> Questionable",
+   "stated": "2026-10-25T00:15:00+00:00",
+   "detected": "2026-10-25T00:18:00.000124+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 661,
+   "player": "Joel Embiid",
+   "change": "None -> Out",
+   "stated": "2026-10-25T17:00:00+00:00",
+   "detected": "2026-10-25T17:03:00.000118+00:00",
+   "quotes_at_detection": 284,
+   "alerts": 0
+  },
+  {
+   "event_id": 674,
+   "player": "Mikel Brown Jr.",
+   "change": "None -> Out",
+   "stated": "2026-10-25T17:15:00+00:00",
+   "detected": "2026-10-25T17:18:00.000111+00:00",
+   "quotes_at_detection": 360,
+   "alerts": 0
+  },
+  {
+   "event_id": 707,
+   "player": "Mikel Brown Jr.",
+   "change": "None -> Out",
+   "stated": "2026-10-25T18:00:00+00:00",
+   "detected": "2026-10-25T18:03:00.000134+00:00",
+   "quotes_at_detection": 96,
+   "alerts": 0
+  },
+  {
+   "event_id": 742,
+   "player": "Keegan Murray",
+   "change": "Questionable -> Doubtful",
+   "stated": "2026-10-25T18:30:00+00:00",
+   "detected": "2026-10-25T18:33:00.000130+00:00",
+   "quotes_at_detection": 228,
+   "alerts": 0
+  },
+  {
+   "event_id": 757,
+   "player": "Keegan Murray",
+   "change": "Questionable -> Doubtful",
+   "stated": "2026-10-25T19:00:00+00:00",
+   "detected": "2026-10-25T19:03:00.000101+00:00",
+   "quotes_at_detection": 150,
+   "alerts": 0
+  },
+  {
+   "event_id": 840,
+   "player": "Naji Marshall",
+   "change": "None -> Out",
+   "stated": "2026-10-25T20:15:00+00:00",
+   "detected": "2026-10-25T20:18:00.000125+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 860,
+   "player": "VJ Edgecombe",
+   "change": "None -> Questionable",
+   "stated": "2026-10-25T21:00:00+00:00",
+   "detected": "2026-10-25T21:02:00.000114+00:00",
+   "quotes_at_detection": 172,
+   "alerts": 1
+  },
+  {
+   "event_id": 923,
+   "player": "Naji Marshall",
+   "change": "None -> Out",
+   "stated": "2026-10-25T21:00:00+00:00",
+   "detected": "2026-10-25T21:02:00.000114+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 938,
+   "player": "Gui Santos",
+   "change": "None -> Questionable",
+   "stated": "2026-10-25T21:00:00+00:00",
+   "detected": "2026-10-25T21:02:00.000114+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 940,
+   "player": "Kobe Brown",
+   "change": "Probable -> Out",
+   "stated": "2026-10-25T21:15:00+00:00",
+   "detected": "2026-10-25T21:17:00.000137+00:00",
+   "quotes_at_detection": 386,
+   "alerts": 0
+  },
+  {
+   "event_id": 949,
+   "player": "Steven Adams",
+   "change": "None -> Out",
+   "stated": "2026-10-25T21:15:00+00:00",
+   "detected": "2026-10-25T21:17:00.000137+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 956,
+   "player": "Kawhi Leonard",
+   "change": "None -> Out",
+   "stated": "2026-10-25T22:00:00+00:00",
+   "detected": "2026-10-25T22:03:00.000098+00:00",
+   "quotes_at_detection": 75,
+   "alerts": 0
+  },
+  {
+   "event_id": 957,
+   "player": "Ausar Thompson",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-25T22:00:00+00:00",
+   "detected": "2026-10-25T22:03:00.000098+00:00",
+   "quotes_at_detection": 110,
+   "alerts": 0
+  },
+  {
+   "event_id": 969,
+   "player": "Steven Adams",
+   "change": "None -> Out",
+   "stated": "2026-10-25T22:00:00+00:00",
+   "detected": "2026-10-25T22:03:00.000098+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 984,
+   "player": "Oso Ighodaro",
+   "change": "None -> Doubtful",
+   "stated": "2026-10-25T22:15:00+00:00",
+   "detected": "2026-10-25T22:18:00.000143+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1007,
+   "player": "Alpha Diallo",
+   "change": "None -> Doubtful",
+   "stated": "2026-10-25T22:30:00+00:00",
+   "detected": "2026-10-25T22:33:00.000092+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1011,
+   "player": "VJ Edgecombe",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-25T22:45:00+00:00",
+   "detected": "2026-10-25T22:48:00.000094+00:00",
+   "quotes_at_detection": 154,
+   "alerts": 2
+  },
+  {
+   "event_id": 1012,
+   "player": "VJ Edgecombe",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-25T23:00:00+00:00",
+   "detected": "2026-10-25T23:03:00.000097+00:00",
+   "quotes_at_detection": 51,
+   "alerts": 1
+  },
+  {
+   "event_id": 1020,
+   "player": "Oso Ighodaro",
+   "change": "None -> Doubtful",
+   "stated": "2026-10-25T23:00:00+00:00",
+   "detected": "2026-10-25T23:03:00.000097+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 1032,
+   "player": "Cameron Johnson",
+   "change": "None -> Doubtful",
+   "stated": "2026-10-25T23:00:00+00:00",
+   "detected": "2026-10-25T23:03:00.000097+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 1054,
+   "player": "Cedric Coward",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-26T00:15:00+00:00",
+   "detected": "2026-10-26T00:18:00.000104+00:00",
+   "quotes_at_detection": 232,
+   "alerts": 1
+  },
+  {
+   "event_id": 1057,
+   "player": "Marcus Smart",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-26T16:15:00+00:00",
+   "detected": "2026-10-26T16:18:00.000104+00:00",
+   "quotes_at_detection": 416,
+   "alerts": 0
+  },
+  {
+   "event_id": 1070,
+   "player": "Anthony Edwards",
+   "change": "None -> Questionable",
+   "stated": "2026-10-26T17:00:00+00:00",
+   "detected": "2026-10-26T17:03:00.000125+00:00",
+   "quotes_at_detection": 216,
+   "alerts": 0
+  },
+  {
+   "event_id": 1071,
+   "player": "Cooper Flagg",
+   "change": "Questionable -> Probable",
+   "stated": "2026-10-26T17:00:00+00:00",
+   "detected": "2026-10-26T17:03:00.000125+00:00",
+   "quotes_at_detection": 242,
+   "alerts": 0
+  },
+  {
+   "event_id": 1072,
+   "player": "Marcus Smart",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-26T17:00:00+00:00",
+   "detected": "2026-10-26T17:03:00.000125+00:00",
+   "quotes_at_detection": 130,
+   "alerts": 0
+  },
+  {
+   "event_id": 1074,
+   "player": "Ivica Zubac",
+   "change": "None -> Out",
+   "stated": "2026-10-26T18:15:00+00:00",
+   "detected": "2026-10-26T18:18:00.000121+00:00",
+   "quotes_at_detection": 348,
+   "alerts": 0
+  },
+  {
+   "event_id": 1089,
+   "player": "Cason Wallace",
+   "change": "None -> Out",
+   "stated": "2026-10-26T18:15:00+00:00",
+   "detected": "2026-10-26T18:18:00.000121+00:00",
+   "quotes_at_detection": 8,
+   "alerts": 0
+  },
+  {
+   "event_id": 1104,
+   "player": "Andrew Nembhard",
+   "change": "None -> Questionable",
+   "stated": "2026-10-26T19:00:00+00:00",
+   "detected": "2026-10-26T19:03:00.000109+00:00",
+   "quotes_at_detection": 174,
+   "alerts": 0
+  },
+  {
+   "event_id": 1114,
+   "player": "Cason Wallace",
+   "change": "None -> Out",
+   "stated": "2026-10-26T19:00:00+00:00",
+   "detected": "2026-10-26T19:03:00.000109+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 1170,
+   "player": "Ben Saraf",
+   "change": "None -> Out",
+   "stated": "2026-10-26T20:45:00+00:00",
+   "detected": "2026-10-26T20:48:00.000100+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1201,
+   "player": "Jalen Duren",
+   "change": "None -> Out",
+   "stated": "2026-10-26T20:45:00+00:00",
+   "detected": "2026-10-26T20:48:00.000100+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1206,
+   "player": "Anthony Edwards",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-26T22:00:00+00:00",
+   "detected": "2026-10-26T22:05:25.286831+00:00",
+   "quotes_at_detection": 406,
+   "alerts": 0
+  },
+  {
+   "event_id": 1219,
+   "player": "Keegan Murray",
+   "change": "None -> Out",
+   "stated": "2026-10-26T22:00:00+00:00",
+   "detected": "2026-10-26T22:05:25.286831+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1234,
+   "player": "Andrew Nembhard",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-26T23:00:00+00:00",
+   "detected": "2026-10-26T23:03:00.000102+00:00",
+   "quotes_at_detection": 331,
+   "alerts": 0
+  },
+  {
+   "event_id": 1246,
+   "player": "Kobe Brown",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-26T23:15:00+00:00",
+   "detected": "2026-10-26T23:18:00.000102+00:00",
+   "quotes_at_detection": 119,
+   "alerts": 0
+  },
+  {
+   "event_id": 1260,
+   "player": "Scoot Henderson",
+   "change": "None -> Questionable",
+   "stated": "2026-10-27T00:00:00+00:00",
+   "detected": "2026-10-27T00:03:00.000138+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1304,
+   "player": "Kawhi Leonard",
+   "change": "None -> Out",
+   "stated": "2026-10-27T20:00:00+00:00",
+   "detected": "2026-10-27T20:03:00.000123+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1331,
+   "player": "Yves Missi",
+   "change": "None -> Out",
+   "stated": "2026-10-27T20:00:00+00:00",
+   "detected": "2026-10-27T20:03:00.000123+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1337,
+   "player": "Alperen Sengun",
+   "change": "None -> Out",
+   "stated": "2026-10-27T20:15:00+00:00",
+   "detected": "2026-10-27T20:18:00.000132+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1356,
+   "player": "Yaxel Lendeborg",
+   "change": "None -> Questionable",
+   "stated": "2026-10-27T20:30:00+00:00",
+   "detected": "2026-10-27T20:33:00.000130+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1374,
+   "player": "Justin Champagnie",
+   "change": "None -> Out",
+   "stated": "2026-10-27T20:45:00+00:00",
+   "detected": "2026-10-27T20:48:00.000128+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1423,
+   "player": "Kobe Brown",
+   "change": "None -> Probable",
+   "stated": "2026-10-27T21:15:00+00:00",
+   "detected": "2026-10-27T21:18:00.000156+00:00",
+   "quotes_at_detection": 28,
+   "alerts": 0
+  },
+  {
+   "event_id": 1452,
+   "player": "Alex Caruso",
+   "change": "None -> Out",
+   "stated": "2026-10-27T21:30:00+00:00",
+   "detected": "2026-10-27T21:33:00.000118+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1469,
+   "player": "Anthony Edwards",
+   "change": "None -> Questionable",
+   "stated": "2026-10-27T22:00:00+00:00",
+   "detected": "2026-10-27T22:03:00.000141+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1480,
+   "player": "Kyrie Irving",
+   "change": "None -> Questionable",
+   "stated": "2026-10-27T22:00:00+00:00",
+   "detected": "2026-10-27T22:03:00.000141+00:00",
+   "quotes_at_detection": 2,
+   "alerts": 0
+  },
+  {
+   "event_id": 1496,
+   "player": "Alpha Diallo",
+   "change": "None -> Out",
+   "stated": "2026-10-27T22:30:00+00:00",
+   "detected": "2026-10-27T22:33:00.000124+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1507,
+   "player": "Jaren Jackson Jr.",
+   "change": "None -> Out",
+   "stated": "2026-10-27T23:00:00+00:00",
+   "detected": "2026-10-27T23:03:00.000127+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1519,
+   "player": "Ausar Thompson",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-27T23:15:00+00:00",
+   "detected": "2026-10-27T23:18:00.000138+00:00",
+   "quotes_at_detection": 415,
+   "alerts": 0
+  },
+  {
+   "event_id": 1530,
+   "player": "Rui Hachimura",
+   "change": "None -> Out",
+   "stated": "2026-10-28T00:00:00+00:00",
+   "detected": "2026-10-28T00:03:00.000085+00:00",
+   "quotes_at_detection": 28,
+   "alerts": 0
+  },
+  {
+   "event_id": 1532,
+   "player": "Anthony Black",
+   "change": "None -> Questionable",
+   "stated": "2026-10-28T14:30:00+00:00",
+   "detected": "2026-10-28T14:31:00.000097+00:00",
+   "quotes_at_detection": 336,
+   "alerts": 0
+  },
+  {
+   "event_id": 1536,
+   "player": "Jalen Duren",
+   "change": "None -> Out",
+   "stated": "2026-10-28T16:45:00+00:00",
+   "detected": "2026-10-28T16:46:00.000109+00:00",
+   "quotes_at_detection": 258,
+   "alerts": 0
+  },
+  {
+   "event_id": 1550,
+   "player": "Marcus Smart",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-28T17:30:00+00:00",
+   "detected": "2026-10-28T17:31:00.000136+00:00",
+   "quotes_at_detection": 356,
+   "alerts": 1
+  },
+  {
+   "event_id": 1565,
+   "player": "Naji Marshall",
+   "change": "Questionable -> Doubtful",
+   "stated": "2026-10-28T18:15:00+00:00",
+   "detected": "2026-10-28T18:16:00.000131+00:00",
+   "quotes_at_detection": 188,
+   "alerts": 0
+  },
+  {
+   "event_id": 1577,
+   "player": "Ziaire Williams",
+   "change": "None -> Out",
+   "stated": "2026-10-28T20:00:00+00:00",
+   "detected": "2026-10-28T20:04:00.000099+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1593,
+   "player": "Keegan Murray",
+   "change": "None -> Out",
+   "stated": "2026-10-28T21:15:00+00:00",
+   "detected": "2026-10-28T21:18:00.000136+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  },
+  {
+   "event_id": 1602,
+   "player": "Andrew Nembhard",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-28T21:45:00+00:00",
+   "detected": "2026-10-28T21:48:00.000123+00:00",
+   "quotes_at_detection": 268,
+   "alerts": 0
+  },
+  {
+   "event_id": 1608,
+   "player": "Tyrese Haliburton",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-28T22:00:00+00:00",
+   "detected": "2026-10-28T22:03:00.000108+00:00",
+   "quotes_at_detection": 209,
+   "alerts": 2
+  },
+  {
+   "event_id": 1610,
+   "player": "Anthony Black",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-28T22:00:00+00:00",
+   "detected": "2026-10-28T22:03:00.000108+00:00",
+   "quotes_at_detection": 386,
+   "alerts": 0
+  },
+  {
+   "event_id": 1611,
+   "player": "Tre Johnson",
+   "change": "None -> Out",
+   "stated": "2026-10-28T22:15:00+00:00",
+   "detected": "2026-10-28T22:18:00.000098+00:00",
+   "quotes_at_detection": 275,
+   "alerts": 0
+  },
+  {
+   "event_id": 1612,
+   "player": "Yaxel Lendeborg",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-28T22:15:00+00:00",
+   "detected": "2026-10-28T22:18:00.000098+00:00",
+   "quotes_at_detection": 396,
+   "alerts": 0
+  },
+  {
+   "event_id": 1613,
+   "player": "Gui Santos",
+   "change": "None -> Questionable",
+   "stated": "2026-10-28T22:30:00+00:00",
+   "detected": "2026-10-28T22:33:00.000133+00:00",
+   "quotes_at_detection": 198,
+   "alerts": 0
+  },
+  {
+   "event_id": 1615,
+   "player": "Gui Santos",
+   "change": "None -> Out",
+   "stated": "2026-10-28T22:45:00+00:00",
+   "detected": "2026-10-28T22:48:00.000129+00:00",
+   "quotes_at_detection": 127,
+   "alerts": 0
+  },
+  {
+   "event_id": 1618,
+   "player": "Lauri Markkanen",
+   "change": "Questionable -> Out",
+   "stated": "2026-10-29T00:15:00+00:00",
+   "detected": "2026-10-29T00:16:00.000095+00:00",
+   "quotes_at_detection": 164,
+   "alerts": 0
+  },
+  {
+   "event_id": 1620,
+   "player": "Ajay Mitchell",
+   "change": "Questionable -> Available",
+   "stated": "2026-10-29T00:15:00+00:00",
+   "detected": "2026-10-29T00:16:00.000095+00:00",
+   "quotes_at_detection": 298,
+   "alerts": 0
+  },
+  {
+   "event_id": 1628,
+   "player": "Yves Missi",
+   "change": "None -> Out",
+   "stated": "2026-10-29T16:45:00+00:00",
+   "detected": "2026-10-29T16:46:00.000148+00:00",
+   "quotes_at_detection": 280,
+   "alerts": 0
+  },
+  {
+   "event_id": 1637,
+   "player": "Jalen Suggs",
+   "change": "None -> Out",
+   "stated": "2026-10-29T16:45:00+00:00",
+   "detected": "2026-10-29T16:46:00.000148+00:00",
+   "quotes_at_detection": 28,
+   "alerts": 0
+  },
+  {
+   "event_id": 1679,
+   "player": "Jalen Smith",
+   "change": "None -> Questionable",
+   "stated": "2026-10-29T18:45:00+00:00",
+   "detected": "2026-10-29T18:46:00.000157+00:00",
+   "quotes_at_detection": 16,
+   "alerts": 0
+  },
+  {
+   "event_id": 1692,
+   "player": "Kawhi Leonard",
+   "change": "None -> Out",
+   "stated": "2026-10-29T19:30:00+00:00",
+   "detected": "2026-10-29T19:32:00.000137+00:00",
+   "quotes_at_detection": 28,
+   "alerts": 0
+  },
+  {
+   "event_id": 1701,
+   "player": "Egor Demin",
+   "change": "None -> Out",
+   "stated": "2026-10-29T20:30:00+00:00",
+   "detected": "2026-10-29T20:33:00.000171+00:00",
+   "quotes_at_detection": 22,
+   "alerts": 0
+  },
+  {
+   "event_id": 1733,
+   "player": "Steven Adams",
+   "change": "None -> Out",
+   "stated": "2026-10-29T20:30:00+00:00",
+   "detected": "2026-10-29T20:33:00.000171+00:00",
+   "quotes_at_detection": 4,
+   "alerts": 0
+  }
+ ],
+ "m16_news_alerts": 6,
+ "alerts": [
+  {
+   "alert_id": 16,
+   "game_label": "SAS @ DAL",
+   "market": "spreads",
+   "player_name": null,
+   "side": "away",
+   "line": -14.5,
+   "price": -105,
+   "book": "fanduel",
+   "fair_prob": 0.6016035923480088,
+   "book_prob": 0.4891657638136511,
+   "reason": "[replay] Kyrie Irving not listed -> Questionable; model margin -8.6 -> -11.7; fair 60.2% vs fanduel no-vig 48.9% (edge 11.2 pp); consensus median two-book n=2; fanduel unchanged since the report (3:00 PM ET, 4 min ago)"
+  },
+  {
+   "alert_id": 17,
+   "game_label": "SAS @ DAL",
+   "market": "h2h",
+   "player_name": null,
+   "side": "away",
+   "line": null,
+   "price": -820,
+   "book": "fanduel",
+   "fair_prob": 0.9285678842334952,
+   "book_prob": 0.8565637667602121,
+   "reason": "[replay] Kyrie Irving not listed -> Questionable; model margin -8.6 -> -11.7; fair 92.9% vs fanduel no-vig 85.7% (edge 7.2 pp); consensus median two-book n=3; fanduel unchanged since the report (3:00 PM ET, 4 min ago)"
+  },
+  {
+   "alert_id": 18,
+   "game_label": "SAS @ DAL",
+   "market": "spreads",
+   "player_name": null,
+   "side": "away",
+   "line": -14.5,
+   "price": -115,
+   "book": "draftkings",
+   "fair_prob": 0.5994386023567058,
+   "book_prob": 0.5108342361863488,
+   "reason": "[replay] Kyrie Irving Questionable -> Doubtful; model margin -11.7 -> -14.5; fair 59.9% vs draftkings no-vig 51.1% (edge 8.9 pp); consensus pinnacle n=1; draftkings unchanged since the report (5:45 PM ET, 1 min ago)"
+  },
+  {
+   "alert_id": 19,
+   "game_label": "SAS @ DAL",
+   "market": "h2h",
+   "player_name": null,
+   "side": "away",
+   "line": null,
+   "price": -900,
+   "book": "draftkings",
+   "fair_prob": 0.9031048579696984,
+   "book_prob": 0.863013698630137,
+   "reason": "[replay] Kyrie Irving Questionable -> Doubtful; model margin -11.7 -> -14.5; fair 90.3% vs draftkings no-vig 86.3% (edge 4.0 pp); consensus pinnacle n=1; draftkings unchanged since the report (5:45 PM ET, 1 min ago)"
+  },
+  {
+   "alert_id": 20,
+   "game_label": "SAS @ DAL",
+   "market": "spreads",
+   "player_name": null,
+   "side": "away",
+   "line": -14.5,
+   "price": -116,
+   "book": "fanduel",
+   "fair_prob": 0.6036506012033857,
+   "book_prob": 0.510685587279877,
+   "reason": "[replay] Kyrie Irving Questionable -> Doubtful; model margin -11.7 -> -14.5; fair 60.4% vs fanduel no-vig 51.1% (edge 9.3 pp); consensus median two-book n=2; fanduel unchanged since the report (6:00 PM ET, 3 min ago); the consensus moved toward the side"
+  },
+  {
+   "alert_id": 21,
+   "game_label": "SAS @ DAL",
+   "market": "h2h",
+   "player_name": null,
+   "side": "away",
+   "line": null,
+   "price": -900,
+   "book": "draftkings",
+   "fair_prob": 0.9150490683585073,
+   "book_prob": 0.863013698630137,
+   "reason": "[replay] Kyrie Irving Questionable -> Doubtful; model margin -11.7 -> -14.5; fair 91.5% vs draftkings no-vig 86.3% (edge 5.2 pp); consensus median two-book n=3; draftkings unchanged since the report (6:00 PM ET, 3 min ago)"
+  },
+  {
+   "alert_id": 22,
+   "game_label": "NOP @ DEN",
+   "market": "threes",
+   "player_name": "Aaron Gordon",
+   "side": "under",
+   "line": 1.5,
+   "price": 108,
+   "book": "draftkings",
+   "fair_prob": 0.551357457171763,
+   "book_prob": 0.4496336318555252,
+   "reason": "[replay] Alpha Diallo Questionable -> Out; projection 1.6 -> 1.6; fair 55.1% vs draftkings no-vig 45.0% (edge 10.2 pp); model only (no pre-news consensus); draftkings unchanged since the report (8:00 PM ET, 3 min ago)"
+  },
+  {
+   "alert_id": 23,
+   "game_label": "NOP @ DEN",
+   "market": "rebounds",
+   "player_name": "DeMar DeRozan",
+   "side": "under",
+   "line": 2.5,
+   "price": 112,
+   "book": "draftkings",
+   "fair_prob": 0.5425727490324517,
+   "book_prob": 0.44214520979521704,
+   "reason": "[replay] Alpha Diallo Questionable -> Out; projection 2.3 -> 2.3; fair 54.3% vs draftkings no-vig 44.2% (edge 10.0 pp); model only (no pre-news consensus); draftkings unchanged since the report (8:00 PM ET, 3 min ago)"
+  },
+  {
+   "alert_id": 24,
+   "game_label": "NOP @ DEN",
+   "market": "rebounds",
+   "player_name": "Christian Braun",
+   "side": "under",
+   "line": 4.5,
+   "price": 104,
+   "book": "draftkings",
+   "fair_prob": 0.5279011978509398,
+   "book_prob": 0.4588754646840148,
+   "reason": "[replay] Alpha Diallo Questionable -> Out; projection 4.5 -> 4.5; fair 52.8% vs draftkings no-vig 45.9% (edge 6.9 pp); model only (no pre-news consensus); draftkings unchanged since the report (8:00 PM ET, 3 min ago); fanduel moved toward the side"
+  },
+  {
+   "alert_id": 25,
+   "game_label": "DET @ PHI",
+   "market": "threes",
+   "player_name": "VJ Edgecombe",
+   "side": "under",
+   "line": 1.5,
+   "price": 133,
+   "book": "draftkings",
+   "fair_prob": 0.5156024882082617,
+   "book_prob": 0.40228544776119407,
+   "reason": "[replay] VJ Edgecombe not listed -> Questionable; projection 1.9 -> 1.8; fair 51.6% vs draftkings no-vig 40.2% (edge 11.3 pp); model only (no pre-news consensus); draftkings unchanged since the report (5:00 PM ET, 2 min ago)"
+  },
+  {
+   "alert_id": 26,
+   "game_label": "DET @ PHI",
+   "market": "spreads",
+   "player_name": null,
+   "side": "away",
+   "line": -1.5,
+   "price": -105,
+   "book": "fanduel",
+   "fair_prob": 0.5327652647247421,
+   "book_prob": 0.4891657638136511,
+   "reason": "[replay] VJ Edgecombe Questionable -> Out; model margin -7.1 -> -8.1; fair 53.3% vs fanduel no-vig 48.9% (edge 4.4 pp); consensus median two-book n=2; fanduel unchanged since the report (6:45 PM ET, 3 min ago); draftkings moved toward the side"
+  },
+  {
+   "alert_id": 27,
+   "game_label": "DET @ PHI",
+   "market": "h2h",
+   "player_name": null,
+   "side": "away",
+   "line": null,
+   "price": -116,
+   "book": "fanduel",
+   "fair_prob": 0.5518523428825851,
+   "book_prob": 0.515396797466127,
+   "reason": "[replay] VJ Edgecombe Questionable -> Out; model margin -7.1 -> -8.1; fair 55.2% vs fanduel no-vig 51.5% (edge 3.6 pp); consensus median two-book n=3; fanduel unchanged since the report (6:45 PM ET, 3 min ago); the consensus moved toward the side"
+  },
+  {
+   "alert_id": 28,
+   "game_label": "DET @ PHI",
+   "market": "spreads",
+   "player_name": null,
+   "side": "away",
+   "line": -1.5,
+   "price": -105,
+   "book": "fanduel",
+   "fair_prob": 0.542148933111237,
+   "book_prob": 0.4891657638136511,
+   "reason": "[replay] VJ Edgecombe Questionable -> Out; model margin -6.6 -> -7.7; fair 54.2% vs fanduel no-vig 48.9% (edge 5.3 pp); consensus pinnacle n=1; fanduel unchanged since the report (7:00 PM ET, 3 min ago)"
+  },
+  {
+   "alert_id": 29,
+   "game_label": "MEM @ SAC",
+   "market": "assists",
+   "player_name": "Cameron Boozer",
+   "side": "over",
+   "line": 4.5,
+   "price": 103,
+   "book": "draftkings",
+   "fair_prob": 0.5821621153701179,
+   "book_prob": 0.46086548976722386,
+   "reason": "[replay] Cedric Coward Questionable -> Available; projection 6.3 -> 6.3; fair 58.2% vs draftkings no-vig 46.1% (edge 12.1 pp); model only (no pre-news consensus); draftkings unchanged since the report (8:15 PM ET, 3 min ago)"
+  },
+  {
+   "alert_id": 30,
+   "game_label": "HOU @ MIL",
+   "market": "spreads",
+   "player_name": null,
+   "side": "home",
+   "line": 8.5,
+   "price": -120,
+   "book": "fanduel",
+   "fair_prob": 0.5808883705807296,
+   "book_prob": 0.519280205655527,
+   "reason": "[replay] Marcus Smart Questionable -> Out; model margin -6.5 -> -6.0; fair 58.1% vs fanduel no-vig 51.9% (edge 6.2 pp); model only (no pre-news consensus); fanduel unchanged since the report (1:30 PM ET, 1 min ago)"
+  },
+  {
+   "alert_id": 31,
+   "game_label": "PHI @ IND",
+   "market": "spreads",
+   "player_name": null,
+   "side": "away",
+   "line": -7.5,
+   "price": -115,
+   "book": "draftkings",
+   "fair_prob": 0.5789338134079265,
+   "book_prob": 0.5108342361863488,
+   "reason": "[replay] Tyrese Haliburton Questionable -> Out; model margin -4.1 -> -6.5; fair 57.9% vs draftkings no-vig 51.1% (edge 6.8 pp); consensus median two-book n=2; draftkings unchanged since the report (6:00 PM ET, 3 min ago)"
+  },
+  {
+   "alert_id": 32,
+   "game_label": "PHI @ IND",
+   "market": "h2h",
+   "player_name": null,
+   "side": "away",
+   "line": null,
+   "price": -278,
+   "book": "draftkings",
+   "fair_prob": 0.7666724998141132,
+   "book_prob": 0.705033164260632,
+   "reason": "[replay] Tyrese Haliburton Questionable -> Out; model margin -4.1 -> -6.5; fair 76.7% vs draftkings no-vig 70.5% (edge 6.2 pp); consensus median two-book n=3; draftkings unchanged since the report (6:00 PM ET, 3 min ago); fanduel moved toward the side"
+  }
+ ],
+ "gates": {
+  "C-NBA": {
+   "alerts": 17,
+   "n": 16,
+   "clv": 0.00511875,
+   "lo": -0.0029359362899287825,
+   "hi": 0.013173436289928783,
+   "status": "no read before 60 graded (16 so far); verdict at 200",
+   "wins": 0,
+   "losses": 0,
+   "roi": null
+  },
+  "F": {
+   "alerts": 9,
+   "n": 0,
+   "clv": null,
+   "lo": null,
+   "hi": null,
+   "status": "no read before 60 graded (0 so far); verdict at 200",
+   "wins": 0,
+   "losses": 0,
+   "roi": null
+  }
+ }
+}

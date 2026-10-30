@@ -1,0 +1,81 @@
+{
+ "rule": "under, each team's first 4 home games, close <= open - 0.5",
+ "books": [
+  "draftkings",
+  "fanduel",
+  "espnbet",
+  "caesars",
+  "betmgm",
+  "consensus",
+  "opening"
+ ],
+ "all": {
+  "n": 194,
+  "w": 88,
+  "l": 105,
+  "p": 1,
+  "win_rate": 0.456,
+  "win_rate_95": [
+   0.3872,
+   0.5264
+  ],
+  "roi": -0.129,
+  "breakeven_at_110": 0.5238
+ },
+ "by_season": {
+  "2023": {
+   "n": 68,
+   "w": 30,
+   "l": 37,
+   "p": 1,
+   "win_rate": 0.4478,
+   "win_rate_95": [
+    0.3348,
+    0.5664
+   ],
+   "roi": -0.143,
+   "breakeven_at_110": 0.5238
+  },
+  "2024": {
+   "n": 57,
+   "w": 28,
+   "l": 29,
+   "p": 0,
+   "win_rate": 0.4912,
+   "win_rate_95": [
+    0.3662,
+    0.6174
+   ],
+   "roi": -0.0622,
+   "breakeven_at_110": 0.5238
+  },
+  "2025": {
+   "n": 39,
+   "w": 13,
+   "l": 26,
+   "p": 0,
+   "win_rate": 0.3333,
+   "win_rate_95": [
+    0.2063,
+    0.4902
+   ],
+   "roi": -0.3636,
+   "breakeven_at_110": 0.5238
+  },
+  "2026": {
+   "n": 30,
+   "w": 17,
+   "l": 13,
+   "p": 0,
+   "win_rate": 0.5667,
+   "win_rate_95": [
+    0.392,
+    0.7262
+   ],
+   "roi": 0.081,
+   "breakeven_at_110": 0.5238
+  }
+ },
+ "candidates_with_lines": 434,
+ "early_home_games": 1440
+}
