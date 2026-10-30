@@ -1,1 +1,4 @@
 pick_id,label,stake,labeled_at,edge,threshold,edge_source,pinnacle_sides,available
+Pe75f1b75e0a1,LEAN,0.5,2026-10-30T22:05:00+00:00,0.0678,0.06,,,true
+P5a01552c337b,LEAN,0.5,2026-10-30T22:45:00+00:00,4.0,0.5,,false,true
+Pf1d353460cbf,LEAN,0.5,2026-10-30T22:46:00+00:00,0.0449,0.03,news,false,true
