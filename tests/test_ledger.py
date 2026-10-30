@@ -138,7 +138,7 @@ def test_milestones_are_announced_once(pdb, tmp_path):
 
 def test_ledger_history_is_append_only():
     """Every committed version of each ledger file starts with the previous one."""
-    for name in ("picks.csv", "results.csv", "milestones.csv", "annotations.csv"):
+    for name in ("picks.csv", "results.csv", "milestones.csv", "annotations.csv", "labels.csv"):
         rel = f"ledger/{name}"
         try:
             shas = subprocess.run(["git", "log", "--format=%H", "--reverse", "--", rel],
@@ -237,3 +237,54 @@ def test_m16_legacy_and_duplicates_stay_in_the_csv_but_out_of_the_record(pdb, tm
 def _picks(pdb):
     with pdb.connect() as p:
         return [L.pick_row(p, None, a) for a in p.execute(select(alerts))]
+
+
+def _lab(label, stake):
+    return {"label": {"label": label, "stake": stake, "edge": 0.07, "threshold": 0.03,
+                      "edge_source": "news", "pinnacle_sides": None, "available": True}}
+
+
+def test_labels_and_stakes_are_written_once(pdb, tmp_path):
+    """Labels are fixed when the pick is created: a later change in the database never
+    rewrites them, and picks from before labels shipped get none (no backfill)."""
+    out = tmp_path / "ledger"
+    with pdb.begin() as p:
+        take = _alert(p, "k1", result="win", details=_lab("TAKE", 1.0), profit=0.8)
+        _alert(p, "k2", result="loss", details=_lab("LEAN", 0.5))
+        _alert(p, "k0", result="win")  # before labels: unlabelled
+    with pdb.connect() as p:
+        L.sync(p, None, out, NOW)
+    first = (out / "labels.csv").read_text()
+    assert [(r["label"], r["stake"]) for r in L.read_rows(out / "labels.csv")] == [
+        ("TAKE", "1.0"), ("LEAN", "0.5")]
+    with pdb.begin() as p:  # the stored label changes later: the ledger keeps the first
+        p.execute(alerts.update().where(alerts.c.alert_id == take)
+                  .values(details=_lab("LEAN", 0.5)))
+    with pdb.connect() as p:
+        L.sync(p, None, out, NOW + timedelta(hours=1))
+    assert (out / "labels.csv").read_text() == first
+    with pytest.raises(L.AppendOnlyError):  # a new column would rewrite the header
+        L.append_rows(out / "labels.csv", (*L.LABEL_FIELDS, "x"), [{"pick_id": "z"}])
+    rows = {r["dedup_key"]: r for r in L.joined(out)}
+    assert (rows["k1"]["label"], rows["k1"]["stake"]) == ("TAKE", "1.0")
+    assert (rows["k0"]["label"], rows["k0"]["stake"]) == ("", "")
+    # flat stakes from 100 units: TAKE won 0.8 at 1 unit, LEAN lost 1 at 0.5 unit
+    b = L.bank(list(rows.values()))
+    assert (b.picks, b.wins, b.losses) == (2, 1, 1)
+    assert b.units == pytest.approx(0.3) and b.bankroll == pytest.approx(100.3)
+    assert b.roi == pytest.approx(0.3 / 1.5)
+
+
+def test_page_bankroll_and_badges(pdb, tmp_path):
+    from betdata.page.value import bank_html, label_badge
+
+    with pdb.begin() as p:
+        _alert(p, "k1", result="win", details=_lab("TAKE", 1.0), profit=0.8)
+        _alert(p, "k2", details=_lab("LEAN", 0.5))
+    with pdb.connect() as p:
+        L.sync(p, None, tmp_path, NOW)
+    html = bank_html(L.joined(tmp_path), "NBA")
+    assert "Simulated bankroll · NBA" in html and "<b>100.80u</b>" in html and "+0.80u" in html
+    assert "ROI +80.0%" in html and "2 labelled picks (1-0-0)" in html
+    assert "<span class='lbl take'>TAKE 1u</span>" in html and "LEAN 0.5u" in html
+    assert label_badge(None, None) == ""

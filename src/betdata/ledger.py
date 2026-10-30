@@ -25,6 +25,12 @@ that `joined` lays over the pick. Two are written by `sync`:
   `duplicate: true`.
 The record (page, weekly report, milestones) counts neither: legacy and duplicate picks stay in
 the CSV only.
+
+**Labels and stakes** (`ledger/labels.csv`, owner request 2026-10-30; alerts/labels.py): each
+pick created since labels shipped carries a label (TAKE 1 unit, LEAN 0.5, PASS 0) fixed by the
+poller when the alert was created. `sync` writes it once, keyed by pick id, and never again;
+older picks have no label (no backfill). The simulated bankroll (`bank`) starts at 100 units and
+adds stake x profit for each settled labelled pick (flat stakes, no compounding).
 """
 
 from __future__ import annotations
@@ -51,6 +57,8 @@ RESULT_FIELDS = ("pick_id", "result", "profit", "clv_consensus", "close_method",
                  "clv_pinnacle", "graded_at")  # fmt: skip
 MILESTONE_FIELDS = ("signal_name", "graded", "reached_at")
 ANNOTATION_FIELDS = ("key", "pick_id", "field", "value", "noted_at", "note")
+LABEL_FIELDS = ("pick_id", "label", "stake", "labeled_at", "edge", "threshold", "edge_source",
+                "pinnacle_sides", "available")  # fmt: skip
 LEGACY = "m16-legacy"
 # REVIEW.md M16-4: the next injury report repeated a change already alerted (Edgecombe DET @ PHI
 # 7:00 PM; Zubac/Nembhard IND @ MIL 3:00 PM).
@@ -268,6 +276,18 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
                 results.append(r)
     n_p = append_rows(out / "picks.csv", PICK_FIELDS, picks)
     n_r = append_rows(out / "results.csv", RESULT_FIELDS, results)
+    labels = []
+    for a in p.execute(select(alerts).order_by(alerts.c.created_at, alerts.c.alert_id)):
+        lab = _details(a).get("label")
+        if lab and lab.get("label"):
+            labels.append({"pick_id": pick_id(a.dedup_key), "label": lab["label"],
+                           "stake": _num(lab.get("stake")), "labeled_at": _iso(a.created_at),
+                           "edge": _num(lab.get("edge")), "threshold": _num(lab.get("threshold")),
+                           "edge_source": lab.get("edge_source") or "",
+                           "pinnacle_sides": "" if lab.get("pinnacle_sides") is None
+                           else str(bool(lab["pinnacle_sides"])).lower(),
+                           "available": str(bool(lab.get("available"))).lower()})  # fmt: skip
+    append_rows(out / "labels.csv", LABEL_FIELDS, labels)
     annotate(out, now)
     return {"picks": n_p, "results": n_r, "milestones": milestones(out, now)}
 
@@ -296,12 +316,58 @@ def joined(out: Path) -> list[dict]:
     notes: dict[str, dict] = {}
     for n in read_rows(out / "annotations.csv"):
         notes.setdefault(n["pick_id"], {})[n["field"]] = n["value"]
+    labs = {r["pick_id"]: r for r in read_rows(out / "labels.csv")}
     rows = []
     for pk in read_rows(out / "picks.csv"):
         r = res.get(pk["pick_id"], {})
+        lb = labs.get(pk["pick_id"], {})
         rows.append({**pk, "duplicate": "", **notes.get(pk["pick_id"], {}),
+                     "label": lb.get("label", ""), "stake": lb.get("stake", ""),
                      **{f: r.get(f, "") for f in RESULT_FIELDS if f != "pick_id"}})
     return rows
+
+
+@dataclass
+class Bank:
+    """The simulated bankroll of the labelled picks (flat stakes, no compounding)."""
+
+    picks: int = 0
+    wins: int = 0
+    losses: int = 0
+    pushes: int = 0
+    units: float = 0.0  # stake x profit, summed over settled picks
+    staked: float = 0.0  # stakes of settled picks (wins, losses, pushes)
+    clv: list | None = None
+
+    @property
+    def bankroll(self) -> float:
+        from betdata.alerts.labels import START_BANKROLL
+
+        return START_BANKROLL + self.units
+
+    @property
+    def roi(self) -> float | None:
+        return self.units / self.staked if self.staked else None
+
+
+def bank(rows: list[dict]) -> Bank:
+    """The bankroll over the counted, labelled picks among `rows`."""
+    b = Bank(clv=[])
+    for x in counted(rows):
+        if not x.get("label"):
+            continue
+        b.picks += 1
+        stake = _f(x.get("stake")) or 0.0
+        res = x.get("result", "")
+        if res in ("win", "loss", "push"):
+            b.wins += res == "win"
+            b.losses += res == "loss"
+            b.pushes += res == "push"
+            b.units += stake * (_f(x.get("profit")) or 0.0)
+            b.staked += stake
+        if res != "void" and (c := _f(x.get("clv_consensus", ""))) is not None:
+            b.clv.append(c)
+    return b
 
 
 def counted(rows: list[dict]) -> list[dict]:

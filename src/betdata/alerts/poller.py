@@ -323,7 +323,7 @@ class Poller:
                       None, pick.book_prob, None, event_id, study,
                       {"margin_before": rp.margin_before,
                        "margin_after": rp.margin_after})  # fmt: skip
-            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+            out.append(self.send(a, now))
         dk = _props(qs, "draftkings")
         affected = {name for name, c in players.items()}
         for x in rp.props:
@@ -348,7 +348,7 @@ class Poller:
                       f"{change_key}", pick.fair_prob, pick.book_prob, x["player_name"],
                       event_id, study, {"mean_before": x["mean_before"],
                                         "mean_after": x["mean_after"]})  # fmt: skip
-            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+            out.append(self.send(a, now))
         return [x for x in out if x is not None]
 
     # --- M18 Part C: the value signal ----------------------------------------------------------
@@ -437,7 +437,7 @@ class Poller:
             a = Alert("value", sport, gid, label, tip, c.market, c.side, c.line, c.price,
                       c.book, text, f"value:{gid}:{c.market}:{pkey}:{c.side}:{change_key}",
                       c.fair, c.book_prob, c.player_name, event_id, study, details)  # fmt: skip
-            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+            out.append(self.send(a, now))
         return [x for x in out if x is not None]
 
     # --- polling prices -----------------------------------------------------------------------
@@ -591,7 +591,7 @@ class Poller:
                           f"{100 * (pick.fair_prob * R.decimal(pick.price) - 1):+.1f}%",
                           f"sharp:{gid}:{market}:{side}:{st['n'] + 1}", pick.fair_prob,
                           pick.book_prob)  # fmt: skip
-                aid = emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client)
+                aid = self.send(a, now)
                 if aid is not None:
                     out.append(aid)
         return out
@@ -727,7 +727,7 @@ class Poller:
                       f"g1:{gid}", None,
                       None if nv is None else nv[1], None, None, True,
                       {"open": op.line, "open_at": utc(op.first_seen).isoformat()})  # fmt: skip
-            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+            out.append(self.send(a, now))
         return [x for x in out if x is not None]
 
     # --- M18 Part F: opening-line prop snipes --------------------------------------------------
@@ -800,7 +800,7 @@ class Poller:
                       f"{o.book}:{o.line:g}", s.p_model, s.p_book, o.player_name, None,
                       False, {"mean": pr["mean"], "median": med, "p_cons": s.p_cons,
                               "edge": s.edge})  # fmt: skip
-            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+            out.append(self.send(a, now))
         return [x for x in out if x is not None]
 
     # --- M18 Part G2: NFL alternate rungs from the engine (paper) -----------------------------
@@ -846,7 +846,7 @@ class Poller:
                       f"g2:{r.game_id}:{r.market}:{r.side}:{r.line:g}:{r.book}",
                       r.engine_prob, r.book_prob, None, None, True,
                       {"engine_prob": r.engine_prob, "pin_prob": r.pin_prob})  # fmt: skip
-            out.append(emit(self.pdb, a, now, self.keys.ntfy_topic, self.push_client))
+            out.append(self.send(a, now))
         return [x for x in out if x is not None]
 
     # --- closing polls and grading ----------------------------------------------------------------
@@ -895,6 +895,25 @@ class Poller:
         self._guard("nfl lag decision", _decide_nfl)
 
     # --- helpers --------------------------------------------------------------------------------
+
+    def send(self, a: Alert, now: datetime) -> int | None:
+        """Label, record and push one alert (notify.emit); its id, or None if a duplicate."""
+        return emit(self.pdb, self.labelled(a, now), now, self.keys.ntfy_topic, self.push_client)
+
+    def labelled(self, a: Alert, now: datetime) -> Alert:
+        """The pick's label and stake, fixed when it is created (alerts/labels.py); a failure
+        never stops the alert."""
+        from betdata.alerts.labels import label
+
+        try:
+            with self.pdb.connect() as p:
+                lab = label(p, a, now)
+        except Exception as e:  # noqa: BLE001
+            log.warning("label for %s failed: %s", a.dedup_key, e)
+            lab = None
+        if lab is not None:
+            a.details = {**(a.details or {}), "label": lab}
+        return a
 
     def game_label(self, gid: int) -> tuple[str, datetime]:
         h, a = teams.alias("h"), teams.alias("a")
