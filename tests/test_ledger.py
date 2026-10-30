@@ -138,7 +138,8 @@ def test_milestones_are_announced_once(pdb, tmp_path):
 
 def test_ledger_history_is_append_only():
     """Every committed version of each ledger file starts with the previous one."""
-    for name in ("picks.csv", "results.csv", "milestones.csv", "annotations.csv", "labels.csv"):
+    for name in ("picks.csv", "results.csv", "milestones.csv", "annotations.csv", "labels.csv",
+                 "card.csv"):
         rel = f"ledger/{name}"
         try:
             shas = subprocess.run(["git", "log", "--format=%H", "--reverse", "--", rel],

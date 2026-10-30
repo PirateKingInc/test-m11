@@ -2243,6 +2243,27 @@ No rule, threshold or model changes: the signals are frozen until their 200-pick
 - **Simulated bankroll:** 100 units from 2026-10-30, flat stakes (no compounding): bankroll = 100 + sum of stake x profit over settled labelled picks; ROI = units / stakes settled. Each sport's Value section shows its own bankroll and its record by label (TAKE vs LEAN); the top of the NBA tab also shows "All sports". The all-time record of every pick stays at the end of each Value section, per sport.
 - **Gate status:** under each signal's name, a small line with how proven it is: "C-NBA: 12/200 graded, CLV +0.4 pp", then alerts, record and gate status.
 
+**Tonight's card** (owner request 2026-10-30; **fixed**, display only — no signal, threshold, model or grading change, and the Value section is left as it is; `alerts/card.py`, `page/card.py`). An in-house simulation of a pick service.
+- **Selection:** once per sport and US Eastern day, 30 minutes before that sport's first game. The poller chooses the top 5 picks by expected value among that day's M18 picks that are:
+  - for games not yet started;
+  - created before selection;
+  - still Live (the book's latest stored quote is the alerted line and price, or better).
+- **Shorter cards and exclusions:** fewer than 5 qualifying means a shorter card. Picks created after selection stay off it.
+- **Expected value** per unit = fair probability x decimal odds - 1. G1 has no fair probability (its rule is a points drop), so it is never on the card.
+- **Missed window:** a poller that has no cycle between selection time and the first game records the day as missed (no card).
+- **Card labels at selection:**
+  - TAKE (1 unit): edge >= 1.5x the signal's threshold AND (edge source "news" OR a fresh Pinnacle price sides with the pick).
+  - LEAN (0.5 unit): every other card pick. Book disagreement against a two-book consensus is LEAN at most.
+  - The thresholds and the Pinnacle test are those of "Pick labels and stakes".
+- **Ledger:** `ledger/card.csv` (append-only, keyed by pick id) gets one write-once row per pick on each chosen day's games: card yes (with `card_label`, `card_stake`, EV and the label inputs) or no. The creation-time `label` and `stake` stay as they are, separate. A rebuilt poller database does not choose a day already in the ledger.
+- **Every pick still counts:** every pick, on the card or not, stays in the ledger, is graded, and counts toward its signal's record and 200-pick gate.
+- **Page:** "Tonight's card" sits at the top of each sport tab, above Value. It shows:
+  - the sport's latest card: game and start (ET), pick and line, odds, book, label badge with stake, and a status (Live / Moved / Gone at each build, then the result with units once graded);
+  - a gate line per contributing signal;
+  - the card bankroll: card picks only, 100 units, flat stakes, no compounding, with units, ROI, W-L-P and a record by label. Each tab shows its own sport; "All sports" appears once, on the NBA tab.
+- **Start:** the first card is Sat 2026-10-31 (no backfill).
+- **Timing:** the page is rebuilt by the hourly job, from the poller database saved at :56. So a card chosen at 6:30 PM ET first appears on the 7 PM page.
+
 **Page:** the Value section ends with an all-time record from the ledger, with "too few to judge" under 100 graded picks and a "Download all picks (CSV)" link (`site/picks.csv`). It shows:
 - overall W-L-P, units, ROI and average CLV (consensus and Pinnacle, 95% ranges);
 - the same by sport, by signal, props vs game markets, and the C signals by edge source.

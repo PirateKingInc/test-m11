@@ -31,6 +31,12 @@ pick created since labels shipped carries a label (TAKE 1 unit, LEAN 0.5, PASS 0
 poller when the alert was created. `sync` writes it once, keyed by pick id, and never again;
 older picks have no label (no backfill). The simulated bankroll (`bank`) starts at 100 units and
 adds stake x profit for each settled labelled pick (flat stakes, no compounding).
+
+**Tonight's card** (`ledger/card.csv`, owner request 2026-10-30; alerts/card.py): once a
+sport's card is chosen (poller state `card:<sport>:<day>`), `sync` writes one row per pick on
+that day's games, once: `card` yes (with the card's own label and stake, `card_label` and
+`card_stake`, set at selection) or no (not chosen, or created after selection). The card
+bankroll counts card picks only. The creation-time `label` and `stake` above stay as they are.
 """
 
 from __future__ import annotations
@@ -59,6 +65,9 @@ MILESTONE_FIELDS = ("signal_name", "graded", "reached_at")
 ANNOTATION_FIELDS = ("key", "pick_id", "field", "value", "noted_at", "note")
 LABEL_FIELDS = ("pick_id", "label", "stake", "labeled_at", "edge", "threshold", "edge_source",
                 "pinnacle_sides", "available")  # fmt: skip
+CARD_FIELDS = ("pick_id", "sport", "card_date", "card", "card_label", "card_stake",
+               "selected_at", "ev", "edge", "threshold", "edge_source",
+               "pinnacle_sides")  # fmt: skip
 LEGACY = "m16-legacy"
 # REVIEW.md M16-4: the next injury report repeated a change already alerted (Edgecombe DET @ PHI
 # 7:00 PM; Zubac/Nembhard IND @ MIL 3:00 PM).
@@ -288,8 +297,39 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
                            else str(bool(lab["pinnacle_sides"])).lower(),
                            "available": str(bool(lab.get("available"))).lower()})  # fmt: skip
     append_rows(out / "labels.csv", LABEL_FIELDS, labels)
+    card_rows(p, out)
     annotate(out, now)
     return {"picks": n_p, "results": n_r, "milestones": milestones(out, now)}
+
+
+def card_rows(p: Connection, out: Path) -> int:
+    """One write-once row per pick on each chosen card day: card yes (label, stake) or no."""
+    from betdata.alerts.card import day_picks
+    from betdata.alerts.db import state
+
+    if "poller_state" not in _tables(p):
+        return 0
+    rows = []
+    for st in p.execute(select(state).where(state.c.key.like("card:%"))):
+        c = st.value or {}
+        if not c.get("day"):
+            continue
+        day = datetime.fromisoformat(c["day"]).date()
+        chosen = {x["dedup_key"]: x for x in c.get("picks", [])}
+        for a in day_picks(p, c["sport"], day):
+            x = chosen.get(a.dedup_key)
+            pin = None if x is None else x.get("pinnacle_sides")
+            rows.append({"pick_id": pick_id(a.dedup_key), "sport": c["sport"],
+                         "card_date": c["day"], "card": "yes" if x else "no",
+                         "card_label": x["label"] if x else "",
+                         "card_stake": _num(x["stake"]) if x else "",
+                         "selected_at": c.get("selected_at", ""),
+                         "ev": _num(x.get("ev")) if x else "",
+                         "edge": _num(x.get("edge")) if x else "",
+                         "threshold": _num(x.get("threshold")) if x else "",
+                         "edge_source": (x.get("edge_source") or "") if x else "",
+                         "pinnacle_sides": "" if pin is None else str(bool(pin)).lower()})
+    return append_rows(out / "card.csv", CARD_FIELDS, rows)
 
 
 def annotate(out: Path, now: datetime) -> int:
@@ -317,12 +357,15 @@ def joined(out: Path) -> list[dict]:
     for n in read_rows(out / "annotations.csv"):
         notes.setdefault(n["pick_id"], {})[n["field"]] = n["value"]
     labs = {r["pick_id"]: r for r in read_rows(out / "labels.csv")}
+    cards = {r["pick_id"]: r for r in read_rows(out / "card.csv")}
     rows = []
     for pk in read_rows(out / "picks.csv"):
         r = res.get(pk["pick_id"], {})
         lb = labs.get(pk["pick_id"], {})
         rows.append({**pk, "duplicate": "", **notes.get(pk["pick_id"], {}),
                      "label": lb.get("label", ""), "stake": lb.get("stake", ""),
+                     **{f: cards.get(pk["pick_id"], {}).get(f, "")
+                        for f in ("card", "card_label", "card_stake", "card_date")},
                      **{f: r.get(f, "") for f in RESULT_FIELDS if f != "pick_id"}})
     return rows
 
@@ -350,14 +393,16 @@ class Bank:
         return self.units / self.staked if self.staked else None
 
 
-def bank(rows: list[dict]) -> Bank:
-    """The bankroll over the counted, labelled picks among `rows`."""
+def bank(rows: list[dict], label: str = "label", stake: str = "stake") -> Bank:
+    """The bankroll over the counted, labelled picks among `rows` (the card's: `card_label`,
+    `card_stake`)."""
     b = Bank(clv=[])
+    lab_key, stake_key = label, stake
     for x in counted(rows):
-        if not x.get("label"):
+        if not x.get(lab_key):
             continue
         b.picks += 1
-        stake = _f(x.get("stake")) or 0.0
+        stake = _f(x.get(stake_key)) or 0.0
         res = x.get("result", "")
         if res in ("win", "loss", "push"):
             b.wins += res == "win"
