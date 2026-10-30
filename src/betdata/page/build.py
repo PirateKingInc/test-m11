@@ -444,8 +444,8 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
                         f"{n} in the last 7 days" + (f" · {rec}" if rec else ""), body))
     n_props = len({p.game_id for p in props or []})
     preview = (f"{len(cards)} game{'s' if len(cards) != 1 else ''}"
-               + (" · engine" if engine else "")
-               + (f" · props for {n_props} games" if n_props else ""))
+               + (", engine" if engine else "")
+               + (f", props for {n_props}" if n_props else ""))
     out.append(fold(f"{k}-research", "Model research", preview, compact(
         f"""{research}<section class="games">{games}</section>
 {engine or ""}
@@ -460,12 +460,11 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
                                          engine_version=sport.engine_version())
     if other:
         out.append(fold(f"{k}-versions", "Other model versions",
-                        f"{n_other} background records", other))
+                        f"{n_other} records", other))
     jobs = _jobs(info.last, k)
     ok = sum(j.get("status") == "ok" for j in jobs)
     out.append(fold(f"{k}-sources", "Data sources and notes",
-                    (f"last refresh {ok} of {len(jobs)} jobs ok" if jobs else
-                     "attributions and notes"),
+                    (f"refresh {ok}/{len(jobs)} ok" if jobs else "attributions"),
                     jobs_html(info.last, k, folded=False) + FOOTER_NOTES))
     return "\n".join(out)
 
@@ -782,15 +781,13 @@ border-bottom:1px solid var(--line);font-size:.9rem}} .prop:last-child{{border-b
 padding:0 6px;margin-left:4px;font-size:.75rem}}
 footer{{color:var(--mut);font-size:.8rem;padding:24px 16px 32px}}
 details.fold{{margin:10px 0;border:1px solid var(--line);border-radius:10px;font-size:1rem}}
-.fold>summary{{padding:12px;color:var(--fg);white-space:nowrap;overflow:hidden;
-text-overflow:ellipsis}}
+.fold>summary{{padding:12px;color:var(--fg)}}
 .fold>summary .pv,.gamerow>summary .pv{{color:var(--mut);font-size:.85rem}}
 .fold[open]>summary{{border-bottom:1px solid var(--line)}}
 .foldbody{{padding:0 12px 12px;min-width:0}} .foldbody h2{{font-size:1rem}}
 details.gamerow{{background:var(--card);border:1px solid var(--line);border-radius:10px;
 margin:6px 0;font-size:1rem}} .gamerow.bet{{border-color:var(--acc)}}
-.gamerow>summary{{padding:10px 12px;color:var(--fg);white-space:nowrap;overflow:hidden;
-text-overflow:ellipsis}}
+.gamerow>summary{{padding:10px 12px;color:var(--fg)}}
 .gamerow>.game{{border:0;margin:0;padding:0 12px 12px;background:none}}
 .gamerow>.game>header{{display:none}}
 </style></head>
