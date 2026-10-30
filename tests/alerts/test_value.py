@@ -111,3 +111,30 @@ def test_prop_repricing(pol, engine):
     rep.prop_p_after = lambda ln: 0.565
     assert run(pol, engine, "assists", rep, pr("draftkings", 6.5, -110, -110)
                + pr("fanduel", 6.5, -115, -105), name="Jalen Brunson") is None  # fmt: skip
+
+
+def test_edge_source_tag(pol, engine):
+    """Ledger tag: "news" when the repricer's move supplies >= half the edge, else "book
+    disagreement" (the stale book was already off the consensus before the news)."""
+    pre = STATED - timedelta(minutes=5)
+    pol.store_quotes(sp("draftkings", -3.0) + sp("pinnacle", -3.0, source="the_odds_api"), pre)
+    rep = V.game_repricing("nba", "spreads", cons_at(pol, engine, "spreads", pre), rp(3.0, 4.2))
+    c = run(pol, engine, "spreads", rep, sp("draftkings", -3.0))
+    assert c.news_move == pytest.approx(c.edge, abs=1e-6)  # all of it is the news
+    assert V.edge_source(c.news_move, c.edge) == "news"
+
+
+def test_book_disagreement_tag(pol, engine):
+    pre = STATED - timedelta(minutes=5)
+    # DK -3 vs FD -6: the two-book median L* is -4.5, so DK's -3 is already cheap for home
+    pol.store_quotes(sp("draftkings", -3.0) + sp("fanduel", -6.0), pre)
+    rep = V.game_repricing("nba", "spreads", cons_at(pol, engine, "spreads", pre), rp(3.0, 3.1))
+    c = run(pol, engine, "spreads", rep, sp("draftkings", -3.0) + sp("fanduel", -6.0))
+    assert c is not None and c.side == "home" and c.edge >= 0.045
+    assert c.news_move < c.edge / 2 and V.edge_source(c.news_move, c.edge) == "book disagreement"
+
+
+def test_model_only_base_is_the_model_before_the_news():
+    r = V.game_repricing("nba", "spreads", None, rp(3.0, 5.0))
+    assert r.model_fair_before == pytest.approx(-3.0) and r.model_fair == pytest.approx(-5.0)
+    assert r.base("home", -3.0) == pytest.approx(0.5)

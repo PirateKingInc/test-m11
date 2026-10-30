@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: read
+      contents: write  # the pick ledger and the weekly report are committed to main
       pages: write
       id-token: write
     environment:
@@ -106,6 +106,13 @@ jobs:
           path: data/poller.sqlite
           key: betdata-poller-v1-${{ github.run_id }}
           restore-keys: betdata-poller-v1-
+      # The permanent pick ledger (betdata/ledger.py): new picks and newly final results from
+      # the poller database are appended to ledger/*.csv before the page is built, so the
+      # Value section's all-time record and the CSV download include them.
+      - name: Ledger sync
+        id: ledger
+        continue-on-error: true
+        run: uv run --no-dev betdata ledger sync
       - name: Run
         id: run
         continue-on-error: true
@@ -145,6 +152,29 @@ jobs:
       - id: deploy
         if: steps.run.outputs.skipped != 'true'
         uses: actions/deploy-pages@v4
+      # Mondays after the morning run: the weekly report; any run: milestone pushes (60 / 200
+      # graded picks). Then the ledger and the report are committed to main (append-only
+      # files; a rebase-and-retry loop if main moved).
+      - name: Weekly report and pushes
+        if: steps.run.outputs.skipped != 'true'
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: uv run --no-dev betdata ledger publish
+      - name: Commit the ledger
+        if: ${{ always() && steps.run.outputs.skipped != 'true' }}
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ledger reports/weekly 2>/dev/null || true
+          if git diff --cached --quiet; then echo "ledger unchanged"; exit 0; fi
+          git commit -qm "Ledger: picks and results as of $(date -u +%FT%H:%MZ) [skip ci]"
+          for i in 1 2 3 4; do
+            if git pull -q --rebase origin main && git push -q origin HEAD:main; then exit 0; fi
+            sleep $((i * 5))
+          done
+          echo "::error::could not push the ledger"; exit 1
       - name: Report the failed run
         if: steps.run.outcome == 'failure'
         run: |

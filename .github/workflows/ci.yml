@@ -27,6 +27,8 @@ jobs:
       BETDATA_TEST_PG_URL: ${{ matrix.db == 'postgres' && 'postgresql+psycopg://betdata:betdata@localhost:5432/betdata_test' || '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tests/test_ledger.py checks the ledger files' history is append-only
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true

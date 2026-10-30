@@ -40,7 +40,8 @@ def _pp(x: float | None) -> str:
     return "–" if x is None else f"{100 * x:+.1f} pp"
 
 
-def value_html(sport: str, p: Connection | None, now: datetime, et) -> str:
+def value_html(sport: str, p: Connection | None, now: datetime, et, extra: str = "") -> str:
+    """`extra`: HTML placed at the end of the section (the all-time record)."""
     head = ("<section class='value'><h2>Value</h2><p class='meta'>Paper alerts, not advice. "
             "A DK/FD price is alerted when it has not moved since the news and the repriced "
             "consensus (Pinnacle when fresh, else the median of fresh books) beats it by 3 pp "
@@ -48,7 +49,8 @@ def value_html(sport: str, p: Connection | None, now: datetime, et) -> str:
             f"by CLV against the consensus close; a signal is judged at {GATE_N} graded alerts "
             f"(an early read at {EARLY_N}).</p>")  # fmt: skip
     if p is None:
-        return head + "<p class='meta'>Value alerts unavailable: no poller database.</p></section>"
+        return (head + "<p class='meta'>Value alerts unavailable: no poller database.</p>"
+                + extra + "</section>")
     from sqlalchemy import inspect
 
     if not {"alerts", "alert_grades", "consensus_grades"} <= set(inspect(p).get_table_names()):
@@ -57,7 +59,8 @@ def value_html(sport: str, p: Connection | None, now: datetime, et) -> str:
         return (head + "<h3>Live</h3><p class='meta'>No live value alerts for upcoming games."
                 "</p><h3>Signals</h3><ul>" + "".join(
                     f"<li><b>{escape(n)}</b> {escape(SIGNAL_TEXT[n])}: no alerts yet "
-                    f"(0 of {GATE_N}).</li>" for n in _names(sport)) + "</ul></section>")
+                    f"(0 of {GATE_N}).</li>" for n in _names(sport)) + "</ul>" + extra
+                + "</section>")
     rows = p.execute(
         select(alerts, consensus_grades.c.clv, consensus_grades.c.close_prob,
                consensus_grades.c.close_method, consensus_grades.c.close_two_book,
@@ -92,7 +95,7 @@ def value_html(sport: str, p: Connection | None, now: datetime, et) -> str:
                      f"{s['alerts']} alerts, {s['n']} of {GATE_N} graded; CLV vs consensus "
                      f"close {_pp(s['clv'])}{rng}; {s['wins']}-{s['losses']}, ROI {roi}. "
                      f"{escape(s['status'])}.</li>")  # fmt: skip
-    out.append("<h3>Signals</h3><ul>" + "".join(items) + "</ul></section>")
+    out.append("<h3>Signals</h3><ul>" + "".join(items) + "</ul>" + extra + "</section>")
     return "".join(out)
 
 
@@ -127,3 +130,44 @@ def _alert_li(r, et, graded: bool) -> str:
             f"{_price(r['price'])}</b> at {escape(book)} <span class='research'>{escape(name)}"
             f"</span></div><div class='meta'>{escape(et(_utc(r['created_at']), '%a %-I:%M %p'))}"
             f"{fair}{nv}{tail}</div><div class='meta'>{escape(r['reason'][:300])}</div></li>")
+
+
+def _cell_clv(r, pin: bool = False) -> str:
+    n, mu, lo, hi = r.clv_stats(pin)
+    if mu is None:
+        return "–"
+    rng = "" if lo is None else f" ({100 * lo:+.1f} to {100 * hi:+.1f})"
+    return f"{100 * mu:+.2f} pp{rng}, n={n}"
+
+
+def record_html(rows: list[dict], csv_href: str = "picks.csv") -> str:
+    """The all-time record of every pick in the permanent ledger (betdata/ledger.py): overall,
+    by sport, by signal, props vs game markets, and the C signals by edge source."""
+    from betdata.ledger import TOO_FEW, breakdowns
+
+    if not rows:
+        return ("<h3>All-time record</h3><p class='meta'>No picks in the ledger yet. "
+                f"<a href='{escape(csv_href)}'>Download all picks (CSV)</a></p>")
+    b = breakdowns(rows)
+    body = []
+    for group, recs in b.items():
+        if not recs:
+            continue
+        if group != "all":
+            body.append(f"<tr class='grp'><th colspan='7'>{escape(group.capitalize())}</th></tr>")
+        for k, r in recs.items():
+            roi = "–" if r.roi is None else f"{100 * r.roi:+.1f}%"
+            judge = " <small>too few to judge</small>" if r.graded < TOO_FEW else ""
+            body.append(f"<tr><td>{escape(k)}{judge}</td><td>{r.picks}</td>"
+                        f"<td>{r.wins}-{r.losses}-{r.pushes}</td><td>{r.units:+.2f}</td>"
+                        f"<td>{roi}</td><td>{_cell_clv(r)}</td><td>{_cell_clv(r, True)}</td>"
+                        "</tr>")  # fmt: skip
+    return ("<h3>All-time record</h3><p class='meta'>Every alert is a pick: 1 unit at the "
+            "alerted price, voids kept but left out of W-L and ROI. CLV against the consensus "
+            "close, and separately against Pinnacle's close where one exists. C signals are "
+            "split by edge source: \"news\" when the repricer's move supplies at least half "
+            f"the edge, else \"book disagreement\". Under {TOO_FEW} graded picks a record is "
+            "too few to judge. <a href='" + escape(csv_href) + "'>Download all picks (CSV)</a>"
+            "</p><div class='tablewrap'><table class='lines record'><tr><th></th><th>Picks</th>"
+            "<th>W-L-P</th><th>Units</th><th>ROI</th><th>CLV vs consensus</th>"
+            "<th>CLV vs Pinnacle</th></tr>" + "".join(body) + "</table></div>")

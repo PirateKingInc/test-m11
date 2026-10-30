@@ -2205,3 +2205,34 @@ This is a separate signal with its own 200-alert gate.
   - **Data:** read from the poller database restored by the hourly job.
   - **Sections:** live alerts for upcoming games; the 10 most recent other alerts with their consensus close and CLV; per signal (NBA: C-NBA, F, G1; NFL: C-NFL, G2) the alerts, graded count of 200, CLV with its 95% range, W-L, ROI and gate status.
   - **Proof:** `status.json` records `value_sections` (alert rows per sport). `verify-page` screenshots each Value section at 390 px.
+
+
+# Pick ledger and reports (owner request 2026-10-30; reporting only)
+
+No rule, threshold or model changes: the signals are frozen until their 200-pick gates. Only bug fixes beyond this, each logged in REVIEW.md.
+
+**Edge-source tag** (C signals):
+- **Rule:** a C alert is tagged "news" when the repricer's move supplies at least half the edge, else "book disagreement".
+- **Repricer's move:** `news_move` = fair − the side's probability without the news. That base is the pre-news consensus at the book's line, or the model before the news when the price is model only.
+- **Stored:** on every new alert (`details`). Older alerts are tagged once, in the ledger, from their stored details.
+- **Shown:** CLV and counts split by tag on the page (Value section, all-time record), in `betdata alerts report` and in the weekly report. CLV vs Pinnacle's own last pre-game quote is reported separately wherever one exists.
+
+**The ledger** (`betdata/ledger.py`):
+- **Scope:** every alert is a pick, from every signal: C-NBA, C-NFL, F, G1, G2, the M16 paper alerts and any future signal.
+- **`ledger/picks.csv`:** pick fields, written once when the pick first appears: id (a hash of the de-duplication key), created time, sport, game, market, player, side, line, odds, book, signal, edge-source tag, reason, repriced fair price, book no-vig, and the consensus at pick time.
+- **`ledger/results.csv`:** result fields, written once when final: result, profit (1 unit at the alerted price), CLV vs the consensus close, CLV vs Pinnacle's close, grade time. Voids are kept but left out of W-L and ROI.
+- **Hourly sync:** each hourly run appends what is new (`betdata ledger sync`, before the page is built) and commits the files to main after deploying.
+- **Append-only, enforced twice:**
+  - `append_rows` refuses any write whose old text is not a prefix of the new;
+  - `tests/test_ledger.py` checks every committed version of each file starts with the one before it (CI fetches the full history).
+- **Rebuilt poller database:** each poller job re-inserts every ledger pick missing from `alerts` (`reload_alerts`), so grading continues.
+
+**Page:** the Value section ends with an all-time record from the ledger, with "too few to judge" under 100 graded picks and a "Download all picks (CSV)" link (`site/picks.csv`). It shows:
+- overall W-L-P, units, ROI and average CLV (consensus and Pinnacle, 95% ranges);
+- the same by sport, by signal, props vs game markets, and the C signals by edge source.
+
+**Weekly report** (`betdata/weekly.py`):
+- **When:** Mondays, from the 7 AM ET run.
+- **Content:** `reports/weekly/YYYY-MM-DD.md` with all-time and last-7-days records per signal, CLV with 95% ranges, the news vs book-disagreement split, and system health (hourly runs not ok, poller jobs failed, The Odds API month use, SharpAPI and other request counts).
+- **Delivery:** committed with the ledger, plus a 5-line ntfy summary.
+- **Milestones:** a signal reaching 60 or 200 graded picks gets its own ntfy push, recorded in `ledger/milestones.csv` so it is announced once.

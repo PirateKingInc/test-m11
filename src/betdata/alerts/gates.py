@@ -139,3 +139,20 @@ def gates(p: Connection, signals=("value", "snipe", "g1", "g2")) -> dict[str, di
                      "roi": (sum(r["profit"] for r in settled) / len(settled)
                              if settled else None)}  # fmt: skip
     return out
+
+
+def edge_split(p: Connection) -> dict[str, dict]:
+    """The C signals' alerts by edge source ("news" / "book disagreement", from the alert's
+    details; "untagged" for alerts stored before the tag): count, graded, CLV vs the consensus
+    close. Reporting only."""
+    out: dict[str, list] = {}
+    for r in signal_rows(p):
+        if r["signal"] != "value":
+            continue
+        tag = (r["details"] or {}).get("edge_source") or "untagged"
+        out.setdefault(tag, []).append(r)
+    res = {}
+    for tag, rs in sorted(out.items()):
+        clvs = [r["clv"] for r in rs if r["clv"] is not None]
+        res[tag] = {"alerts": len(rs), **gate(clvs)}
+    return res
