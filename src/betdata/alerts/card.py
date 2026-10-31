@@ -197,14 +197,37 @@ def push(pdb, card: dict, now: datetime, topic: str | None, client=None) -> str:
     return status
 
 
-def due_between(main, start: datetime, end: datetime, tip_fn=first_tip) -> bool:
-    """Is an 8:50 AM ET selection due in [start, end] on a day with games (keeps the poller
-    awake for it)?"""
-    for day in {start.astimezone(EASTERN).date(), end.astimezone(EASTERN).date()}:
-        if day < FIRST_DAY or not start <= select_at(day) <= end:
-            continue
-        for sport in SPORTS:
-            with main.connect() as m:
-                if tip_fn(m, sport, day) is not None:
-                    return True
+def last_tip(main, sport: str, day: date) -> datetime | None:
+    """The sport's last scheduled start on the Eastern day (main database)."""
+    from betdata.alerts.grade import utc
+    from betdata.db.schema import games, sports
+
+    lo, hi = day_bounds(day)
+    t = main.execute(select(games.c.start_time_utc)
+                     .join(sports, sports.c.sport_id == games.c.sport_id)
+                     .where(sports.c.key == sport, games.c.start_time_utc >= lo,
+                            games.c.start_time_utc < hi,
+                            games.c.status.not_in(("postponed", "cancelled")))
+                     .order_by(games.c.start_time_utc.desc())).first()  # fmt: skip
+    return None if t is None else utc(t[0])
+
+
+def pending(pdb, main, start: datetime, end: datetime, tip_fn=first_tip,
+            last_fn=last_tip) -> bool:  # fmt: skip
+    """Keeps the poller awake for the card: on a day with games, from 8:50 AM ET (due by `end`)
+    until the card is chosen or the day's last game starts. (REVIEW.md L-4: a check for 8:50
+    falling inside [start, end] missed it when the loop's clock read 8:50:00.009.)"""
+    day = start.astimezone(EASTERN).date()
+    if day < FIRST_DAY or end < select_at(day):
+        return False
+    for sport in SPORTS:
+        with pdb.connect() as p:
+            if get_state(p, key(sport, day)) is not None:
+                continue
+        with main.connect() as m:
+            if tip_fn(m, sport, day) is None:
+                continue
+            last = last_fn(m, sport, day)
+        if last is not None and start < last and not in_ledger(sport, day):
+            return True
     return False
