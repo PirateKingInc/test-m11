@@ -1,0 +1,26 @@
+{
+ "generated_at": "2026-10-31T13:16:43.150275+00:00",
+ "last_ok_at": "2026-10-31T13:16:43.146618+00:00",
+ "last_run": {
+  "status": "ok",
+  "at": "2026-10-31T13:16:43.146618+00:00",
+  "message": null
+ },
+ "rebuilt_at": null,
+ "stale_hours": 2,
+ "missing_keys": [
+  "CollegeFootballData (CFBD_API_KEY)",
+  "OddsPapi (ODDSPAPI_KEY)"
+ ],
+ "detected_keys": [
+  "SharpAPI (SHARPAPI_KEY)",
+  "The Odds API (ODDS_API_KEY)"
+ ],
+ "engine_sections": {
+  "nfl": 14
+ },
+ "value_sections": {
+  "nfl": 1,
+  "nba": 65
+ }
+}
