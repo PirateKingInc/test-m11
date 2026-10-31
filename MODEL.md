@@ -2266,6 +2266,20 @@ No rule, threshold or model changes: the signals are frozen until their 200-pick
   - the card bankroll: card picks only, 100 units, flat stakes, no compounding, with units, ROI, W-L-P and a record by label. Each tab shows its own sport; "All sports" appears once, on the NBA tab.
 - **Start:** the first card is Sat 2026-10-31 (no backfill).
 
+**Today's tracker** (owner request 2026-10-31; display only — no change to picks, labels, rules or grading, and the Value section is left as it is; `alerts/tracker.py`, `page/tracker.py`).
+- **Where:** directly below Tonight's card on each sport tab.
+- **Rows:** one per pick of today (US Eastern day, the M18 signals), grouped by game with the game's tip time (ET) and status.
+- **Toggle:** the default view is the card's picks; a toggle shows all of today's picks. The choice is remembered in localStorage (wrapped in try/catch).
+- **Pre-game:** pick and line, odds, book, label and stake (the card's at selection, else the creation label; unlabelled picks count 1 unit), and the price status against the latest poll (Live / Moved / Gone), or "No recent quote".
+- **In-game:** "In progress", with the score, period and clock when a live score source is configured.
+- **Final:** the result in plain words, e.g. "Anthony Black: 2 assists — under 3.5 WIN, +0.45u". A void reads "VOID (did not play)"; a total reads "Total 205 — over 210.5 LOSS". Units are at the pick's stake, and CLV shows once graded. Prop stats come from the box score the grading uses (NBA; NFL props show the result without the stat).
+- **Freshness:**
+  - During game windows (30 minutes before a sport's first game to 4 hours, NFL 5, after its last) the poller rebuilds the tracker every 5 minutes. It force-pushes it as the single commit of the `tracker` branch (`tracker.json`), never main.
+  - The page embeds the hourly build's copy, then re-reads the branch every 2 minutes in the browser (GitHub contents API, falling back to raw.githubusercontent.com), with no redeploy. It shows "Updated X min ago".
+- **Live scores:** balldontlie's free games endpoint, one request per sport per refresh, only when the `BALLDONTLIE_API_KEY` secret is set. Without the key, a started game shows "In progress" with no score.
+- **Player stats:** no free, terms-compliant source of live player stats exists, so player results appear at the final, and the page says so.
+- **Grading:** grading is unchanged. A result appears once the existing box-score pipeline (the hourly job's NBA box scores) has the game and the poller has graded it. The poller grades at the start of each job, so a result typically appears within the hour after the final, and games ending after the 10 PM ET hourly run are graded the next morning. Faster grading would need the poller to fetch the final box score itself (PROJECT.md "Tracker sources").
+
 **Page:** the Value section ends with an all-time record from the ledger, with "too few to judge" under 100 graded picks and a "Download all picks (CSV)" link (`site/picks.csv`). It shows:
 - overall W-L-P, units, ROI and average CLV (consensus and Pinnacle, 95% ranges);
 - the same by sport, by signal, props vs game markets, and the C signals by edge source.

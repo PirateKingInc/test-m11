@@ -194,6 +194,13 @@ class Poller:
                 return True
         except Exception as e:  # noqa: BLE001 - has_work must never fail over the card
             self.errors.append(f"card due: {type(e).__name__}: {str(e)[:200]}")
+        try:  # today's tracker is refreshed through every game window
+            from betdata.alerts.tracker import in_window
+
+            if in_window(self.main, start):
+                return True
+        except Exception as e:  # noqa: BLE001 - has_work must never fail over the tracker
+            self.errors.append(f"tracker window: {type(e).__name__}: {str(e)[:200]}")
         t = start
         with self.main.connect() as c:
             while t <= end:
@@ -219,6 +226,23 @@ class Poller:
         self._guard("sweep", self.sweep, now)
         self._guard("g1", self.g1_check, now)
         self._guard("card", self.card, now)
+        self._guard("tracker", self.tracker, now)
+
+    def tracker(self, now: datetime) -> str | None:
+        """Today's tracker (alerts/tracker.py): every 5 minutes in a game window, rebuilt and
+        pushed to the `tracker` branch for the page to read."""
+        import os
+
+        from betdata.alerts import tracker as T
+
+        if not T.in_window(self.main, now) or not self._due("due:tracker", T.EVERY, now):
+            return None
+        with self.pdb.connect() as p, self.main.connect() as m:
+            doc = T.document(p, m, now, os.environ.get("BALLDONTLIE_API_KEY"))
+        out = T.publish(doc)
+        n = sum(len(g["picks"]) for s in doc["sports"].values() for g in s["games"])
+        self.notes.append(f"tracker: {n} picks, {out}")
+        return out
 
     def card(self, now: datetime) -> list[dict]:
         """Tonight's card (alerts/card.py): chosen once per sport and day."""

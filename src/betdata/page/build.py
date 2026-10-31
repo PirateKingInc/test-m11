@@ -418,7 +418,7 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
                 book_names: dict, info: RunInfo, props: list[PropRow] | None = None,
                 engine: str | None = None, value: str | None = None,
                 picks: list[dict] | None = None, now: datetime | None = None,
-                card: str | None = None) -> str:  # fmt: skip
+                card: str | None = None, tracker: str | None = None) -> str:  # fmt: skip
     """The Value section first, fully open; everything below it folded (one tap to open, the
     choice remembered in the browser): past picks, model research, other model versions, data
     sources and notes. Inside the folds each game card is a compact row that opens on tap."""
@@ -438,7 +438,8 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
     research = ("<p class='meta'>The models below are research: no pick is flagged (M18). Value "
                 "is above.</p>") if value else ""  # fmt: skip
     k = sport.key
-    out = [card or "", value or ""]  # tonight's card first, then Value (unchanged)
+    # tonight's card first, today's tracker below it, then Value (unchanged)
+    out = [card or "", tracker or "", value or ""]
     if picks is not None:
         n, rec, body = past_picks_html(k, picks, now or datetime.now(UTC))
         out.append(fold(f"{k}-past", "Past picks",
@@ -585,6 +586,10 @@ def render(entries: list[SportEntry], panels: dict[str, str], status: dict) -> s
                  + "</p>")  # fmt: skip
     notes = keys_note + SOURCE_NOTES
     panels_html = "".join(sections).replace(FOOTER_NOTES, notes)
+    if "data-tracker=" in panels_html:  # the tracker's renderer, once (page/tracker.py)
+        from betdata.page.tracker import SCRIPT
+
+        panels_html += SCRIPT
     payload = json.dumps(status).replace("</", "<\\/")
     return PAGE.format(
         updated=escape(et(datetime.fromisoformat(status["last_ok_at"]))
@@ -614,7 +619,8 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
                                         movement_for(conn, sport, info), sport.records(conn),
                                         book_names, info, _props(sport, conn, now),
                                         eng, val, picks, now,
-                                        _card(sport, conn, poller, now, picks))  # fmt: skip
+                                        _card(sport, conn, poller, now, picks),
+                                        _tracker(sport, conn, poller, now))  # fmt: skip
     if poller is not None:
         poller.close()
     status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
@@ -690,6 +696,23 @@ def _card(sport: Sport, conn: Connection, poller, now: datetime,
                          picks if sport.key == "nba" else None)  # fmt: skip
     except Exception as e:  # never lose the page over the card
         log.warning("%s card section failed: %s", sport.key, e)
+        return None
+
+
+def _tracker(sport: Sport, conn: Connection, poller, now: datetime) -> str | None:
+    """The sport's "Today's tracker" section (page/tracker.py) with today's document embedded;
+    the browser then reads the poller's newer copy. A failure only drops it."""
+    if sport.key not in ("nba", "nfl"):
+        return None
+    try:
+        from betdata.alerts.tracker import build
+        from betdata.page.tracker import tracker_html
+
+        day = now.astimezone(EASTERN).date()
+        doc = build(poller, conn, sport.key, day, now) if poller is not None else None
+        return tracker_html(sport.key, doc)
+    except Exception as e:  # never lose the page over the tracker
+        log.warning("%s tracker section failed: %s", sport.key, e)
         return None
 
 
@@ -822,6 +845,12 @@ white-space:nowrap}} .lbl.take{{background:var(--acc);color:var(--bg)}}
 .bankline{{margin:4px 0 0}} .bankline b{{font-size:1.15rem}}
 .cardsec{{border:2px solid var(--fg);border-radius:10px;padding:8px 12px;margin:8px 0 14px}}
 .gates{{margin:6px 0}}
+.tracker{{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0 14px}}
+.trk-game{{margin:10px 0 4px}} .trk-game h4{{margin:0;font-size:.95rem}}
+.trk-toggle{{font:inherit;font-size:.85rem;padding:6px 10px;border:1px solid var(--acc);
+border-radius:8px;background:var(--card);color:var(--fg);margin:4px 0}}
+.st.final{{color:var(--fg)}} .st.inprog{{color:var(--acc)}} .st.sched{{color:var(--mut)}}
+.trk-res{{font-weight:600}} .trk-res.loss{{color:var(--warn)}} .trk-res.win{{color:var(--acc)}}
 details.fold{{margin:10px 0;border:1px solid var(--line);border-radius:10px;font-size:1rem}}
 .fold>summary{{padding:12px;color:var(--fg)}}
 .fold>summary .pv,.gamerow>summary .pv{{color:var(--mut);font-size:.85rem}}
