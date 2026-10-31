@@ -55,6 +55,11 @@ jobs:
   poll:
     runs-on: ubuntu-latest
     timeout-minutes: 65
+    # contents: write only to force-push today's tracker (tracker.json) to the `tracker` branch,
+    # never main (alerts/tracker.py).
+    permissions:
+      actions: write
+      contents: write
     # Keys live in this environment (main only); nothing is deployed from this job.
     environment: github-pages
     steps:
@@ -86,6 +91,8 @@ jobs:
           SHARPAPI_KEY: ${{ secrets.SHARPAPI_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          # optional: live scores for today's tracker (balldontlie free tier); unset = no scores
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         run: uv run --no-dev betdata poller run
       - name: Save the poller database
