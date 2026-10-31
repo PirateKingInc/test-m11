@@ -95,11 +95,25 @@ def test_only_on_days_with_games_and_from_oct_31(pdb):
         _pick(p, "k", 0.6)
     assert CD.run(pdb, _Main(), NOW, lambda m, s, d: None) == []  # no games today
     assert CD.run(pdb, _Main(), datetime(2026, 10, 30, 12, 50, tzinfo=UTC), tip_fn) == []
-    # the poller is kept awake for 8:50 on a day with games, and only then
-    assert CD.due_between(_Main(), NOW - timedelta(minutes=1), NOW, tip_fn)
-    assert not CD.due_between(_Main(), NOW + timedelta(minutes=1), NOW + timedelta(minutes=2),
-                              tip_fn)  # fmt: skip
-    assert not CD.due_between(_Main(), NOW, NOW, lambda m, s, d: None)
+
+
+def test_the_poller_stays_awake_until_the_card_is_chosen(pdb):
+    """REVIEW.md L-4: on Oct 31 the 8 AM job's loop read 8:50:00.009, a check for 8:50 inside
+    [now, until] said nothing was due, and the job stopped idle: the card came at 9:03."""
+    def pend(start, end, tips=tip_fn):
+        return CD.pending(pdb, _Main(), start, end, tips, lambda m, s, d: FIRST)
+
+    late = NOW + timedelta(milliseconds=9)
+    assert not pend(NOW - timedelta(minutes=20), NOW - timedelta(minutes=2))  # before 8:50
+    assert pend(NOW - timedelta(minutes=10), NOW + timedelta(minutes=6))  # the job's start
+    assert pend(late, late + timedelta(minutes=6))  # 8:50:00.009: still awake
+    assert pend(NOW + timedelta(hours=5), NOW + timedelta(hours=5, minutes=1))  # still waiting
+    assert not pend(FIRST, FIRST + timedelta(minutes=1))  # the last game has started
+    assert not pend(late, late + timedelta(minutes=6), lambda m, s, d: None)  # no games
+    with pdb.begin() as p:
+        _pick(p, "k", 0.6)
+    CD.run(pdb, _Main(), late, tip_fn)  # chosen
+    assert not pend(late, late + timedelta(minutes=6))
 
 
 def test_the_card_is_pushed_right_after_selection(pdb):

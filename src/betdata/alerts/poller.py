@@ -188,9 +188,9 @@ class Poller:
                                           for _, tip in self.g1_games(start)):  # fmt: skip
             return True
         try:  # tonight's card is chosen 30 minutes before a sport's first game
-            from betdata.alerts.card import due_between
+            from betdata.alerts.card import pending
 
-            if due_between(self.main, start, end + timedelta(minutes=1)):
+            if pending(self.pdb, self.main, start, end + timedelta(minutes=1)):
                 return True
         except Exception as e:  # noqa: BLE001 - has_work must never fail over the card
             self.errors.append(f"card due: {type(e).__name__}: {str(e)[:200]}")
