@@ -17,6 +17,7 @@ out = Path("out/ledger")
 shutil.copytree("ledger", out)
 peng = create_engine("sqlite:///file:data/poller.sqlite?mode=ro&uri=true", future=True)
 t = time.time()
+import logging; logging.basicConfig(level=logging.INFO)
 with peng.connect() as p, make_engine(get_settings().db_url).connect() as m:
     print("sync", RV.sync(p, m, out, datetime.now(UTC)), f"{time.time() - t:.0f}s")
 rp = {r["pick_id"]: r for r in csv.DictReader((out / "review_pick.csv").open())}
