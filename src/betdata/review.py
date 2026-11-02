@@ -241,6 +241,9 @@ def _team_ids(m, pick: dict, details: dict) -> dict[str, int]:
 # --- projections --------------------------------------------------------------------------------
 
 
+_PANELS: dict = {}
+
+
 def rebuild_projection(m, pick: dict) -> dict | None:
     """nbap15 re-run as of the pick time for an NBA prop whose alert kept no minutes: median,
     minutes, team. The panel marks the game scheduled so the model prices it as it would have."""
@@ -256,18 +259,25 @@ def rebuild_projection(m, pick: dict) -> dict | None:
     pid = nba_ids(m).get(norm_name(pick["player"]))
     if pid is None:
         return None
-    panel = Panel.load(m, season_for("nba", at) - 1)
+    season = season_for("nba", at) - 1
+    if season not in _PANELS:  # loaded once per sync, not once per pick
+        _PANELS[season] = Panel.load(m, season)
+    panel = _PANELS[season]
     gid = int(pick["game_id"])
     if gid not in panel.g.index:
         return None
-    panel.g.loc[gid, "status"] = "scheduled"
+    status = panel.g.at[gid, "status"]
+    panel.g.loc[gid, "status"] = "scheduled"  # restored below: the cached panel stays as is
     over = int(pick["odds"]) if pick["side"] == "over" else None
     under = int(pick["odds"]) if pick["side"] == "under" else None
     df = pd.DataFrame([dict(game_id=gid, player_name=pick["player"], market=pick["market"],
                             line=float(pick["line"]), over_price=over, under_price=under,
                             book=pick["book"], book_id=0, fetched_at=pd.Timestamp(at),
                             source="review", player_id=pid)])  # fmt: skip
-    preds = predict(m, at, panel, PropDesign.load(), lines=df)
+    try:
+        preds = predict(m, at, panel, PropDesign.load(), lines=df)
+    finally:
+        panel.g.loc[gid, "status"] = status
     if not preds:
         return None
     d = preds[0]
