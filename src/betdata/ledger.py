@@ -299,6 +299,12 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
     append_rows(out / "labels.csv", LABEL_FIELDS, labels)
     card_rows(p, out)
     annotate(out, now)
+    try:  # M19 review fields and reason tags (betdata/review.py), each row written once
+        from betdata import review
+
+        review.sync(p, m, out, now)
+    except Exception as e:  # noqa: BLE001 - the review never stops the ledger
+        log.warning("review sync failed: %s", e)
     return {"picks": n_p, "results": n_r, "milestones": milestones(out, now)}
 
 

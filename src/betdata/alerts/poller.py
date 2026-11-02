@@ -842,7 +842,8 @@ class Poller:
                       o.book, reason, f"snipe:{gid}:{o.market}:{_norm(o.player_name)}:"
                       f"{o.book}:{o.line:g}", s.p_model, s.p_book, o.player_name, None,
                       False, {"mean": pr["mean"], "median": med, "p_cons": s.p_cons,
-                              "edge": s.edge})  # fmt: skip
+                              "edge": s.edge, "team_id": pr.get("team_id"),
+                              "minutes": (pr.get("dist") or {}).get("minutes")})  # fmt: skip
             out.append(self.send(a, now))
         return [x for x in out if x is not None]
 
