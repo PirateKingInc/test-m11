@@ -418,10 +418,11 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
                 book_names: dict, info: RunInfo, props: list[PropRow] | None = None,
                 engine: str | None = None, value: str | None = None,
                 picks: list[dict] | None = None, now: datetime | None = None,
-                card: str | None = None, tracker: str | None = None) -> str:  # fmt: skip
-    """The Value section first, fully open; everything below it folded (one tap to open, the
-    choice remembered in the browser): past picks, model research, other model versions, data
-    sources and notes. Inside the folds each game card is a compact row that opens on tap."""
+                card: str | None = None, tracker: str | None = None, m19: str | None = None,
+                research_sink: list | None = None) -> str:  # fmt: skip
+    """M19 (`m19` given): the official record, Today and Results by day, then the data sources;
+    the model research and other model versions go to the Research tab (`research_sink`).
+    Otherwise (a sport without the M19 sections): the earlier layout, everything folded."""
     roi = sport.moneyline_final_roi()
     ml_flags = roi is not None and roi > 0
     note = version_note(sport)
@@ -438,9 +439,13 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
     research = ("<p class='meta'>The models below are research: no pick is flagged (M18). Value "
                 "is above.</p>") if value else ""  # fmt: skip
     k = sport.key
-    # tonight's card first, today's tracker below it, then Value (unchanged)
-    out = [card or "", tracker or "", value or ""]
-    if picks is not None:
+    m19_layout = m19 is not None and research_sink is not None
+    out = [m19] if m19_layout else [card or "", tracker or "", value or ""]
+    research_out = out
+    if m19_layout:
+        research_out = [f"<h2 class='research-sport'>{escape(sport.name)}: models</h2>"]
+        research_sink.append(research_out)
+    elif picks is not None:
         n, rec, body = past_picks_html(k, picks, now or datetime.now(UTC))
         out.append(fold(f"{k}-past", "Past picks",
                         f"{n} in the last 7 days" + (f" · {rec}" if rec else ""), body))
@@ -448,7 +453,7 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
     preview = (f"{len(cards)} game{'s' if len(cards) != 1 else ''}"
                + (", engine" if engine else "")
                + (f", props for {n_props}" if n_props else ""))
-    out.append(fold(f"{k}-research", "Model research", preview, compact(
+    research_out.append(fold(f"{k}-research", "Model research", preview, compact(
         f"""{research}<section class="games">{games}</section>
 {engine or ""}
 {props_html(props or [], book_names) if props is not None else ""}
@@ -461,7 +466,7 @@ def sport_panel(sport: Sport, cards: list[Card], movement: dict, records: list[R
     n_other, other = other_versions_html(records, sport.page_version(),
                                          engine_version=sport.engine_version())
     if other:
-        out.append(fold(f"{k}-versions", "Other model versions",
+        research_out.append(fold(f"{k}-versions", "Other model versions",
                         f"{n_other} records", other))
     jobs = _jobs(info.last, k)
     ok = sum(j.get("status") == "ok" for j in jobs)
@@ -590,6 +595,10 @@ def render(entries: list[SportEntry], panels: dict[str, str], status: dict) -> s
         from betdata.page.tracker import SCRIPT
 
         panels_html += SCRIPT
+    if "class='dayjump'" in panels_html:  # results by day: the date field (page/official.py)
+        from betdata.page.official import JUMP_JS
+
+        panels_html += JUMP_JS
     payload = json.dumps(status).replace("</", "<\\/")
     return PAGE.format(
         updated=escape(et(datetime.fromisoformat(status["last_ok_at"]))
@@ -603,35 +612,86 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
                active: list[Sport], out_dir: Path, now: datetime) -> dict:  # fmt: skip
     info = run_info(conn, now)
     book_names = {k: n for k, n in conn.execute(select(books.c.key, books.c.name))}
-    panels, engines, values = {}, {}, {}
+    panels, engines = {}, {}
     from betdata.nfl.book_lines import poller_conn
 
     poller = poller_conn()
     picks = _ledger(out_dir)
+    rows = _official_rows()
+    research: list[list[str]] = []
+    official: dict[str, int] = {}
     for sport in active:
         eng = _engine(sport, conn, now)
         if eng is not None:  # the run log's proof that the section was published (M17)
             engines[sport.key] = eng.count("<article class='game'>")
-        val = _value(sport, poller, now, picks)
-        if val is not None:  # the run log's proof that the Value section was published (M18)
-            values[sport.key] = val.count("<li class='prop'>")
+        m19 = _m19(sport, conn, poller, now, rows, out_dir)
+        if m19 is not None:  # the run log's proof that the M19 sections were published
+            official[sport.key] = m19.count("class='day'")
         panels[sport.key] = sport_panel(sport, sport.cards(conn, now),
                                         movement_for(conn, sport, info), sport.records(conn),
                                         book_names, info, _props(sport, conn, now),
-                                        eng, val, picks, now,
-                                        _card(sport, conn, poller, now, picks),
-                                        _tracker(sport, conn, poller, now))  # fmt: skip
+                                        eng, None, picks, now, None, None, m19,
+                                        research if m19 is not None else None)  # fmt: skip
     if poller is not None:
         poller.close()
     status = status_payload(info, now, missing_keys(settings), detected_keys(settings))
     if engines:
         status["engine_sections"] = engines
-    status["value_sections"] = values
+    status["official_sections"] = official
+    tabs = list(entries)
+    if research or rows:
+        panels["research"] = _research(rows, research, out_dir)
+        tabs.append(SportEntry(key="research", name="Research", status=ACTIVE))
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "index.html").write_text(render(entries, panels, status))
+    (out_dir / "index.html").write_text(render(tabs, panels, status))
     (out_dir / "status.json").write_text(json.dumps(status, indent=1))
     (out_dir / ".nojekyll").write_text("")
     return status
+
+
+def _official_rows() -> list[dict] | None:
+    """The ledger as betdata/official.py reads it (M19); None if it cannot be read."""
+    try:
+        from betdata.ledger import ledger_dir
+        from betdata.official import dataset
+
+        return dataset(ledger_dir())
+    except Exception as e:  # never lose the page over the ledger
+        log.warning("official dataset failed: %s", e)
+        return None
+
+
+def _m19(sport: Sport, conn: Connection, poller, now: datetime, rows: list[dict] | None,
+         out_dir: Path) -> str | None:  # fmt: skip
+    """The sport tab's M19 sections: the official record, Today, Results by day (MODEL.md
+    "M19: Page layout"). A failure only drops them (the earlier layout is used instead)."""
+    if sport.key not in ("nba", "nfl") or rows is None:
+        return None
+    try:
+        from betdata.page.official import days_html, header_html
+
+        today = now.astimezone(EASTERN).date()
+        return (header_html(rows, sport.key, sport.name, today, out_dir)
+                + (_tracker(sport, conn, poller, now) or "")
+                + days_html(rows, sport.key, today, out_dir, et))
+    except Exception as e:
+        log.warning("%s official sections failed: %s", sport.key, e)
+        return None
+
+
+def _research(rows: list[dict] | None, parts: list[list[str]], out_dir: Path) -> str:
+    """The Research tab: each signal's research record and gate, then each sport's models."""
+    from betdata.page.official import research_html
+
+    head = ("<p class='meta research-note'>Research, not official picks. Official picks are "
+            "the daily card on each sport's tab.</p>")
+    sig = ""
+    if rows is not None:
+        try:
+            sig = research_html(rows, out_dir)
+        except Exception as e:  # never lose the page over the research records
+            log.warning("research records failed: %s", e)
+    return head + sig + "".join("\n".join(p) for p in parts)
 
 
 def _ledger(out_dir: Path) -> list[dict] | None:
@@ -851,6 +911,14 @@ white-space:nowrap}} .lbl.take{{background:var(--acc);color:var(--bg)}}
 border-radius:8px;background:var(--card);color:var(--fg);margin:4px 0}}
 .st.final{{color:var(--fg)}} .st.inprog{{color:var(--acc)}} .st.sched{{color:var(--mut)}}
 .trk-res{{font-weight:600}} .trk-res.loss{{color:var(--warn)}} .trk-res.win{{color:var(--acc)}}
+.official{{border:2px solid var(--acc);border-radius:10px;padding:8px 12px;margin:8px 0 14px}}
+.periods{{margin:6px 0 0}} .periods dt{{font-weight:700;margin-top:8px}} .periods dd{{margin:0}}
+.recon{{color:var(--mut);font-size:.8rem}} .rec a{{color:inherit}}
+.days{{margin:14px 0}} details.day{{border:1px solid var(--line);border-radius:10px;margin:6px 0}}
+details.day>summary{{padding:10px 12px;color:var(--fg)}} .jump{{font-size:.85rem;display:block;
+margin:6px 0}} .jump input{{font:inherit;margin-left:6px}}
+.gamerow h4{{margin:8px 0 2px;font-size:.9rem}} .gamerow h5{{margin:6px 0 0;font-size:.85rem;
+color:var(--mut)}} .research-note{{font-weight:600}}
 details.fold{{margin:10px 0;border:1px solid var(--line);border-radius:10px;font-size:1rem}}
 .fold>summary{{padding:12px;color:var(--fg)}}
 .fold>summary .pv,.gamerow>summary .pv{{color:var(--mut);font-size:.85rem}}

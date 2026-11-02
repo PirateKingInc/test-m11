@@ -149,6 +149,19 @@ def result_text(a, res: str, units: float, actual, score) -> str:
     return f"{selection(a)} — {tail}"
 
 
+def _teams(m, a, details: dict) -> tuple[str, str]:
+    """(team, opponent) of a pick (betdata/review.py); blanks when unknown."""
+    from betdata.review import teams_for
+
+    try:
+        return teams_for(m, {"game": a.game_label, "player": a.player_name or "",
+                             "sport": a.sport, "game_id": a.game_id,
+                             "created_at": _utc(a.created_at).isoformat(), "market": a.market,
+                             "side": a.side}, details or {})  # fmt: skip
+    except Exception:  # noqa: BLE001 - a missing team never drops the pick
+        return "", ""
+
+
 def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None) -> dict:
     """Today's tracker for one sport (module docstring). `p`: the poller database; `m`: the main
     database (final scores, box scores), or None."""
@@ -157,7 +170,7 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     from betdata.alerts.card import key as card_key
     from betdata.alerts.gates import signal_name
     from betdata.alerts.labels import SIGNALS, status
-    from betdata.alerts.notify import BOOKS, _fmt_price, selection
+    from betdata.alerts.notify import BOOKS, MARKETS, _fmt_price, selection
     from betdata.ledger import pick_id
 
     lo, hi = day_bounds(day)
@@ -209,6 +222,9 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
                 "pick": selection(a), "odds": _fmt_price(a.price),
                 "book": BOOKS.get(a.book, a.book), "result": res, "units": units,
                 "clv": None if a.clv is None else round(100 * a.clv, 1)}  # fmt: skip
+        team, opp = _teams(m, a, d)
+        pick.update(team=team, opp=opp, player=a.player_name or "",
+                    market=MARKETS.get(a.market, a.market))  # M19: games and teams first
         if res is not None:
             sc = g["score"]
             pick["text"] = result_text(a, res, units or 0.0, _actual(m, a),
