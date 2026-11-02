@@ -2289,3 +2289,79 @@ No rule, threshold or model changes: the signals are frozen until their 200-pick
 - **Content:** `reports/weekly/YYYY-MM-DD.md` with all-time and last-7-days records per signal, CLV with 95% ranges, the news vs book-disagreement split, and system health (hourly runs not ok, poller jobs failed, The Odds API month use, SharpAPI and other request counts).
 - **Delivery:** committed with the ledger, plus a 5-line ntfy summary.
 - **Milestones:** a signal reaching 60 or 200 graded picks gets its own ntfy push, recorded in `ledger/milestones.csv` so it is announced once.
+
+# M19: one official record, a game-first page, and a reason for every result (written 2026-11-02, before any M19 code)
+
+Presentation and review fields only. **Unchanged:** signals, thresholds, models, grading rules, the card selection rule, and every stored pick or result field. The ledger stays append-only; the new review files are write-once (`betdata/official.py`, `betdata/review.py`). The signals stay frozen for their 200-pick tests.
+
+## Official record
+
+- **Official picks** are the daily card's picks: `ledger/card.csv` rows with `card = yes` (top 5 per sport and day, the existing rule). The official record covers card picks only, everywhere on the page.
+- **States:** a pick is **graded** when its result is win, loss or push. It is **void** when its result is void, and **pending** when it has no result yet.
+- **Counting:** pending and void picks never enter W-L-P, units, ROI, average odds or CLV.
+- **Units:** for an official pick, units = the card stake (TAKE 1, LEAN 0.5) x the ledger profit (per unit at the alerted price). **Staked** = the stakes of graded picks; **ROI** = units / staked.
+- **Average odds:** the mean decimal odds of the graded picks, shown in American odds.
+- **CLV:** the mean consensus CLV (`clv_consensus`) of the graded picks that have one, in percentage points.
+- **Reconciliation line:** every record shows one, e.g. "16 picks = 11 graded (6-5-0) + 0 void + 5 pending". W-L-P is never shown without units next to it.
+- **Periods (US Eastern card dates):**
+  - **all time**;
+  - **last 7 days**: the card dates from today - 6 to today;
+  - **yesterday**.
+  - Each sport tab shows that sport's record.
+- **Removed from the main view:** every other record, bankroll and label box (the labelled-pick bankroll, the all-signal record, the card bankroll box). The ledger keeps all of their data.
+
+## Research records (the Research tab, "research, not official picks")
+
+- **Scope:** each signal's record covers all its picks, excluding M16 legacy alerts and duplicates (as now). It counts graded picks only, at a flat 1 unit per pick, and shows the same reconciliation line, units, ROI, average odds and CLV.
+- **Gate status:** graded picks with a consensus CLV out of 200, and the mean CLV (the existing 200-pick gate, read from the ledger).
+
+## One source for every number
+
+- **Single function:** every number on the page comes from one function over the ledger CSVs (`official.dataset` and `official.record`).
+- **Drill-down:** each record number links to a CSV of exactly the picks behind it.
+- **Per-day CSV:** each card date has its own CSV with these columns: pick id, time, sport, game, team, opponent, player, market, pick, line, odds, book, card yes/no, label, stake, result, actual stat, units, CLV, review tag.
+
+## Why each pick won or lost (review fields and reason tags)
+
+- **Pick-time fields** (`ledger/review_pick.csv`, written once, at the first ledger sync after the pick is created, normally the same hour):
+  - player team and opponent;
+  - projected median and projected minutes (NBA props: the model's numbers when the alert fired, from the alert, or else nbap15 re-run as of the pick time);
+  - the line;
+  - the injury-report statuses the model assumed for the player and his key teammates (game markets: the key players of both teams).
+- **Status rules:**
+  - The assumed status is the latest NBA injury report entry known at pick time for that game. A player not listed is Available; "Removed" means Available.
+  - **NBA key teammates:** teammates with >= 24.0 average minutes over their last 10 games before pick time.
+  - **NFL key players:** each team's quarterback with the most snaps in its previous game, plus players with >= 70% offensive snap share in it.
+  - **NFL player picks**, if one ever reaches the card: projected snap share = the mean offensive snap share over the player's previous 3 games.
+- **Result fields** (`ledger/review_result.csv`, written once, after the pick is graded and the box score is in):
+  - actual stat and actual minutes (NFL: snap share);
+  - any status change for the player or key players between pick time and tip (the latest report before tip vs the one at pick time);
+  - closing line and CLV;
+  - the reason tag.
+- **Reason tag:** one primary tag per graded pick, the first rule that applies, in this order:
+  1. **News after pick:** a status change, as above, for the player or a key teammate (game markets: a key player of either team) between pick time and tip.
+  2. **Minutes miss** (player picks): actual minutes differ from projected by >= 25% of the projection or by >= 8 minutes. NFL: snap share off by >= 25 points.
+  3. **Market disagreed:** CLV < 0, meaning the market moved against the pick.
+  4. **Variance:** none of the above. The inputs were right; the result went the other way, or won as expected.
+- **Missing inputs:** if a rule cannot be checked because its inputs are missing, and no earlier rule applied, the tag is **"not enough data"**. A void pick has no tag.
+- **Backfill:** already-graded card picks are tagged where the data allows, and marked "not enough data" otherwise.
+- **Patterns:** each day and each week shows the counts by tag for wins and for losses, e.g. "4 of 5 losses were minutes misses".
+
+## Page layout (each sport tab, in this order)
+
+1. **Official record header:** all time, last 7 days and yesterday, each with W-L-P, units, ROI and the reconciliation line.
+2. **Today:** today's games (time ET, teams, status and score from the tracker), with card picks marked on their game.
+   - Tapping a game opens it: card picks first, then "Other model picks (research, not official)", grouped by team.
+   - Each pick row: player (TEAM) vs OPP (or the team, for game markets), market, pick, line, odds, book, label, price status before the game, then the result with the actual stat at the final.
+   - Games are collapsed by default, and no prop is listed outside its game.
+3. **Results by day:** newest first, one row per card date (card W-L-P, units, CLV).
+   - Tapping a day opens its games and every card pick, with result, actual stat and reason tag, plus that day's tag counts and CSV.
+   - A date field jumps to older days.
+
+**Research tab** (separate from the sport tabs): each signal's research record and 200-pick gate status, the model-vs-market and engine sections, and the other model versions.
+
+**Removed:** the Value list, Today's tracker as a separate list, the Past picks list and the duplicated records. Their content lives in the views above.
+
+## Weekly report
+
+The Monday report and its ntfy summary use the official card record (week and all time, each with its reconciliation line) and the reason-tag counts, plus one line per research signal: graded, units, CLV and gate status.
