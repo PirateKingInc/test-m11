@@ -36,6 +36,8 @@ PICK_FIELDS = ("pick_id", "team", "opponent", "proj_median", "proj_minutes", "pr
                "line", "statuses", "captured_at", "source")  # fmt: skip
 RESULT_FIELDS = ("pick_id", "actual_stat", "actual_minutes", "actual_snap_share", "final_score",
                  "status_changes", "close_line", "clv", "tag", "reviewed_at")  # fmt: skip
+HISTORY = timedelta(days=90)  # box-score history read for teams and key players
+_CACHE: dict = {}  # per sync: abbreviations, key players and player teams (cleared by sync)
 STATUS = {"out": "Out", "doubtful": "Doubtful", "questionable": "Questionable",
           "probable": "Probable", "available": "Available", "removed": "Available",
           "active": "Available"}  # fmt: skip
@@ -75,9 +77,12 @@ def _num(x, nd=2) -> str:
 def abbrevs(m, sport: str) -> dict[int, str]:
     from betdata.db.schema import sports, teams
 
-    return {tid: (ab or "") for tid, ab in m.execute(
+    if ("ab", sport) in _CACHE:
+        return _CACHE[("ab", sport)]
+    out = _CACHE[("ab", sport)] = {tid: (ab or "") for tid, ab in m.execute(
         select(teams.c.team_id, teams.c.abbrev).join(sports, sports.c.sport_id == teams.c.sport_id)
         .where(sports.c.key == sport))}  # fmt: skip
+    return out
 
 
 def game_teams(label: str) -> tuple[str, str]:
@@ -90,17 +95,28 @@ def nba_player_team(m, player: str, game_id: int, before: datetime) -> int | Non
     from betdata.db.schema import games
     from betdata.db.schema import nba_player_games as npg
 
+    k = ("team", _norm(player), game_id)
+    if k in _CACHE:
+        return _CACHE[k]
     want = _norm(player)
-    rows = m.execute(select(npg.c.player_name, npg.c.team_id, npg.c.game_id,
-                            games.c.start_time_utc)
-                     .join(games, games.c.game_id == npg.c.game_id)
-                     .where((npg.c.game_id == game_id) | (games.c.start_time_utc < before))
-                     .order_by(games.c.start_time_utc.desc())).all()  # fmt: skip
-    mine = [r for r in rows if _norm(r.player_name) == want]
-    for r in mine:
-        if r.game_id == game_id:
-            return r.team_id
-    return mine[0].team_id if mine else None
+    day = ("teams-by-player", before.date())
+    if day not in _CACHE:  # the window's box scores, read once per day of picks
+        rows = m.execute(select(npg.c.player_name, npg.c.team_id, npg.c.game_id,
+                                games.c.start_time_utc)
+                         .join(games, games.c.game_id == npg.c.game_id)
+                         .where(games.c.start_time_utc >= before - HISTORY,
+                                games.c.start_time_utc < before + timedelta(days=1))
+                         .order_by(games.c.start_time_utc.desc())).all()  # fmt: skip
+        by: dict = {}
+        for r in rows:
+            by.setdefault(_norm(r.player_name), []).append(r)
+        _CACHE[day] = by
+    mine = _CACHE[day].get(want, [])
+    out = next((r.team_id for r in mine if r.game_id == game_id), None)
+    if out is None:
+        out = next((r.team_id for r in mine if _utc(r.start_time_utc) < before), None)
+    _CACHE[k] = out
+    return out
 
 
 def teams_for(m, pick: dict, details: dict) -> tuple[str, str]:
@@ -130,16 +146,21 @@ def nba_key_players(m, team_id: int, before: datetime) -> list[str]:
     from betdata.db.schema import games
     from betdata.db.schema import nba_player_games as npg
 
+    k = ("key", team_id, before.date())
+    if k in _CACHE:
+        return _CACHE[k]
     rows = m.execute(select(npg.c.player_name, npg.c.minutes, games.c.start_time_utc)
                      .join(games, games.c.game_id == npg.c.game_id)
-                     .where(npg.c.team_id == team_id, games.c.start_time_utc < before)
+                     .where(npg.c.team_id == team_id, games.c.start_time_utc < before,
+                            games.c.start_time_utc >= before - HISTORY)
                      .order_by(games.c.start_time_utc.desc())).all()  # fmt: skip
     by: dict[str, list[float]] = {}
     for r in rows:
         mins = by.setdefault(r.player_name, [])
         if len(mins) < LAST_N:
             mins.append(r.minutes or 0.0)
-    return sorted(n for n, v in by.items() if v and sum(v) / len(v) >= KEY_MINUTES)
+    out = _CACHE[k] = sorted(n for n, v in by.items() if v and sum(v) / len(v) >= KEY_MINUTES)
+    return out
 
 
 def nba_statuses(m, game_id: int, names: list[str], at: datetime) -> dict[str, str] | None:
@@ -439,6 +460,7 @@ def sync(p, m, out: Path, now: datetime) -> dict:
 
     if m is None:
         return {"pick": 0, "result": 0}
+    _CACHE.clear()
     have_p = {r["pick_id"]: r for r in read_rows(out / "review_pick.csv")}
     have_r = {r["pick_id"] for r in read_rows(out / "review_result.csv")}
     det = {}
