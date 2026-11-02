@@ -20,7 +20,7 @@ import httpx
 from sqlalchemy import Connection, func, select
 
 from betdata.alerts.rules import EASTERN
-from betdata.ledger import LEGACY, TOO_FEW, Record, breakdowns, counted, joined
+from betdata.ledger import LEGACY, TOO_FEW, Record, counted, joined
 
 log = logging.getLogger(__name__)
 NTFY = "https://ntfy.sh/"
@@ -93,49 +93,78 @@ def health(main: Connection | None, poller: Connection | None, since: datetime) 
     return out or ["- (no run data available)"]
 
 
+def _rec(r) -> str:
+    """W-L-P with units, ROI, average odds, CLV and the reconciliation line (M19)."""
+    roi = "–" if r.roi is None else f"{100 * r.roi:+.1f}%"
+    odds = "–" if r.avg_odds is None else (f"+{r.avg_odds}" if r.avg_odds > 0 else str(r.avg_odds))
+    clv = "–" if r.clv is None else f"{r.clv:+.1f} pp"
+    return f"{r.wlp} | {r.units:+.2f}u | {roi} | {odds} | {clv} | {r.line()}"
+
+
+def _tags(tc: dict) -> str:
+    parts = []
+    for res, word in (("loss", "losses"), ("win", "wins")):
+        d = tc[res]
+        if d:
+            parts.append(f"{word} " + ", ".join(f"{v} {k}" for k, v in
+                                                sorted(d.items(), key=lambda kv: -kv[1])))
+    return "; ".join(parts) or "no reason tags yet"
+
+
 def build(root: Path, now: datetime, main: Connection | None,
           poller: Connection | None) -> tuple[str, list[str]]:  # fmt: skip
-    """(report markdown, 5-line summary)."""
-    every = joined(root / "ledger")
-    rows = counted(every)
-    n_legacy = sum(r["signal_name"] == LEGACY for r in every)
-    since = now - timedelta(days=7)
-    week = [r for r in rows if r["created_at"] and datetime.fromisoformat(r["created_at"])
-            >= since]  # fmt: skip
-    b_all, b_week = breakdowns(rows), breakdowns(week)
+    """(report markdown, 5-line summary) on the official card record and the reason tags, with
+    one line per research signal (M19, MODEL.md "M19: Weekly report")."""
+    from betdata import official as O
+    from betdata.alerts.gates import GATE_N, gate
+
+    rows = O.dataset(root / "ledger")
+    n_legacy = sum(r["signal_name"] == LEGACY for r in joined(root / "ledger"))
     t = now.astimezone(EASTERN)
-    md = [f"# Weekly report, {t.date().isoformat()}",
-          "",
-          f"Written {now.isoformat(timespec='minutes')} by the hourly run. Reporting only; the "
-          "signals are frozen until their 200-pick gates. Paper picks, not advice. Records "
-          f"under {TOO_FEW} graded picks are too few to judge.",
-          *(["", f"Excludes {n_legacy} M16 legacy alerts (pre-M18 rules), available in the "
-               "CSV."] if n_legacy else []),
-          "", "## All-time", "", HEAD]
-    for group, recs in b_all.items():
-        for k, r in recs.items():
-            md.append(record_line(k if group == "all" else f"{group}: {k}", r))
-    md += ["", "## Last 7 days", "", HEAD]
-    for group in ("all", "by signal"):
-        for k, r in b_week.get(group, {}).items():
-            md.append(record_line(k, r))
-    md += ["", "## C signals: news vs book disagreement (all-time)", "", HEAD]
-    for k, r in b_all["C signals by edge source"].items():
-        md.append(record_line(k, r))
+    today = t.date()
+    off = O.official(rows)
+    week_from = (today - timedelta(days=6)).isoformat()
+    week = [r for r in off if week_from <= r["day"] <= today.isoformat()]
+    w_rec, a_rec = O.record(week, O.official_stake), O.record(off, O.official_stake)
+    head = "| | W-L-P | Units | ROI | Avg odds | CLV | Picks |\n|---|---|---|---|---|---|---|"
+    md = [f"# Weekly report, {today.isoformat()}", "",
+          f"Written {now.isoformat(timespec='minutes')} by the hourly run. Official picks are "
+          "the daily card; graded picks only (pending and void are in the Picks column). Paper "
+          "units, not advice. Signals stay frozen until their 200-pick gates.", "",
+          *([f"Excludes {n_legacy} M16 legacy alerts (pre-M18 rules), available in the CSV.",
+             ""] if n_legacy else []),
+          "## Official record (card picks)", "", head,
+          f"| Last 7 days | {_rec(w_rec)} |", f"| All time | {_rec(a_rec)} |"]
+    for sport in sorted({r["sport"] for r in off}):
+        md.append(f"| {sport.upper()}, all time | "
+                  f"{_rec(O.record(O.official(rows, sport), O.official_stake))} |")
+    md += ["", "## Why picks won or lost (official)", "",
+           f"- Last 7 days: {_tags(O.tag_counts(week))}",
+           f"- All time: {_tags(O.tag_counts(off))}", "",
+           "## Results by day (last 7 days)", "", head]
+    for d, rs in O.by_day(week).items():
+        md.append(f"| {d} | {_rec(O.record(rs, O.official_stake))} |")
+    md += ["", "## Research signals (not official picks; every pick, flat 1 unit)", "",
+           "| Signal | W-L-P | Units | ROI | Avg odds | CLV | Picks | Gate |",
+           "|---|---|---|---|---|---|---|---|"]
+    sig = O.signals(rows)
+    for name, r in sig.items():
+        g = gate(r.clvs)
+        md.append(f"| {name} | {_rec(r)} | {g['n']}/{GATE_N}: {g['status']} |")
+    since = now - timedelta(days=7)
     md += ["", "## System health (last 7 days)", "", *health(main, poller, since), ""]
-    a = b_all["all"]["all picks"]
-    n, mu, lo, hi = a.clv_stats()
-    news = b_all["C signals by edge source"].get("news")
-    book = b_all["C signals by edge source"].get("book disagreement")
+
+    def short(r) -> str:
+        roi = "–" if r.roi is None else f"{100 * r.roi:+.0f}%"
+        return f"{r.wlp} {r.units:+.2f}u ROI {roi}"
+
     summary = [
-        f"Weekly {t.date().isoformat()}: {len(week)} new picks, {a.picks} all-time",
-        f"All-time {a.wins}-{a.losses}-{a.pushes}, {a.units:+.2f}u, ROI "
-        + ("–" if a.roi is None else f"{100 * a.roi:+.1f}%"),
-        f"CLV vs consensus {_pp(mu)} ({_rng(lo, hi)}), n={n}",
-        "C news/book: " + " / ".join(f"{r.picks} picks {_pp(r.clv_stats()[1])}" if r else "0"
-                                     for r in (news, book)),
-        "Signals: " + ", ".join(f"{k} {r.graded}/200" for k, r in
-                                b_all["by signal"].items())[:200],
+        f"Weekly {today.isoformat()}: card {short(w_rec)} ({w_rec.line()})",
+        f"Card all time {short(a_rec)}, CLV "
+        + ("–" if a_rec.clv is None else f"{a_rec.clv:+.1f} pp"),
+        f"Why (7 days): {_tags(O.tag_counts(week))}"[:180],
+        "Research: " + ", ".join(f"{k} {short(r)}" for k, r in sig.items())[:220],
+        "Gates: " + ", ".join(f"{k} {gate(r.clvs)['n']}/{GATE_N}" for k, r in sig.items()),
     ]
     return "\n".join(md) + "\n", summary
 
