@@ -95,6 +95,15 @@ jobs:
                   pg.screenshot(path="proof/nba_phone_full.png", full_page=True)
                   print("nba tab:", pg.evaluate("document.getElementById('tab-nba').innerText.slice(0, 600)"))
                   print("nba scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
+                  # the official success goal (owner decision 2026-11-03)
+                  off = pg.locator("#tab-nba section.official")
+                  if off.count():
+                      top, height = off.first.evaluate(
+                          "e => [e.getBoundingClientRect().top + window.scrollY, e.offsetHeight]")
+                      pg.screenshot(path="proof/nba_official_goal_390.png", full_page=True,
+                                    clip={"x": 0, "y": top, "width": 390, "height": height})
+                      print("goal lines:", [g.inner_text() for g in
+                                            off.first.locator("div.goal").all()])
                   value_shot("nba")
                   open_folds("nba")
                   props_shot("nba")

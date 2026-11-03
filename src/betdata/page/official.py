@@ -56,8 +56,26 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
         href = f"csv/{sport}-official-{slug}.csv"
         O.write_csv(site / href, rec.rows)
         out.append(f"<dt>{escape(label)}</dt><dd>{stat_line(rec, href)}</dd>")
-    out.append("</dl></section>")
+    out.append("</dl>")
+    out.append(goal_html(off, name))
+    if sport == "nba":  # "All sports" once, on the NBA tab (as the M18 bankroll was)
+        out.append(goal_html(O.official(rows), "All sports"))
+    out.append("</section>")
     return "".join(out)
+
+
+def goal_html(rows: list[dict], label: str) -> str:
+    """The official success goal's progress line (owner decision 2026-11-03): the goal and the
+    card's progress, a progress bar to 500 graded picks, the status, and the card's average
+    odds with the break-even win rate."""
+    g = O.goal(rows)
+    pct = "" if g.pct is None else f"{g.pct:.4f}"
+    return (f"<div class='goal' data-goal='{escape(label)}' data-graded='{g.graded}' "
+            f"data-pct='{pct}' data-units='{g.units:.4f}' data-status='{escape(g.status)}'>"
+            f"<p class='meta'><b>{escape(label)}</b> · {escape(O.goal_text(g))}</p>"
+            f"<progress max='{O.GOAL_N}' value='{min(g.graded, O.GOAL_N)}' "
+            f"style='width:100%'>{g.graded} of {O.GOAL_N}</progress>"
+            f"<p class='meta'>{escape(O.context_text(g))}</p></div>")
 
 
 def _tags(rows: list[dict]) -> str:

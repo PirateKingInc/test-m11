@@ -5,8 +5,9 @@
 - the C signals split by edge source (news vs book disagreement);
 - system health: failed hourly runs and poller jobs, quota use.
 
-The hourly job commits the report and pushes a 5-line ntfy summary. It also pushes an extra
-ntfy alert when a signal reaches 60 or 200 graded picks (ledger milestones).
+The hourly job commits the report and pushes a 6-line ntfy summary (with the official goal
+line). It also pushes an extra ntfy alert when a signal reaches 60 or 200 graded picks
+(ledger milestones).
 Reporting only: nothing here changes a rule, a threshold or a model.
 """
 
@@ -113,7 +114,7 @@ def _tags(tc: dict) -> str:
 
 def build(root: Path, now: datetime, main: Connection | None,
           poller: Connection | None) -> tuple[str, list[str]]:  # fmt: skip
-    """(report markdown, 5-line summary) on the official card record and the reason tags, with
+    """(report markdown, 6-line summary) on the official card record and the reason tags, with
     one line per research signal (M19, MODEL.md "M19: Weekly report")."""
     from betdata import official as O
     from betdata.alerts.gates import GATE_N, gate
@@ -138,6 +139,13 @@ def build(root: Path, now: datetime, main: Connection | None,
     for sport in sorted({r["sport"] for r in off}):
         md.append(f"| {sport.upper()}, all time | "
                   f"{_rec(O.record(O.official(rows, sport), O.official_stake))} |")
+    # the official success goal (owner decision 2026-11-03)
+    goal_all = O.goal(off)
+    md += ["", "## Official success goal", "",
+           f"- All sports: {O.goal_text(goal_all)} ({O.context_text(goal_all)})"]
+    for sport in sorted({r["sport"] for r in off}):
+        g = O.goal(O.official(rows, sport))
+        md.append(f"- {sport.upper()}: {O.goal_text(g)} ({O.context_text(g)})")
     md += ["", "## Why picks won or lost (official)", "",
            f"- Last 7 days: {_tags(O.tag_counts(week))}",
            f"- All time: {_tags(O.tag_counts(off))}", "",
@@ -162,6 +170,7 @@ def build(root: Path, now: datetime, main: Connection | None,
         f"Weekly {today.isoformat()}: card {short(w_rec)}, {w_rec.graded} graded",
         f"Card all time {short(a_rec)}, CLV "
         + ("–" if a_rec.clv is None else f"{a_rec.clv:+.1f} pp"),
+        f"{O.goal_text(goal_all)} ({O.context_text(goal_all)})"[:200],
         f"Why (7 days): {_tags(O.tag_counts(week))}"[:180],
         "Research: " + ", ".join(f"{k} {short(r)}" for k, r in sig.items())[:220],
         "Gates: " + ", ".join(f"{k} {gate(r.clvs)['n']}/{GATE_N}" for k, r in sig.items()),
