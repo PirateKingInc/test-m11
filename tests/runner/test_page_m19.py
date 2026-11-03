@@ -121,7 +121,7 @@ def test_research_tab_has_every_signal_with_units_and_gate(tmp_path):
     [f] = _recs(html)
     assert (f["graded"], f["w"], f["l"]) == ("4", "2", "2") and "pending" not in html
     assert float(f["units"]) == round(1.2 - 1.0 - 1.0 + 0.833, 4)  # flat 1 unit
-    assert "Gate: 4/200 graded with CLV" in html and "research, not official picks" in html
+    assert "M18 CLV gate: 4/200 graded with CLV" in html and "research, not official picks" in html
 
 
 def test_pending_picks_are_counted_only_under_today():
