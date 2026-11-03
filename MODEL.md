@@ -2486,3 +2486,111 @@ Fair probability = w·p_engine + (1 − w)·p_market, w ∈ {0, 0.1, ..., 1} lea
 - **Research tab only:** one compact "NBA engine" section: today's engine picks grouped by game (player (TEAM) vs OPP), its graded record (W-L-P with units, graded picks only) and the three checks with their status.
 - **Runtime:** a typical hourly run stays under 3 minutes.
 - **SWITCH.md:** how the card would switch to the engine and what would be archived (nba15, nbap15, F, C), for the owner. Not executed in M20.
+
+## M20 results log (validation decisions logged before the test seasons were scored)
+
+### Part A: the three checks on the live ledger (2026-11-03, `betdata alerts checks`)
+
+| Signal | Graded (W/L) | Calibration (ECE; gap, 95%) | Brier vs close (95%) | EV at close (95%) | CLV = movement + book | Status |
+|---|---|---|---|---|---|---|
+| F | 314 | 0.042; +4.2 pp (−1.3 to +9.8) pass | +0.0049 (−0.0059 to +0.0157) fail | −3.2% (−4.8 to −1.6) fail | +1.6 = +1.2 + 0.4 | does not work |
+| G2 (retired) | 100 | 0.090; +7.4 pp (−0.0 to +14.7) fail | +0.0073 (+0.0008 to +0.0138) fail | −3.7% (−4.3 to −3.1) fail | +2.1 = −0.3 + 2.4 | too few; failing all three |
+| G1 (retired) | 18 | no fair probability | – | −4.1% (−4.6 to −3.7) fail | +0.1 | too few |
+| C-NBA | 14 | 0.317; +10.6 pp | +0.0143 | −0.9% (−3.1 to +1.2) | +1.7 = +1.1 + 0.6 | too few |
+| C-NFL, sharp-nba | 1 each | – | – | – | – | too few |
+
+F passed the old M18 gate (mean CLV +1.6 pp, range above 0) at 200; it fails the new rule on checks 2 and 3. Its positive CLV is mostly market movement (+1.2 pp), but it does not cover the margin. F reached 200 before this rule was written (see Part A).
+
+### B2 stability (training 2015-16 to 2020-21; `reports/nba/m20_stability.csv`)
+
+| Rate | Split-half r | Padding | Season-to-season r |
+|---|---|---|---|
+| player usage / 3PA / 2PA per possession | 0.95 / 0.96 / 0.95 | 80 / 62 / 83 possessions | 0.86 / 0.90 / 0.87 |
+| player FTA / TOV per possession | 0.84 / 0.75 | 269 / 485 | 0.84 / 0.80 |
+| player OREB / DREB / AST per possession | 0.89 / 0.89 / 0.94 | 169 / 173 / 98 | 0.93 / 0.89 / 0.90 |
+| player 2P% / 3P% / FT% | 0.48 / 0.35 / 0.49 | 139 / 129 / 47 attempts | 0.31 / 0.38 / 0.50 |
+| player competitive-minutes share | 0.99 | 0.5 games | 0.77 |
+| team pace | 0.93 | 3.3 games | 0.56 |
+| team points per possession for / against | 0.82 / 0.80 | 919 / 1,018 | 0.59 / 0.62 |
+| team 3P% allowed | 0.29 | 3,131 attempts | 0.28 |
+| team DREB rate | 0.65 | 1,007 chances | 0.36 |
+
+Volume (usage, attempts, assists, rebounds) is stable within a season; shooting percentages need 130-140 attempts of padding and carry little across seasons; a defence's 3P% allowed is mostly luck.
+
+### B3-B6 selection (validation, pretip, played player-games; `reports/nba/m20_selection.json`)
+
+- **Competitive minutes:** CM1 5.2571, CM2 5.2663, CM3 5.2568 minutes MAE → **CM1** (CM3 is a tie within 0.1%; simplest wins).
+- **Outlier weights:** no weight below 1 helps, at h = 10 or (adjustment 1) at h = 3: blowout 0 → 5.270, 0.5 → 5.140, 1 → 5.125; OT, foul trouble and early exits likewise. Weights stay 1. The baseline is a share of *competitive* time, so B3 already removes the blowout effect; down-weighting again double-counts.
+- **Role changes:** the minutes half-life is short for everyone: stable h = 3 (5.1246; h = 10: 5.2571; h = 40: 5.3925), and role-change h = 3 (no extra gain). Rates: h = 20 for both (usage MAE 3.2284; h = 10 ties). Role-change detection is kept (it is part of the design and the fixture shows it raises a Schröder-like new-team projection above the same player without it), but on validation it adds nothing beyond the short half-life.
+- **Minutes MAE 5.125** (pretip) vs nbap15's 5.060 (both points pooled, M15).
+
+### B7 adjustments (validation means; `reports/nba/m20_b7_adjustments.json`)
+
+| Step | Margin MAE | Total MAE | Total bias |
+|---|---|---|---|
+| core | 10.895 | 15.895 | −6.17 |
+| 1: player priors at the league's as-of level | 10.918 | 15.312 | −3.89 (kept) |
+| 2: stretch ×1.5 / 2 / 3 on shooting deviations | 10.964 / 11.214 / 12.213 | 15.52 / 15.86 / 16.87 | (dropped) |
+| 3: team priors at the previous season's league level | 10.918 | 15.290 | −2.98 (kept) |
+
+### B8 simulation constants (training games, 250 games × 2,000 sims)
+The binomial noise of shot-making alone puts the simulated margin's SD near 16 against a residual SD of 12.4-13.9, even with no shooting shock: the simulation is too wide for sides before calibration, which Part C's one Platt fit absorbs where it is applied. Sum checks held in every simulated game.
+
+### Part D add-ons (validation; bar ≥ 0.5% MAE; `reports/nba/m20_addons.json`)
+
+| Add-on | Target | Core | With | Decision |
+|---|---|---|---|---|
+| D1 with/without key teammates | assists on the 9,572 affected rows | 1.413 | 1.508 | dropped |
+| D1 adjustment 1 (assists, rebounds only) | assists / rebounds affected | 1.419 / 2.120 | 1.513 / 2.188 | dropped |
+| D2 rebounding environment | rebounds | 1.9227 | 1.9231 | dropped |
+| D3 assists × teammate shooting | assists | 1.27699 | 1.27688 | dropped (0.01%) |
+| D4 script into minutes (removal test) | minutes | 5.1248 with | 5.1323 without (+0.15%) | removed (points better without) |
+
+No add-on is kept, so the ablation is empty. The engine is the core alone.
+
+### Part C/E: the validated design (`reports/nba/m20_design.json`, frozen in `config/fits/nba_engine_m20.json`)
+
+Engine constants fitted on 2015-16 to 2020-21; 10,000 simulations per validation game, pretip.
+
+| Market | Engine Brier / log loss | Market (no-vig at the line) | Blend weight on the engine | Platt |
+|---|---|---|---|---|
+| spreads (closing line, −110) | 0.2608 / 0.7164 | 0.2500 / 0.6931 | **0** | – |
+| totals (closing line) | 0.2676 / 0.7313 | 0.2500 / 0.6931 | **0** | – |
+| moneyline (closing price) | 0.2287 / 0.6490 | 0.2137 / 0.6163 | **0.1** | – |
+| points (2022-23 opening lines) | 0.2645 | 0.2500 | **0.1** | slope 0.51 |
+| rebounds | 0.2584 | 0.2472 | **0.2** | – |
+| assists | 0.2518 | 0.2433 | **0.2** | slope 1.14 |
+| threes | 0.2515 | 0.2436 | **0.1** | – |
+| PRA | no validation lines | | 0 (market only) | – |
+
+- The engine's spread and total probabilities carry no information beyond the closing line (a Platt slope near 0), so the blend gives them no weight and the engine makes no spread or total picks.
+- **θ:** game markets 5% EV (336 validation picks at the close, ROI +13.1%: long moneyline prices), props 10% EV (304 picks at the opening line, ROI +13.4%). Both "validated" under the Part E rule.
+- **Accuracy (validation):** margin MAE 10.87 vs nba15 10.46 and the close 10.26; total MAE 15.10 vs nba15 14.70 and the close 14.15; player MAE pretip minutes 5.13, points 4.59, rebounds 1.92, assists 1.28, threes 0.873 (nbap15, both points: 5.06 / 4.62 / 1.92 / 1.29 / 0.873).
+
+## M20 test: 2023-24 to 2025-26, scored once (repeat look for NBA sides; `reports/nba/m20_final_test.json`)
+
+Constants refitted on 2015-16 to 2022-23 with the frozen design; 3,962 games, sum checks held in every simulated game.
+
+| | Engine | nba15 | Closing line |
+|---|---|---|---|
+| Margin MAE | 11.37 | 10.87 | 10.77 |
+| Total MAE | 14.93 | 14.82 | 14.32 |
+| Moneyline Brier (all games) | 0.2157 | – | 0.1993 |
+
+Props at the cleaned opening lines (engine median MAE vs the line; Brier engine vs no-vig): points 5.016 vs 4.914, 0.2564 vs 0.2492; rebounds 2.014 vs 2.008, 0.2536 vs 0.2472; assists **1.508 vs 1.538**, 0.2491 vs 0.2456; threes **1.078 vs 1.145**, 0.2447 vs 0.2428; PRA 6.542 vs 6.334, 0.2608 vs 0.2487. The engine's medians beat the line on assists and threes; its probabilities lose to the line everywhere.
+
+**Re-score after a data bug found in the test (disclosed, M14-4 / M16-1 precedent).** The first scoring's prop picks won 66% (rebound unders 106-26). Inspection showed broken stored lines: two-way prices that are not a market (both sides +1200 to +1600, overround 0.14, passing the M16 0.35-0.65 no-vig filter) and lines far from the player (rebound "lines" of 14-37 for a 3-rebound player: another market stored under this one). They are about 1% of rows but 22% of validation and 34% of test prop picks. `evaluate.clean_lines` drops a two-way overround outside 1.00-1.25 and a line more than max(4, 60%) from the player's as-of last-10 average. It was applied identically to validation and test with the **frozen** design (w, Platt and θ were not re-chosen). Both scorings are committed; the clean one is the result (`reports/nba/m20_*_clean_lines.json`). Live quotes get the same overround guard (`picks.real_two_way`).
+
+**The three checks on the engine's test picks (95% ranges):**
+
+| Picks | n (W) | ROI | Calibration (ECE; gap) | Brier vs reference | EV at reference | Status |
+|---|---|---|---|---|---|---|
+| props at the opening line (reference: opening no-vig; no pre-game close stored) | 329 (174) | +18.5% | 0.043; −3.0 pp pass | −0.0140 (−0.0232 to −0.0048) **pass** | −6.9% fail (by construction: bet at the reference line) | does not work |
+| moneyline at the closing price | 526 (62) | −29.3% | 0.049; +4.9 pp fail | +0.0014 fail | −4.2% fail | does not work |
+| moneyline at the opening price, graded vs the close | 439 (68) | −3.3% | 0.008; +0.8 pp pass | +0.0063 (+0.0010 to +0.0116) fail | **+5.0% (+1.9 to +8.2) pass** | does not work |
+| rebound unders (props) | 49 (31) | +33% | fail | −0.025 pass | fail | too few |
+| primary-ballhandler assists (assist share ≥ 25%, line ≥ 5.5) | 8 (7) | +64% | fail | pass | fail | too few |
+
+All lines at primary ballhandlers' assist lines ≥ 5.5 (2,425 test rows): over rate 45.8%, opening no-vig over 49.9%, engine P(over) 44.1% — the market prices these overs too high and the engine leans the right way. nbap15 at its own thresholds on the same seasons: assists 3,021 picks, rebounds 1,977, points 1,842, threes 7,322, every market failing calibration (gap +5 to +11 pp, overconfident) and EV; nba15 moneyline picks (1,711 at the close) gap +6.8 pp, Brier +0.005, EV −4.1%; spreads 88 picks (too few). The closing moneyline itself: gap +0.5 pp, Brier 0 by definition, EV −4.1% (the margin).
+
+**Reading.** The engine is not closer than the market. Its side errors are worse than nba15's and the close's; its probabilities lose to the line in every market. Where its picks look good, they are taken against *opening* lines with information from later in the day (pretip injury news): the props' Brier pass and the opening-moneyline EV pass are the stale-opener effect M14 described ("not achievable results"), not a demonstrated edge against the close. It fixes nbap15's overconfidence (its prop picks are calibrated, gap −3 pp, against nbap15's +5 to +11 pp). Live grading against the M18 consensus close is the real test.
