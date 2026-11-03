@@ -42,25 +42,32 @@ DAY = [("w", "2026-11-01", "snipe", 120, "win", 1.2, 0.02, 0.5),
 
 
 def test_a_day_with_a_win_a_loss_a_void_and_a_pending_pick(tmp_path):
+    """The record is 1-1 with units for the two graded picks only; the void and the pending pick
+    are never counted in it (owner correction 2026-11-03)."""
     _ledger(tmp_path, DAY)
     rows = O.dataset(tmp_path)
     rec = O.record(O.official(rows), O.official_stake)
-    assert rec.line() == "4 picks = 2 graded (1-1-0) + 1 void + 1 pending"
-    assert rec.units == pytest.approx(0.5 * 1.2 - 0.5)  # void and pending never count
+    assert (rec.wlp, rec.graded) == ("1-1-0", 2)
+    assert rec.units == pytest.approx(0.5 * 1.2 - 0.5)
     assert rec.staked == 1.0 and rec.roi == pytest.approx(0.1)
     assert rec.clv == pytest.approx(0.5)  # (2 - 1) / 2 pp
     assert rec.avg_odds == O.american((2.2 + 1 + 100 / 110) / 2)
+    assert sorted(r["pick_id"] for r in rec.rows) == ["l", "w"]  # the drill-down: graded only
+    assert not hasattr(rec, "line") and not hasattr(rec, "pending")
     p = O.periods(O.official(rows), date(2026, 11, 2))
-    assert p["Yesterday"].line() == p["All time"].line() == rec.line()
+    assert p["Yesterday"].wlp == p["All time"].wlp == "1-1-0"
     sig = O.signals(rows)
-    assert sig["G2"].line() == "1 pick = 1 graded (1-0-0) + 0 void + 0 pending"
+    assert (sig["G2"].wlp, sig["G2"].graded) == ("1-0-0", 1)
     assert sig["F"].units == pytest.approx(1.2 - 1.0)  # research: flat 1 unit
-    text = O.csv_text(O.by_day(rows)["2026-11-01"])
-    got = list(csv.DictReader(text.splitlines()))
+    # results by day: graded and void picks only; the pending pick is not there
+    day = O.by_day(rows)["2026-11-01"]
+    assert sorted(r["pick_id"] for r in day) == ["l", "v", "w", "x"]
+    assert [r["pick_id"] for r in O.voids(day)] == ["v"]
+    got = list(csv.DictReader(O.csv_text(day).splitlines()))
     assert list(got[0]) == list(O.CSV_FIELDS)
     assert {r["pick_id"]: (r["card"], r["result"], r["units"]) for r in got} == {
         "w": ("yes", "win", "0.6"), "l": ("yes", "loss", "-0.5"), "v": ("yes", "void", ""),
-        "p": ("yes", "pending", ""), "x": ("no", "win", "0.0833")}
+        "x": ("no", "win", "0.0833")}
 
 
 # --- an independent recount from the raw CSVs ------------------------------------------------
@@ -87,26 +94,21 @@ def _independent(ledger: Path):
 
 
 def _tally(items, stake):
-    n = w = l_ = pu = v = pend = 0
+    """Graded picks only: W, L, P, units."""
+    w = l_ = pu = 0
     units = 0.0
     for _p, r, c in items:
-        n += 1
         res = r.get("result", "")
-        if res == "void":
-            v += 1
-        elif res not in ("win", "loss", "push"):
-            pend += 1
-        else:
+        if res in ("win", "loss", "push"):
             w += res == "win"
             l_ += res == "loss"
             pu += res == "push"
             units += stake(c) * float(r["profit"])
-    return n, w, l_, pu, v, pend, round(units, 6)
+    return w, l_, pu, round(units, 6)
 
 
 def _ours(rec):
-    return (rec.picks, rec.wins, rec.losses, rec.pushes, rec.voids, rec.pending,
-            round(rec.units, 6))
+    return rec.wins, rec.losses, rec.pushes, round(rec.units, 6)
 
 
 @pytest.mark.parametrize("where", ["fixture", "repo"])

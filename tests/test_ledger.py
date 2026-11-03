@@ -173,7 +173,7 @@ def test_weekly_report_and_pushes(pdb, tmp_path):
     # M19: the official card record and reason tags, one line per research signal
     assert "## Official record (card picks)" in md and "| F | 1-0-0 | +1.10u" in md
     assert "| C-NBA | 0-1-0 | -1.00u" in md and "## Why picks won or lost (official)" in md
-    assert "0 picks = 0 graded (0-0-0) + 0 void + 0 pending" in md and "## System health" in md
+    assert "pending" not in md and "## System health" in md  # graded-only records
     assert len(summary) == 5 and summary[0].startswith("Weekly 2026-11-02: card 0-0-0")
     assert summary[4] == "Gates: C-NBA 1/200, F 1/200"
     posts = []
