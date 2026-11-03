@@ -98,6 +98,23 @@ jobs:
                   value_shot("nba")
                   open_folds("nba")
                   props_shot("nba")
+              # M20: the Research tab's "NBA engine" section, at phone width.
+              res = pg.locator('button[data-tab="research"]')
+              if res.count():
+                  res.click()
+                  pg.wait_for_timeout(300)
+                  sec = pg.locator("#tab-research section[data-engine='nba']")
+                  if sec.count():
+                      top, height = sec.first.evaluate(
+                          "e => [e.getBoundingClientRect().top + window.scrollY, e.offsetHeight]")
+                      pg.screenshot(path="proof/research_nba_engine_390.png", full_page=True,
+                                    clip={"x": 0, "y": top, "width": 390,
+                                          "height": min(height, 1800)})
+                      print("nba engine section:", sec.first.inner_text()[:1500])
+                  else:
+                      print("nba engine section: none")
+                  print("research scrollWidth",
+                        pg.evaluate("document.documentElement.scrollWidth"))
               b.close()
           PY
       - name: Push to the proof branch
