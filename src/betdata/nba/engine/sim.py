@@ -156,7 +156,8 @@ def sim_game(rows: pd.DataFrame, fit, n: int = N_SIMS, seed: int = 0) -> GameSim
     mu_a = float((r.p_play * r.pts_m)[~home].sum())
     script = ((mu_h * (1 + 1.6 * shock[:, 0]) - mu_a * (1 + 1.6 * shock[:, 1]))
               + rng.normal(0, sp["sd_script"], S))  # fmt: skip
-    G = g_of(fit.g_curve, script)
+    # D4 (game script into minutes) did not clear the add-on bar: off unless the fit says so
+    G = g_of(fit.g_curve, script) if sp.get("script", True) else np.zeros(S)
     ot = (np.abs(script) < sp["ot_band"]).astype(float)
     ot = ot + ot * (rng.random(S) < 0.12)  # a second overtime about one time in eight
     # stage 2: minutes, possessions on court
