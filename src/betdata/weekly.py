@@ -94,11 +94,11 @@ def health(main: Connection | None, poller: Connection | None, since: datetime) 
 
 
 def _rec(r) -> str:
-    """W-L-P with units, ROI, average odds, CLV and the reconciliation line (M19)."""
+    """A graded-only record: W-L-P with units, ROI, average odds, CLV, graded picks (M19)."""
     roi = "–" if r.roi is None else f"{100 * r.roi:+.1f}%"
     odds = "–" if r.avg_odds is None else (f"+{r.avg_odds}" if r.avg_odds > 0 else str(r.avg_odds))
     clv = "–" if r.clv is None else f"{r.clv:+.1f} pp"
-    return f"{r.wlp} | {r.units:+.2f}u | {roi} | {odds} | {clv} | {r.line()}"
+    return f"{r.wlp} | {r.units:+.2f}u | {roi} | {odds} | {clv} | {r.graded}"
 
 
 def _tags(tc: dict) -> str:
@@ -126,11 +126,11 @@ def build(root: Path, now: datetime, main: Connection | None,
     week_from = (today - timedelta(days=6)).isoformat()
     week = [r for r in off if week_from <= r["day"] <= today.isoformat()]
     w_rec, a_rec = O.record(week, O.official_stake), O.record(off, O.official_stake)
-    head = "| | W-L-P | Units | ROI | Avg odds | CLV | Picks |\n|---|---|---|---|---|---|---|"
+    head = "| | W-L-P | Units | ROI | Avg odds | CLV | Graded |\n|---|---|---|---|---|---|---|"
     md = [f"# Weekly report, {today.isoformat()}", "",
           f"Written {now.isoformat(timespec='minutes')} by the hourly run. Official picks are "
-          "the daily card; graded picks only (pending and void are in the Picks column). Paper "
-          "units, not advice. Signals stay frozen until their 200-pick gates.", "",
+          "the daily card. Records count graded picks only, like a team's record. Paper units, "
+          "not advice. Signals stay frozen until their 200-pick gates.", "",
           *([f"Excludes {n_legacy} M16 legacy alerts (pre-M18 rules), available in the CSV.",
              ""] if n_legacy else []),
           "## Official record (card picks)", "", head,
@@ -145,7 +145,7 @@ def build(root: Path, now: datetime, main: Connection | None,
     for d, rs in O.by_day(week).items():
         md.append(f"| {d} | {_rec(O.record(rs, O.official_stake))} |")
     md += ["", "## Research signals (not official picks; every pick, flat 1 unit)", "",
-           "| Signal | W-L-P | Units | ROI | Avg odds | CLV | Picks | Gate |",
+           "| Signal | W-L-P | Units | ROI | Avg odds | CLV | Graded | Gate |",
            "|---|---|---|---|---|---|---|---|"]
     sig = O.signals(rows)
     for name, r in sig.items():
@@ -159,7 +159,7 @@ def build(root: Path, now: datetime, main: Connection | None,
         return f"{r.wlp} {r.units:+.2f}u ROI {roi}"
 
     summary = [
-        f"Weekly {today.isoformat()}: card {short(w_rec)} ({w_rec.line()})",
+        f"Weekly {today.isoformat()}: card {short(w_rec)}, {w_rec.graded} graded",
         f"Card all time {short(a_rec)}, CLV "
         + ("–" if a_rec.clv is None else f"{a_rec.clv:+.1f} pp"),
         f"Why (7 days): {_tags(O.tag_counts(week))}"[:180],

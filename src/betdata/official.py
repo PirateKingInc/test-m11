@@ -3,8 +3,9 @@ shows comes from here, over the ledger CSVs only.
 
 - `dataset`: every counted pick (no M16 legacy alert, no duplicate) with its result, card fields
   and review fields; `day` is the card date (or the tip's Eastern date).
-- `record`: graded picks only (win / loss / push). Void and pending picks are counted in the
-  reconciliation line, never in W-L-P, units, ROI, average odds or CLV.
+- `record`: graded picks only (win / loss / push), like a team's record: W-L-P, units, ROI,
+  average odds, CLV and the number of graded picks. Pending picks appear only under Today and
+  voids only in the day view (owner correction 2026-11-03): neither is ever in or beside a record.
 - Official picks are card picks, at the card stake; research records are flat 1 unit.
 """
 
@@ -69,17 +70,16 @@ def american(dec: float) -> int:
 
 @dataclass
 class Rec:
-    picks: int = 0
+    """A record of graded picks only (no pending, no void)."""
+
     wins: int = 0
     losses: int = 0
     pushes: int = 0
-    voids: int = 0
-    pending: int = 0
     units: float = 0.0
     staked: float = 0.0
     decimals: list = field(default_factory=list)
     clvs: list = field(default_factory=list)
-    rows: list = field(default_factory=list)  # the picks behind it, for the drill-down CSV
+    rows: list = field(default_factory=list)  # the graded picks behind it (drill-down CSV)
 
     @property
     def graded(self) -> int:
@@ -101,27 +101,29 @@ class Rec:
     def wlp(self) -> str:
         return f"{self.wins}-{self.losses}-{self.pushes}"
 
-    def line(self) -> str:
-        """The reconciliation line: every pick is graded, void or pending."""
-        return (f"{self.picks} pick{'s' if self.picks != 1 else ''} = {self.graded} graded "
-                f"({self.wlp}) + {self.voids} void + {self.pending} pending")
+
+def graded(rows: list[dict]) -> list[dict]:
+    return [r for r in rows if (r.get("result") or "") in GRADED]
+
+
+def voids(rows: list[dict]) -> list[dict]:
+    return [r for r in rows if r.get("result") == "void"]
+
+
+def pending(rows: list[dict]) -> list[dict]:
+    return [r for r in rows if not r.get("result")]
 
 
 def record(rows: list[dict], stake=flat) -> Rec:
-    """Graded picks only enter W-L-P, units, ROI, average odds and CLV (MODEL.md "M19")."""
+    """Graded picks only: pending and void picks are skipped, never counted (MODEL.md "M19")."""
     from betdata.alerts.rules import decimal
 
     rec = Rec()
     for r in rows:
-        rec.picks += 1
-        rec.rows.append(r)
         res = r.get("result") or ""
-        if res == "void":
-            rec.voids += 1
-            continue
         if res not in GRADED:
-            rec.pending += 1
             continue
+        rec.rows.append(r)
         rec.wins += res == "win"
         rec.losses += res == "loss"
         rec.pushes += res == "push"
@@ -149,9 +151,12 @@ def periods(rows: list[dict], today: date) -> dict[str, Rec]:
 
 
 def by_day(rows: list[dict]) -> dict[str, list[dict]]:
+    """Graded and void picks by day, newest first; pending picks are left out (they appear only
+    under Today)."""
     out: dict[str, list[dict]] = {}
     for r in sorted(rows, key=lambda r: (r["day"], r["tip"], r["game"])):
-        out.setdefault(r["day"], []).append(r)
+        if r.get("result"):
+            out.setdefault(r["day"], []).append(r)
     return dict(sorted(out.items(), reverse=True))
 
 

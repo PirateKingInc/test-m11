@@ -2298,11 +2298,13 @@ Presentation and review fields only. **Unchanged:** signals, thresholds, models,
 
 - **Official picks** are the daily card's picks: `ledger/card.csv` rows with `card = yes` (top 5 per sport and day, the existing rule). The official record covers card picks only, everywhere on the page.
 - **States:** a pick is **graded** when its result is win, loss or push. It is **void** when its result is void, and **pending** when it has no result yet.
-- **Counting:** pending and void picks never enter W-L-P, units, ROI, average odds or CLV.
+- **A record counts graded picks only, like a team's record** (owner correction 2026-11-03): W-L-P, units, ROI, average odds, CLV and the number of graded picks. No total that includes pending picks is ever shown.
+  - **Pending picks** appear only in the Today section ("Tonight: 5 card picks pending"), never in or beside a record.
+  - **Voids** are left out of W-L and units, and listed only in the day view ("1 void: Jalen Suggs (ORL) did not play").
 - **Units:** for an official pick, units = the card stake (TAKE 1, LEAN 0.5) x the ledger profit (per unit at the alerted price). **Staked** = the stakes of graded picks; **ROI** = units / staked.
 - **Average odds:** the mean decimal odds of the graded picks, shown in American odds.
 - **CLV:** the mean consensus CLV (`clv_consensus`) of the graded picks that have one, in percentage points.
-- **Reconciliation line:** every record shows one, e.g. "16 picks = 11 graded (6-5-0) + 0 void + 5 pending". W-L-P is never shown without units next to it.
+- **Units beside W-L:** W-L-P is never shown without units next to it.
 - **Periods (US Eastern card dates):**
   - **all time**;
   - **last 7 days**: the card dates from today - 6 to today;
@@ -2312,14 +2314,14 @@ Presentation and review fields only. **Unchanged:** signals, thresholds, models,
 
 ## Research records (the Research tab, "research, not official picks")
 
-- **Scope:** each signal's record covers all its picks, excluding M16 legacy alerts and duplicates (as now). It counts graded picks only, at a flat 1 unit per pick, and shows the same reconciliation line, units, ROI, average odds and CLV.
+- **Scope:** each signal's record covers all its graded picks, excluding M16 legacy alerts and duplicates (as now), at a flat 1 unit per pick: W-L-P, units, ROI, average odds, CLV and the number graded.
 - **Gate status:** graded picks with a consensus CLV out of 200, and the mean CLV (the existing 200-pick gate, read from the ledger).
 
 ## One source for every number
 
 - **Single function:** every number on the page comes from one function over the ledger CSVs (`official.dataset` and `official.record`).
-- **Drill-down:** each record number links to a CSV of exactly the picks behind it.
-- **Per-day CSV:** each card date has its own CSV with these columns: pick id, time, sport, game, team, opponent, player, market, pick, line, odds, book, card yes/no, label, stake, result, actual stat, units, CLV, review tag.
+- **Drill-down:** each record number links to a CSV of exactly the graded picks behind it.
+- **Per-day CSV:** each card date has its own CSV of that day's graded and void picks (never pending), with these columns: pick id, time, sport, game, team, opponent, player, market, pick, line, odds, book, card yes/no, label, stake, result, actual stat, units, CLV, review tag.
 
 ## Why each pick won or lost (review fields and reason tags)
 
@@ -2349,13 +2351,13 @@ Presentation and review fields only. **Unchanged:** signals, thresholds, models,
 
 ## Page layout (each sport tab, in this order)
 
-1. **Official record header:** all time, last 7 days and yesterday, each with W-L-P, units, ROI and the reconciliation line.
-2. **Today:** today's games (time ET, teams, status and score from the tracker), with card picks marked on their game.
+1. **Official record header:** all time, last 7 days and yesterday, each with W-L-P, units, ROI, average odds, CLV and the number of graded picks.
+2. **Today:** today's games (time ET, teams, status and score from the tracker), with card picks marked on their game, and the only pending count on the page ("Tonight: 5 card picks pending").
    - Tapping a game opens it: card picks first, then "Other model picks (research, not official)", grouped by team.
    - Each pick row: player (TEAM) vs OPP (or the team, for game markets), market, pick, line, odds, book, label, price status before the game, then the result with the actual stat at the final.
    - Games are collapsed by default, and no prop is listed outside its game.
-3. **Results by day:** newest first, one row per card date (card W-L-P, units, CLV).
-   - Tapping a day opens its games and every card pick, with result, actual stat and reason tag, plus that day's tag counts and CSV.
+3. **Results by day:** newest first, one row per card date with graded picks (card W-L-P, units, CLV); a pending pick is not listed here until it is graded.
+   - Tapping a day opens its games and every graded card pick, with result, actual stat and reason tag, plus that day's voids, tag counts and CSV.
    - A date field jumps to older days.
 
 **Research tab** (separate from the sport tabs): each signal's research record and 200-pick gate status, the model-vs-market and engine sections, and the other model versions.
@@ -2364,4 +2366,4 @@ Presentation and review fields only. **Unchanged:** signals, thresholds, models,
 
 ## Weekly report
 
-The Monday report and its ntfy summary use the official card record (week and all time, each with its reconciliation line) and the reason-tag counts, plus one line per research signal: graded, units, CLV and gate status.
+The Monday report and its ntfy summary use the official card record (week and all time, graded picks only) and the reason-tag counts, plus one line per research signal: graded, units, CLV and gate status.

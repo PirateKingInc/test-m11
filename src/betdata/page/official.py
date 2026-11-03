@@ -34,22 +34,22 @@ def _clv(rec: O.Rec) -> str:
 
 
 def stat_line(rec: O.Rec, href: str) -> str:
-    """W-L-P never without units; every number links to the picks behind it."""
+    """A record of graded picks only, like a team's: W-L-P (never without units), units, ROI,
+    average odds, CLV and the number of graded picks. Each number links to those picks."""
     a = f"<a href='{escape(href)}'"
-    return (f"<span class='rec' data-picks='{rec.picks}' data-graded='{rec.graded}' "
-            f"data-w='{rec.wins}' data-l='{rec.losses}' data-p='{rec.pushes}' "
-            f"data-void='{rec.voids}' data-pending='{rec.pending}' "
-            f"data-units='{rec.units:.4f}'>{a}><b>{rec.wlp}</b></a> · {a}>{_units(rec.units)}"
-            f"</a> · ROI {_roi(rec)} · avg odds {_odds(rec)} · CLV {_clv(rec)}</span>"
-            f"<div class='recon'>{escape(rec.line())}</div>")  # fmt: skip
+    return (f"<span class='rec' data-graded='{rec.graded}' data-w='{rec.wins}' "
+            f"data-l='{rec.losses}' data-p='{rec.pushes}' data-units='{rec.units:.4f}'>"
+            f"{a}><b>{rec.wlp}</b></a> · {a}>{_units(rec.units)}</a> · ROI {_roi(rec)} · "
+            f"avg odds {_odds(rec)} · CLV {_clv(rec)} · {a}>{rec.graded} graded</a>"
+            "</span>")  # fmt: skip
 
 
 def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path) -> str:
     off = O.official(rows, sport)
     out = [f"<section class='official' data-sport='{escape(sport)}'><h2>Official record · "
            f"{escape(name)}</h2><p class='meta'>Official picks are the daily card (up to 5, "
-           "chosen at 8:50 AM ET). Graded picks only: pending and void picks are counted in the "
-           "line below each record, never in W-L, units or ROI. Paper units, not advice.</p>"
+           "chosen at 8:50 AM ET). Like a team's record, graded picks only; today's picks are "
+           "under Today until they are graded. Paper units, not advice.</p>"
            "<dl class='periods'>"]
     for label, rec in O.periods(off, today).items():
         slug = label.lower().replace(" ", "-")
@@ -81,8 +81,7 @@ def _result_cell(r: dict) -> str:
     stat = r.get("actual_stat")
     stat_txt = "" if not stat else f" · actual {escape(stat)}"
     if res == "void":
-        return ("<span class='st moved'>VOID (did not play)</span>" if r["player"] else
-                "<span class='st moved'>VOID</span>")
+        return "<span class='st moved'>VOID</span>"
     cls = {"win": "live", "loss": "gone"}.get(res, "moved")
     return (f"<span class='st {cls}'>{escape(res.upper())} {float(u):+.2f}u</span>"
             f"{stat_txt}")
@@ -109,6 +108,19 @@ def pick_line(r: dict) -> str:
             f" at {escape(BOOKS.get(r['book'], r['book']))}{badge}</div>")
 
 
+def void_line(rs: list[dict]) -> str:
+    """'1 void: Jalen Suggs (ORL) did not play' (the day view only; never in a record)."""
+    vs = O.voids(rs)
+    if not vs:
+        return ""
+    names = []
+    for r in vs:
+        who = f"{r['player']} ({r['team']})" if r["player"] and r.get("team") else r["player"]
+        names.append(f"{who} did not play" if r["player"] else f"{r['game']}: no action")
+    return (f"<p class='meta voids'>{len(vs)} void{'s' if len(vs) != 1 else ''}: "
+            f"{escape('; '.join(names))}</p>")
+
+
 def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
     off = O.official(rows, sport)
     days = O.by_day(off)
@@ -123,10 +135,11 @@ def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
     for d, rs in days.items():
         rec = O.record(rs, O.official_stake)
         href = f"csv/{sport}-day-{d}.csv"
-        O.write_csv(site / href, [r for r in rows if r["sport"] == sport and r["day"] == d])
+        O.write_csv(site / href, [r for r in rows if r["sport"] == sport and r["day"] == d
+                                  and r.get("result")])  # graded and void, never pending
         label = datetime.fromisoformat(d).strftime("%a %b %-d")
         games: dict[str, list] = {}
-        for r in rs:
+        for r in O.graded(rs):
             games.setdefault(r["game"], []).append(r)
         body = []
         for g, ps in games.items():
@@ -142,9 +155,10 @@ def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
                    f"data-day='{escape(d)}'><summary><b>{escape(label)}</b> "
                    f"<span class='pv'>{rec.wlp} · {_units(rec.units)} · CLV {_clv(rec)}"
                    f"</span></summary><div class='foldbody'>{stat_line(rec, href)}"
-                   f"<p class='meta'>{_tags(rs)}</p>{''.join(body)}<p class='meta'>"
-                   f"<a href='{escape(href)}'>Download {escape(label)} (CSV, every pick of the "
-                   "day)</a></p></div></details>")  # fmt: skip
+                   f"<p class='meta'>{_tags(rs)}</p>{''.join(body)}{void_line(rs)}"
+                   "<p class='meta'>"
+                   f"<a href='{escape(href)}'>Download {escape(label)} (CSV, every graded pick "
+                   "of the day)</a></p></div></details>")  # fmt: skip
     out.append("</section>")
     return "".join(out)
 
@@ -154,8 +168,8 @@ def research_html(rows: list[dict], site: Path) -> str:
     from betdata.alerts.gates import GATE_N, gate
 
     out = ["<section class='research'><h2>Signals (research, not official picks)</h2>"
-           "<p class='meta'>Every pick of each signal, card or not, at a flat 1 unit. Graded "
-           "picks only; pending and void are in the line below each record. A signal is judged "
+           "<p class='meta'>Every graded pick of each signal, card or not, at a flat 1 unit. A "
+           "signal is judged "
            f"by its CLV at {GATE_N} graded picks.</p><ul class='plist'>"]
     for name, rec in O.signals(rows).items():
         href = f"csv/signal-{name}.csv"

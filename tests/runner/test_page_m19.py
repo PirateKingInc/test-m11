@@ -73,18 +73,20 @@ def test_header_numbers_equal_an_independent_recount(tmp_path):
     lo = sum(1 for k in card if res.get(k, {}).get("result") == "loss")
     units = sum(float(card[k]["card_stake"]) * float(res[k]["profit"]) for k in card
                 if res.get(k, {}).get("result") in ("win", "loss", "push"))
-    assert (int(alltime["w"]), int(alltime["l"]), int(alltime["picks"])) == (w, lo, len(card))
+    assert (int(alltime["w"]), int(alltime["l"]), int(alltime["graded"])) == (w, lo, w + lo)
     assert float(alltime["units"]) == round(units, 4)
-    assert (alltime["void"], alltime["pending"]) == ("1", "1")
-    assert "5 picks = 3 graded (1-2-0) + 1 void + 1 pending" in html
-    assert (yest["w"], yest["l"], yest["void"], yest["pending"]) == ("1", "1", "1", "0")
-    assert week["picks"] == "5"
+    assert "<b>1-2-0</b></a> · <a href='csv/nba-official-all-time.csv'>-0.90u</a>" in html
+    assert "3 graded</a>" in html
+    # graded picks only: no pick total, no void and no pending count in or beside a record
+    assert "pending" not in html and "void" not in html.lower() and "5 picks" not in html
+    assert (yest["w"], yest["l"], yest["graded"]) == ("1", "1", "2")
+    assert week["graded"] == "3"
     # every record links to the CSV of exactly its picks
     for href in re.findall(r"href='([^']+)'", html):
         got = list(csv.DictReader((site / href).open()))
         assert all(r["card"] == "yes" for r in got)
     yest_csv = list(csv.DictReader((site / "csv/nba-official-yesterday.csv").open()))
-    assert sorted(r["pick_id"] for r in yest_csv) == ["l", "v", "w"]
+    assert sorted(r["pick_id"] for r in yest_csv) == ["l", "w"]  # the graded picks behind it
 
 
 def test_results_by_day_open_to_every_card_pick_with_stat_and_tag(tmp_path):
@@ -92,17 +94,21 @@ def test_results_by_day_open_to_every_card_pick_with_stat_and_tag(tmp_path):
     _ledger(led)
     html = days_html(O.dataset(led), "nba", TODAY, site, et)
     days = re.findall(r"data-day='([\d-]+)'", html)
-    assert days == ["2026-11-02", "2026-11-01", "2026-10-31"]  # newest first
+    # newest first; Nov 2 has only a pending pick, which appears under Today, not here
+    assert days == ["2026-11-01", "2026-10-31"] and "Bam Adebayo" not in html
     nov1 = html[html.index("data-day='2026-11-01'"):html.index("data-day='2026-10-31'")]
-    assert "3 picks = 2 graded (1-1-0) + 1 void + 0 pending" in nov1
+    assert "1-1-0</b></a> · <a href='csv/nba-day-2026-11-01.csv'>+0.10u</a>" in nov1
+    assert "2 graded</a>" in nov1 and "pending" not in html
     assert "Anthony Black (ORL) vs MIA" in nov1 and "why: <b>Minutes miss</b>" in nov1
-    assert "WIN +0.60u</span> · actual 2.0" in nov1 and "VOID (did not play)" in nov1
+    assert "WIN +0.60u</span> · actual 2.0" in nov1
+    # the void: in the day view only, never in its record
+    assert "<p class='meta voids'>1 void: Jalen Suggs (ORL) did not play</p>" in nov1
     assert "Losses (1): 1 Minutes miss · Wins (1): 1 Variance" in nov1
     assert "Kel'el Ware" not in nov1  # research picks are not on the day's card list
     day_csv = list(csv.DictReader((site / "csv/nba-day-2026-11-01.csv").open()))
     assert list(day_csv[0]) == list(O.CSV_FIELDS)
     assert {r["pick_id"]: r["card"] for r in day_csv} == {"w": "yes", "l": "yes", "v": "yes",
-                                                          "x": "no"}  # every pick of the day
+                                                          "x": "no"}  # never the pending pick
     assert "Last 7 days, why picks won or lost: Losses (2): 1 Minutes miss, 1 News after pick" \
         in html
     assert "type='date' class='dayjump'" in html
@@ -113,6 +119,12 @@ def test_research_tab_has_every_signal_with_units_and_gate(tmp_path):
     _ledger(led)
     html = research_html(O.dataset(led), site)
     [f] = _recs(html)
-    assert (f["picks"], f["w"], f["l"], f["void"], f["pending"]) == ("6", "2", "2", "1", "1")
+    assert (f["graded"], f["w"], f["l"]) == ("4", "2", "2") and "pending" not in html
     assert float(f["units"]) == round(1.2 - 1.0 - 1.0 + 0.833, 4)  # flat 1 unit
     assert "Gate: 4/200 graded with CLV" in html and "research, not official picks" in html
+
+
+def test_pending_picks_are_counted_only_under_today():
+    from betdata.page.tracker import SCRIPT
+
+    assert "Tonight: ' +" in SCRIPT and "card pick' + (pend === 1 ? '' : 's') + ' pending" in SCRIPT

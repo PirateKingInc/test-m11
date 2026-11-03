@@ -95,9 +95,13 @@ SCRIPT = """<script>
     var sec = document.querySelector('section[data-tracker="' + sport + '"]');
     var d = docs[sport]; if (!sec || !d) return;
     var games = d.games || [];
-    sec.querySelector('.trk-body').innerHTML = games.length ?
+    var pend = 0;  // the only place pending picks are counted (never in or beside a record)
+    games.forEach(function (g) { g.picks.forEach(function (p) {
+      if (p.card && !p.result) pend++; }); });
+    sec.querySelector('.trk-body').innerHTML = (pend ? '<p class="trk-pending"><b>Tonight: ' +
+      pend + ' card pick' + (pend === 1 ? '' : 's') + ' pending</b></p>' : '') + (games.length ?
       games.map(function (g) { return game(sport, g); }).join('') :
-      '<p class="meta">No picks for today\\'s games yet.</p>';
+      '<p class="meta">No picks for today\\'s games yet.</p>');
     sec.querySelectorAll('details[data-game]').forEach(function (el) {
       el.addEventListener('toggle', function () { open[el.dataset.game] = el.open; });
     });
