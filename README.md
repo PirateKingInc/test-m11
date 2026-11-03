@@ -471,3 +471,21 @@ betdata backfill --source nflverse_extra --dataset all --seasons 2016-2026
 - [x] **M14** NBA: box scores, official injury reports (change-only), ESPN lines; as-of
   model with availability, strength, rest, pace and context groups; NBA tab on the hourly page
 - [x] **M15** new side variables (NBA RAPM, three-point luck, load management; NFL special teams, depth backups, penalties, situational luck) as background or page versions by the switch rule; NBA and NFL player props with live lines, grading and a props section
+
+## M20 NBA engine (research, in the background)
+
+One NBA model from the players up, blended with the market, graded by a success test that counts the bookmaker's margin (MODEL.md "M20"). The card and every existing model are unchanged; the engine's picks appear only on the **Research** tab.
+
+```bash
+betdata alerts checks                       # the three checks per signal (calibration, Brier vs close, EV at close)
+betdata nba engine stability                # B2 reliability and padding table (training seasons)
+betdata nba engine select                   # B3-B6 choices on validation
+betdata nba engine fit --last 2025 --out f.json      # constants (paddings, multipliers, simulation)
+betdata nba engine simulate --fit f.json --seasons 2021,2022 --out v.pkl   # 10,000 sims a game at stored lines
+betdata nba engine freeze --fit f.json      # config/fits/nba_engine_m20.json (constants + validated design)
+betdata nba engine live                     # the live document the hourly run writes
+```
+
+- **Chain:** stints → competitive minutes (CM1), per-possession rates shrunk by the stability table, role changes, minutes filled to 240 per team, usage rescaled to the team's shot volume, rebounds from misses, assists from makes, then 10,000 simulations per game (possessions, shooting, second chances, overtime), with sum checks in every simulation.
+- **Live:** the hourly run writes `data/derived/nba_engine_live.json` (no refit). The poller prices DK/FD lines from it at the hourly sweep, on new lines and after qualifying injury changes (re-simulating the game), and records picks as research signal `nba-engine` (never pushed, never on the card).
+- **Switching the card** to the engine is documented in `SWITCH.md`, for the owner to approve; it is not done.

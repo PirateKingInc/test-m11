@@ -117,3 +117,12 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **G2 first-half rungs:** SharpAPI's free plan lists DK/FD 1st-half spread, total and moneyline, but the M17 engine does not record the score at half-time, so these rungs are not priced. Recording it means a change to the simulation loop; do it with engine v2.
 - **Value rule: news-driven edge only (candidate for after the 200-alert test).** The first live C-NBA alert (CHA @ WAS, 2026-10-29) came from a 0.1-point model move. Its 4.5 pp edge was FanDuel disagreeing with the DK/FD median (two-book), not the news. The fixed rule allows it. A post-test rule could require the repricing shift itself to supply most of the edge. No change during the test (stop rule).
 - **Openers are hourly-sweep openers:** a line that posts between sweeps is first seen up to an hour after it posts. F's "opening line" snipes are therefore "first seen by the hourly sweep". Tighter sweeps cost SharpAPI calls.
+
+## M20 additions
+
+- **The engine trails the market.** On validation and test the engine alone is worse than the no-vig line in every market (Brier, log loss); the validated blend gives it 0-20% weight. Next steps, in order of expected value: per-player stats split by competitive time from play-by-play events (rates are full-game today), lineup-level (stint) offense/defense instead of box-score rates for team strength, and a possession-level simulation (the binomial shot model is too wide for sides: simulated margin SD ~16 vs 12-14 actual).
+- **Ejections vs injury exits:** stored data cannot tell them apart (one "early exit" flag). ESPN play-by-play has ejection events; the M15 stints builder could store them.
+- **D1 with/without from stints:** stints carry no player stats, so D1 used games missed, not minutes apart. A per-stint player box (from play-by-play) would allow true on/off splits.
+- **F crossed 200 before the M20 rule was written**, so its three-check verdict is not pre-registered. Judge F again on its next 200 picks (from 2026-11-04) under the M20 rule.
+- **Database rebuild drift:** nba15 rebuilt from today's published files reproduces its recorded test MAE within 0.015 (not bit-exact); the original runner database was not available here.
+- **Engine props for PRA:** no validation lines (PRA lines start 2024-25), so its blend weight is 0 (market only) and SharpAPI quotes no PRA; research only.
