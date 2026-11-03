@@ -75,7 +75,8 @@ class Engine:
         self.states = states if states is not None else player_states(inp.p, fit.pads,
                                                                       fit.params)  # fmt: skip
         self.priors = season_priors(self.states, fit.pads, fit.params)
-        self.tstates = T.team_states(inp.tg, fit.pads)
+        self.tstates = T.team_states(inp.tg, fit.pads,
+                                     bool((fit.sim or {}).get("era_team")))
         self.lstates = T.league_states(inp.tg)
         self._returns()
 
@@ -93,7 +94,8 @@ class Engine:
         inp = self.inp
         sl = slots if slots is not None else P.slots_for(inp.g, game_ids, points)
         cand = P.rotation(inp.p, inp.sched, inp.inj, sl)
-        c = P.player_frame(self.fit, self.states, self.priors, inp.p, inp.sched, inp.inj, cand)
+        c = P.player_frame(self.fit, self.states, self.priors, inp.p, inp.sched, inp.inj, cand,
+                           self.lstates)
         st = P.asof_states(self.states[["player_id", "known_at", "since_return", "tip",
                                         "player_name", "season"]].assign(
                                             player_name=""), c)  # fmt: skip
@@ -230,6 +232,8 @@ def fit_sim(eng: Engine, seasons, n_games: int = 300, n_sims: int = 2000, seed: 
     act_m = np.array([tt.pts[g] - tt.o_pts[g] for g, _ in groups])
     act_t = np.array([tt.pts[g] + tt.o_pts[g] for g, _ in groups])
     sp = dict(SM.DEFAULT_SIM)
+    keep = ("script", "addons", "era_priors", "era_team", "stretch", "d2_beta", "d2_lg_share3")
+    sp.update({k: v for k, v in (eng.fit.sim or {}).items() if k in keep})  # the design
 
     def run(spx):
         eng.fit.sim = spx

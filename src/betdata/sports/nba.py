@@ -39,7 +39,19 @@ class NbaSport(Sport):
             n = 0
         self.predict_15(engine, now)
         self.predict_props(engine, now)
+        self.predict_engine(engine, now)
         return n
+
+    def predict_engine(self, engine: Engine, now: datetime) -> int:
+        """M20: the NBA engine's live document for the poller and the Research tab (research
+        only; never breaks the run or touches the card)."""
+        from betdata.nba.engine.live import run as run_engine
+
+        try:
+            return run_engine(engine, now)
+        except Exception as e:  # noqa: BLE001
+            log.warning("nba engine skipped: %s: %s", type(e).__name__, e)
+            return 0
 
     def predict_15(self, engine: Engine, now: datetime) -> int:
         """The M15 side version nba15 (background unless the switch rule moved the page)."""

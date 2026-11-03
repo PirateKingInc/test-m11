@@ -39,6 +39,7 @@ def test_asof_harness_later_rows_never_change_an_earlier_prediction(pads):
 
     g0, p0, tg0 = E.build(g, p.copy(), st)
     fit = _engine(g0, p0, tg0, pads).fit  # training constants: fixed before the point
+    fit.sim.update({"era_priors": True, "era_team": True})  # the production design
 
     def run(pp, ss):
         g2, p2, tg2 = E.build(g, pp.copy(), ss)
