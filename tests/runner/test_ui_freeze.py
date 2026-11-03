@@ -5,7 +5,13 @@ the order of elements, the styles and the scripts may not. Only the Research tab
 
 The snapshot `ui_freeze_snapshot.txt` was taken at main 92d65e5, before any M20 code. It is
 never regenerated to make a change pass: a structural change to the main page needs the
-owner's approval first (UI_FREEZE_REGENERATE=1 rewrites it, for that case only)."""
+owner's approval first (UI_FREEZE_REGENERATE=1 rewrites it, for that case only).
+
+Owner-approved additions (each allowed exactly, and nothing else):
+- 2026-11-03, the official success goal: one `div.goal` block per official-record header (plus
+  an "All sports" block on the NBA tab) holding a progress line, a progress bar and the
+  average-odds / break-even line. The test checks those blocks against GOAL_STRUCTURE, removes
+  them, and compares the rest with the unchanged snapshot."""
 
 import hashlib
 import os
@@ -70,8 +76,27 @@ class _Structure(HTMLParser):
             self._buf.append(data)
 
 
-def main_page_structure(html: str) -> str:
-    """The page with the Research tab's panel cut out, reduced to its skeleton."""
+GOAL_BLOCK = re.compile(r"<div class='goal' data-goal='[^']*'[^>]*>.*?</div>", re.S)
+# the exact skeleton of one goal block (owner-approved 2026-11-03)
+GOAL_STRUCTURE = "div class=goal\n  p class=meta\n    b\n  progress\n  p class=meta\n"
+
+
+def goal_blocks(html: str) -> list[str]:
+    """The goal blocks inside the official-record headers (sport tabs only)."""
+    main = re.sub(r'<div class="panel" id="tab-research".*?(?=<div class="panel" id="tab-|'
+                  r'</main>|<footer)', "", html, flags=re.S)
+    out = []
+    for sec in re.findall(r"<section class='official'.*?</section>", main, flags=re.S):
+        out += GOAL_BLOCK.findall(sec)
+    return out
+
+
+def main_page_structure(html: str, strip_goal: bool = True) -> str:
+    """The page with the Research tab's panel (and the approved goal blocks) cut out, reduced
+    to its skeleton."""
+    if strip_goal:
+        html = re.sub(r"(<section class='official'.*?</section>)",
+                      lambda m: GOAL_BLOCK.sub("", m.group(1)), html, flags=re.S)
     html = re.sub(r'<div class="panel" id="tab-research".*?(?=<div class="panel" id="tab-|'
                   r'</main>|<footer)', "", html, flags=re.S)
     p = _Structure()
@@ -109,6 +134,23 @@ def test_main_page_structure_is_frozen(tmp_path):
     assert got == SNAPSHOT.read_text(), (
         "The main page's HTML structure changed. M20 freezes it: only the Research tab may "
         "change (MODEL.md 'M20: UI freeze').")
+
+
+def test_goal_is_the_only_approved_addition(tmp_path):
+    html = build_fixture_page(tmp_path)
+    blocks = goal_blocks(html)
+    # the NBA header: its own goal and "All sports"; nothing else was added
+    assert [re.search(r"data-goal='([^']*)'", b).group(1) for b in blocks] == ["NBA",
+                                                                               "All sports"]
+    for b in blocks:
+        p = _Structure()
+        p.feed(b)
+        assert "\n".join(p.out) + "\n" == GOAL_STRUCTURE
+    # a goal block anywhere else, or anything else added to the header, is still caught
+    extra = html.replace("<h2>Today</h2>", "<h2>Today</h2><div class='goal' data-goal='x'>"
+                         "<p class='meta'>x</p></div>")
+    assert main_page_structure(extra) != main_page_structure(html)
+    assert main_page_structure(html, strip_goal=False) != main_page_structure(html)
 
 
 def test_research_tab_is_free_to_change(tmp_path):

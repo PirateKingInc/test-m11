@@ -174,14 +174,16 @@ def test_weekly_report_and_pushes(pdb, tmp_path):
     assert "## Official record (card picks)" in md and "| F | 1-0-0 | +1.10u" in md
     assert "| C-NBA | 0-1-0 | -1.00u" in md and "## Why picks won or lost (official)" in md
     assert "pending" not in md and "## System health" in md  # graded-only records
-    assert len(summary) == 5 and summary[0].startswith("Weekly 2026-11-02: card 0-0-0")
-    assert summary[4] == "Gates: C-NBA 1/200, F 1/200"
+    assert len(summary) == 6 and summary[0].startswith("Weekly 2026-11-02: card 0-0-0")
+    assert summary[2].startswith("Goal: .500+ and positive units over 500 graded picks")
+    assert "## Official success goal" in md and "- All sports: Goal: .500+" in md
+    assert summary[5] == "Gates: C-NBA 1/200, F 1/200"
     posts = []
     client = httpx.Client(transport=httpx.MockTransport(
         lambda r: posts.append((str(r.url), r.headers["title"], r.content)) or
         httpx.Response(200)))  # fmt: skip
     assert W.ntfy("topic-x", "Weekly picks report", summary, client) == "http 200"
-    assert posts[0][0].endswith("/topic-x") and posts[0][2].count(b"\n") == 4
+    assert posts[0][0].endswith("/topic-x") and posts[0][2].count(b"\n") == 5
     assert W.ntfy(None, "t", summary) == "no NTFY_TOPIC"
 
 
@@ -229,7 +231,7 @@ def test_m16_legacy_and_duplicates_stay_in_the_csv_but_out_of_the_record(pdb, tm
     assert "m16-legacy" not in html and "0-1-0" in html and "1-0-0" not in html
     md, summary = W.build(tmp_path, NOW, None, None)
     assert "m16-legacy" not in md and "Excludes 2 M16 legacy alerts" in md
-    assert summary[3].startswith("Research: F 0-1-0")  # the legacy picks are not counted
+    assert summary[4].startswith("Research: F 0-1-0")  # the legacy picks are not counted
     # a new M16 alert is named m16-legacy when written
     with pdb.begin() as p:
         _alert(p, "news:new", signal="news", market="spreads", player=None)

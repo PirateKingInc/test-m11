@@ -223,3 +223,70 @@ def write_csv(path: Path, rows: list[dict]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(csv_text(rows))
     return path.name
+
+
+# --- The official success goal (owner decision 2026-11-03; MODEL.md "Official success goal") ---
+
+GOAL_N = 500  # graded card picks
+
+
+@dataclass
+class Goal:
+    """The card at .500 or better AND positive in units, over at least GOAL_N graded picks."""
+
+    wins: int
+    losses: int
+    pushes: int
+    units: float
+    graded: int
+    avg_odds: int | None
+    break_even: float | None  # win rate that breaks even at the card's average odds
+
+    @property
+    def pct(self) -> float | None:
+        d = self.wins + self.losses  # pushes are neither
+        return self.wins / d if d else None
+
+    @property
+    def win_ok(self) -> bool:
+        return self.pct is not None and self.pct >= 0.5
+
+    @property
+    def units_ok(self) -> bool:
+        return self.units > 0
+
+    @property
+    def status(self) -> str:
+        """Under GOAL_N: "too early", with "on track" (both conditions met now) or "off track"
+        (either not met) once there is a graded pick. At GOAL_N or more: "goal met" or
+        "goal not met"."""
+        both = self.win_ok and self.units_ok
+        if self.graded >= GOAL_N:
+            return "goal met" if both else "goal not met"
+        if self.graded == 0:
+            return "too early"
+        return "too early · " + ("on track" if both else "off track")
+
+
+def goal(rows: list[dict]) -> Goal:
+    """The goal over official (card) rows, graded only, units at the card stake."""
+    r = record(rows, official_stake)
+    dec = sum(r.decimals) / len(r.decimals) if r.decimals else None
+    return Goal(r.wins, r.losses, r.pushes, r.units, r.graded, r.avg_odds,
+                None if dec is None else 1 / dec)  # fmt: skip
+
+
+def goal_text(g: Goal) -> str:
+    """'Goal: .500+ and positive units over 500 graded picks — 6-5 (.545), +1.07u · 11 of 500
+    · too early · on track'."""
+    pct = "–" if g.pct is None else f"{g.pct:.3f}".lstrip("0")
+    return (f"Goal: .500+ and positive units over {GOAL_N} graded picks — {g.wins}-{g.losses}"
+            f"{f'-{g.pushes}' if g.pushes else ''} ({pct}), {g.units:+.2f}u · "
+            f"{g.graded} of {GOAL_N} · {g.status}")
+
+
+def context_text(g: Goal) -> str:
+    """'avg odds +119 · break-even 45.7%' (the .500 target read in context)."""
+    o = "–" if g.avg_odds is None else (f"+{g.avg_odds}" if g.avg_odds > 0 else str(g.avg_odds))
+    be = "–" if g.break_even is None else f"{100 * g.break_even:.1f}%"
+    return f"avg odds {o} · break-even {be}"
