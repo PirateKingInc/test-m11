@@ -2367,3 +2367,122 @@ Presentation and review fields only. **Unchanged:** signals, thresholds, models,
 ## Weekly report
 
 The Monday report and its ntfy summary use the official card record (week and all time, graded picks only) and the reason-tag counts, plus one line per research signal: graded, units, CLV and gate status.
+
+# M20: one NBA engine, a success test that counts the margin (written 2026-11-03, before any M20 result)
+
+**Why.** Every model so far lands close to the market and behind it. The live ledger shows how: the F prop picks average a 52.0% fair probability, the consensus close says 44.9%, and they win 47.8% (314 graded). Their no-vig CLV is positive (+1.6 pp), but that does not cover the bookmaker's margin: expected value at the closing price is −3.2% for F, and negative for every signal with volume (G2 −3.7%, G1 −4.1%, C-NBA −0.9%). The losses sit in unders (rebound unders, assist lines on primary ballhandlers), which points at stale roles and minutes. NBA also runs two models that do not talk to each other (nba15 sides, nbap15 props), so a player change never reaches the team line.
+
+M20 does three things: it fixes the success test (Part A), builds **one** NBA engine from players up (Parts B-D), and runs it live in the background as a research signal (Parts E-G). **Unchanged:** nba15, nbap15, F, C-NBA, C-NFL, the card pipeline (the card keeps coming from the existing picks until the owner approves SWITCH.md), every NFL model, every stored pick, result and grade, and the main page (UI freeze below). Everything below is fixed now; the stop rule applies to every component.
+
+## Part A: the success test (measurement only, every signal)
+
+**Correction to the gate rule (M18 Part H).** "Mean no-vig CLV > 0 with a 95% range above 0 over 200 graded picks" is replaced by three checks. A signal **works** only if all three pass over **≥ 200 graded picks**:
+
+1. **Calibration.** A reliability table: the model's (fair) probability of the picked side in bins (< 0.40, 0.40-0.45, 0.45-0.50, 0.50-0.55, 0.55-0.60, 0.60-0.70, ≥ 0.70), with the mean predicted and the actual win rate per bin, and the **expected calibration error** ECE = Σ (n_b / N)·|mean p_b − win rate_b|. The overall gap (mean p − win rate) carries a 95% range (mean ± 1.96·sd/√n of p − y). **Passes** when the gap's 95% range reaches 0 or below (not significantly overconfident) and ECE ≤ 0.05.
+2. **Closer than the close.** On the same picks: Brier(model p, result) − Brier(closing no-vig p, result), with a paired 95% range. **Passes** when the whole range is below 0.
+3. **Profit after the margin.** EV at close = closing no-vig probability of the side (at the picked line) × decimal odds taken − 1, averaged, with its 95% range. **Passes** when the whole range is above 0.
+
+- **Pushes and voids** are left out. Closing no-vig = the consensus close (M18 Part B) = `book_prob + clv_consensus` from the ledger. Picks without a fair probability (G1) report check 3 only and cannot "work".
+- **CLV split**, reported beside the checks: CLV = (a) **market movement**, the consensus at the close minus the consensus at pick time, both at the picked line, plus (b) **book difference**, the consensus at pick time minus the book's no-vig at pick time. (a) + (b) = the stored CLV. Picks without a stored pick-time consensus report (a)+(b) only.
+- **Where:** `betdata/checks.py`, one function over the ledger rows; `betdata alerts checks` prints the tables; the Research tab shows each signal's three checks with their status (the main page is untouched).
+- **Timing, stated plainly:** F reached 200 graded at 2026-11-03 12:00 UTC (`ledger/milestones.csv`), a few hours before this correction was written. For F the new rule is therefore **not** pre-registered: F's old-rule verdict and its three checks are both reported, and neither changes any F rule, pick or grade. For every other signal (G2 ~100, the rest < 20) the rule is fixed before 200.
+- No pick, rule, threshold or grade changes. Old gate lines stay computed (labelled "M18 CLV gate").
+
+**G1 and G2 are retired now.** The poller stops creating G1 and G2 picks. Their ledger history, grading of open picks, and Research-tab records stay ("retired 2026-11-03"). F, C-NBA, C-NFL and the current NBA models keep running unchanged.
+
+## UI freeze
+
+The main page (each sport tab: official record, Today, Results by day, card picks, data sources; the page shell, styles and scripts) keeps its HTML structure. `tests/runner/test_ui_freeze.py` compares the page's skeleton (tags, ids, classes, style and script hashes; text and data dropped) with a snapshot taken on main `92d65e5` before any M20 change. New results appear only on the Research tab, using existing CSS classes.
+
+## Seasons and the stop rule
+
+- **Sides:** train 2015-16 to 2020-21 (rates, paddings, constants, dispersions), validate 2021-22 and 2022-23 (every choice), test 2023-24 to 2025-26 scored **once** after refitting constants on 2015-16 to 2022-23. Labelled a **repeat look for NBA sides** (M14 and M15 scored them).
+- **Props:** the player model is fitted and chosen as the sides. Prop lines exist from 2022-23 (ESPN opening lines, M15/M16, cleaned to a no-vig over in 0.35-0.65), so the prop blend weights, calibration and pick threshold are chosen on **2022-23** and the props are tested on 2023-24 to 2025-26 at opening lines, once (a repeat look: nbap15 scored them in M15, M16 and M18). 2021-22 is accuracy-only for props.
+- **Points:** M14's `morning` and `pretip`; the engine reports both and is judged at `pretip` (the live point is the run time).
+- **Stop rule:** each component gets one full build plus at most 3 adjustments, each judged on validation and logged kept or dropped. Nothing is adjusted after a test season is seen. Simpler wins ties (a difference below the add-on bar is a tie).
+
+## Part B: the engine (`src/betdata/nba/engine/`)
+
+**B1. Data and as-of.** Inputs: player box scores (`nba_player_games`, sportsdataverse / hoopR files for history, ESPN game summaries live), lineup stints (`nba_stints`, M15), the official injury report history (`nba_injury_reports`, M14 play probabilities), schedules and rosters from the box scores. A game's box score and stints are known at their `known_at` (tip + 3 h history, fetch time live); an injury row at its `known_at`. A prediction at instant t reads only rows known by t. The market never enters any rate, fit or constant (a test checks the package reads no line table); it enters only in Part C's blend and Part E's pick rule. The as-of harness rebuilds every engine input at a point from (i) all data, (ii) only rows known then, (iii) all data with every later row scrambled, and requires identical values.
+
+**From stints, per player-game** (`engine/derive.py`): seconds on court; on-court team possessions; seconds on court in non-competitive time under each B3 candidate; the last second on court; and per team-game: possessions, overtime periods, non-competitive seconds. The running margin at each stint's start is the cumulative stint points. Box-score stats are full-game (stints carry no player stats), so **rates are per on-court team possession over the full game**; competitive time enters the minutes projection, not the rates.
+
+**B2. Stability table first** (`reports/nba/m20_stability.csv`, `betdata nba engine stability`), training seasons only, for every rate the engine uses:
+- player, per on-court possession: two-point attempts, three-point attempts, free-throw attempts, offensive rebounds, defensive rebounds, assists, turnovers, usage ((FGA + 0.44·FTA + TOV) / possessions); shooting: 2P%, 3P%, FT% (per attempt); competitive-minutes share; non-competitive share;
+- team: possessions per 48 minutes, points per possession for and against, offensive rebound rate, defensive rebound rate, three-point attempt rate allowed, 2P% and 3P% allowed, turnovers forced per possession, assisted share of made field goals.
+
+For each: **split-half** reliability (odd vs even games within a season; players with ≥ 10 games in each half, teams all), **season-to-season** reliability (players with ≥ 500 on-court possessions in both seasons), and the **empirical padding** k = n·(1 − r)/r, with r the split-half correlation and n the median opportunities per half (possessions, or attempts for percentages). An estimate after m opportunities is (m·x + k·prior)/(m + k). The **prior** is the player's previous-season estimate regressed to his role mean by the season-to-season r (roles G/F/C by nbap15's rule), or the role mean for a player with no previous season. All shrinkage constants come from this table; a rate with r ≤ 0 uses the role mean.
+
+**B3. Competitive minutes.** A stint is non-competitive when, at its start:
+- **CM1:** |margin| ≥ 15 with ≤ 5:00 left in the fourth quarter;
+- **CM2:** the leading team's win probability > 95% from a score/time model, P = Φ(margin / (σ·√(seconds left / 2880))), σ fitted on training final margins (second half only);
+- **CM3:** |margin| ≥ 20 at any time in the fourth quarter.
+
+Overtime is always competitive. The definition with the lowest validation MAE of the minutes projection (B6, pretip, every rotation player) wins; ties go to CM1 (simplest).
+
+**B4. Outlier games** (per player-game, from stints and the box):
+- **blowout:** the game had ≥ 3 non-competitive minutes (chosen definition; CM1 spans only the last 5 minutes, so 6 could never be reached — corrected before any result);
+- **overtime:** the game went past 48 minutes;
+- **foul trouble:** 5+ personal fouls;
+- **early exit:** the player's last stint ended before the final 12 minutes of regulation, he did not return, the game was not a blowout, and he played < 60% of his projection (injury exits and ejections; the stored data cannot tell them apart, so they share one flag).
+
+Their minutes are down-weighted in the minutes baseline by a weight per flag from {0, 0.25, 0.5, 0.75, 1}, chosen on validation (minutes MAE), one flag at a time in the order above; their per-possession rates are kept at full weight.
+
+**B5. Role changes**, as of the point:
+- **new team:** the player's previous game was for another team, and he has played fewer than 15 games for this one;
+- **key teammate gone:** within the last 15 team games a teammate averaging ≥ 28 minutes (his last 10 played) left the team or has missed its last 3+ games;
+- **starter switch:** he started 2+ of his last 3 games after starting < 30% of the 10 before, or the reverse.
+
+Recency weights are 0.5^(games ago / h). A player with a detected role change uses h_change, a stable player h_stable, each from {3, 5, 10, 20, 40} games, chosen on validation (minutes MAE for the minutes share; usage MAE for the rates), stable first.
+
+**B6. Minutes projection.**
+- **Baseline:** the recency-weighted competitive share c (seconds on court in competitive time / competitive seconds of the game) and non-competitive share g, each shrunk with its B2 padding to the role prior; outlier games down-weighted (B4).
+- **Tonight's script:** expected non-competitive minutes G(m) as a function of the game's margin, fitted on training games (mean non-competitive minutes by |final margin| bucket); the engine's own margin distribution gives E[G]. Minutes = c·(48 − G) + g·G per player, and in overtime + c·5 per period.
+- **Rest and returns:** multipliers for the second night of a back-to-back (starters and bench separately) and the first two games after a return from an absence of 8+ days, fitted on training residuals.
+- **Availability:** the M14 play probabilities at the point (frozen `play_prob` table). In each simulation a player plays with that probability.
+- Rotation: players who played for the team in its last 10 games plus anyone listed on tonight's report for the team.
+
+**B7. Team assembly** (each simulation):
+- **Minutes:** the players who play are scaled to 240 (+ 25 per overtime period), each capped at 44 (48 in overtime games), excess spread over the others in proportion.
+- **Possessions:** game possessions ~ Normal(pace_home·pace_away / league pace, σ_pace) per 48 minutes, the same for both teams, + 5/48 per overtime period; σ_pace from training residuals. A player's on-court possessions = possessions × minutes / 48.
+- **Shots:** each player's two- and three-point attempts and free-throw attempts are negative binomial with mean = his per-possession rate × on-court possessions × the opponent's allowed attempt factor; makes are binomial with his shrunk percentage × the opponent's allowed-percentage factor × the team's shooting shock (below) × home court.
+- **Points** = 2·2PM + 3·3PM + FTM per player; team points = the sum.
+- **Rebounds:** each team's missed field goals are rebounded: the defence collects Binomial(misses, p) with p from log5 of the defence's rebound rate and the offence's offensive rebound rate; the offence the rest. Each team's offensive and defensive rebounds go to its players in proportion to (rate × minutes) by a multinomial. So team offensive rebounds + opponent defensive rebounds = team missed field goals, and team rebounds = the sum of its players'.
+- **Assists:** team assists ~ Binomial(team made field goals, the team's assisted share), split among its players by (assist rate × minutes), never to more than the team's made field goals.
+- **Turnovers:** negative binomial per player. A sum check reports possessions vs FGA − OREB + TOV + 0.44·FTA.
+- **Opponent and pace:** every opponent factor is the defence's allowed rate relative to the league, shrunk with its B2 padding; pace as above.
+
+**B8. Simulation** (`engine/sim.py`): ≥ 10,000 simulations per game, vectorised. Game script ties the players together: each simulation draws the game's possessions, a shooting shock per team (Normal, σ fitted on training so the simulated margin and total spread match the training residual spread), the overtime indicator, and the non-competitive minutes implied by its own margin (stage 1: team means and shocks give the margin; stage 2: minutes and player counts). **Outputs:** team points, margin, total and win probability; per player the full distribution, mean and median of points, rebounds, assists, made threes and PRA, and P(over) at any line. **Consistency checks** in every simulated game (tests, and every live run): player minutes sum to 240 + 25·OT; team points = Σ players' points; team OREB + opponent DREB = team missed FG; team assists ≤ team made FG; no player above his team's total; median within the 10th-90th range.
+
+## Part C: fair prices, the market as the starting point
+
+Fair probability = w·p_engine + (1 − w)·p_market, w ∈ {0, 0.1, ..., 1} learned on validation by log loss, separately for spreads, totals, moneylines and each prop market (points, rebounds, assists, threes, PRA). p_market is the best available no-vig consensus at the point: live, the M18 consensus; on validation sides, the ESPN closing no-vig (the only pre-tip line in 2021-23, M14 "Historical lines"); on 2022-23 props, the opening no-vig. Then **one** Platt calibration of the blended probability on validation per market, applied only if its slope differs from 1 by more than 2 standard errors.
+
+## Part D: add-ons (each tested alone; kept only if it earns it)
+
+**Minimum improvement bar (fixed now):** an add-on is kept only if it lowers validation error for its target by **at least 0.5%** (MAE), or improves validation log loss by **more than 2 standard errors**. One full build plus at most 3 adjustments each.
+- **D1 With/without key teammates:** for each player's 2-3 key teammates (most shared minutes), his usage, assist and rebound rates with and without each on the floor, from stints and box, shrunk toward his normal rates by possessions apart (B2 padding); used when a key teammate's play probability is below 0.5. Target: usage/assist/rebound MAE on games where a key teammate was out.
+- **D2 Rebounding environment:** this season's league rebound rates (instead of the training average) and rebound chances from the opponent's missed twos and threes counted separately (long rebounds after threes favour guards). Target: rebound MAE.
+- **D3 Assists × teammate shooting:** expected assists scaled by the projected on-court teammates' shooting quality (their shrunk effective FG% vs league). Target: assist MAE.
+- **D4 Game script into minutes:** B6's script term is in the core; D4 tests the core without it (the add-on bar applied in reverse: removed if it does not earn the bar).
+- **Ablation:** each kept add-on removed from the final model must make validation worse.
+
+## Part E: one pick rule (research)
+
+- **Rule:** a pick when EV after the margin, fair × decimal odds − 1 at the best available DraftKings/FanDuel price, is at least θ. θ from {0.02, 0.03, 0.05, 0.075, 0.10}, chosen on validation separately for game markets (at the closing price, the M14 convention) and props (2022-23 opening price): the highest validation ROI with ≥ 200 picks. If no θ has a positive validation ROI the best one is still used and the signal is labelled "no validated edge".
+- **Triggers:** a new DK/FD line (the poller's opener sweep), a qualifying injury-status change (the existing poller), and the hourly run (the poller's first cycle each hour).
+- **One pick per market per player/game** (dedup `engine:game:market:player`), at its first trigger.
+- **Ledger:** signal `engine`, name **`nba-engine`**, research. Picks are recorded, never pushed, never labelled or put on the card, and graded like every pick (result, consensus close, three checks).
+
+## Part F: evaluation
+
+- Validation and the labelled test, the engine vs nba15 (sides), nbap15 (props) and the closing line on: margin and total MAE; the three checks at the validated threshold; prop MAE and Brier at the line.
+- Props are backtested at stored prop lines where they exist (opening lines 2022-23 on); otherwise accuracy and calibration only. For prop backtests the "close" of checks 2-3 is the opening no-vig (ESPN's stored close is in-game, REVIEW M15-3), labelled so.
+- Reported specifically: **rebound unders** and **assist props on primary ballhandlers** (players whose assist share of team assists ≥ 25% over their last 10 games, at lines ≥ 5.5).
+
+## Part G: live in the background
+
+- The hourly run predicts today's and tomorrow's NBA games with the engine (frozen fit in `config/fits/nba_engine_m20.json`; never refit hourly) and keeps the predictions in `data/derived/nba_engine_live.json`. The poller creates the picks at its triggers.
+- **Research tab only:** one compact "NBA engine" section: today's engine picks grouped by game (player (TEAM) vs OPP), its graded record (W-L-P with units, graded picks only) and the three checks with their status.
+- **Runtime:** a typical hourly run stays under 3 minutes.
+- **SWITCH.md:** how the card would switch to the engine and what would be archived (nba15, nbap15, F, C), for the owner. Not executed in M20.
