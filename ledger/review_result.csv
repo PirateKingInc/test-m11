@@ -1,0 +1,312 @@
+pick_id,actual_stat,actual_minutes,actual_snap_share,final_score,status_changes,close_line,clv,tag,reviewed_at
+Pd2853212d240,1.0,37.0,,SAC 120-132 NOP,[],1.5,1.86,not enough data,2026-11-03T00:00:32+00:00
+Pe84d0e015fcd,2.0,41.0,,SAC 120-132 NOP,[],1.5,-2.25,not enough data,2026-11-03T00:00:32+00:00
+P20bd28ce216e,0.0,0.0,,SAC 120-132 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,8.21,,2026-11-03T00:00:32+00:00
+P785b0672f7a2,8.0,23.0,,MEM 124-103 POR,[],3.5,0.09,not enough data,2026-11-03T00:00:32+00:00
+P4dd48ab3598f,1.0,25.0,,MEM 124-103 POR,[],3.5,2.16,not enough data,2026-11-03T00:00:32+00:00
+P6676713cf92b,12.0,28.0,,MEM 124-103 POR,[],7.5,-1.17,not enough data,2026-11-03T00:00:32+00:00
+P3aa832c62361,2.0,26.0,,MEM 124-103 POR,[],4.5,0.0,not enough data,2026-11-03T00:00:32+00:00
+Pc54a69eb1ad4,8.0,29.0,,MEM 124-103 POR,[],11.5,-2.65,not enough data,2026-11-03T00:00:32+00:00
+P0609976a7917,9.0,32.0,,MEM 124-103 POR,[],6.5,-0.57,not enough data,2026-11-03T00:00:32+00:00
+Pe8f79f2d9a97,8.0,23.0,,MEM 124-103 POR,[],2.5,2.3,not enough data,2026-11-03T00:00:32+00:00
+P54507a15f79c,-16.0,,,CHA 79-95 WAS,"[{""player"": ""Dennis Schroder"", ""from"": ""Available"", ""to"": ""Probable""}]",-1.5,8.68,News after pick,2026-11-03T00:00:32+00:00
+P92603f8f0e3a,5.0,16.0,,CLE 111-114 ATL,[],3.5,0.16,not enough data,2026-11-03T00:00:32+00:00
+Pb54d83ba5fd2,6.0,18.0,,CLE 111-114 ATL,[],3.5,-2.85,not enough data,2026-11-03T00:00:32+00:00
+P12605a39a840,2.0,22.0,,CLE 111-114 ATL,[],1.5,-1.18,not enough data,2026-11-03T00:00:32+00:00
+P5c829ef25042,252.0,,,SAC 120-132 NOP,[],234.5,-0.65,Market disagreed,2026-11-03T00:00:32+00:00
+P5920482ca4bd,2.0,21.0,,CHA 79-95 WAS,"[{""player"": ""Dennis Schroder"", ""from"": ""Questionable"", ""to"": ""Probable""}]",3.5,-2.64,News after pick,2026-11-03T00:00:32+00:00
+Pdd8da73621b3,8.0,30.0,,CHA 79-95 WAS,[],4.5,2.21,not enough data,2026-11-03T00:00:32+00:00
+Paf7a6e304eb3,1.0,30.0,,CHA 79-95 WAS,[],2.5,4.53,not enough data,2026-11-03T00:00:32+00:00
+P0ecfc9721a1b,4.0,29.0,,CHA 79-95 WAS,"[{""player"": ""Dennis Schroder"", ""from"": ""Questionable"", ""to"": ""Probable""}]",2.5,26.08,News after pick,2026-11-03T00:00:32+00:00
+P3d477286686d,2.0,13.0,,CHA 79-95 WAS,[],2.5,2.78,not enough data,2026-11-03T00:00:32+00:00
+P6df74e1de73c,7.0,38.0,,CHA 79-95 WAS,[],2.5,-2.08,not enough data,2026-11-03T00:00:32+00:00
+P2ca5fbd3fe0a,5.0,29.0,,CHA 79-95 WAS,"[{""player"": ""Dennis Schroder"", ""from"": ""Questionable"", ""to"": ""Probable""}]",3.5,6.73,News after pick,2026-11-03T00:00:32+00:00
+P8924f183944e,7.0,37.0,,CHA 79-95 WAS,"[{""player"": ""Dennis Schroder"", ""from"": ""Questionable"", ""to"": ""Probable""}]",5.5,5.99,News after pick,2026-11-03T00:00:32+00:00
+P0ae8ce80dd6f,3.0,17.0,,CHA 79-95 WAS,[],3.5,-16.63,not enough data,2026-11-03T00:00:32+00:00
+Pde064afb53e1,4.0,26.0,,CHI 111-125 BOS,[],5.5,1.73,not enough data,2026-11-03T00:00:32+00:00
+P5173937bf1d9,3.0,31.0,,CHI 111-125 BOS,[],1.5,-11.2,not enough data,2026-11-03T00:00:32+00:00
+P3cd452862758,7.0,35.0,,CHI 111-125 BOS,[],6.5,1.88,not enough data,2026-11-03T00:00:32+00:00
+Pae144b3a7f27,5.0,25.0,,CHI 111-125 BOS,[],6.5,3.49,not enough data,2026-11-03T00:00:32+00:00
+Pbb4671b1789e,6.0,27.0,,CHI 111-125 BOS,[],5.5,-5.89,not enough data,2026-11-03T00:00:32+00:00
+P52e16ef4ffa7,2.0,11.0,,CHI 111-125 BOS,[],3.5,3.44,not enough data,2026-11-03T00:00:32+00:00
+Pa489c9633793,4.0,19.0,,CHI 111-125 BOS,[],7.5,-8.26,not enough data,2026-11-03T00:00:32+00:00
+P8abf7e0bba7f,3.0,35.0,,CHI 111-125 BOS,[],2.5,-3.57,not enough data,2026-11-03T00:00:32+00:00
+P6d6a828dd544,2.0,26.0,,CHI 111-125 BOS,[],3.5,1.65,not enough data,2026-11-03T00:00:32+00:00
+Pe927a2ebd771,4.0,20.0,,CHI 111-125 BOS,[],2.5,0.23,not enough data,2026-11-03T00:00:32+00:00
+P8d3e1e45191f,3.0,25.0,,DET 110-94 BKN,[],5.5,3.77,not enough data,2026-11-03T00:00:32+00:00
+Pbd75c2f94fb1,1.0,24.0,,DET 110-94 BKN,[],2.5,1.3,not enough data,2026-11-03T00:00:32+00:00
+P09808c127857,2.0,26.0,,DET 110-94 BKN,[],2.5,1.82,not enough data,2026-11-03T00:00:32+00:00
+Pb506817a698a,2.0,26.0,,DET 110-94 BKN,[],3.5,6.98,not enough data,2026-11-03T00:00:32+00:00
+P3eec07405c41,3.0,24.0,,DET 110-94 BKN,[],2.5,3.71,not enough data,2026-11-03T00:00:32+00:00
+P7e731bff0e26,0.0,23.0,,DET 110-94 BKN,[],2.5,-15.12,not enough data,2026-11-03T00:00:32+00:00
+P5d3e5d4c174d,8.0,23.0,,DET 110-94 BKN,[],3.5,-0.47,not enough data,2026-11-03T00:00:32+00:00
+P7a9c5994e929,4.0,31.0,,DET 110-94 BKN,[],8.5,1.16,not enough data,2026-11-03T00:00:32+00:00
+P9475ce034973,3.0,34.0,,NYK 93-98 PHI,[],2.5,-14.39,not enough data,2026-11-03T00:00:32+00:00
+P2df71d2a4df7,2.0,36.0,,NYK 93-98 PHI,"[{""player"": ""Jaylen Brown"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,8.12,News after pick,2026-11-03T00:00:32+00:00
+P66a9afa34809,3.0,31.0,,NYK 93-98 PHI,[],4.5,-7.16,not enough data,2026-11-03T00:00:32+00:00
+P1b89aaea2f17,3.0,35.0,,NYK 93-98 PHI,[],3.5,6.13,not enough data,2026-11-03T00:00:32+00:00
+P2c73b093f99b,6.0,35.0,,NYK 93-98 PHI,[],6.5,-3.74,not enough data,2026-11-03T00:00:32+00:00
+P0395f8b407d4,,,,NYK 93-98 PHI,"[{""player"": ""Jaylen Brown"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,,,2026-11-03T00:00:32+00:00
+P0638ba16df35,4.0,34.0,,NYK 93-98 PHI,[],5.5,3.1,not enough data,2026-11-03T00:00:32+00:00
+P50fbdf0c0614,7.0,33.0,,NYK 93-98 PHI,"[{""player"": ""Jaylen Brown"", ""from"": ""Questionable"", ""to"": ""Out""}]",8.5,-1.1,News after pick,2026-11-03T00:00:32+00:00
+P105d5b9dc724,8.0,36.0,,NYK 93-98 PHI,"[{""player"": ""Jaylen Brown"", ""from"": ""Questionable"", ""to"": ""Out""}]",5.5,3.48,News after pick,2026-11-03T00:00:32+00:00
+P4e4d5e103e25,4.0,38.0,,NYK 93-98 PHI,"[{""player"": ""Jaylen Brown"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,4.46,News after pick,2026-11-03T00:00:32+00:00
+P4942b946b1cf,11.0,39.0,,ORL 121-114 TOR,[],6.5,-8.31,not enough data,2026-11-03T00:00:32+00:00
+P615324c78fb4,10.0,31.0,,ORL 121-114 TOR,[],3.5,13.76,not enough data,2026-11-03T00:00:32+00:00
+Pb6cfbbe0d723,6.0,39.0,,ORL 121-114 TOR,[],3.5,1.92,not enough data,2026-11-03T00:00:32+00:00
+P91a60e82b2a8,3.0,23.0,,ORL 121-114 TOR,[],1.5,3.49,not enough data,2026-11-03T00:00:32+00:00
+Pa796d77732eb,0.0,23.0,,ORL 121-114 TOR,[],3.5,1.97,not enough data,2026-11-03T00:00:32+00:00
+P6057c91b422a,8.0,37.0,,ORL 121-114 TOR,[],5.5,-0.87,not enough data,2026-11-03T00:00:32+00:00
+P6a4332d9bccb,10.0,31.0,,ORL 121-114 TOR,[],3.5,2.58,not enough data,2026-11-03T00:00:32+00:00
+P818a88a8a1b9,5.0,39.0,,ORL 121-114 TOR,[],5.5,7.25,not enough data,2026-11-03T00:00:32+00:00
+P10c148e9de62,11.0,23.0,,ORL 121-114 TOR,[],5.5,2.96,not enough data,2026-11-03T00:00:32+00:00
+P99f1b9e92a52,3.0,32.0,,ORL 121-114 TOR,[],3.5,1.44,not enough data,2026-11-03T00:00:32+00:00
+P0f50276aeba3,5.0,23.0,,ORL 121-114 TOR,[],5.5,-5.69,not enough data,2026-11-03T00:00:32+00:00
+P9bf9f517d3d9,6.0,37.0,,ORL 121-114 TOR,[],3.5,1.62,not enough data,2026-11-03T00:00:32+00:00
+P6a950e808b63,1.0,30.0,,IND 125-145 MIA,[],1.5,3.69,not enough data,2026-11-03T00:00:32+00:00
+P87d3ed044267,2.0,30.0,,IND 125-145 MIA,"[{""player"": ""Andrew Nembhard"", ""from"": ""Probable"", ""to"": ""Available""}]",2.5,0.0,News after pick,2026-11-03T00:00:32+00:00
+Pbcff46f8db7a,11.0,35.0,,IND 125-145 MIA,[],6.5,3.58,not enough data,2026-11-03T00:00:32+00:00
+P2aff3f6149e0,6.0,35.0,,IND 125-145 MIA,[],2.5,12.59,not enough data,2026-11-03T00:00:32+00:00
+P90d2edc4d745,3.0,21.0,,IND 125-145 MIA,"[{""player"": ""Aaron Nesmith"", ""from"": ""Probable"", ""to"": ""Available""}, {""player"": ""Andrew Nembhard"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,15.11,News after pick,2026-11-03T00:00:32+00:00
+P551d70b24654,18.0,31.0,,IND 125-145 MIA,[],11.5,4.45,not enough data,2026-11-03T00:00:32+00:00
+P39fbb51b2f11,0.0,0.0,,IND 125-145 MIA,"[{""player"": ""Andrew Nembhard"", ""from"": ""Probable"", ""to"": ""Available""}, {""player"": ""Obi Toppin"", ""from"": ""Available"", ""to"": ""Out""}]",5.5,,,2026-11-03T00:00:32+00:00
+P7364d78e877c,2.0,30.0,,IND 125-145 MIA,"[{""player"": ""Andrew Nembhard"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,5.09,News after pick,2026-11-03T00:00:32+00:00
+P0d6fe046dbe4,0.0,26.0,,LAC 101-127 MIN,"[{""player"": ""Rui Hachimura"", ""from"": ""Questionable"", ""to"": ""Available""}]",1.5,0.27,News after pick,2026-11-03T00:00:32+00:00
+P8b84e655eb45,2.0,20.0,,LAC 101-127 MIN,[],2.5,,not enough data,2026-11-03T00:00:32+00:00
+Pb41ba1cdc4e0,7.0,22.0,,LAC 101-127 MIN,"[{""player"": ""Rui Hachimura"", ""from"": ""Questionable"", ""to"": ""Available""}]",6.5,4.47,News after pick,2026-11-03T00:00:32+00:00
+Paa4eed4ea166,5.0,26.0,,LAC 101-127 MIN,"[{""player"": ""Rui Hachimura"", ""from"": ""Questionable"", ""to"": ""Available""}]",4.5,-2.45,News after pick,2026-11-03T00:00:32+00:00
+P475ed6446b8d,1.0,26.0,,LAC 101-127 MIN,"[{""player"": ""Rui Hachimura"", ""from"": ""Questionable"", ""to"": ""Available""}]",1.5,,News after pick,2026-11-03T00:00:32+00:00
+P6f0b8b70a5ce,6.0,25.0,,LAC 101-127 MIN,"[{""player"": ""Rui Hachimura"", ""from"": ""Questionable"", ""to"": ""Available""}]",3.5,2.01,News after pick,2026-11-03T00:00:32+00:00
+P2cf13b98a665,5.0,31.0,,LAC 101-127 MIN,"[{""player"": ""Rui Hachimura"", ""from"": ""Questionable"", ""to"": ""Available""}]",3.5,-0.12,News after pick,2026-11-03T00:00:32+00:00
+P4e150ef10f67,2.0,31.0,,LAC 101-127 MIN,"[{""player"": ""Rui Hachimura"", ""from"": ""Questionable"", ""to"": ""Available""}]",2.5,1.33,News after pick,2026-11-03T00:00:32+00:00
+Pfb140690dcd9,4.0,35.0,,HOU 111-116 DAL,"[{""player"": ""Naji Marshall"", ""from"": ""Questionable"", ""to"": ""Available""}]",3.5,5.05,News after pick,2026-11-03T00:00:32+00:00
+Pc25627c6d831,3.0,39.0,,HOU 111-116 DAL,"[{""player"": ""Alperen Sengun"", ""from"": ""Questionable"", ""to"": ""Out""}]",8.5,2.17,News after pick,2026-11-03T00:00:32+00:00
+P044cdfadb7f5,5.0,33.0,,HOU 111-116 DAL,"[{""player"": ""Alperen Sengun"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,0.85,News after pick,2026-11-03T00:00:32+00:00
+Pae0b7fdbc689,3.0,21.0,,LAL 95-112 GSW,[],2.5,-0.25,not enough data,2026-11-03T00:00:32+00:00
+P7c5ed47d97ff,1.0,24.0,,LAL 95-112 GSW,[],7.5,1.42,not enough data,2026-11-03T00:00:32+00:00
+Pe777e46d7838,5.0,21.0,,LAL 95-112 GSW,[],2.5,2.11,not enough data,2026-11-03T00:00:32+00:00
+P3328b0f880bd,3.0,26.0,,LAL 95-112 GSW,"[{""player"": ""Ziaire Williams"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,1.02,News after pick,2026-11-03T00:00:32+00:00
+P6a87fdd294c7,4.0,22.0,,IND 125-145 MIA,"[{""player"": ""Andrew Nembhard"", ""from"": ""Probable"", ""to"": ""Available""}]",4.5,3.7,News after pick,2026-11-03T00:00:32+00:00
+Pc644bf65488c,2.0,26.0,,LAL 95-112 GSW,"[{""player"": ""Ziaire Williams"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,3.89,News after pick,2026-11-03T00:00:32+00:00
+P767460d86a56,13.0,31.0,,LAL 95-112 GSW,"[{""player"": ""Ziaire Williams"", ""from"": ""Questionable"", ""to"": ""Out""}]",9.5,2.42,News after pick,2026-11-03T00:00:32+00:00
+P571aa921e4a1,5.0,21.0,,LAL 95-112 GSW,[],2.5,-14.83,not enough data,2026-11-03T00:00:32+00:00
+P16d4238b00cb,49.0,,,IND 7-42 JAX,,46.5,2.72,not enough data,2026-11-03T00:00:32+00:00
+P757754fb79aa,20.0,,,IND 125-145 MIA,"[{""player"": ""Andrew Nembhard"", ""from"": ""Probable"", ""to"": ""Available""}]",-8.5,1.07,News after pick,2026-11-03T00:00:32+00:00
+Pe75f1b75e0a1,6.0,28.0,,HOU 111-116 DAL,"[{""player"": ""Naji Marshall"", ""from"": ""Probable"", ""to"": ""Available""}]",4.5,-1.52,News after pick,2026-11-03T00:00:32+00:00
+P84abdb38da6d,-5.0,,,HOU 111-116 DAL,"[{""player"": ""Alperen Sengun"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Naji Marshall"", ""from"": ""Probable"", ""to"": ""Available""}]",,0.0,News after pick,2026-11-03T00:00:32+00:00
+P5a01552c337b,174.0,,,CHA 79-95 WAS,[],219.5,4.69,Variance,2026-11-03T00:00:32+00:00
+Pf1d353460cbf,20.0,,,IND 125-145 MIA,"[{""player"": ""Andrew Nembhard"", ""from"": ""Probable"", ""to"": ""Available""}]",-8.5,0.0,News after pick,2026-11-03T00:00:32+00:00
+P22eaa849d145,191.0,,,NYK 93-98 PHI,[],224.5,1.16,Variance,2026-11-03T00:00:32+00:00
+Pa8b211ac0def,204.0,,,DET 110-94 BKN,[],221.5,-2.76,Market disagreed,2026-11-03T00:00:32+00:00
+P187de4f61e25,270.0,,,IND 125-145 MIA,[],237.5,-2.54,Market disagreed,2026-11-03T00:00:32+00:00
+P512ce0692f71,227.0,,,HOU 111-116 DAL,[],223.5,2.17,Variance,2026-11-03T00:00:32+00:00
+P2a33a6522211,1.0,16.0,,LAL 95-112 GSW,[],2.5,0.0,not enough data,2026-11-03T00:00:32+00:00
+Paddd754eb0d4,1.0,16.0,,LAL 95-112 GSW,[],1.5,0.92,not enough data,2026-11-03T00:00:32+00:00
+P65f47156483c,0.0,31.0,,POR 112-90 UTA,[],1.5,6.82,not enough data,2026-11-03T00:00:32+00:00
+Pa2933cfea63a,0.0,15.0,,POR 112-90 UTA,[],1.5,4.85,not enough data,2026-11-03T00:00:32+00:00
+P6650b78c8a32,1.0,31.0,,POR 112-90 UTA,[],3.5,-3.03,not enough data,2026-11-03T00:00:32+00:00
+P1b0e6e921865,5.0,27.0,,POR 112-90 UTA,[],3.5,0.81,not enough data,2026-11-03T00:00:32+00:00
+P78511216c4c5,9.0,15.0,,POR 112-90 UTA,[],10.5,12.96,not enough data,2026-11-03T00:00:32+00:00
+Pe625f7a368aa,3.0,31.0,,POR 112-90 UTA,[],2.5,4.59,not enough data,2026-11-03T00:00:32+00:00
+Pbec70a3def8e,0.0,31.0,,POR 112-90 UTA,[],1.5,9.48,not enough data,2026-11-03T00:00:32+00:00
+Pa127225f6bac,9.0,15.0,,POR 112-90 UTA,[],10.5,12.26,not enough data,2026-11-03T00:00:32+00:00
+P8af248957491,1.0,37.0,,POR 112-90 UTA,[],1.5,-0.29,not enough data,2026-11-03T00:00:32+00:00
+P02e441296062,3.0,29.0,,POR 112-90 UTA,[],3.5,4.17,Variance,2026-11-03T00:00:32+00:00
+P614773e8015d,7.0,20.0,,POR 112-90 UTA,[],5.5,4.5,not enough data,2026-11-03T00:00:32+00:00
+P53d9993c3671,7.0,37.0,,POR 112-90 UTA,[],5.5,7.86,not enough data,2026-11-03T00:00:32+00:00
+P758629720825,5.0,33.0,,PHI 109-104 CHA,,3.5,-8.3,not enough data,2026-11-03T00:00:32+00:00
+Pa00ef2fd7475,7.0,35.0,,PHI 109-104 CHA,,5.5,4.13,not enough data,2026-11-03T00:00:32+00:00
+Pca738400eafa,8.0,37.0,,PHI 109-104 CHA,,6.5,4.1,not enough data,2026-11-03T00:00:32+00:00
+P2097de427c5b,7.0,31.0,,ATL 99-121 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,29.37,News after pick,2026-11-03T00:00:32+00:00
+P09c04956da1e,2.0,24.0,,ATL 99-121 NOP,[],3.5,-9.65,not enough data,2026-11-03T00:00:32+00:00
+P0e7884d7931f,6.0,25.0,,ATL 99-121 NOP,[],3.5,3.1,Minutes miss,2026-11-03T00:00:32+00:00
+Paf65aaf14f8a,4.0,23.0,,ATL 99-121 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}]",2.5,14.42,News after pick,2026-11-03T00:00:32+00:00
+Pf6da8808ee2f,3.0,27.0,,ATL 99-121 NOP,[],4.5,3.22,not enough data,2026-11-03T00:00:32+00:00
+P19a75d652f34,7.0,28.0,,ATL 99-121 NOP,[],9.5,6.45,not enough data,2026-11-03T00:00:32+00:00
+Pd5f13dc34e23,8.0,23.0,,ATL 99-121 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}]",7.5,2.41,News after pick,2026-11-03T00:00:32+00:00
+P8459ac55155d,3.0,29.0,,ATL 99-121 NOP,[],2.5,2.18,not enough data,2026-11-03T00:00:32+00:00
+Pbfaf075a7aea,2.0,24.0,,CLE 136-111 MIL,[],1.5,2.86,not enough data,2026-11-03T00:00:32+00:00
+Pb3972341bcdf,4.0,24.0,,CLE 136-111 MIL,[],4.5,0.8,not enough data,2026-11-03T00:00:32+00:00
+Pe5e865207fa3,3.0,21.0,,CLE 136-111 MIL,[],2.5,2.97,not enough data,2026-11-03T00:00:32+00:00
+Pb372a9b941ee,7.0,23.0,,CLE 136-111 MIL,[],5.5,5.04,not enough data,2026-11-03T00:00:32+00:00
+P3b29a3b323de,3.0,23.0,,CLE 136-111 MIL,[],5.5,7.6,not enough data,2026-11-03T00:00:32+00:00
+P0fa8d09049c6,6.0,26.0,,CLE 136-111 MIL,[],4.5,0.06,not enough data,2026-11-03T00:00:32+00:00
+Pd2d28fef2eff,3.0,24.0,,CLE 136-111 MIL,[],4.5,0.88,not enough data,2026-11-03T00:00:32+00:00
+P28f58b907dd9,5.0,23.0,,CLE 136-111 MIL,[],3.5,-0.08,not enough data,2026-11-03T00:00:32+00:00
+Pa82cb5b9b53c,11.0,24.0,,CLE 136-111 MIL,[],8.5,0.96,not enough data,2026-11-03T00:00:32+00:00
+P7aa4de86d338,10.0,24.0,,CLE 136-111 MIL,[],7.5,1.85,not enough data,2026-11-03T00:00:32+00:00
+P32b9b278926d,5.0,37.0,,SAC 105-136 MEM,[],5.5,3.48,not enough data,2026-11-03T00:00:32+00:00
+P6fd5783790df,3.0,26.0,,SAC 105-136 MEM,[],5.5,11.33,not enough data,2026-11-03T00:00:32+00:00
+Pf59aec868f37,6.0,18.0,,SAC 105-136 MEM,[],7.5,1.73,not enough data,2026-11-03T00:00:32+00:00
+Pcac98ffe2b5a,9.0,26.0,,SAC 105-136 MEM,[],7.5,1.22,not enough data,2026-11-03T00:00:32+00:00
+P76cdf5c72040,,,,SAC 105-136 MEM,[],2.5,-0.38,,2026-11-03T00:00:32+00:00
+P7e7aa6536650,0.0,21.0,,SAC 105-136 MEM,[],3.5,-9.43,not enough data,2026-11-03T00:00:32+00:00
+P95ddbd4650d2,2.0,22.0,,SAC 105-136 MEM,[],3.5,-8.14,not enough data,2026-11-03T00:00:32+00:00
+P41a8afc41a66,1.0,21.0,,SAC 105-136 MEM,[],3.5,1.07,not enough data,2026-11-03T00:00:32+00:00
+Pade8a40ea4cf,0.0,21.0,,SAC 105-136 MEM,[],3.5,2.33,not enough data,2026-11-03T00:00:32+00:00
+Pfc7d9bb4dc50,2.0,22.0,,SAC 105-136 MEM,[],3.5,1.6,not enough data,2026-11-03T00:00:32+00:00
+P9604ddd9d778,,,,SAC 105-136 MEM,[],3.5,0.26,,2026-11-03T00:00:32+00:00
+P9481351b51a5,5.0,37.0,,SAC 105-136 MEM,[],3.5,3.02,not enough data,2026-11-03T00:00:32+00:00
+P7514c3b3d069,6.0,39.0,,MIN 111-121 SAS,[],4.5,-7.16,not enough data,2026-11-03T00:00:32+00:00
+P1a518edb2b33,3.0,40.0,,MIN 111-121 SAS,"[{""player"": ""Anthony Edwards"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Rudy Gobert"", ""from"": ""Available"", ""to"": ""Out""}]",2.5,0.56,News after pick,2026-11-03T00:00:32+00:00
+P5c0cdc26302a,5.0,34.0,,MIN 111-121 SAS,[],3.5,-0.43,not enough data,2026-11-03T00:00:32+00:00
+P831fb5f1a9d6,6.0,40.0,,MIN 111-121 SAS,"[{""player"": ""Anthony Edwards"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Rudy Gobert"", ""from"": ""Available"", ""to"": ""Out""}]",5.5,4.59,News after pick,2026-11-03T00:00:32+00:00
+P1e36db4e8455,7.0,26.0,,CLE 136-111 MIL,[],6.5,-0.8,not enough data,2026-11-03T00:00:32+00:00
+Pf96b9fa46288,9.0,28.0,,OKC 98-119 HOU,[],4.5,0.05,not enough data,2026-11-03T00:00:32+00:00
+P7c25b5a6ea13,4.0,27.0,,OKC 98-119 HOU,"[{""player"": ""Fred VanVleet"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,3.2,News after pick,2026-11-03T00:00:32+00:00
+Peabf57a0acac,3.0,31.0,,OKC 98-119 HOU,[],5.5,1.93,not enough data,2026-11-03T00:00:32+00:00
+P882b9df47e1a,4.0,28.0,,OKC 98-119 HOU,[],2.5,2.27,Variance,2026-11-03T00:00:32+00:00
+Pc664d8648cdb,3.0,26.0,,OKC 98-119 HOU,[],3.5,1.25,not enough data,2026-11-03T00:00:32+00:00
+Pbd1bf0558733,-5.0,,,PHI 109-104 CHA,[],1.5,0.76,Variance,2026-11-03T00:00:32+00:00
+Paae0bb09155c,-5.0,,,PHI 109-104 CHA,[],,0.23,Variance,2026-11-03T00:00:32+00:00
+Pc11e5d82a464,-21.0,,,OKC 98-119 HOU,[],2.5,-0.11,Market disagreed,2026-11-03T00:00:32+00:00
+Pfc1d56963901,-21.0,,,OKC 98-119 HOU,[],,0.36,Variance,2026-11-03T00:00:32+00:00
+Pa63701597f63,-22.0,,,ATL 99-121 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}]",-4.5,1.89,News after pick,2026-11-03T00:00:32+00:00
+Pc50fb534f32a,-22.0,,,ATL 99-121 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}]",,2.27,News after pick,2026-11-03T00:00:32+00:00
+P5fdbca655f47,213.0,,,PHI 109-104 CHA,[],211.5,3.38,Variance,2026-11-03T00:00:32+00:00
+P16d391d84ca5,2.0,19.0,,OKC 98-119 HOU,[],3.5,1.71,not enough data,2026-11-03T00:00:32+00:00
+Pcf8997461b86,241.0,,,SAC 105-136 MEM,[],228.5,2.35,Variance,2026-11-03T00:00:32+00:00
+Pd5242cbf38c6,247.0,,,CLE 136-111 MIL,[],235.5,0.22,Variance,2026-11-03T00:00:32+00:00
+P3277e7ec6609,4.0,26.0,,OKC 98-119 HOU,[],5.5,3.48,not enough data,2026-11-03T00:00:32+00:00
+P139e59ea964f,2.0,34.0,,BOS 108-97 ORL,[],4.5,-1.46,Market disagreed,2026-11-03T00:00:32+00:00
+Pc3634739cc17,12.0,40.0,,BOS 108-97 ORL,[],6.5,-8.8,not enough data,2026-11-03T00:00:32+00:00
+Pcf62381f21ef,3.0,33.0,,BOS 108-97 ORL,[],3.5,-5.03,not enough data,2026-11-03T00:00:32+00:00
+Pe92044e3b545,8.0,33.0,,BOS 108-97 ORL,[],3.5,1.61,not enough data,2026-11-03T00:00:32+00:00
+Pe454529fe15c,1.0,26.0,,BOS 108-97 ORL,[],2.5,6.02,not enough data,2026-11-03T00:00:32+00:00
+P71e9ffdfc738,6.0,40.0,,BOS 108-97 ORL,[],5.5,2.35,not enough data,2026-11-03T00:00:32+00:00
+Pe7f191e6c5f9,10.0,35.0,,BOS 108-97 ORL,[],7.5,0.38,not enough data,2026-11-03T00:00:32+00:00
+P8af88be02134,,,,BOS 108-97 ORL,"[{""player"": ""Mitchell Robinson"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,,,2026-11-03T00:00:32+00:00
+P5773d0af5676,1.0,40.0,,BOS 108-97 ORL,[],3.5,2.16,not enough data,2026-11-03T00:00:32+00:00
+P54fe534220ed,7.0,34.0,,BOS 108-97 ORL,[],6.5,8.61,not enough data,2026-11-03T00:00:32+00:00
+P058e695b11dd,0.0,35.0,,BOS 108-97 ORL,[],1.5,0.67,not enough data,2026-11-03T00:00:32+00:00
+P30bb85bdd158,3.0,33.0,,BOS 108-97 ORL,[],3.5,1.44,Variance,2026-11-03T00:00:32+00:00
+Pdfd3c9ef2df0,7.0,27.0,,BOS 108-97 ORL,[],2.5,-2.08,not enough data,2026-11-03T00:00:32+00:00
+P6242cc131042,10.0,35.0,,BOS 108-97 ORL,[],7.5,2.77,not enough data,2026-11-03T00:00:32+00:00
+Pba868b246b75,8.0,33.0,,BOS 108-97 ORL,[],3.5,4.33,not enough data,2026-11-03T00:00:32+00:00
+Pbe7c3df5402f,3.0,20.0,,BKN 98-90 IND,[],2.5,4.44,Minutes miss,2026-11-03T00:00:32+00:00
+Pf0f4faae9210,3.0,36.0,,BKN 98-90 IND,[],2.5,1.26,not enough data,2026-11-03T00:00:32+00:00
+P34f777b8e0f7,3.0,17.0,,BKN 98-90 IND,[],4.5,-10.07,not enough data,2026-11-03T00:00:32+00:00
+Pd212ec76e9a6,9.0,36.0,,BKN 98-90 IND,[],6.5,1.76,not enough data,2026-11-03T00:00:32+00:00
+Pce8b0529d932,6.0,20.0,,BKN 98-90 IND,[],5.5,8.76,not enough data,2026-11-03T00:00:32+00:00
+P9ca5162209a3,1.0,20.0,,BKN 98-90 IND,[],1.5,1.75,not enough data,2026-11-03T00:00:32+00:00
+Pc7c11bb246af,4.0,26.0,,BKN 98-90 IND,[],2.5,8.78,not enough data,2026-11-03T00:00:32+00:00
+P8861651fea9c,5.0,36.0,,BKN 98-90 IND,[],4.5,-2.13,not enough data,2026-11-03T00:00:32+00:00
+P561dc8d14b1c,13.0,26.0,,BKN 98-90 IND,[],7.5,0.68,not enough data,2026-11-03T00:00:32+00:00
+Pcdc7890f596d,2.0,20.0,,BKN 98-90 IND,[],4.5,1.1,not enough data,2026-11-03T00:00:32+00:00
+Pf58fc67ed17e,3.0,30.0,,BKN 98-90 IND,"[{""player"": ""Aaron Nesmith"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,6.61,News after pick,2026-11-03T00:00:32+00:00
+Pe92bbf34c84d,5.0,36.0,,TOR 125-131 LAL,[],5.5,2.54,not enough data,2026-11-03T00:00:32+00:00
+Pecf6e5b89df1,0.0,0.0,,TOR 125-131 LAL,[],6.5,9.26,,2026-11-03T00:00:32+00:00
+P3ca13e9e7c2e,2.0,25.0,,TOR 125-131 LAL,"[{""player"": ""Ziaire Williams"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,2.89,News after pick,2026-11-03T00:00:32+00:00
+P313a8dec64f7,3.0,39.0,,TOR 125-131 LAL,"[{""player"": ""Ziaire Williams"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,0.99,News after pick,2026-11-03T00:00:32+00:00
+P8c9dbb04f079,0.0,33.0,,LAC 112-124 GSW,[],2.5,2.24,not enough data,2026-11-03T00:00:32+00:00
+P10d9c0036175,4.0,19.0,,LAC 112-124 GSW,[],3.5,1.63,not enough data,2026-11-03T00:00:32+00:00
+P2d60b2c90266,3.0,25.0,,LAC 112-124 GSW,[],2.5,8.11,Minutes miss,2026-11-03T00:00:32+00:00
+P9cb90a647e97,2.0,19.0,,LAC 112-124 GSW,[],4.5,-0.01,not enough data,2026-11-03T00:00:32+00:00
+P76d02798b38d,4.0,19.0,,LAC 112-124 GSW,[],3.5,1.86,not enough data,2026-11-03T00:00:32+00:00
+P1620d43a825f,1.0,21.0,,LAC 112-124 GSW,[],3.5,6.05,not enough data,2026-11-03T00:00:32+00:00
+Pba6f1580280f,8.0,22.0,,LAC 112-124 GSW,[],6.5,0.02,Variance,2026-11-03T00:00:32+00:00
+Pc42c290cda33,6.0,35.0,,TOR 125-131 LAL,"[{""player"": ""Ziaire Williams"", ""from"": ""Questionable"", ""to"": ""Out""}]",7.5,-3.15,News after pick,2026-11-03T00:00:32+00:00
+P2b3e4241afb8,8.0,27.0,,BOS 108-97 ORL,[],7.5,-7.54,not enough data,2026-11-03T00:00:32+00:00
+P575aedad2c2d,-21.0,,,CLE 6-27 PIT,,3.5,2.09,not enough data,2026-11-03T00:00:32+00:00
+P7b6e0ebe39cd,-21.0,,,CLE 6-27 PIT,,3.5,1.59,not enough data,2026-11-03T00:00:32+00:00
+P559d2d99ea00,-21.0,,,CLE 6-27 PIT,,3.5,2.03,not enough data,2026-11-03T00:00:32+00:00
+P68200dcbff0d,-21.0,,,CLE 6-27 PIT,,3.5,2.58,not enough data,2026-11-03T00:00:32+00:00
+Pf0b48d7f1258,-21.0,,,CLE 6-27 PIT,,3.5,1.61,not enough data,2026-11-03T00:00:32+00:00
+P1ec1cd0203c6,-21.0,,,CLE 6-27 PIT,,3.5,1.15,not enough data,2026-11-03T00:00:32+00:00
+P2ec1b96dcee3,-21.0,,,CLE 6-27 PIT,,3.5,1.25,not enough data,2026-11-03T00:00:32+00:00
+P82465c01cf7b,-21.0,,,CLE 6-27 PIT,,3.5,-0.52,not enough data,2026-11-03T00:00:32+00:00
+P165d3b81910d,-21.0,,,CLE 6-27 PIT,,3.5,0.69,not enough data,2026-11-03T00:00:32+00:00
+Pb36286cb6b14,-21.0,,,CLE 6-27 PIT,,3.5,2.75,not enough data,2026-11-03T00:00:32+00:00
+Pe362a713fc8c,-21.0,,,CLE 6-27 PIT,,3.5,1.97,not enough data,2026-11-03T00:00:32+00:00
+P6593410cd9c4,-21.0,,,CLE 6-27 PIT,,3.5,-1.3,not enough data,2026-11-03T00:00:32+00:00
+P80fa1caf3bf4,-21.0,,,CLE 6-27 PIT,,3.5,0.34,not enough data,2026-11-03T00:00:32+00:00
+P33fc36d58b86,-21.0,,,CLE 6-27 PIT,,3.5,0.28,not enough data,2026-11-03T00:00:32+00:00
+Pc50399a8bad5,-21.0,,,CLE 6-27 PIT,,3.5,2.48,not enough data,2026-11-03T00:00:32+00:00
+P1c3c3972fb44,-16.0,,,ATL 0-16 TB,,1.5,2.67,not enough data,2026-11-03T00:00:32+00:00
+P3be1c3b6447f,16.0,,,ATL 0-16 TB,,-1.5,3.17,not enough data,2026-11-03T00:00:32+00:00
+P36a2cb4560ed,-16.0,,,ATL 0-16 TB,,1.5,2.37,not enough data,2026-11-03T00:00:32+00:00
+P5f24a98adb12,-16.0,,,ATL 0-16 TB,,1.5,1.48,not enough data,2026-11-03T00:00:32+00:00
+P0b1b155ae9e5,16.0,,,ATL 0-16 TB,,-1.5,1.46,not enough data,2026-11-03T00:00:32+00:00
+P2cb463a8d76f,16.0,,,ATL 0-16 TB,,-1.5,2.87,not enough data,2026-11-03T00:00:32+00:00
+P62493aa547d1,-16.0,,,ATL 0-16 TB,,1.5,2.9,not enough data,2026-11-03T00:00:32+00:00
+P57bee3166cd0,-16.0,,,ATL 0-16 TB,,1.5,1.9,not enough data,2026-11-03T00:00:32+00:00
+P241fd2bc1d6b,-16.0,,,ATL 0-16 TB,,1.5,2.26,not enough data,2026-11-03T00:00:32+00:00
+P006cb29dc2eb,16.0,,,ATL 0-16 TB,,-1.5,2.17,not enough data,2026-11-03T00:00:32+00:00
+P10890e14e13d,16.0,,,ATL 0-16 TB,,-1.5,3.14,not enough data,2026-11-03T00:00:32+00:00
+Pe1b7f674b540,16.0,,,ATL 0-16 TB,,-1.5,2.1,not enough data,2026-11-03T00:00:32+00:00
+P59c47008dbe8,-16.0,,,ATL 0-16 TB,,1.5,1.61,not enough data,2026-11-03T00:00:32+00:00
+P6a7ba153afbc,16.0,,,ATL 0-16 TB,,-1.5,3.05,not enough data,2026-11-03T00:00:32+00:00
+P67b395e044f7,-16.0,,,ATL 0-16 TB,,1.5,2.25,not enough data,2026-11-03T00:00:32+00:00
+Pa754c85553fa,16.0,,,ATL 0-16 TB,,43.5,3.04,not enough data,2026-11-03T00:00:32+00:00
+P7680c55488fd,16.0,,,ATL 0-16 TB,,43.5,3.68,not enough data,2026-11-03T00:00:32+00:00
+Pf226ed555a10,63.0,,,ARI 33-30 DAL,,54.5,3.69,not enough data,2026-11-03T00:00:32+00:00
+Pa0b50f45ee6a,63.0,,,ARI 33-30 DAL,,54.5,4.3,not enough data,2026-11-03T00:00:32+00:00
+P00a0b5f89504,63.0,,,ARI 33-30 DAL,,54.5,4.46,not enough data,2026-11-03T00:00:32+00:00
+P9987761de7a0,63.0,,,ARI 33-30 DAL,,54.5,4.25,not enough data,2026-11-03T00:00:32+00:00
+Pf6c924c83f6c,63.0,,,ARI 33-30 DAL,,54.5,3.45,not enough data,2026-11-03T00:00:32+00:00
+P7d6bbe64184f,63.0,,,ARI 33-30 DAL,,54.5,4.15,not enough data,2026-11-03T00:00:32+00:00
+P395ea08e5261,63.0,,,ARI 33-30 DAL,,54.5,4.17,not enough data,2026-11-03T00:00:32+00:00
+Pb3e0b448ab95,63.0,,,ARI 33-30 DAL,,54.5,3.92,not enough data,2026-11-03T00:00:32+00:00
+P14a11963159c,63.0,,,ARI 33-30 DAL,,54.5,4.21,not enough data,2026-11-03T00:00:32+00:00
+P5f6c16e179f2,63.0,,,ARI 33-30 DAL,,54.5,4.07,not enough data,2026-11-03T00:00:32+00:00
+Pfe7097d0aad4,63.0,,,ARI 33-30 DAL,,54.5,3.82,not enough data,2026-11-03T00:00:32+00:00
+P2ae250386b5a,63.0,,,ARI 33-30 DAL,,54.5,2.57,not enough data,2026-11-03T00:00:32+00:00
+Pc8837298e2cb,63.0,,,ARI 33-30 DAL,,54.5,2.97,not enough data,2026-11-03T00:00:32+00:00
+Pb146420094a8,63.0,,,ARI 33-30 DAL,,54.5,2.14,not enough data,2026-11-03T00:00:32+00:00
+Pa327e3101688,63.0,,,ARI 33-30 DAL,,54.5,2.07,not enough data,2026-11-03T00:00:32+00:00
+P51ee4330807a,63.0,,,ARI 33-30 DAL,,54.5,1.08,not enough data,2026-11-03T00:00:32+00:00
+P9caa453a2acd,63.0,,,ARI 33-30 DAL,,54.5,4.32,not enough data,2026-11-03T00:00:32+00:00
+Pe12cbb3acfd5,63.0,,,ARI 33-30 DAL,,54.5,1.32,not enough data,2026-11-03T00:00:32+00:00
+P0f0f027c6bda,63.0,,,ARI 33-30 DAL,,54.5,0.05,not enough data,2026-11-03T00:00:32+00:00
+P13bd2b2424bd,63.0,,,ARI 33-30 DAL,,54.5,1.0,not enough data,2026-11-03T00:00:32+00:00
+P98aa929a8d11,63.0,,,ARI 33-30 DAL,,54.5,0.83,not enough data,2026-11-03T00:00:32+00:00
+Pa65814e42dff,63.0,,,ARI 33-30 DAL,,54.5,3.15,not enough data,2026-11-03T00:00:32+00:00
+Pe582d92052cb,49.0,,,IND 7-42 JAX,,46.5,0.43,not enough data,2026-11-03T00:00:32+00:00
+P5f57b10cb297,49.0,,,IND 7-42 JAX,,46.5,-0.02,not enough data,2026-11-03T00:00:32+00:00
+P05239f823b8e,49.0,,,IND 7-42 JAX,,46.5,0.05,not enough data,2026-11-03T00:00:32+00:00
+Pc1a26040f03d,49.0,,,IND 7-42 JAX,,46.5,0.56,not enough data,2026-11-03T00:00:32+00:00
+Pd11f94318c48,49.0,,,IND 7-42 JAX,,46.5,0.31,not enough data,2026-11-03T00:00:32+00:00
+Pb5516c1e1846,49.0,,,IND 7-42 JAX,,46.5,0.04,not enough data,2026-11-03T00:00:32+00:00
+Pbfa180946082,49.0,,,IND 7-42 JAX,,46.5,0.01,not enough data,2026-11-03T00:00:32+00:00
+P56f0e7cad446,49.0,,,IND 7-42 JAX,,46.5,0.55,not enough data,2026-11-03T00:00:32+00:00
+P6a65479f57a7,49.0,,,IND 7-42 JAX,,46.5,0.08,not enough data,2026-11-03T00:00:32+00:00
+P38915e3d2da2,49.0,,,IND 7-42 JAX,,46.5,0.62,not enough data,2026-11-03T00:00:32+00:00
+Pb78ce48ff2f5,4.0,,,MIN 15-19 DET,,-3.5,1.08,not enough data,2026-11-03T00:00:32+00:00
+P4a275292804d,4.0,,,MIN 15-19 DET,,-3.5,1.05,not enough data,2026-11-03T00:00:32+00:00
+P9be090a3db9d,4.0,,,MIN 15-19 DET,,-3.5,1.86,not enough data,2026-11-03T00:00:32+00:00
+P2a5361b89dfa,4.0,,,MIN 15-19 DET,,-3.5,0.26,not enough data,2026-11-03T00:00:32+00:00
+Pfebc97d55592,4.0,,,MIN 15-19 DET,,-3.5,1.47,not enough data,2026-11-03T00:00:32+00:00
+P5f9696494e7a,4.0,,,MIN 15-19 DET,,-3.5,0.81,not enough data,2026-11-03T00:00:32+00:00
+Pbf1c48cf9852,4.0,,,MIN 15-19 DET,,-3.5,1.83,not enough data,2026-11-03T00:00:32+00:00
+P3dd046cca187,4.0,,,KC 24-28 DEN,,1.5,3.07,not enough data,2026-11-03T00:00:32+00:00
+Paf34cd53f7cd,4.0,,,KC 24-28 DEN,,1.5,1.12,not enough data,2026-11-03T00:00:32+00:00
+Pf3627bf7fb77,4.0,,,KC 24-28 DEN,,1.5,2.12,not enough data,2026-11-03T00:00:32+00:00
+Pcd910db2d219,4.0,,,KC 24-28 DEN,,1.5,3.11,not enough data,2026-11-03T00:00:32+00:00
+P5d43fe722821,4.0,,,KC 24-28 DEN,,1.5,2.81,not enough data,2026-11-03T00:00:32+00:00
+P9daaabdc4c63,4.0,,,KC 24-28 DEN,,1.5,-0.5,not enough data,2026-11-03T00:00:32+00:00
+Pefd6a7e1d0d0,4.0,,,KC 24-28 DEN,,1.5,0.96,not enough data,2026-11-03T00:00:32+00:00
+P904e15ed1efe,-4.0,,,KC 24-28 DEN,,-1.5,3.89,not enough data,2026-11-03T00:00:32+00:00
+P04c1c2f835d5,4.0,,,KC 24-28 DEN,,1.5,1.73,not enough data,2026-11-03T00:00:32+00:00
+P5232941a52ad,-4.0,,,KC 24-28 DEN,,-1.5,4.09,not enough data,2026-11-03T00:00:32+00:00
+Pd9d4eac19498,4.0,,,KC 24-28 DEN,,1.5,2.94,not enough data,2026-11-03T00:00:32+00:00
+P476440a44a2d,4.0,,,KC 24-28 DEN,,1.5,1.36,not enough data,2026-11-03T00:00:32+00:00
+P6f3e56021d2a,-4.0,,,KC 24-28 DEN,,-1.5,3.78,not enough data,2026-11-03T00:00:32+00:00
+Pe5135494e381,4.0,,,KC 24-28 DEN,,1.5,-0.24,not enough data,2026-11-03T00:00:32+00:00
+Paa7a37c7504f,4.0,,,KC 24-28 DEN,,1.5,3.45,not enough data,2026-11-03T00:00:32+00:00
+Pe886a9fe4b47,4.0,,,KC 24-28 DEN,,1.5,2.54,not enough data,2026-11-03T00:00:32+00:00
+Paea8ac8bbd77,4.0,,,KC 24-28 DEN,,1.5,0.28,not enough data,2026-11-03T00:00:32+00:00
+P3346542985fd,-4.0,,,KC 24-28 DEN,,-1.5,3.71,not enough data,2026-11-03T00:00:32+00:00
+P6b7a97b344e1,-4.0,,,KC 24-28 DEN,,-1.5,4.09,not enough data,2026-11-03T00:00:32+00:00
+P706a94a0ae1b,4.0,,,KC 24-28 DEN,,1.5,2.61,not enough data,2026-11-03T00:00:32+00:00
+P4764a718adcf,4.0,,,KC 24-28 DEN,,1.5,2.08,not enough data,2026-11-03T00:00:32+00:00
+Pfe865e605d87,4.0,,,KC 24-28 DEN,,1.5,0.74,not enough data,2026-11-03T00:00:32+00:00
+Pcc2b1bf00f50,4.0,,,KC 24-28 DEN,,1.5,2.53,not enough data,2026-11-03T00:00:32+00:00
+P8d57aef2a298,4.0,,,KC 24-28 DEN,,1.5,4.23,not enough data,2026-11-03T00:00:32+00:00
+Pf8af1c0d1434,4.0,,,KC 24-28 DEN,,1.5,1.67,not enough data,2026-11-03T00:00:32+00:00
+P86c91b12decd,4.0,,,KC 24-28 DEN,,1.5,1.32,not enough data,2026-11-03T00:00:32+00:00
+Pa3fec6ef52e1,4.0,,,KC 24-28 DEN,,1.5,0.94,not enough data,2026-11-03T00:00:32+00:00
+P5b2f21813962,4.0,,,KC 24-28 DEN,,1.5,3.92,not enough data,2026-11-03T00:00:32+00:00
+P790502cf4eb9,8.0,,,BKN 98-90 IND,[],3.5,2.06,Variance,2026-11-03T00:00:32+00:00
+P6deef1098f40,8.0,,,BKN 98-90 IND,[],,1.96,Variance,2026-11-03T00:00:32+00:00
+P6b9b27981ec0,188.0,,,BKN 98-90 IND,[],229.5,-3.47,Market disagreed,2026-11-03T00:00:32+00:00
+P0e63df5412c1,256.0,,,TOR 125-131 LAL,[],223.5,-2.03,Market disagreed,2026-11-03T00:00:32+00:00
