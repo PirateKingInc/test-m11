@@ -49,6 +49,12 @@ class Candidate:
     book_nv: float | None = None  # the book's own no-vig probability of the side
 
 
+def real_two_way(a: int, b: int) -> bool:
+    """A main two-way market: implied probabilities sum to 1.00-1.25 (M20 clean-lines rule)."""
+    t = 1 / float(dec(a)) + 1 / float(dec(b))
+    return 1.0 <= t <= 1.25
+
+
 def no_vig(a: int, b: int) -> float:
     pa, pb = 1 / float(dec(a)), 1 / float(dec(b))
     return pa / (pa + pb)
@@ -77,7 +83,7 @@ def game_candidates(game: dict, two_way: dict, design: Design, cons=None) -> lis
     out = []
     for market in ("spreads", "totals", "h2h"):
         for book, (line, pa, pb) in (two_way.get(market) or {}).items():
-            if book not in BOOKS or pa is None or pb is None:
+            if book not in BOOKS or pa is None or pb is None or not real_two_way(pa, pb):
                 continue
             pe = _engine_side(game, market, line)
             if pe is None:
@@ -110,7 +116,8 @@ def prop_candidates(game: dict, props: dict, design: Design, cons=None,
         if stat is None or pl is None or not pl["cdf"].get(stat):
             continue
         for book, (line, po, pu) in books.items():
-            if book not in BOOKS or po is None or pu is None or line is None:
+            if (book not in BOOKS or po is None or pu is None or line is None
+                    or not real_two_way(po, pu)):
                 continue
             r = p_over(pl["cdf"][stat], line)
             if r is None:

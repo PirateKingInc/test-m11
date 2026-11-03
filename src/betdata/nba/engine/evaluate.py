@@ -290,3 +290,27 @@ def checks_of(sp: pd.DataFrame) -> dict:
             "roi": float(prof.mean()) if len(prof) else None,
             "calibration": vars(c.calibration), "brier": vars(c.brier), "ev": vars(c.ev),
             "table": c.table}  # fmt: skip
+
+
+def clean_lines(pv: pd.DataFrame, p: pd.DataFrame) -> pd.DataFrame:
+    """Drop stored prop lines that are not a real main market (found in the M20 test, applied
+    identically to validation and test): a two-way overround outside 1.00-1.25 (e.g. both
+    sides at +1200), or a line far from the player's as-of last-10 average (more than
+    max(4, 60%) away: another market stored under this one). Rows without a last-10 average
+    are kept."""
+    imp = 1 / dec(pv.over_price) + 1 / dec(pv.under_price)
+    pl = p[p.played].sort_values("tip")
+    ix = pd.MultiIndex.from_arrays([pl.game_id, pl.player_id.astype(str)])
+    avg = np.full(len(pv), np.nan)
+    for m, s in PROP_STATS.items():
+        sel = (pv.market == m).to_numpy()
+        if not sel.any():
+            continue
+        r = pl.groupby("player_id")[s].transform(lambda x: x.shift(1).rolling(10, 3).mean())
+        ser = pd.Series(r.to_numpy(), index=ix)
+        ser = ser[~ser.index.duplicated()]
+        avg[sel] = ser.reindex(pd.MultiIndex.from_arrays(
+            [pv.game_id[sel].astype(int), pv.player_id[sel].astype(str)])).to_numpy()  # fmt: skip
+    far = np.abs(pv.line.to_numpy() - avg) > np.maximum(4, 0.6 * avg)
+    keep = (imp >= 1.0) & (imp <= 1.25) & ~np.where(np.isnan(avg), False, far)
+    return pv[np.asarray(keep)].copy()

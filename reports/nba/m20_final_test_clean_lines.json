@@ -1,0 +1,694 @@
+{
+ "mode": "test",
+ "n_games": 3962,
+ "checks_ok_all_games": true,
+ "margin_mae": 11.394556461383141,
+ "total_mae": 14.91770896012115,
+ "close_margin_mae": 10.774517276422765,
+ "engine_margin_mae_same": 11.370560619918699,
+ "close_total_mae": 14.316357632715265,
+ "engine_total_mae_same": 14.932591567183135,
+ "player_mae_pretip": {
+  "minutes": 5.019696924843885,
+  "pts": 4.557755034562393,
+  "reb": 1.8969257618299171,
+  "ast": 1.3290845798403625,
+  "fg3m": 0.8873126438403844,
+  "pra": 5.995416211803593
+ },
+ "player_mae_morning": {
+  "minutes": 4.999396946707842,
+  "pts": 4.548776509857575,
+  "reb": 1.8879900204188902,
+  "ast": 1.326028391710375,
+  "fg3m": 0.8842422015129479,
+  "pra": 5.985298599016382
+ },
+ "props_at_lines": {
+  "points": {
+   "n": 36195,
+   "mae_engine_median": 5.015817101809642,
+   "mae_engine_mean": 5.080191106857852,
+   "mae_line": 4.913703550214118,
+   "brier_engine": 0.2563604191765309,
+   "brier_novig": 0.2492402963175108,
+   "logloss_engine": 0.708136144569619,
+   "logloss_novig": 0.6916187446477868
+  },
+  "rebounds": {
+   "n": 34777,
+   "mae_engine_median": 2.0140322627023606,
+   "mae_engine_mean": 2.0560705391451544,
+   "mae_line": 2.007950657043448,
+   "brier_engine": 0.2535872375341919,
+   "brier_novig": 0.247170854295119,
+   "logloss_engine": 0.7026550460575933,
+   "logloss_novig": 0.6874643902962011
+  },
+  "assists": {
+   "n": 31908,
+   "mae_engine_median": 1.5075999749279179,
+   "mae_engine_mean": 1.5492881414984696,
+   "mae_line": 1.5382349254105554,
+   "brier_engine": 0.24914902646539772,
+   "brier_novig": 0.24558130374619247,
+   "logloss_engine": 0.6926050285766074,
+   "logloss_novig": 0.6842557068240624
+  },
+  "threes": {
+   "n": 28414,
+   "mae_engine_median": 1.0778313507425916,
+   "mae_engine_mean": 1.1204759444213694,
+   "mae_line": 1.1447173928345182,
+   "brier_engine": 0.24465243644282705,
+   "brier_novig": 0.24282414925512186,
+   "logloss_engine": 0.6828436561542037,
+   "logloss_novig": 0.6786618811147731
+  },
+  "pra": {
+   "n": 14689,
+   "mae_engine_median": 6.541799986384369,
+   "mae_engine_mean": 6.601711665593636,
+   "mae_line": 6.333957383075771,
+   "brier_engine": 0.26075357868773363,
+   "brier_novig": 0.24868208367992098,
+   "logloss_engine": 0.7199690435686807,
+   "logloss_novig": 0.6905018069516227
+  }
+ },
+ "games_at_lines": {
+  "spreads": {
+   "n": 3919,
+   "brier_engine": 0.26128641264769314,
+   "brier_market": 0.25,
+   "logloss_engine": 0.7171869628517192,
+   "logloss_market": 0.6931471805599453,
+   "calib_engine": {
+    "slope": -0.014669264544195653,
+    "intercept": 0.008891976677681561,
+    "se": 0.07306423495467415,
+    "applied": true
+   }
+  },
+  "totals": {
+   "n": 3921,
+   "brier_engine": 0.2615835140678026,
+   "brier_market": 0.25,
+   "logloss_engine": 0.71840960386337,
+   "logloss_market": 0.6931471805599454,
+   "calib_engine": {
+    "slope": 0.08931075415878675,
+    "intercept": 0.01430147200602025,
+    "se": 0.060897164195556255,
+    "applied": true
+   }
+  },
+  "h2h": {
+   "n": 3937,
+   "brier_engine": 0.2157403090532131,
+   "brier_market": 0.1992715164528123,
+   "logloss_engine": 0.6214770505355166,
+   "logloss_market": 0.5817923717232495,
+   "calib_engine": {
+    "slope": 1.6877405073547929,
+    "intercept": -0.1300362452060398,
+    "se": 0.07646531885395805,
+    "applied": true
+   }
+  }
+ },
+ "design": {
+  "w": {
+   "spreads": 0.0,
+   "totals": 0.0,
+   "h2h": 0.1,
+   "points": 0.1,
+   "rebounds": 0.2,
+   "assists": 0.2,
+   "threes": 0.1,
+   "pra": 0.0
+  },
+  "platt": {
+   "spreads": null,
+   "totals": null,
+   "h2h": null,
+   "points": [
+    0.5102522636507465,
+    -0.08781179471449169
+   ],
+   "rebounds": null,
+   "assists": [
+    1.1404228392527334,
+    -0.014429873121788958
+   ],
+   "threes": null,
+   "pra": null
+  },
+  "theta": {
+   "game": 0.05,
+   "prop": 0.1
+  },
+  "validated": {
+   "game": true,
+   "prop": true
+  }
+ },
+ "engine_game_picks": {
+  "n": 526,
+  "status": "does not work: fails calibration, brier vs close, EV at close",
+  "works": false,
+  "wins": 62,
+  "roi": -0.29277566539923955,
+  "calibration": {
+   "name": "calibration",
+   "value": 0.048710589300177284,
+   "low": 0.021731008128388893,
+   "high": 0.07569017047196568,
+   "passed": false,
+   "n": 526,
+   "note": "gap +4.9 pp"
+  },
+  "brier": {
+   "name": "brier vs close",
+   "value": 0.0014179378888145816,
+   "low": 0.00014969067669414696,
+   "high": 0.002686185100935016,
+   "passed": false,
+   "n": 526,
+   "note": ""
+  },
+  "ev": {
+   "name": "EV at close",
+   "value": -0.04176700973719086,
+   "low": -0.04215714400071773,
+   "high": -0.041376875473663983,
+   "passed": false,
+   "n": 526,
+   "note": ""
+  },
+  "table": [
+   {
+    "bin": "0.00-0.40",
+    "n": 526,
+    "predicted": 0.1666,
+    "actual": 0.1179
+   }
+  ]
+ },
+ "engine_prop_picks": {
+  "n": 329,
+  "status": "does not work: fails EV at close",
+  "works": false,
+  "wins": 174,
+  "roi": 0.18526121402426793,
+  "calibration": {
+   "name": "calibration",
+   "value": 0.04255672670740276,
+   "low": -0.08334178884436008,
+   "high": 0.022719440621159385,
+   "passed": true,
+   "n": 329,
+   "note": "gap -3.0 pp"
+  },
+  "brier": {
+   "name": "brier vs close",
+   "value": -0.013980969261744228,
+   "low": -0.023185397030229656,
+   "high": -0.004776541493258799,
+   "passed": true,
+   "n": 329,
+   "note": ""
+  },
+  "ev": {
+   "name": "EV at close",
+   "value": -0.06927648943200128,
+   "low": -0.07046695641332343,
+   "high": -0.06808602245067913,
+   "passed": false,
+   "n": 329,
+   "note": ""
+  },
+  "table": [
+   {
+    "bin": "0.40-0.45",
+    "n": 55,
+    "predicted": 0.4441,
+    "actual": 0.4182
+   },
+   {
+    "bin": "0.45-0.50",
+    "n": 135,
+    "predicted": 0.4636,
+    "actual": 0.4593
+   },
+   {
+    "bin": "0.50-0.55",
+    "n": 74,
+    "predicted": 0.5227,
+    "actual": 0.5811
+   },
+   {
+    "bin": "0.55-0.60",
+    "n": 41,
+    "predicted": 0.5694,
+    "actual": 0.7317
+   },
+   {
+    "bin": "0.60-0.70",
+    "n": 24,
+    "predicted": 0.6244,
+    "actual": 0.6667
+   }
+  ]
+ },
+ "engine_picks_by_market": {
+  "assists": {
+   "n": 93,
+   "status": "too few (93/200); failing so far: calibration, EV at close",
+   "works": false,
+   "wins": 56,
+   "roi": 0.22130731889031494,
+   "calibration": {
+    "name": "calibration",
+    "value": 0.08725706295088657,
+    "low": -0.1477671466118214,
+    "high": 0.04873708503289324,
+    "passed": false,
+    "n": 93,
+    "note": "gap -5.0 pp"
+   },
+   "brier": {
+    "name": "brier vs close",
+    "value": -0.019981471519466245,
+    "low": -0.03811956392937399,
+    "high": -0.0018433791095584968,
+    "passed": true,
+    "n": 93,
+    "note": ""
+   },
+   "ev": {
+    "name": "EV at close",
+    "value": -0.06186567944407004,
+    "low": -0.06377078668394115,
+    "high": -0.05996057220419892,
+    "passed": false,
+    "n": 93,
+    "note": ""
+   },
+   "table": [
+    {
+     "bin": "0.45-0.50",
+     "n": 14,
+     "predicted": 0.4825,
+     "actual": 0.5
+    },
+    {
+     "bin": "0.50-0.55",
+     "n": 34,
+     "predicted": 0.5222,
+     "actual": 0.4706
+    },
+    {
+     "bin": "0.55-0.60",
+     "n": 23,
+     "predicted": 0.5711,
+     "actual": 0.7826
+    },
+    {
+     "bin": "0.60-0.70",
+     "n": 22,
+     "predicted": 0.625,
+     "actual": 0.6818
+    }
+   ]
+  },
+  "h2h": {
+   "n": 526,
+   "status": "does not work: fails calibration, brier vs close, EV at close",
+   "works": false,
+   "wins": 62,
+   "roi": -0.29277566539923955,
+   "calibration": {
+    "name": "calibration",
+    "value": 0.048710589300177284,
+    "low": 0.021731008128388893,
+    "high": 0.07569017047196568,
+    "passed": false,
+    "n": 526,
+    "note": "gap +4.9 pp"
+   },
+   "brier": {
+    "name": "brier vs close",
+    "value": 0.0014179378888145816,
+    "low": 0.00014969067669414696,
+    "high": 0.002686185100935016,
+    "passed": false,
+    "n": 526,
+    "note": ""
+   },
+   "ev": {
+    "name": "EV at close",
+    "value": -0.04176700973719086,
+    "low": -0.04215714400071773,
+    "high": -0.041376875473663983,
+    "passed": false,
+    "n": 526,
+    "note": ""
+   },
+   "table": [
+    {
+     "bin": "0.00-0.40",
+     "n": 526,
+     "predicted": 0.1666,
+     "actual": 0.1179
+    }
+   ]
+  },
+  "points": {
+   "n": 169,
+   "status": "too few (169/200); failing so far: brier vs close, EV at close",
+   "works": false,
+   "wins": 73,
+   "roi": 0.06627218934911247,
+   "calibration": {
+    "name": "calibration",
+    "value": 0.03557056375384204,
+    "low": -0.050887919230588975,
+    "high": 0.09845710712578015,
+    "passed": true,
+    "n": 169,
+    "note": "gap +2.4 pp"
+   },
+   "brier": {
+    "name": "brier vs close",
+    "value": -0.002981333486359519,
+    "low": -0.015346596780157734,
+    "high": 0.009383929807438695,
+    "passed": false,
+    "n": 169,
+    "note": ""
+   },
+   "ev": {
+    "name": "EV at close",
+    "value": -0.07662314376737775,
+    "low": -0.07771843494135268,
+    "high": -0.07552785259340282,
+    "passed": false,
+    "n": 169,
+    "note": ""
+   },
+   "table": [
+    {
+     "bin": "0.40-0.45",
+     "n": 53,
+     "predicted": 0.4442,
+     "actual": 0.3962
+    },
+    {
+     "bin": "0.45-0.50",
+     "n": 114,
+     "predicted": 0.4603,
+     "actual": 0.4386
+    },
+    {
+     "bin": "0.50-0.55",
+     "n": 2,
+     "predicted": 0.502,
+     "actual": 1.0
+    }
+   ]
+  },
+  "rebounds": {
+   "n": 67,
+   "status": "too few (67/200); failing so far: calibration, EV at close",
+   "works": false,
+   "wins": 45,
+   "roi": 0.43536356354007233,
+   "calibration": {
+    "name": "calibration",
+    "value": 0.14718478968575316,
+    "low": -0.25406977923634055,
+    "high": -0.0261414087170926,
+    "passed": false,
+    "n": 67,
+    "note": "gap -14.0 pp"
+   },
+   "brier": {
+    "name": "brier vs close",
+    "value": -0.033397263829981066,
+    "low": -0.05356192854192259,
+    "high": -0.013232599118039541,
+    "passed": true,
+    "n": 67,
+    "note": ""
+   },
+   "ev": {
+    "name": "EV at close",
+    "value": -0.061032022957359176,
+    "low": -0.0629140352551789,
+    "high": -0.059150010659539454,
+    "passed": false,
+    "n": 67,
+    "note": ""
+   },
+   "table": [
+    {
+     "bin": "0.40-0.45",
+     "n": 2,
+     "predicted": 0.4402,
+     "actual": 1.0
+    },
+    {
+     "bin": "0.45-0.50",
+     "n": 7,
+     "predicted": 0.4805,
+     "actual": 0.7143
+    },
+    {
+     "bin": "0.50-0.55",
+     "n": 38,
+     "predicted": 0.5242,
+     "actual": 0.6579
+    },
+    {
+     "bin": "0.55-0.60",
+     "n": 18,
+     "predicted": 0.5673,
+     "actual": 0.6667
+    },
+    {
+     "bin": "0.60-0.70",
+     "n": 2,
+     "predicted": 0.6186,
+     "actual": 0.5
+    }
+   ]
+  }
+ },
+ "rebound_unders": {
+  "n": 49,
+  "status": "too few (49/200); failing so far: calibration, EV at close",
+  "works": false,
+  "wins": 31,
+  "roi": 0.33039507667724166,
+  "calibration": {
+   "name": "calibration",
+   "value": 0.10517407777011907,
+   "low": -0.2322309821717456,
+   "high": 0.04124225979499528,
+   "passed": false,
+   "n": 49,
+   "note": "gap -9.5 pp"
+  },
+  "brier": {
+   "name": "brier vs close",
+   "value": -0.02497752805652616,
+   "low": -0.04899375601496317,
+   "high": -0.0009613000980891566,
+   "passed": true,
+   "n": 49,
+   "note": ""
+  },
+  "ev": {
+   "name": "EV at close",
+   "value": -0.060951516106108355,
+   "low": -0.0625816710918836,
+   "high": -0.05932136112033311,
+   "passed": false,
+   "n": 49,
+   "note": ""
+  },
+  "table": [
+   {
+    "bin": "0.40-0.45",
+    "n": 2,
+    "predicted": 0.4402,
+    "actual": 1.0
+   },
+   {
+    "bin": "0.45-0.50",
+    "n": 2,
+    "predicted": 0.4797,
+    "actual": 0.5
+   },
+   {
+    "bin": "0.50-0.55",
+    "n": 27,
+    "predicted": 0.5243,
+    "actual": 0.5926
+   },
+   {
+    "bin": "0.55-0.60",
+    "n": 16,
+    "predicted": 0.568,
+    "actual": 0.6875
+   },
+   {
+    "bin": "0.60-0.70",
+    "n": 2,
+    "predicted": 0.6186,
+    "actual": 0.5
+   }
+  ]
+ },
+ "primary_ballhandler_assists": {
+  "n": 8,
+  "status": "too few (8/200); failing so far: calibration, EV at close",
+  "works": false,
+  "wins": 7,
+  "roi": 0.6443888941171549,
+  "calibration": {
+   "name": "calibration",
+   "value": 0.28101391115017393,
+   "low": -0.5146675214201376,
+   "high": -0.04736030088021023,
+   "passed": false,
+   "n": 8,
+   "note": "gap -28.1 pp"
+  },
+  "brier": {
+   "name": "brier vs close",
+   "value": -0.06838757383935475,
+   "low": -0.1109746834474295,
+   "high": -0.025800464231279997,
+   "passed": true,
+   "n": 8,
+   "note": ""
+  },
+  "ev": {
+   "name": "EV at close",
+   "value": -0.0625181048353144,
+   "low": -0.06439340679522214,
+   "high": -0.06064280287540668,
+   "passed": false,
+   "n": 8,
+   "note": ""
+  },
+  "table": [
+   {
+    "bin": "0.55-0.60",
+    "n": 5,
+    "predicted": 0.574,
+    "actual": 0.8
+   },
+   {
+    "bin": "0.60-0.70",
+    "n": 3,
+    "predicted": 0.6273,
+    "actual": 1.0
+   }
+  ]
+ },
+ "primary_ballhandler_assist_lines": {
+  "n": 2425,
+  "over_rate": 0.4577319587628866,
+  "engine_p_over": 0.44147464529666386,
+  "novig_over": 0.49909303212810124
+ },
+ "engine_game_picks_at_open_vs_close": {
+  "n": 439,
+  "status": "does not work: fails brier vs close",
+  "works": false,
+  "wins": 68,
+  "roi": -0.03257403189066057,
+  "calibration": {
+   "name": "calibration",
+   "value": 0.00810496331111088,
+   "low": -0.02484521368349569,
+   "high": 0.04105514030571749,
+   "passed": true,
+   "n": 439,
+   "note": "gap +0.8 pp"
+  },
+  "brier": {
+   "name": "brier vs close",
+   "value": 0.006274204322478479,
+   "low": 0.000959423428003859,
+   "high": 0.0115889852169531,
+   "passed": false,
+   "n": 439,
+   "note": ""
+  },
+  "ev": {
+   "name": "EV at close",
+   "value": 0.050413756501872735,
+   "low": 0.01917602957268951,
+   "high": 0.08165148343105597,
+   "passed": true,
+   "n": 439,
+   "note": ""
+  },
+  "table": [
+   {
+    "bin": "0.00-0.40",
+    "n": 439,
+    "predicted": 0.163,
+    "actual": 0.1549
+   }
+  ]
+ },
+ "engine_game_picks_at_open_by_market": {
+  "h2h": {
+   "n": 439,
+   "status": "does not work: fails brier vs close",
+   "works": false,
+   "wins": 68,
+   "roi": -0.03257403189066057,
+   "calibration": {
+    "name": "calibration",
+    "value": 0.00810496331111088,
+    "low": -0.02484521368349569,
+    "high": 0.04105514030571749,
+    "passed": true,
+    "n": 439,
+    "note": "gap +0.8 pp"
+   },
+   "brier": {
+    "name": "brier vs close",
+    "value": 0.006274204322478479,
+    "low": 0.000959423428003859,
+    "high": 0.0115889852169531,
+    "passed": false,
+    "n": 439,
+    "note": ""
+   },
+   "ev": {
+    "name": "EV at close",
+    "value": 0.050413756501872735,
+    "low": 0.01917602957268951,
+    "high": 0.08165148343105597,
+    "passed": true,
+    "n": 439,
+    "note": ""
+   },
+   "table": [
+    {
+     "bin": "0.00-0.40",
+     "n": 439,
+     "predicted": 0.163,
+     "actual": 0.1549
+    }
+   ]
+  }
+ }
+}

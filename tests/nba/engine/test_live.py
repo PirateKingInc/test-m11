@@ -66,3 +66,12 @@ def test_props_priced_from_the_players_cdf(pads):
     props = {(name, "points"): {"draftkings": (med + 8.5, -110, -110)}}
     picks = K.best_picks(K.prop_candidates(game, props, DESIGN), DESIGN)
     assert len(picks) == 1 and picks[0].side == "under" and picks[0].player == pl["name"]
+
+
+def test_broken_two_way_quotes_never_become_picks(pads):
+    doc, _ = _doc(pads)
+    game = doc["games"][0]
+    pl = max(game["players"], key=lambda x: x["mean"]["pts"] or 0)
+    props = {(pl["name"].lower(), "points"): {"draftkings": (pl["median"]["pts"] + 8.5, 1600,
+                                                            1200)}}  # fmt: skip
+    assert K.prop_candidates(game, props, DESIGN) == []

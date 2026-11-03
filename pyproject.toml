@@ -41,7 +41,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["migrations/versions"]  # generated; keep as Alembic wrote them
+extend-exclude = ["migrations/versions", "scripts/m20"]  # generated; M20 one-off drivers kept as run
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
