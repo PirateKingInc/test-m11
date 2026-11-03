@@ -37,8 +37,10 @@ def prepare(tg: pd.DataFrame) -> pd.DataFrame:
     return t
 
 
-def team_states(tg: pd.DataFrame, pads: dict) -> pd.DataFrame:
-    """After each team-game: the shrunk estimate of every TEAM_RATES rate."""
+def team_states(tg: pd.DataFrame, pads: dict, era: bool = False) -> pd.DataFrame:
+    """After each team-game: the shrunk estimate of every TEAM_RATES rate. With `era`, a
+    season's prior regresses to the previous season's league level (known before the season)
+    instead of the training average (M20 adjustment 3 to B7)."""
     t = prepare(tg).dropna(subset=["o_poss"]).sort_values(["team_id", "tip"]).reset_index(
         drop=True)  # fmt: skip
     grp = t.team_id.astype(str) + "|" + t.season.astype(str)
@@ -54,11 +56,23 @@ def team_states(tg: pd.DataFrame, pads: dict) -> pd.DataFrame:
     last = pd.DataFrame({"team_id": t.team_id, "season": t.season + 1, **raw}).groupby(
         ["team_id", "season"]).tail(1).set_index(["team_id", "season"])  # fmt: skip
     pk = pd.MultiIndex.from_arrays([t.team_id, t.season])
+    by_season = {}
+    for name, (num, den) in TEAM_RATES.items():
+        agg = t.groupby("season")[[num, den]].sum()
+        by_season[name] = (agg[num] / agg[den]).rename(lambda x: x + 1)  # -> next season
+
+    def lg_of(name, seasons):
+        base = pads[f"team:{name}"]["league"]
+        if not era:
+            return np.full(len(seasons), base)
+        return by_season[name].reindex(np.asarray(seasons)).fillna(base).to_numpy()
+
     for name, (sx, sn) in sums.items():
         pd_ = pads[f"team:{name}"]
         prev = last[name].reindex(pk).to_numpy()
+        lg = lg_of(name, t.season)
         prior = np.where(np.isfinite(prev), pd_["season_r"] * prev
-                         + (1 - pd_["season_r"]) * pd_["league"], pd_["league"])  # fmt: skip
+                         + (1 - pd_["season_r"]) * lg, lg)  # fmt: skip
         out[name] = (sx + pd_["padding"] * prior) / (sn + pd_["padding"])
     out["season_prior"] = False
     # a season's first game reads the season prior only: one extra row per (team, season)
@@ -69,8 +83,9 @@ def team_states(tg: pd.DataFrame, pads: dict) -> pd.DataFrame:
     for name in TEAM_RATES:
         pd_ = pads[f"team:{name}"]
         prev = last[name].reindex(pd.MultiIndex.from_arrays([pri.team_id, pri.season])).to_numpy()
+        lg = lg_of(name, pri.season)
         pri[name] = np.where(np.isfinite(prev), pd_["season_r"] * prev
-                             + (1 - pd_["season_r"]) * pd_["league"], pd_["league"])  # fmt: skip
+                             + (1 - pd_["season_r"]) * lg, lg)  # fmt: skip
     pri["season_prior"] = True
     return pd.concat([out, pri], ignore_index=True).sort_values("known_at").reset_index(
         drop=True)  # fmt: skip
@@ -92,7 +107,13 @@ def asof(states: pd.DataFrame, team_ids, ts, seasons) -> pd.DataFrame:
 H_LEAGUE = 300  # team-games (about three weeks of the league)
 # credit: the share of a team's missed field goals rebounded by a player (the rest are team
 # rebounds, which box scores do not give any player)
-LEAGUE_RATES = {**TEAM_RATES, "use": ("_use", "poss"), "credit": ("_reb_ch", "_miss")}
+LEAGUE_RATES = {**TEAM_RATES, "use": ("_use", "poss"), "credit": ("_reb_ch", "_miss"),
+                # the average player's per-on-court-possession rates and percentages (the
+                # era level for player priors, M20 adjustment 1 to B7)
+                **{f"player:{r}": (r, "_poss5") for r in ("fg2a", "fg3a", "fta", "oreb",
+                                                          "dreb", "ast", "tov")},
+                "player:usage": ("_use", "_poss5"), "player:fg2_pct": ("fg2m", "fg2a"),
+                "player:fg3_pct": ("fg3m", "fg3a"), "player:ft_pct": ("ftm", "fta")}
 
 
 def league_states(tg: pd.DataFrame) -> pd.DataFrame:
@@ -104,6 +125,7 @@ def league_states(tg: pd.DataFrame) -> pd.DataFrame:
     t["_use"] = t.fga + 0.44 * t.fta + t.tov
     t["_reb_ch"] = t.oreb + t.o_dreb
     t["_miss"] = t.fga - t.fgm
+    t["_poss5"] = 5 * t.poss
     starts = np.zeros(len(t), bool)
     if len(t):
         starts[0] = True

@@ -149,8 +149,8 @@ def asof_states(states: pd.DataFrame, keys: pd.DataFrame) -> pd.DataFrame:
 
 
 def player_frame(fit: Fit, states: pd.DataFrame, priors: pd.DataFrame, p: pd.DataFrame,
-                 sched: pd.DataFrame, inj: pd.DataFrame,
-                 cand: pd.DataFrame) -> pd.DataFrame:  # fmt: skip
+                 sched: pd.DataFrame, inj: pd.DataFrame, cand: pd.DataFrame,
+                 lstates: pd.DataFrame | None = None) -> pd.DataFrame:  # fmt: skip
     """Per candidate: as-of state, role change, play probability and shrunk estimates."""
     c = cand.copy()
     st = asof_states(states, c)
@@ -199,7 +199,12 @@ def player_frame(fit: Fit, states: pd.DataFrame, priors: pd.DataFrame, p: pd.Dat
     gone = _key_gone(p, sched, states, c)
     c["key_gone"] = gone
     c["role_change"] = c.new_team | c.starter_switch | c.key_gone
-    est = estimates(s2, fit.pads, fit.params, pri, c.role_change.to_numpy())
+    league_now = None
+    if lstates is not None and (fit.sim or {}).get("era_priors"):
+        lv = T.league_asof(lstates, c.t, {})
+        league_now = {k: lv[k].to_numpy() for k in lv.columns if k.startswith("player:")
+                      and np.isfinite(lv[k].to_numpy()).all()}  # fmt: skip
+    est = estimates(s2, fit.pads, fit.params, pri, c.role_change.to_numpy(), league_now)
     for col in est.columns:
         c[col] = est[col].to_numpy()
     return c
@@ -254,6 +259,10 @@ def team_factors(fit: Fit, tstates: pd.DataFrame, c: pd.DataFrame,
     out["use_team"] = now.use.to_numpy()
     out["lg_oreb"] = now.oreb_rate.to_numpy()
     out["credit"] = now.credit.to_numpy()
+    out["lg_fg2"] = (now["player:fg2_pct"] if "player:fg2_pct" in now else
+                     pd.Series(fit.pads["player:fg2_pct"]["league"], index=now.index)).to_numpy()
+    out["lg_fg3"] = (now["player:fg3_pct"] if "player:fg3_pct" in now else
+                     pd.Series(fit.pads["player:fg3_pct"]["league"], index=now.index)).to_numpy()
     return out
 
 
@@ -300,6 +309,12 @@ def means(fit: Fit, c: pd.DataFrame, tf: pd.DataFrame, gmin: np.ndarray | None =
     d["fta_m"] = d.fta * scale * d.poss_on
     d["tov_m"] = d.tov * d.f_tov * scale * d.poss_on
     home = np.where(d.is_home, 1 + fit.home, 1 - fit.home)
+    st = float((fit.sim or {}).get("stretch", 1.0))  # M20 adjustment 2 to B7
+    if st != 1.0:
+        for pc, lgc in (("fg2_pct", "lg_fg2"), ("fg3_pct", "lg_fg3")):
+            d[pc] = d[lgc] + st * (d[pc] - d[lgc])
+        for f in ("f_fg2p", "f_fg3p", "f_fg3a", "f_tov"):
+            d[f] = 1 + st * (d[f] - 1)
     d["fg2m_m"] = d.fg2a_m * np.clip(d.fg2_pct * d.f_fg2p * home, 0, 1)
     d["fg3m_m"] = d.fg3a_m * np.clip(d.fg3_pct * d.f_fg3p * home, 0, 1)
     d["ftm_m"] = d.fta_m * np.clip(d.ft_pct, 0, 1)

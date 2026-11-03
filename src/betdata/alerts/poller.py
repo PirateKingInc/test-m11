@@ -348,6 +348,8 @@ class Poller:
         # replaces M16's Signal 1 for the NBA.
         self.signal_value("nba", gid, first_event, report.name, rp, qs, players, reason,
                           report.report_at, now, models.p_over)
+        # M20: a qualifying status change re-simulates the game with the engine
+        self._guard(f"engine {gid}", self.engine_picks, gid, qs, now, f"injury: {why}", True)
 
     # --- Signal 1 -----------------------------------------------------------------------------
 
@@ -683,6 +685,9 @@ class Poller:
             self._guard(f"consensus {gid}", self.store_consensus, sport, gid, qs, now)
             if sport == "nba" and new:
                 self._guard(f"snipes {gid}", self.snipes, gid, new, now)
+            if sport == "nba":  # M20: the hourly sweep and new lines trigger engine picks
+                self._guard(f"engine {gid}", self.engine_picks, gid, qs, now,
+                            "new line" if new else "hourly")  # fmt: skip
             done += 1
         with self.pdb.begin() as p:
             set_state(p, "sweep:queue", queue, now)
@@ -707,6 +712,82 @@ class Poller:
                     C.store(p, c)
                     n += 1
         return n
+
+    # --- M20 Part E: the NBA engine's picks (research, never pushed or carded) -----------------
+
+    def engine_game(self, gid: int, now: datetime, resim: bool) -> dict | None:
+        """The engine's document for one game: the hourly file's, or re-simulated now (after
+        news, or when the file lacks the game). The engine is built once per job."""
+        from betdata.nba.engine import live as L
+
+        if not resim:
+            doc = L.read(L.LIVE_PATH, now)
+            g = next((x for x in (doc or {}).get("games", []) if x["game_id"] == gid), None)
+            if g is not None:
+                return g
+        if not L.FIT_PATH.exists():
+            return None
+        with self.main.connect() as c:
+            if getattr(self, "_engine", None) is None:
+                self._engine = L.build_engine(c, now)
+            else:  # the latest injury rows (the report was just loaded)
+                from betdata.nba.data import load_injuries
+
+                self._engine.inp.inj = load_injuries(c, self._engine.inp.g)
+            doc = L.predict_live(c, now, self._engine, [gid])
+        return doc["games"][0] if doc["games"] else None
+
+    def engine_picks(self, gid: int, qs: list[Quote], now: datetime, trigger: str,
+                     resim: bool = False) -> list[int]:  # fmt: skip
+        from betdata.alerts import consensus as C
+        from betdata.alerts.notify import record
+        from betdata.nba.engine import live as L
+        from betdata.nba.engine import picks as K
+
+        if not L.FIT_PATH.exists():
+            return []
+        design = K.Design.from_json(L.load_fit()[1]["design"])
+        game = self.engine_game(gid, now, resim)
+        if game is None:
+            return []
+        two_way: dict = {}
+        for (_, market), books in _two_way(qs, now).items():
+            two_way[market] = {b: (tw.line, tw.price_a, tw.price_b) for b, tw in books.items()}
+        props: dict = {}
+        for book in K.BOOKS:
+            for (name, market), x in _props(qs, book).items():
+                props.setdefault((name, market), {})[book] = (x["line"], x.get("over"),
+                                                              x.get("under"))  # fmt: skip
+        with self.pdb.connect() as p, self.main.connect() as m:
+            def gcons(market, side, line):
+                c = C.game_consensus(p, m, "nba", gid, market, now)
+                return None if c is None else c.prob(side, line)
+
+            def pcons(market, name, line):
+                c = C.prop_consensus(p, "nba", gid, market, name, now, line)
+                return None if c is None else c.prob("over", line)
+
+            cands = (K.game_candidates(game, two_way, design, gcons)
+                     + K.prop_candidates(game, props, design, pcons, _norm))  # fmt: skip
+        label, tip = self.game_label(gid)
+        out = []
+        for c in K.best_picks(cands, design):
+            reason = (f"NBA engine ({trigger}): P({c.side}) engine {100 * c.p_engine:.1f}%, "
+                      f"market {100 * c.p_market:.1f}% ({c.market_source}), fair "
+                      f"{100 * c.fair:.1f}%, EV {100 * c.ev:+.1f}% at {c.book} {c.price:+d}")
+            a = Alert("engine", "nba", gid, label, tip, c.market, c.side, c.line, c.price,
+                      c.book, reason, K.dedup_key(gid, c), c.fair, c.book_nv, c.player, None,
+                      True, {"p_engine": c.p_engine, "p_market": c.p_market,
+                             "market_source": c.market_source, "ev": c.ev, "trigger": trigger,
+                             "theta": design.theta["prop" if c.player else "game"],
+                             "version": game.get("version")})  # fmt: skip
+            with self.pdb.begin() as pc:
+                aid = record(pc, a, now)
+            if aid is not None:
+                out.append(aid)
+        if out:
+            self.notes.append(f"engine {gid}: {len(out)} picks ({trigger})")
+        return out
 
     # --- M18 Part G1: early-season NBA totals (paper) -----------------------------------------
 

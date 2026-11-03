@@ -113,12 +113,14 @@ def platt_fit(p, y) -> tuple[float, float, float]:
     p = np.clip(np.asarray(p, float), 1e-6, 1 - 1e-6)
     x = np.log(p / (1 - p))
     y = np.asarray(y, float)
+    if np.ptp(x) < 1e-9:  # a constant probability (w = 0 on a -110/-110 market): nothing to fit
+        return 1.0, 0.0, float("inf")
     m = LogisticRegression(C=1e10, max_iter=1000).fit(x.reshape(-1, 1), y)
     a, b = float(m.coef_[0][0]), float(m.intercept_[0])
     mu = 1 / (1 + np.exp(-(a * x + b)))
     X = np.column_stack([x, np.ones_like(x)])
     H = X.T @ (X * (mu * (1 - mu))[:, None])
-    return a, b, float(math.sqrt(np.linalg.inv(H)[0, 0]))
+    return a, b, float(math.sqrt(abs(np.linalg.pinv(H)[0, 0])))
 
 
 def apply_platt(p, cal: tuple[float, float] | None) -> np.ndarray:

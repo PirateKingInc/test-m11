@@ -108,7 +108,7 @@ def _league(pads: dict, name: str) -> float:
 
 
 def estimates(st: pd.DataFrame, pads: dict, prm: Params, prior: pd.DataFrame | None,
-              change: np.ndarray) -> pd.DataFrame:  # fmt: skip
+              change: np.ndarray, league_now: dict | None = None) -> pd.DataFrame:  # fmt: skip
     """Shrunk estimates from state rows `st` (aligned with `prior` rows and `change` flags):
     per-possession rates, percentages, usage and the two minutes shares."""
     out = pd.DataFrame(index=st.index)
@@ -123,7 +123,9 @@ def estimates(st: pd.DataFrame, pads: dict, prm: Params, prior: pd.DataFrame | N
         return res
 
     def pri(name: str, key: str) -> np.ndarray:
-        lg = _league(pads, key)
+        # the league's level as of the point (era), else the training average
+        lg = (league_now[key] if league_now is not None and key in league_now
+              else _league(pads, key))  # fmt: skip
         r = pads[key]["season_r"]
         if prior is None or name not in prior:
             return np.full(len(st), lg)

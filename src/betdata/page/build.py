@@ -640,7 +640,7 @@ def build_site(conn: Connection, settings: Settings, entries: list[SportEntry],
     status["official_sections"] = official
     tabs = list(entries)
     if research or rows:
-        panels["research"] = _research(rows, research, out_dir)
+        panels["research"] = _research(rows, research, out_dir, now)
         tabs.append(SportEntry(key="research", name="Research", status=ACTIVE))
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(render(tabs, panels, status))
@@ -679,19 +679,28 @@ def _m19(sport: Sport, conn: Connection, poller, now: datetime, rows: list[dict]
         return None
 
 
-def _research(rows: list[dict] | None, parts: list[list[str]], out_dir: Path) -> str:
+def _research(rows: list[dict] | None, parts: list[list[str]], out_dir: Path,
+              now: datetime | None = None) -> str:  # fmt: skip
     """The Research tab: each signal's research record and gate, then each sport's models."""
     from betdata.page.official import research_html
 
     head = ("<p class='meta research-note'>Research, not official picks. Official picks are "
             "the daily card on each sport's tab.</p>")
-    sig = ""
+    sig = eng = ""
     if rows is not None:
         try:
             sig = research_html(rows, out_dir)
         except Exception as e:  # never lose the page over the research records
             log.warning("research records failed: %s", e)
-    return head + sig + "".join("\n".join(p) for p in parts)
+        try:  # M20: the NBA engine's section (Research tab only)
+            from betdata.nba.engine.live import read
+            from betdata.page.engine_research import engine_html
+
+            today = (now or datetime.now(UTC)).astimezone(EASTERN).date()
+            eng = engine_html(rows, today, out_dir, read())
+        except Exception as e:  # never lose the page over the engine section
+            log.warning("nba engine section failed: %s", e)
+    return head + eng + sig + "".join("\n".join(p) for p in parts)
 
 
 def _ledger(out_dir: Path) -> list[dict] | None:
