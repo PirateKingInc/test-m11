@@ -310,3 +310,46 @@ P790502cf4eb9,8.0,,,BKN 98-90 IND,[],3.5,2.06,Variance,2026-11-03T00:00:32+00:00
 P6deef1098f40,8.0,,,BKN 98-90 IND,[],,1.96,Variance,2026-11-03T00:00:32+00:00
 P6b9b27981ec0,188.0,,,BKN 98-90 IND,[],229.5,-3.47,Market disagreed,2026-11-03T00:00:32+00:00
 P0e63df5412c1,256.0,,,TOR 125-131 LAL,[],223.5,-2.03,Market disagreed,2026-11-03T00:00:32+00:00
+P7d0dda8f3791,4.0,33.0,,OKC 117-112 CLE,[],3.5,3.12,not enough data,2026-11-03T12:00:29+00:00
+Pe106546df2e8,11.0,36.0,,OKC 117-112 CLE,[],4.5,2.66,Variance,2026-11-03T12:00:29+00:00
+Pe76c486ebcde,6.0,33.0,,OKC 117-112 CLE,[],6.5,-3.05,not enough data,2026-11-03T12:00:29+00:00
+Pc0f24a75d3d5,9.0,27.0,,OKC 117-112 CLE,[],2.5,1.18,not enough data,2026-11-03T12:00:29+00:00
+Pd78247a994a9,2.0,12.0,,OKC 117-112 CLE,[],1.5,-4.68,not enough data,2026-11-03T12:00:29+00:00
+Pb75f6d381e7f,3.0,39.0,,OKC 117-112 CLE,[],3.5,-0.59,not enough data,2026-11-03T12:00:29+00:00
+P46dd905fb08d,6.0,28.0,,OKC 117-112 CLE,[],7.5,-1.31,not enough data,2026-11-03T12:00:29+00:00
+P09d79e32ac38,2.0,23.0,,CHI 107-126 PHI,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",1.5,1.56,News after pick,2026-11-03T12:00:29+00:00
+Pfcc0ab5a75fc,5.0,33.0,,CHI 107-126 PHI,[],2.5,-15.78,not enough data,2026-11-03T12:00:29+00:00
+P48ecce24c770,10.0,32.0,,CHI 107-126 PHI,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",7.5,4.6,News after pick,2026-11-03T12:00:29+00:00
+Pff06d6a2283a,4.0,36.0,,CHI 107-126 PHI,[],3.5,2.75,not enough data,2026-11-03T12:00:29+00:00
+P6477a8a40255,3.0,29.0,,CHI 107-126 PHI,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,-0.11,News after pick,2026-11-03T12:00:29+00:00
+Pc961552dbe0d,7.0,28.0,,CHI 107-126 PHI,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",7.5,1.36,News after pick,2026-11-03T12:00:29+00:00
+Pd1f37289da43,4.0,32.0,,CHI 107-126 PHI,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",5.5,-0.32,News after pick,2026-11-03T12:00:29+00:00
+Pd3b262b811bb,6.0,33.0,,OKC 117-112 CLE,[],6.5,-2.34,not enough data,2026-11-03T12:00:29+00:00
+Pbe83608e274b,1.0,28.0,,OKC 117-112 CLE,[],1.5,7.11,not enough data,2026-11-03T12:00:29+00:00
+Pf8de46238c27,4.0,33.0,,OKC 117-112 CLE,[],3.5,5.93,not enough data,2026-11-03T12:00:29+00:00
+P1767e71ab46a,2.0,27.0,,OKC 117-112 CLE,[],1.5,2.45,not enough data,2026-11-03T12:00:29+00:00
+Pc7b8ca41ea05,5.0,33.0,,CHI 107-126 PHI,[],2.5,-15.37,not enough data,2026-11-03T12:00:29+00:00
+P8a91c2b3fc24,5.0,33.0,,CHI 107-126 PHI,[],3.5,-12.09,not enough data,2026-11-03T12:00:29+00:00
+Pc6bc4050052b,3.0,25.0,,CHI 107-126 PHI,[],4.5,-1.65,not enough data,2026-11-03T12:00:29+00:00
+Pe27f57204ce1,2.0,33.0,,WAS 103-94 ORL,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Out""}]",1.5,-1.41,News after pick,2026-11-03T12:00:29+00:00
+P2980c5525274,,,,WAS 103-94 ORL,"[{""player"": ""Anthony Black"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jalen Suggs"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Paolo Banchero"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,,,2026-11-03T12:00:29+00:00
+P240f3e94079d,4.0,37.0,,WAS 103-94 ORL,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,-0.6,News after pick,2026-11-03T12:00:29+00:00
+P023380953711,2.0,33.0,,WAS 103-94 ORL,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Out""}]",1.5,6.25,News after pick,2026-11-03T12:00:29+00:00
+Pdbcaac6e3ffe,3.0,36.0,,WAS 103-94 ORL,"[{""player"": ""Anthony Black"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jalen Suggs"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Paolo Banchero"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,-1.3,News after pick,2026-11-03T12:00:29+00:00
+P4276ea1fc02b,9.0,34.0,,WAS 103-94 ORL,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Out""}]",9.5,1.37,News after pick,2026-11-03T12:00:29+00:00
+Pa67d04c1dc21,9.0,34.0,,WAS 103-94 ORL,"[{""player"": ""Anthony Black"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jalen Suggs"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Paolo Banchero"", ""from"": ""Available"", ""to"": ""Out""}]",8.5,3.53,News after pick,2026-11-03T12:00:29+00:00
+P17d9976e74e8,3.0,34.0,,WAS 103-94 ORL,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,2.01,News after pick,2026-11-03T12:00:29+00:00
+P6fb4bfb9cc75,,,,WAS 103-94 ORL,"[{""player"": ""Anthony Black"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jalen Suggs"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Paolo Banchero"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,,,2026-11-03T12:00:29+00:00
+Pb919bb751c00,4.0,31.0,,ATL 108-104 IND,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,-19.64,News after pick,2026-11-03T12:00:29+00:00
+P9d79e6eca481,3.0,33.0,,ATL 108-104 IND,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,-14.16,News after pick,2026-11-03T12:00:29+00:00
+Pa46b3c8fed8c,0.0,0.0,,ATL 108-104 IND,"[{""player"": ""Andrew Nembhard"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Pascal Siakam"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Tyrese Haliburton"", ""from"": ""Available"", ""to"": ""Out""}]",2.5,,,2026-11-03T12:00:29+00:00
+P49f3c11ef1c2,0.0,0.0,,ATL 108-104 IND,"[{""player"": ""Aaron Nesmith"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Andrew Nembhard"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Pascal Siakam"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Tyrese Haliburton"", ""from"": ""Available"", ""to"": ""Out""}]",1.5,,,2026-11-03T12:00:29+00:00
+Padc3f2626708,4.0,31.0,,ATL 108-104 IND,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,-22.94,News after pick,2026-11-03T12:00:29+00:00
+P5d4c3854a2f4,11.0,32.0,,ATL 108-104 IND,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,-16.56,News after pick,2026-11-03T12:00:29+00:00
+Pe4bd16554493,0.0,0.0,,ATL 108-104 IND,"[{""player"": ""Andrew Nembhard"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Pascal Siakam"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Tyrese Haliburton"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,,,2026-11-03T12:00:29+00:00
+Pdb82d45e18f3,10.0,33.0,,ATL 108-104 IND,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",9.5,-28.13,News after pick,2026-11-03T12:00:29+00:00
+P72771e32490a,3.0,45.0,,ATL 108-104 IND,[],4.5,-0.07,not enough data,2026-11-03T12:00:29+00:00
+Pf9fbd66cebc0,7.0,35.0,,ATL 108-104 IND,[],4.5,-19.43,not enough data,2026-11-03T12:00:29+00:00
+Pb60afe40d199,2.0,23.0,,CHI 107-126 PHI,[],4.5,13.71,not enough data,2026-11-03T12:00:29+00:00
+Pe352d79d5d7c,197.0,,,WAS 103-94 ORL,[],224.5,1.68,Variance,2026-11-03T12:00:29+00:00
+P5117a1b82442,212.0,,,ATL 108-104 IND,[],227.5,0.48,Variance,2026-11-03T12:00:29+00:00
