@@ -164,20 +164,29 @@ def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
 
 
 def research_html(rows: list[dict], site: Path) -> str:
-    """Each signal's research record (all its picks, graded only, flat 1 unit) and its gate."""
+    """Each signal's research record (all its picks, graded only, flat 1 unit), its three
+    checks (M20 Part A) and the earlier M18 CLV gate."""
     from betdata.alerts.gates import GATE_N, gate
+    from betdata.checks import N_WORKS, RETIRED, picks_of, summary_line, three_checks
 
     out = ["<section class='research'><h2>Signals (research, not official picks)</h2>"
-           "<p class='meta'>Every graded pick of each signal, card or not, at a flat 1 unit. A "
-           "signal is judged "
-           f"by its CLV at {GATE_N} graded picks.</p><ul class='plist'>"]
+           "<p class='meta'>Every graded pick of each signal, card or not, at a flat 1 unit. "
+           f"Since M20 a signal works only if three checks pass over {N_WORKS} graded picks: "
+           "calibration, a Brier score closer than the closing no-vig line, and a positive "
+           "EV at the close (closing no-vig × odds taken − 1), each with a 95% range.</p>"
+           "<ul class='plist'>"]
     for name, rec in O.signals(rows).items():
         href = f"csv/signal-{name}.csv"
         O.write_csv(site / href, rec.rows)
         g = gate(rec.clvs)
+        ck = three_checks(picks_of(rec.rows))
+        retired = (f" <span class='meta'>retired {escape(RETIRED[name])}: no new picks"
+                   "</span>" if name in RETIRED else "")  # fmt: skip
         out.append(f"<li class='prop' data-signal='{escape(name)}'><div><b>{escape(name)}</b>"
-                   f"</div><div>{stat_line(rec, href)}</div><div class='meta'>Gate: {g['n']}/"
-                   f"{GATE_N} graded with CLV · {escape(g['status'])}</div></li>")
+                   f"{retired}</div><div>{stat_line(rec, href)}</div>"
+                   f"<div class='meta' data-checks='{escape(ck.status)}'>Three checks: "
+                   f"{escape(summary_line(ck))}</div><div class='meta'>M18 CLV gate: "
+                   f"{g['n']}/{GATE_N} graded with CLV · {escape(g['status'])}</div></li>")
     out.append("</ul></section>")
     return "".join(out)
 

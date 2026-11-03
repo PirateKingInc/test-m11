@@ -154,3 +154,14 @@ def alerts_page(db: Path = typer.Option(Path("data/poller.sqlite"), help="Poller
     from betdata.alerts.page import publish
 
     typer.echo(publish(db, site))
+
+
+@alerts_app.command("checks")
+def alerts_checks(ledger: Path = typer.Option(None, help="Ledger folder (default ledger/).")):
+    """M20 Part A: the three checks per signal (calibration, Brier vs the closing no-vig, EV
+    at the close) with 95% ranges, the reliability tables and the CLV split."""
+    from betdata.checks import report
+    from betdata.ledger import ledger_dir
+    from betdata.official import dataset
+
+    typer.echo(report(dataset(ledger or ledger_dir())))

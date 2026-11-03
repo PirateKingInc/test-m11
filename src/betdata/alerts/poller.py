@@ -52,6 +52,8 @@ CLOSING_MIN = 10
 NBA_BOARDS_ET = ((17, 30), (18, 45))
 NFL_BOARD_BEFORE = timedelta(minutes=75)
 G1_BEFORE = timedelta(minutes=10)  # M18 G1: the early-season totals check, ten minutes out
+# M20 Part A: G1 and G2 are retired (no new picks); their ledger history and grading stay.
+RETIRED = frozenset({"g1", "g2"})
 
 
 def utc(t: datetime) -> datetime:
@@ -184,8 +186,9 @@ class Poller:
                                                          get_state(p, "sweep:queue", []),
                                                          start, end):  # fmt: skip
                 return True
-        if self.sharp is not None and any(start <= tip - G1_BEFORE <= end + timedelta(minutes=5)
-                                          for _, tip in self.g1_games(start)):  # fmt: skip
+        g1_on = "g1" not in RETIRED and self.sharp is not None
+        if g1_on and any(start <= tip - G1_BEFORE <= end + timedelta(minutes=5)
+                         for _, tip in self.g1_games(start)):  # fmt: skip
             return True
         try:  # tonight's card is chosen 30 minutes before a sport's first game
             from betdata.alerts.card import pending
@@ -224,7 +227,8 @@ class Poller:
         self._guard("sharp boards", self.sharp_boards, now)
         self._guard("closing polls", self.closing_polls, now)
         self._guard("sweep", self.sweep, now)
-        self._guard("g1", self.g1_check, now)
+        if "g1" not in RETIRED:
+            self._guard("g1", self.g1_check, now)
         self._guard("card", self.card, now)
         self._guard("tracker", self.tracker, now)
 
@@ -594,7 +598,7 @@ class Poller:
                 soft = self.sharp.board(c, sport, now + timedelta(hours=6))
             self.store_quotes(pin + soft, now)
             self.signal_sharp(sport, pin, soft, now)
-            if sport == "nfl":
+            if sport == "nfl" and "g2" not in RETIRED:
                 self._guard("g2 rungs", self.g2_rungs, now)
 
     def signal_sharp(self, sport: str, pin: list[Quote], soft: list[Quote],
