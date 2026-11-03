@@ -2421,7 +2421,7 @@ For each: **split-half** reliability (odd vs even games within a season; players
 Overtime is always competitive. The definition with the lowest validation MAE of the minutes projection (B6, pretip, every rotation player) wins; ties go to CM1 (simplest).
 
 **B4. Outlier games** (per player-game, from stints and the box):
-- **blowout:** the game had ≥ 6 non-competitive minutes (chosen definition);
+- **blowout:** the game had ≥ 3 non-competitive minutes (chosen definition; CM1 spans only the last 5 minutes, so 6 could never be reached — corrected before any result);
 - **overtime:** the game went past 48 minutes;
 - **foul trouble:** 5+ personal fouls;
 - **early exit:** the player's last stint ended before the final 12 minutes of regulation, he did not return, the game was not a blowout, and he played < 60% of his projection (injury exits and ejections; the stored data cannot tell them apart, so they share one flag).
