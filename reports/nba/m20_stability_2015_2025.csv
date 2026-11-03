@@ -1,0 +1,24 @@
+level,rate,unit,league,units,split_half_r,spearman_brown_r,median_half_n,padding,season_to_season_r,season_pairs
+player,fg2a,possessions,0.1092,4767,0.948,0.973,1401.7,77.6,0.878,3426
+player,fg3a,possessions,0.065,4767,0.956,0.978,1401.7,64.1,0.902,3426
+player,fta,possessions,0.0449,4767,0.849,0.919,1401.7,248.4,0.85,3426
+player,oreb,possessions,0.0206,4767,0.89,0.942,1401.7,172.4,0.925,3426
+player,dreb,possessions,0.0667,4767,0.89,0.942,1401.7,173.4,0.898,3426
+player,ast,possessions,0.0488,4767,0.929,0.963,1401.7,106.5,0.899,3426
+player,tov,possessions,0.0266,4767,0.749,0.856,1401.7,470.6,0.804,3426
+player,usage,possessions,0.2206,4767,0.948,0.973,1401.7,77.7,0.866,3426
+player,fg2_pct,attempts,0.5258,4767,0.479,0.648,121.0,131.6,0.34,4275
+player,fg3_pct,attempts,0.3591,4767,0.319,0.484,74.0,158.1,0.298,4275
+player,ft_pct,attempts,0.7743,4767,0.463,0.633,45.0,52.2,0.457,4275
+player,comp_share,games,0.4714,4767,0.985,0.993,32.0,0.5,0.786,4275
+player,garbage_share,games,0.4241,1454,0.874,0.933,13.0,1.9,0.659,4212
+team,pace,games,99.9467,330,0.918,0.957,42.0,3.8,0.538,300
+team,off_ppp,possessions,1.0983,330,0.861,0.925,4267.0,688.5,0.675,300
+team,def_ppp,possessions,1.0983,330,0.852,0.92,4266.7,743.9,0.713,300
+team,oreb_rate,chances,0.2362,330,0.845,0.916,1873.0,344.4,0.508,300
+team,dreb_rate,chances,0.7638,330,0.723,0.84,1858.0,710.2,0.541,300
+team,fg3a_allowed,possessions,0.3249,330,0.95,0.974,4266.7,225.0,0.824,300
+team,fg2_pct_allowed,attempts,0.5258,330,0.854,0.921,2338.5,399.5,0.76,300
+team,fg3_pct_allowed,attempts,0.3591,330,0.267,0.422,1395.0,3821.3,0.199,300
+team,tov_forced,possessions,0.1333,330,0.798,0.888,4266.7,1078.5,0.496,300
+team,ast_share,made FG,0.6048,330,0.897,0.946,1725.5,198.9,0.687,300
