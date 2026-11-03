@@ -558,3 +558,8 @@ def freeze15_cmd():
     from betdata.nba.select15 import freeze15
 
     typer.echo(f"wrote {freeze15()}")
+
+
+from betdata.nba.engine.cli import engine_app  # noqa: E402  (M20)
+
+nba_app.add_typer(engine_app, name="engine")

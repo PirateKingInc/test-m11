@@ -67,8 +67,11 @@ def context(inp: Inputs, c: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
 class Engine:
     """States built once per (params); predictions for any games and points."""
 
-    def __init__(self, inp: Inputs, fit: P.Fit, states: pd.DataFrame | None = None):
+    def __init__(self, inp: Inputs, fit: P.Fit, states: pd.DataFrame | None = None,
+                 addons=None):  # fmt: skip
         self.inp, self.fit = inp, fit
+        self.addons = set(addons if addons is not None else fit.sim.get("addons", []))
+        self._d1 = None
         self.states = states if states is not None else player_states(inp.p, fit.pads,
                                                                       fit.params)  # fmt: skip
         self.priors = season_priors(self.states, fit.pads, fit.params)
@@ -98,12 +101,22 @@ class Engine:
         # the game after a return: the streak of missed games says so too
         sr = np.where(same, st.since_return.to_numpy(), 99)
         c["n_since_return"] = np.where(c.streak.to_numpy() >= 3, 0, sr)
+        if "d1" in self.addons:
+            from betdata.nba.engine import addons as A
+
+            if self._d1 is None:
+                self._d1 = A.without_sums(inp.p, A.key_teammates(inp.p))
+            c = A.apply_d1(c, A.d1_factors(c, self._d1, self.fit.pads))
         return c
 
-    def means(self, c: pd.DataFrame, script: bool = True) -> pd.DataFrame:
+    def means(self, c: pd.DataFrame, script: bool | None = None) -> pd.DataFrame:
         tf = P.team_factors(self.fit, self.tstates, c, self.lstates)
         b2b, ret = context(self.inp, c)
+        if self.addons & {"d2", "d3"}:
+            c = self._d23(c, tf, b2b, ret)
         d = P.means(self.fit, c, tf, None, b2b, ret)
+        if script is None:
+            script = bool((self.fit.sim or {}).get("script", True))
         if not script:
             return d
         gm = P.game_means(d)
@@ -112,8 +125,49 @@ class Engine:
         G = P.expected_g(self.fit.g_curve, mu.reindex(key).to_numpy())
         return P.means(self.fit, c, tf, G, b2b, ret)
 
-    def predict(self, game_ids, points=("pretip",), script: bool = True) -> pd.DataFrame:
+    def _d23(self, c, tf, b2b, ret):
+        """D2/D3 adjust rates from a first pass (so the sim carries them too)."""
+        from betdata.nba.engine import addons as A
+
+        d0 = P.means(self.fit, c, tf, None, b2b, ret)
+        c = c.copy()
+        if "d3" in self.addons:
+            c["ast"] = c.ast * A.d3_factor(d0)
+        if "d2" in self.addons:
+            beta = self.fit.sim.get("d2_beta", {})
+            x = opp_three_miss_share(d0) - self.fit.sim.get("d2_lg_share3", 0.4)
+            b = np.array([beta.get(r, 0.0) for r in A.roles(c)])
+            c["dreb"] = c.dreb * np.clip(1 + b * x, 0.5, 1.5)
+        return c
+
+    def predict(self, game_ids, points=("pretip",), script: bool | None = None) -> pd.DataFrame:
         return self.means(self.frame(game_ids, points), script)
+
+
+def opp_three_miss_share(d: pd.DataFrame) -> np.ndarray:
+    """Per row: the share of the opponent's expected missed field goals that are threes."""
+    k = ["game_id", "point", "team_id"]
+    w = d.p_play
+    t3 = ((d.fg3a_m - d.fg3m_m) * w).groupby([d[x] for x in k]).sum()
+    tm = ((d.fg2a_m - d.fg2m_m + d.fg3a_m - d.fg3m_m) * w).groupby([d[x] for x in k]).sum()
+    sh = (t3 / tm.clip(lower=1e-9))
+    key = pd.MultiIndex.from_arrays([d.game_id, d.point, d.opp_id])
+    return sh.reindex(key).fillna(sh.mean()).to_numpy()
+
+
+def fit_d2(eng: Engine, seasons) -> None:
+    """D2 constants on training player-games: league three-miss share and per-role betas."""
+    from betdata.nba.engine import addons as A
+
+    inp = eng.inp
+    gids = inp.g[inp.g.season.isin(list(seasons)) & (inp.g.status == "final")].game_id
+    d = eng.predict(gids)
+    x = opp_three_miss_share(d)
+    lg = float(np.nanmean(x))
+    act = actuals(inp.p, d, "dreb").to_numpy()
+    d = d.assign(role=A.roles(d))
+    eng.fit.sim["d2_lg_share3"] = lg
+    eng.fit.sim["d2_beta"] = A.fit_d2(d, act, x, lg)
 
 
 def fit_multipliers(eng: Engine, seasons) -> None:
