@@ -111,6 +111,21 @@ def simulate_cmd(fit: Path = typer.Option(...), seasons: str = typer.Option(...)
                                   "side": side, "plines": pl}))  # fmt: skip
 
 
+@engine_app.command("freeze")
+def freeze_cmd(fit: Path = typer.Option(..., help="Constants on 2015-2025 (`fit --last 2025`)."),
+               design: Path = typer.Option(REPORTS / "m20_design.json")):  # fmt: skip
+    """The live config: constants fitted on every completed season with the frozen design,
+    plus the validation blend/calibration/threshold (never refitted hourly)."""
+    from betdata.nba.engine import VERSION
+    from betdata.nba.engine.live import FIT_PATH
+
+    d = json.loads(design.read_text())
+    raw = {"version": VERSION, "fit": json.loads(fit.read_text()),
+           "design": {k: d[k] for k in ("w", "platt", "theta", "validated")}}
+    FIT_PATH.write_text(json.dumps(raw, indent=1, default=float) + "\n")
+    typer.echo(str(FIT_PATH))
+
+
 @engine_app.command("live")
 def live_cmd():
     from betdata.nba.engine.live import run
