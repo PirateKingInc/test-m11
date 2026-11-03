@@ -1,6 +1,6 @@
 # M19 report: one official record, a game-first page, a reason for every result
 
-Written 2026-11-03. Presentation and review fields only.
+Written 2026-11-03. Presentation and review fields only. This report covers the corrected, graded-only records (#288).
 
 **Unchanged:** models, signals, thresholds, grading rules, card selection rule and data sources. Signals stay frozen for their 200-pick tests.
 
@@ -86,7 +86,7 @@ The brief quoted average odds of −1208. That figure is a mean of American odds
 4. **Fixture day with a win, a loss, a void and a pending pick:** the record reads "1-1-0 · +0.10u · … · 2 graded" in every period and on the day. The void is listed only in the day view, and the pending pick appears only under Today ("Tonight: 1 card pick pending"). Screenshot: `reports/m19/fixture_win_loss_void_pending.png`.
 5. **Live proof, two consecutive automatic hourly runs on the final code (#288):**
    - 01:00 UTC, run 355 (`github-actions[bot]`, clock), success. Page generated 01:01:47; the records were graded only and Today read "Tonight: 5 card picks pending".
-   - 02:00 UTC: see below.
+   - 02:00 UTC, run 356 (`github-actions[bot]`, clock), success. Page generated 02:03:05, with the same graded-only records (NBA all time 6-4-0 +1.57u, 10 graded) and "Tonight: 5 card picks pending" only under Today; nothing overflows.
 
 Screenshots in `reports/m19/`:
 - `live_main_view.png`
