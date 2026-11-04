@@ -530,7 +530,12 @@ def past_picks_html(sport: str, rows: list[dict], now: datetime) -> tuple[int, s
         except (ValueError, TypeError):
             sel = f"{r['market']} {r['side']}"
         odds = int(r["odds"]) if r["odds"] else None
-        res = r["result"] or "pending"
+        if r["result"]:
+            res = r["result"]
+        else:
+            from betdata.page.official import ungraded_text
+
+            res = ungraded_text(r, now)
         tail = "" if not r["result"] else f" {float(r['profit'] or 0):+.2f}u"
         clv = "" if not r["clv_consensus"] else f" · CLV {100 * float(r['clv_consensus']):+.1f} pp"
         items.append(

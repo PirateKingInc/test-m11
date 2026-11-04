@@ -1,9 +1,16 @@
 """The "Today" section of each sport tab (M19, MODEL.md "M19: Page layout"; alerts/tracker.py
 builds the data).
 
-Today's games, each a collapsed row with its time (ET), teams, status and score, and the number
-of official (card) picks on it. Tapping a game opens it: the card picks first, then "Other model
-picks (research, not official)" grouped by team. Each pick: player (TEAM) vs OPP (or the team for
+"Tonight's card" (owner request 2026-11-04), a fold directly below the official record, open
+by default, its preview the summary line: one row per card pick (tip ET, game,
+player (TEAM) vs OPP, pick and line, odds, book, label/stake, status), each jumping to its game
+below, a summary line (picks, first tip, when results post) and a note that picks are locked at
+the prices shown. A pick's status is plain words with an ETA, never "pending": "Tips 7:00 PM
+ET", "In progress" (with the score when live scores are on), "Final — grading by ~9:15 PM ET"
+(or "grading tomorrow ~9:00 AM ET"), then the result. Then today's games, each a collapsed
+row with its time (ET), teams, status and score, and the number of card picks on it. Tapping
+a game opens it: the card picks first, then "Other model picks (research, not official)"
+grouped by team. Each pick: player (TEAM) vs OPP (or the team for
 game markets), market, pick, line, odds, book, label, price status before the game, then the
 result with the actual stat at the final. No prop is listed outside its game.
 
@@ -21,8 +28,12 @@ REPO = "PirateKingInc/test-m11"
 
 
 def tracker_html(sport: str, doc: dict | None) -> str:
+    """"Tonight's card" (a fold, open, directly below the official record), then Today."""
     data = json.dumps(doc or {"sport": sport, "games": []}).replace("</", "<\\/")
-    return (f"<section class='tracker' data-tracker='{escape(sport)}'><h2>Today</h2>"
+    return (f"<details class='fold' data-tonight='{escape(sport)}' open><summary><b>Tonight's "
+            "card</b> <span class='pv trk-sum'></span></summary><div class='foldbody "
+            "trk-cardbody'><p class='meta'>Loading…</p></div></details>"
+            f"<section class='tracker' data-tracker='{escape(sport)}'><h2>Today</h2>"
             "<p class='meta trk-meta'></p><div class='trk-body'><p class='meta'>Loading…</p>"
             f"</div><script type='application/json' class='trk-data'>{data}</script></section>")
 
@@ -56,19 +67,68 @@ SCRIPT = """<script>
       (p.opp ? ' vs ' + esc(p.opp) : '');
     return p.team ? esc(p.team) + (p.opp ? ' vs ' + esc(p.opp) : '') : 'Game total';
   }
-  function row(g, p) {
-    var line;
-    if (p.result) line = '<div class="trk-res ' + esc(p.result) + '">' + esc(p.text) + '</div>' +
+  function pstat(g, p) {
+    // a pick's status in plain words: tips / in progress / final and when it grades;
+    // graded picks show their result instead (row)
+    var now = Date.now();
+    var ended = g.end && now >= Date.parse(g.end);
+    if (g.state === 'final' || (ended && g.state !== 'live'))
+      return '<span class="st final">Final — ' +
+        esc(g.grade_text || 'result on the next hourly run') + '</span>';
+    if (g.state === 'live' || (g.tip && now >= Date.parse(g.tip)))
+      return '<span class="st inprog">In progress' + (g.score ? ' ' + esc(score(g)) : '') +
+        '</span>';
+    return '<span class="st sched">Tips ' + esc(tip(g.tip)) + '</span>' + (p.price ?
+      ' <span class="st ' + esc(p.price.toLowerCase()) + '">' + esc(p.price) + '</span>' : '');
+  }
+  function result(p) {
+    return '<div class="trk-res ' + esc(p.result) + '">' + esc(p.text) + '</div>' +
       (p.clv != null ? '<div class="meta">CLV ' + (p.clv > 0 ? '+' : '') + p.clv +
       ' pp</div>' : '');
-    else if (g.state === 'pre') line = '<div><span class="st ' +
-      esc((p.price || 'sched').toLowerCase()) + '">' + esc(p.price || 'No recent quote') +
-      '</span></div>';
-    else if (g.state === 'live') line = '<div><span class="st inprog">In progress</span></div>';
-    else line = '<div class="meta">Final; result when the box score is in</div>';
+  }
+  function row(g, p) {
+    var line = p.result ? result(p) : '<div>' + pstat(g, p) + '</div>';
     return '<li class="prop"><div><b>' + who(p) + '</b> · ' + esc(p.market) + '</div><div>' +
       esc(p.pick) + ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + badge(p) + '</div>' +
       line + '<div class="meta">' + esc(p.signal) + '</div></li>';
+  }
+  function cardBlock(sport, games) {
+    // "Tonight's card" (owner request 2026-11-04): every card pick, by tip; a row jumps to
+    // its game below
+    var rows = [];
+    games.forEach(function (g) { g.picks.forEach(function (p) {
+      if (p.card) rows.push([g, p]); }); });
+    if (!rows.length) return ['none yet',
+      '<p class="meta">No card picks today yet (the card is chosen at 8:50 AM ET).</p>'];
+    rows.sort(function (a, b) { return Date.parse(a[0].tip) - Date.parse(b[0].tip); });
+    var now = Date.now(), first = null, last = null, late = false, open_ = 0;
+    rows.forEach(function (r) {
+      var g = r[0], p = r[1];
+      if (g.tip && Date.parse(g.tip) > now && first === null) first = g.tip;
+      if (p.result) return;
+      open_++;
+      if (g.grade_at) { if (!last || Date.parse(g.grade_at) > Date.parse(last)) last = g.grade_at; }
+      else late = true;
+    });
+    var n = rows.length, parts = ['Tonight: ' + n + ' card pick' + (n === 1 ? '' : 's')];
+    if (first) parts.push('first tip ' + tip(first));
+    if (!open_) parts.push('all graded');
+    else if (last) parts.push('results by ~' + tip(last) + (late ?
+      ' (late games tomorrow morning)' : ''));
+    else if (late) parts.push('results tomorrow ~9:00 AM ET');
+    return [parts.join(' · '), '<ul class="plist trk-card">' + rows.map(function (r) {
+        var g = r[0], p = r[1];
+        // three lines: when and which game, with the label; who and the pick (its line, odds
+        // and book); then the status or the result
+        var pk = p.pick || '';
+        if (p.player && pk.indexOf(p.player) === 0) pk = pk.slice(p.player.length).trim();
+        return '<li class="prop" role="button" tabindex="0" data-jump="' +
+          esc(sport + '-' + g.game_id) + '"><div><b>' + esc(tip(g.tip)) + ' · ' +
+          esc(g.label) + '</b>' + badge(p) + '</div><div>' + who(p) + ' · ' + esc(pk) +
+          ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + '</div>' +
+          (p.result ? result(p) : '<div>' + pstat(g, p) + '</div>') + '</li>';
+      }).join('') + '</ul><p class="meta">Picks are locked at the prices shown. Results post ' +
+      'on the hourly run after each game ends.</p>'];
   }
   function game(sport, g) {
     var card = g.picks.filter(function (p) { return p.card; });
@@ -95,13 +155,25 @@ SCRIPT = """<script>
     var sec = document.querySelector('section[data-tracker="' + sport + '"]');
     var d = docs[sport]; if (!sec || !d) return;
     var games = d.games || [];
-    var pend = 0;  // the only place pending picks are counted (never in or beside a record)
-    games.forEach(function (g) { g.picks.forEach(function (p) {
-      if (p.card && !p.result) pend++; }); });
-    sec.querySelector('.trk-body').innerHTML = (pend ? '<p class="trk-pending"><b>Tonight: ' +
-      pend + ' card pick' + (pend === 1 ? '' : 's') + ' pending</b></p>' : '') + (games.length ?
+    var cb = cardBlock(sport, games);
+    var fold = document.querySelector('details[data-tonight="' + sport + '"]');
+    if (fold) {
+      fold.querySelector('.trk-sum').textContent = '— ' + cb[0];
+      fold.querySelector('.trk-cardbody').innerHTML = cb[1];
+    }
+    sec.querySelector('.trk-body').innerHTML = games.length ?
       games.map(function (g) { return game(sport, g); }).join('') :
-      '<p class="meta">No picks for today\\'s games yet.</p>');
+      '<p class="meta">No picks for today\\'s games yet.</p>';
+    (fold ? fold.querySelectorAll('[data-jump]') : []).forEach(function (el) {
+      function go() {
+        var d = sec.querySelector('details[data-game="' + el.dataset.jump + '"]');
+        if (!d) return;
+        d.open = true; open[el.dataset.jump] = true;
+        d.scrollIntoView({block: 'start', behavior: 'smooth'});
+      }
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    });
     sec.querySelectorAll('details[data-game]').forEach(function (el) {
       el.addEventListener('toggle', function () { open[el.dataset.game] = el.open; });
     });

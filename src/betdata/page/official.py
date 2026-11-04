@@ -45,13 +45,22 @@ def stat_line(rec: O.Rec, href: str) -> str:
 
 
 def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path) -> str:
+    """The official record, at the top of the tab and foldable (owner 2026-11-04): folded, its
+    one-line preview gives the all-time record and the goal status; open, the periods and the
+    goal blocks. The page's fold script remembers a reader who opens it."""
     off = O.official(rows, sport)
-    out = [f"<section class='official' data-sport='{escape(sport)}'><h2>Official record · "
-           f"{escape(name)}</h2><p class='meta'>Official picks are the daily card (up to 5, "
+    per = O.periods(off, today)
+    allt, g = per["All time"], O.goal(off)
+    preview = (f"All time {allt.wlp} · {_units(allt.units)} · goal {g.graded} of {O.GOAL_N}, "
+               f"{g.status}")
+    out = [f"<section class='official' data-sport='{escape(sport)}'>"
+           f"<details class='fold' data-fold='{escape(sport)}-official'><summary><b>Official "
+           f"record · {escape(name)}</b> <span class='pv'>— {escape(preview)}</span></summary>"
+           "<div class='foldbody'><p class='meta'>Official picks are the daily card (up to 5, "
            "chosen at 8:50 AM ET). Like a team's record, graded picks only; today's picks are "
-           "under Today until they are graded. Paper units, not advice.</p>"
+           "under Tonight's card until they are graded. Paper units, not advice.</p>"
            "<dl class='periods'>"]
-    for label, rec in O.periods(off, today).items():
+    for label, rec in per.items():
         slug = label.lower().replace(" ", "-")
         href = f"csv/{sport}-official-{slug}.csv"
         O.write_csv(site / href, rec.rows)
@@ -60,7 +69,7 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
     out.append(goal_html(off, name))
     if sport == "nba":  # "All sports" once, on the NBA tab (as the M18 bankroll was)
         out.append(goal_html(O.official(rows), "All sports"))
-    out.append("</section>")
+    out.append("</div></details></section>")
     return "".join(out)
 
 
@@ -91,10 +100,20 @@ def _tags(rows: list[dict]) -> str:
     return " · ".join(parts) or "No reason tags yet."
 
 
-def _result_cell(r: dict) -> str:
+def ungraded_text(r: dict, now: datetime | None = None) -> str:
+    """A pick without a result, in plain words with an ETA (alerts/tracker.plain_status)."""
+    from datetime import UTC
+
+    from betdata.alerts.tracker import plain_status
+
+    tip = datetime.fromisoformat(r["tip"]) if r.get("tip") else None
+    return plain_status(tip, r.get("sport") or "nba", now or datetime.now(UTC))
+
+
+def _result_cell(r: dict, now: datetime | None = None) -> str:
     res = r.get("result") or ""
     if not res:
-        return "<span class='st sched'>pending</span>"
+        return f"<span class='st sched'>{escape(ungraded_text(r, now))}</span>"
     u = O.csv_row(r)["units"]
     stat = r.get("actual_stat")
     stat_txt = "" if not stat else f" · actual {escape(stat)}"

@@ -95,6 +95,11 @@ def test_the_document_has_each_state(dbs):
     assert out["text"] == "VOID (did not play)"
     assert tot["text"] == "Total 205 — over 210.5 LOSS, -1.00u"
     assert json.loads(json.dumps(doc)) == doc  # plain JSON
+    # when results post (2026-11-04): expected end, grading ETA and its words on every game
+    for x in doc["games"]:
+        eta = T.grading_eta(datetime.fromisoformat(x["tip"]), "nba")
+        assert (x["end"], x["grade_at"], x["grade_text"]) == (eta["end"], eta["grade_at"],
+                                                              eta["grade_text"])
 
 
 def test_live_scores_from_balldontlie_when_a_key_is_set(dbs):

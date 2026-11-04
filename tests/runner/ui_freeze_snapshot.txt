@@ -19,30 +19,40 @@ html
         button role=tab
       div id=tab-nba class=panel
         section class=official
-          h2
-          p class=meta
-          dl class=periods
-            dt
-            dd
-              span class=rec
-                a
-                  b
-                a
-                a
-            dt
-            dd
-              span class=rec
-                a
-                  b
-                a
-                a
-            dt
-            dd
-              span class=rec
-                a
-                  b
-                a
-                a
+          details class=fold
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              p class=meta
+              dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+        details class=fold
+          summary
+            b
+            span class=pv trk-sum
+          div class=foldbody trk-cardbody
+            p class=meta
         section class=tracker
           h2
           p class=meta trk-meta

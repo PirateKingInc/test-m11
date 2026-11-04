@@ -2604,3 +2604,26 @@ All lines at primary ballhandlers' assist lines ≥ 5.5 (2,425 test rows): over 
 - **Context:** the card's average odds (mean decimal, shown American) and the break-even win rate at those odds (1 / mean decimal), so the .500 target is read against the prices taken.
 - **Where:** a progress line under each sport's official record (and "All sports" once, on the NBA tab) with a progress bar to 500 (`betdata/official.py` `goal`, `page/official.py` `goal_html`); the weekly report's "Official success goal" section and a line in the ntfy summary.
 - **Unchanged:** picks, models, rules, grading, the card selection rule. This is an owner-approved change to the frozen main page; `tests/runner/test_ui_freeze.py` allows exactly the goal blocks (checked against their own structure) and still compares everything else with the pre-M20 snapshot.
+
+# Tonight's card and plain statuses (owner request 2026-11-04; display only)
+
+No change to picks, models, rules, grading or the card selection rule.
+
+- **Layout (each sport tab, owner's answer of 2026-11-04):** the official record stays at the top as a fold, folded by default with a one-line preview (all-time W-L-P, units, and the goal's progress and status). Open, it holds the periods and goal blocks; the page remembers a reader who opens it. Directly below it, **"Tonight's card"** is its own fold, open by default. Today's games list follows, then Results by day.
+- **Tonight's card:** one row per card pick, by tip:
+  - line 1: tip time ET, game, label and stake;
+  - line 2: player (TEAM) vs OPP (or the team), the pick with its line, odds and book;
+  - line 3: the status, or the result once graded.
+
+  Tapping a row opens that game in Today's list and scrolls to it. The games' "★ N card" badges stay. The fold's preview is the summary line, e.g. "Tonight: 5 card picks · first tip 7:00 PM ET · results by ~11:15 PM ET (late games tomorrow morning)". Under the rows: "Picks are locked at the prices shown. Results post on the hourly run after each game ends."
+- **Statuses replace the word "pending" everywhere** (`alerts/tracker.plain_status`; the browser renderer in `page/tracker.py` does the same live):
+  - before tip: "Tips 7:00 PM ET" (with the price status: Live / Moved / Gone);
+  - during: "In progress", with the score when live scores are on;
+  - after the expected end: "Final — grading by ~9:15 PM ET", or "Final — grading tomorrow ~9:00 AM ET";
+  - graded: the result, the actual stat and the units.
+- **When results post (`grading_eta`):**
+  - expected end = tip + 2 h 30 min (NBA) or 3 h 15 min (NFL);
+  - the result posts on the next hourly run at or after that, on the hour, shown as ~15 minutes past it;
+  - if that run would be after the last run of the day (10 PM ET), it posts "tomorrow ~9:00 AM ET".
+  - The tracker document carries `end`, `grade_at` and `grade_text` per game.
+- **UI freeze:** the snapshot was regenerated under this approval, and the M19 snapshot is kept. `tests/runner/test_ui_freeze.py` pins three things: the exact difference between them (the record fold and the Tonight's card fold), the Today renderer's hash, and a node syntax check of that renderer.

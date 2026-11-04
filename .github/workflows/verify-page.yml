@@ -95,6 +95,13 @@ jobs:
                   pg.screenshot(path="proof/nba_phone_full.png", full_page=True)
                   print("nba tab:", pg.evaluate("document.getElementById('tab-nba').innerText.slice(0, 600)"))
                   print("nba scrollWidth", pg.evaluate("document.documentElement.scrollWidth"))
+                  # Tonight's card (owner request 2026-11-04): the first screen of the tab
+                  pg.screenshot(path="proof/nba_tonight_card_390.png")
+                  card = pg.locator("#tab-nba details[data-tonight] li[data-jump]")
+                  print("tonight's card rows:", card.count(), [r.inner_text().replace("\n", " | ")
+                                                              for r in card.all()])
+                  pg.evaluate("document.querySelectorAll('#tab-nba section.official details')"
+                              ".forEach(d => d.open = true)")
                   # the official success goal (owner decision 2026-11-03)
                   off = pg.locator("#tab-nba section.official")
                   if off.count():
