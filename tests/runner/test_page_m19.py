@@ -125,6 +125,30 @@ def test_research_tab_has_every_signal_with_units_and_gate(tmp_path):
 
 
 def test_pending_picks_are_counted_only_under_today():
+    """The card's count lives only in Today's "Tonight's card" summary; since 2026-11-04 no
+    pick is called "pending" (plain status and an ETA instead)."""
     from betdata.page.tracker import SCRIPT
 
-    assert "Tonight: ' +" in SCRIPT and "card pick' + (pend === 1 ? '' : 's') + ' pending" in SCRIPT
+    assert "'Tonight: ' + n + ' card pick'" in SCRIPT
+    assert "pending" not in SCRIPT.lower()
+
+
+def test_today_renderer_is_valid_javascript(tmp_path):
+    """The renderer is plain ES5 inside a Python string: a stray escape breaks the whole Today
+    section, so it is syntax-checked with node when node is available (GitHub runners have
+    it)."""
+    import shutil
+    import subprocess
+
+    import pytest
+
+    from betdata.page.tracker import SCRIPT
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+    js = SCRIPT.split("<script>", 1)[1].rsplit("</script>", 1)[0]
+    f = tmp_path / "today.js"
+    f.write_text(js)
+    r = subprocess.run([node, "--check", str(f)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr

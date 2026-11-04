@@ -40,6 +40,12 @@ WINDOW_BEFORE = timedelta(minutes=30)
 WINDOW_AFTER = {"nba": timedelta(hours=4), "nfl": timedelta(hours=5)}
 BRANCH = "tracker"
 FILE = "tracker.json"
+# When results post (owner request 2026-11-04): a game's expected end is its tip plus a typical
+# length; its result posts on the next hourly run at or after that (runs on the hour, 7am-10pm
+# ET, the page out ~15 minutes later); after the last run of the day, the next morning.
+GAME_LENGTH = {"nba": timedelta(hours=2, minutes=30), "nfl": timedelta(hours=3, minutes=15)}
+POST_DELAY = timedelta(minutes=15)
+MORNING_ETA = (9, 0)  # "grading tomorrow ~9:00 AM ET"
 BDL = {"nba": "https://api.balldontlie.io/v1/games",
        "nfl": "https://api.balldontlie.io/nfl/v1/games"}  # fmt: skip
 # balldontlie abbreviations that differ from ours
@@ -149,6 +155,45 @@ def result_text(a, res: str, units: float, actual, score) -> str:
     return f"{selection(a)} — {tail}"
 
 
+def et_time(t: datetime) -> str:
+    """'7:00 PM ET'."""
+    return t.astimezone(EASTERN).strftime("%-I:%M %p ET")
+
+
+def grading_eta(tip: datetime, sport: str) -> dict:
+    """Expected end, when the result should post, and the plain words for it:
+    {"end", "grade_at" (None: tomorrow morning), "grade_text"}."""
+    from betdata.runner.window import FIRST_HOUR, LAST_HOUR
+
+    end = tip + GAME_LENGTH.get(sport, GAME_LENGTH["nba"])
+    local = end.astimezone(EASTERN)
+    run = local.replace(minute=0, second=0, microsecond=0)
+    if run < local:
+        run += timedelta(hours=1)
+    same_day = run.date() == tip.astimezone(EASTERN).date()
+    if same_day and FIRST_HOUR <= run.hour <= LAST_HOUR:
+        at = run + POST_DELAY
+        return {"end": end.isoformat(), "grade_at": at.astimezone(tip.tzinfo).isoformat(),
+                "grade_text": f"grading by ~{et_time(at)}"}
+    h, m = MORNING_ETA
+    return {"end": end.isoformat(), "grade_at": None,
+            "grade_text": f"grading tomorrow ~{h}:{m:02d} AM ET"}
+
+
+def plain_status(tip: datetime | None, sport: str, now: datetime, final: bool = False,
+                 score: str = "") -> str:
+    """The status of a not-yet-graded pick, in plain words (never "pending"): "Tips 7:00 PM
+    ET", "In progress" (with the score when known), "Final — grading by ~9:15 PM ET"."""
+    if tip is None:
+        return "Not graded yet"
+    eta = grading_eta(tip, sport)
+    if final or now >= datetime.fromisoformat(eta["end"]):
+        return f"Final — {eta['grade_text']}"
+    if now >= tip:
+        return "In progress" + (f" {score}" if score else "")
+    return f"Tips {et_time(tip)}"
+
+
 def _teams(m, a, details: dict) -> tuple[str, str]:
     """(team, opponent) of a pick (betdata/review.py); blanks when unknown."""
     from betdata.review import teams_for
@@ -204,9 +249,11 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
             sc = (final if final is not None else
                   (live["home"], live["away"]) if live and live.get("home") is not None
                   else None)  # fmt: skip
+            eta = grading_eta(a.tip, sport) if a.tip else {}
             g = games[a.game_id] = {
                 "game_id": a.game_id, "label": a.game_label, "tip": a.tip.isoformat()
-                if a.tip else None, "state": state,
+                if a.tip else None, "state": state, "end": eta.get("end"),
+                "grade_at": eta.get("grade_at"), "grade_text": eta.get("grade_text"),
                 "score": None if sc is None else {"home": sc[0], "away": sc[1]},
                 "period": (live or {}).get("period", ""), "clock": (live or {}).get("clock", ""),
                 "picks": []}  # fmt: skip

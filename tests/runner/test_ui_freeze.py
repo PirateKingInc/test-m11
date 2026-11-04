@@ -11,7 +11,15 @@ Owner-approved additions (each allowed exactly, and nothing else):
 - 2026-11-03, the official success goal: one `div.goal` block per official-record header (plus
   an "All sports" block on the NBA tab) holding a progress line, a progress bar and the
   average-odds / break-even line. The test checks those blocks against GOAL_STRUCTURE, removes
-  them, and compares the rest with the unchanged snapshot."""
+  them, and compares the rest with the unchanged snapshot.
+- 2026-11-04, "Tonight's card" and plain statuses (no "pending"), with the owner's layout
+  answer: the official record stays at the top as a fold (folded by default, its preview the
+  all-time record and the goal status), and "Tonight's card" is its own fold directly below it
+  (open by default), ahead of Today's games. The snapshot was regenerated under this approval;
+  the previous one is kept as `ui_freeze_snapshot_m19.txt` and the exact difference between
+  them is pinned (APPROVED_DIFF_SHA). Today is drawn by the tracker renderer (page/tracker.py
+  SCRIPT), pinned as TRACKER_SCRIPT_SHA (the M19 renderer was d866cf4bf364).
+"""
 
 import hashlib
 import os
@@ -76,6 +84,12 @@ class _Structure(HTMLParser):
             self._buf.append(data)
 
 
+# the Today renderer's approved version (whitespace-normalised sha1, first 12 hex digits)
+TRACKER_SCRIPT_HISTORY = {"d866cf4bf364": "M19 renderer (pre-2026-11-04)",
+                          "0103d64f91b3": "Tonight's card fold, plain statuses (2026-11-04)"}
+TRACKER_SCRIPT_SHA = "0103d64f91b3"
+SNAPSHOT_M19 = Path(__file__).with_name("ui_freeze_snapshot_m19.txt")
+APPROVED_DIFF_SHA = "c1f5faf443d5"  # m19 snapshot -> current snapshot (2026-11-04)
 GOAL_BLOCK = re.compile(r"<div class='goal' data-goal='[^']*'[^>]*>.*?</div>", re.S)
 # the exact skeleton of one goal block (owner-approved 2026-11-03)
 GOAL_STRUCTURE = "div class=goal\n  p class=meta\n    b\n  progress\n  p class=meta\n"
@@ -134,6 +148,29 @@ def test_main_page_structure_is_frozen(tmp_path):
     assert got == SNAPSHOT.read_text(), (
         "The main page's HTML structure changed. M20 freezes it: only the Research tab may "
         "change (MODEL.md 'M20: UI freeze').")
+
+
+def test_today_renderer_is_the_approved_version():
+    from betdata.page.tracker import SCRIPT
+
+    body = re.sub(r"\s+", " ", SCRIPT).strip()
+    assert hashlib.sha1(body.encode()).hexdigest()[:12] == TRACKER_SCRIPT_SHA, (
+        "The Today renderer (page/tracker.py SCRIPT) changed: a main-page change needs the "
+        "owner's approval and a new TRACKER_SCRIPT_SHA here.")
+
+
+def test_snapshot_differs_from_m19_by_exactly_the_approved_layout():
+    """The regenerated snapshot differs from the M19 one only by the 2026-11-04 change: the
+    official record wrapped in a fold, and the "Tonight's card" fold below it."""
+    import difflib
+
+    a = SNAPSHOT_M19.read_text().splitlines()
+    b = SNAPSHOT.read_text().splitlines()
+    d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
+    assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_SHA, d
+    added = [x[1:].strip() for x in d.splitlines() if x.startswith("+") and not x.startswith("+++")]
+    assert "details class=fold" in added and "span class=pv trk-sum" in added
+    assert "div class=foldbody trk-cardbody" in added
 
 
 def test_goal_is_the_only_approved_addition(tmp_path):
