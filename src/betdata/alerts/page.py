@@ -84,8 +84,23 @@ def load(db: Path, now: datetime | None = None) -> dict:
         "delivery": "sent" if r["sent"] else "quiet" if r["quiet"] else "not sent",
         "study": bool(r["study"]), "result": r["result"], "profit": r["profit"],
         "clv_points": r["clv_points"], "clv_novig": r["clv_novig"],
+        "tip": None if r["tip"] is None else _aware(r["tip"]).isoformat(),
     } for r in rows[:RECENT]]  # fmt: skip
-    return {"available": True, "alerts": recent, "signals": signals, "total": len(rows), "lag": lag}
+    return {"available": True, "alerts": recent, "signals": signals, "total": len(rows), "lag": lag,
+            "now": now.isoformat()}
+
+
+def _aware(t: datetime) -> datetime:
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def _ungraded(a: dict, now: str | None) -> str:
+    """A not-yet-graded alert in plain words with an ETA (no "pending", owner 2026-11-04)."""
+    from betdata.alerts.tracker import plain_status
+
+    tip = datetime.fromisoformat(a["tip"]) if a.get("tip") else None
+    at = datetime.fromisoformat(now) if now else datetime.now(UTC)
+    return plain_status(tip, a.get("sport") or "nba", at)
 
 
 def _selection(r) -> str:
@@ -159,7 +174,8 @@ def fragment(data: dict | None) -> str:
                 f"<td>{escape(MARKETS.get(a['market'], a['market']))}: "
                 f"{escape(a['selection'])}</td><td>{escape(BOOKS.get(a['book'], a['book']))}</td>"
                 f"<td>{price}</td><td>{escape(reason)}</td><td>{a['delivery']}</td>"
-                f"<td>{escape(grade.strip()) or 'pending'}</td></tr>")  # fmt: skip
+                f"<td>{escape(grade.strip() or _ungraded(a, data.get('now')))}</td>"
+                "</tr>")  # fmt: skip
         parts.append("</table></div>")
     return "".join(parts) + tail
 
