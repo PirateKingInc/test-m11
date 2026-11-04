@@ -51,7 +51,10 @@ def test_section_rendered_and_inserted_before_main_end(tmp_path):
     assert html.count('id="alerts"') == 1 and "Paper alerts, not advice." in html
     assert "No signal is judged before 200 graded alerts" in html
     assert "BOS -3.5" in html and "Jayson Tatum over 25.5 points" in html
-    assert "win CLV +3.1 pp (+1.5 pts)" in html and "quiet" in html and "pending" in html
+    assert "win CLV +3.1 pp (+1.5 pts)" in html and "quiet" in html
+    # an ungraded alert reads in plain words with an ETA, never "pending" (2026-11-04)
+    assert "pending" not in html and ("Tips " in html or "Final — " in html
+                                      or "In progress" in html)
     assert "Lag study: 1 qualifying changes so far; DK+FD pooled median lag not enough data; " \
            "Signal 1 on (study running)." in html
     # Only the fragment was added, just before </main>.
