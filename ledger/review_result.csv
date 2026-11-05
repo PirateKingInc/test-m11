@@ -462,3 +462,35 @@ P829eb3e1499f,215.0,,,SAC 115-100 DAL,[],232.5,0.0,Variance,2026-11-03T14:00:37+
 Pc9becd5131bf,0.0,28.0,,TOR 125-118 LAC,[],1.5,0.93,Variance,2026-11-03T14:00:37+00:00
 Pa25ed9e53210,202.0,,,BOS 93-109 HOU,[],215.5,-0.97,Market disagreed,2026-11-03T14:00:37+00:00
 P26849b2a8146,243.0,,,TOR 125-118 LAC,[],219.5,-0.75,Market disagreed,2026-11-03T14:00:37+00:00
+P6b52dee4e51b,10.0,33.0,,PHI 112-106 DET,,5.5,-1.14,not enough data,2026-11-05T12:00:34+00:00
+P8018b8bc288d,4.0,30.0,,PHI 112-106 DET,,2.5,1.92,not enough data,2026-11-05T12:00:34+00:00
+P17f727ad9c78,2.0,37.0,,PHI 112-106 DET,,2.5,0.89,not enough data,2026-11-05T12:00:34+00:00
+P7a2145410f1b,1.0,26.0,,PHI 112-106 DET,,6.5,2.53,not enough data,2026-11-05T12:00:34+00:00
+Pd4c1f8290643,17.0,34.0,,PHI 112-106 DET,,6.5,4.23,not enough data,2026-11-05T12:00:34+00:00
+P6f67025c1aea,3.0,34.0,,PHI 112-106 DET,[],4.5,-9.01,Market disagreed,2026-11-05T12:00:34+00:00
+Pe8f466214a65,,,,ATL 120-105 WAS,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",7.5,15.46,,2026-11-05T12:00:34+00:00
+P313503491c67,4.0,31.0,,ATL 120-105 WAS,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,0.42,News after pick,2026-11-05T12:00:34+00:00
+Pdb9013255c05,4.0,32.0,,ATL 120-105 WAS,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,2.66,News after pick,2026-11-05T12:00:34+00:00
+Pc95e21cb8750,5.0,25.0,,ATL 120-105 WAS,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,2.17,News after pick,2026-11-05T12:00:34+00:00
+Pdc617ddd765f,6.0,34.0,,ATL 120-105 WAS,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Available""}]",9.5,-1.27,News after pick,2026-11-05T12:00:34+00:00
+Paa2b2b2f54f9,7.0,35.0,,ATL 120-105 WAS,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Available""}]",4.5,-0.61,News after pick,2026-11-05T12:00:34+00:00
+Pbe81888aaf77,3.0,30.0,,ATL 120-105 WAS,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Available""}]",2.5,1.28,News after pick,2026-11-05T12:00:34+00:00
+Pb89e1ad9c299,4.0,35.0,,ATL 120-105 WAS,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Available""}]",4.5,4.52,News after pick,2026-11-05T12:00:34+00:00
+P2b9ab8a993f4,2.0,34.0,,ATL 120-105 WAS,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Available""}]",2.5,-12.6,News after pick,2026-11-05T12:00:34+00:00
+Pa9ec6d1fc9df,2.0,23.0,,ATL 120-105 WAS,"[{""player"": ""Alex Sarr"", ""from"": ""Questionable"", ""to"": ""Available""}]",3.5,13.52,News after pick,2026-11-05T12:00:34+00:00
+P34e32c53aa51,4.0,21.0,,PHI 112-106 DET,[],3.5,2.4,Variance,2026-11-05T12:00:34+00:00
+Pb537692cb3b8,1.0,10.0,,PHI 112-106 DET,[],1.5,,Minutes miss,2026-11-05T12:00:34+00:00
+Pb85cde818085,,,,ATL 120-105 WAS,"[{""player"": ""Jalen Johnson"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,16.07,,2026-11-05T12:00:34+00:00
+Pdca60cc1232f,-7.0,,,MIL 102-109 BOS,"[{""player"": ""Jayson Tatum"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Payton Pritchard"", ""from"": ""Questionable"", ""to"": ""Available""}]",,-0.83,News after pick,2026-11-05T12:00:34+00:00
+Pfab8bc6c9ef0,1.0,10.0,,PHI 112-106 DET,[],2.5,,Minutes miss,2026-11-05T12:00:34+00:00
+Pa97233d5bc47,5.0,35.0,,MIL 102-109 BOS,"[{""player"": ""Jayson Tatum"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Payton Pritchard"", ""from"": ""Questionable"", ""to"": ""Available""}]",4.5,-4.91,News after pick,2026-11-05T12:00:34+00:00
+P34d06c2c4847,7.0,36.0,,MIL 102-109 BOS,"[{""player"": ""Jayson Tatum"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Payton Pritchard"", ""from"": ""Questionable"", ""to"": ""Available""}]",6.5,-19.6,News after pick,2026-11-05T12:00:34+00:00
+P6a3d44f0b21a,5.0,18.0,,MIL 102-109 BOS,"[{""player"": ""Jayson Tatum"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Payton Pritchard"", ""from"": ""Questionable"", ""to"": ""Available""}]",5.5,-12.61,News after pick,2026-11-05T12:00:34+00:00
+P9b1da8b9f4fb,5.0,22.0,,MIL 102-109 BOS,[],4.5,7.77,Variance,2026-11-05T12:00:34+00:00
+P98222ccac389,4.0,27.0,,MIL 102-109 BOS,[],2.5,1.83,Variance,2026-11-05T12:00:34+00:00
+P7074fc4214da,5.0,35.0,,MIL 102-109 BOS,"[{""player"": ""Jayson Tatum"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Payton Pritchard"", ""from"": ""Questionable"", ""to"": ""Available""}]",4.5,-4.91,News after pick,2026-11-05T12:00:34+00:00
+Pde0e2d2a0266,5.0,24.0,,MIL 102-109 BOS,[],3.5,-3.96,Market disagreed,2026-11-05T12:00:34+00:00
+Pb35b75437d5d,9.0,36.0,,MIL 102-109 BOS,[],4.5,3.28,Minutes miss,2026-11-05T12:00:34+00:00
+P5097d7d8d0d3,3.0,35.0,,MIL 102-109 BOS,"[{""player"": ""Jayson Tatum"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Payton Pritchard"", ""from"": ""Questionable"", ""to"": ""Available""}]",5.5,-7.32,News after pick,2026-11-05T12:00:34+00:00
+P027f992feca5,9.0,24.0,,MIL 102-109 BOS,[],2.5,2.43,Variance,2026-11-05T12:00:34+00:00
+P2baa9950880f,3.0,22.0,,MIL 102-109 BOS,[],2.5,0.22,not enough data,2026-11-05T12:00:34+00:00
