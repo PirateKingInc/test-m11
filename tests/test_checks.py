@@ -77,8 +77,8 @@ def test_research_tab_shows_three_checks_and_retired(tmp_path):
     assert "Three checks: Calibration" in html
     assert "data-signal='G1'><div><b>G1</b> <span class='meta'>retired" in html
     # F is archived (owner override 2026-11-04), not retired: its history stays
-    assert ("data-signal='F'><div><b>F</b> <span class='meta archived'>archived 2026-11-04 "
-            "(nbap15): no new picks, history kept</span>") in html
+    assert ("data-signal='F'><div><b>F</b> <span class='meta archived'>archived from the card "
+            "2026-11-04 (nbap15): shadow Card v1 only, never pushed; history kept</span>") in html
 
 
 def test_poller_cycle_no_longer_runs_g1(monkeypatch):
@@ -92,4 +92,4 @@ def test_poller_cycle_no_longer_runs_g1(monkeypatch):
     monkeypatch.setattr("betdata.alerts.nba.active", lambda c, t: False)
     P.Poller.cycle(me, datetime(2026, 11, 4, 0, 0, tzinfo=UTC))
     assert "g1" not in called and "sweep" in called
-    assert P.RETIRED == {"g1", "g2", "snipe"}  # F archived 2026-11-04
+    assert P.RETIRED == {"g1", "g2"}  # F runs again for the shadow Card v1 (2026-11-05)

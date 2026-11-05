@@ -37,6 +37,12 @@ sport's card is chosen (poller state `card:<sport>:<day>`), `sync` writes one ro
 that day's games, once: `card` yes (with the card's own label and stake, `card_label` and
 `card_stake`, set at selection) or no (not chosen, or created after selection). The card
 bankroll counts card picks only. The creation-time `label` and `stake` above stay as they are.
+
+**Shadow Card v1** (`ledger/shadow_card.csv`, owner request 2026-11-05; alerts/card.py): the
+same, for the shadow Card v1 (poller state `shadow:<sport>:<day>`, signal `card-v1-shadow`):
+one row per F/C-NBA pick on that day's games, `shadow` yes (its label and stake) or no. Never
+official. **Card days** (`ledger/card_days.csv`): one row per chosen card (official or shadow)
+and day, with its pick count, even when empty, so the comparison counts the same nights only.
 """
 
 from __future__ import annotations
@@ -68,6 +74,10 @@ LABEL_FIELDS = ("pick_id", "label", "stake", "labeled_at", "edge", "threshold", 
 CARD_FIELDS = ("pick_id", "sport", "card_date", "card", "card_label", "card_stake",
                "selected_at", "ev", "edge", "threshold", "edge_source",
                "pinnacle_sides")  # fmt: skip
+SHADOW_FIELDS = ("pick_id", "sport", "card_date", "shadow", "shadow_label", "shadow_stake",
+                 "selected_at", "ev", "edge", "threshold", "edge_source", "pinnacle_sides",
+                 "signal_name")  # fmt: skip
+CARD_DAY_FIELDS = ("key", "sport", "card_date", "kind", "selected_at", "picks")
 LEGACY = "m16-legacy"
 # REVIEW.md M16-4: the next injury report repeated a change already alerted (Edgecombe DET @ PHI
 # 7:00 PM; Zubac/Nembhard IND @ MIL 3:00 PM).
@@ -298,6 +308,8 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
                            "available": str(bool(lab.get("available"))).lower()})  # fmt: skip
     append_rows(out / "labels.csv", LABEL_FIELDS, labels)
     card_rows(p, out)
+    shadow_rows(p, out)
+    card_days(p, out)
     annotate(out, now)
     try:  # M19 review fields and reason tags (betdata/review.py), each row written once
         from betdata import review
@@ -343,6 +355,58 @@ def card_rows(p: Connection, out: Path) -> int:
                          "edge_source": (x.get("edge_source") or "") if x else "",
                          "pinnacle_sides": "" if pin is None else str(bool(pin)).lower()})
     return append_rows(out / "card.csv", CARD_FIELDS, rows)
+
+
+def shadow_rows(p: Connection, out: Path) -> int:
+    """One write-once row per F/C-NBA pick on each shadow Card v1 day: shadow yes or no."""
+    from betdata.alerts.card import SHADOW, V1_SIGNALS, day_picks
+    from betdata.alerts.db import state
+
+    if "poller_state" not in _tables(p):
+        return 0
+    rows = []
+    for st in p.execute(select(state).where(state.c.key.like("shadow:%"))):
+        c = st.value or {}
+        if not c.get("day"):
+            continue
+        day = datetime.fromisoformat(c["day"]).date()
+        chosen = {x["dedup_key"]: x for x in c.get("picks", [])}
+        for a in day_picks(p, c["sport"], day, V1_SIGNALS):
+            x = chosen.get(a.dedup_key)
+            pin = None if x is None else x.get("pinnacle_sides")
+            rows.append({"pick_id": pick_id(a.dedup_key), "sport": c["sport"],
+                         "card_date": c["day"], "shadow": "yes" if x else "no",
+                         "shadow_label": x["label"] if x else "",
+                         "shadow_stake": _num(x["stake"]) if x else "",
+                         "selected_at": c.get("selected_at", ""),
+                         "ev": _num(x.get("ev")) if x else "",
+                         "edge": _num(x.get("edge")) if x else "",
+                         "threshold": _num(x.get("threshold")) if x else "",
+                         "edge_source": (x.get("edge_source") or "") if x else "",
+                         "pinnacle_sides": "" if pin is None else str(bool(pin)).lower(),
+                         "signal_name": SHADOW})  # fmt: skip
+    return append_rows(out / "shadow_card.csv", SHADOW_FIELDS, rows)
+
+
+def card_days(p: Connection, out: Path) -> int:
+    """One write-once row per chosen card and day (official `card`/`engine`, or `shadow`)."""
+    from betdata.alerts.db import state
+
+    if "poller_state" not in _tables(p):
+        return 0
+    rows = []
+    for st in p.execute(select(state).where(state.c.key.like("card:%")
+                                            | state.c.key.like("shadow:%"))):  # fmt: skip
+        c = st.value or {}
+        if not c.get("day") or not c.get("sport"):
+            continue
+        kind = ("shadow" if st.key.startswith("shadow:")
+                else "engine" if c.get("source") == "engine" else "v1")  # fmt: skip
+        rows.append({"key": f"{c['sport']}:{c['day']}:{kind}", "sport": c["sport"],
+                     "card_date": c["day"], "kind": kind,
+                     "selected_at": c.get("selected_at", ""),
+                     "picks": str(len(c.get("picks", [])))})  # fmt: skip
+    return append_rows(out / "card_days.csv", CARD_DAY_FIELDS, rows, key="key")
 
 
 def annotate(out: Path, now: datetime) -> int:

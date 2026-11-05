@@ -52,7 +52,28 @@ def engine_html(rows: list[dict], today: date, site: Path, live: dict | None = N
             out.append(f"<li class='prop'>{pick_line(r)}<div>{_result_cell(r)}</div></li>")
         out.append("</ul>")
     out.append("</section>")
+    out.append(compare_html(rows))
     return "".join(out)
+
+
+def compare_html(rows: list[dict], ledger: Path | None = None) -> str:
+    """Engine card vs shadow Card v1, same nights only, with the fixed comparison rule under
+    the table (owner request 2026-11-05)."""
+    from betdata.ledger import ledger_dir
+
+    c = O.comparison(rows, ledger or ledger_dir())
+    body = "".join(f"<tr><th scope='row'>{escape(m)}</th><td>{escape(a)}</td>"
+                   f"<td>{escape(b)}</td></tr>" for m, a, b in O.comparison_rows(c))
+    return ("<section class='research' data-compare='nba'><h2>Engine card vs shadow Card v1"
+            "</h2><p class='meta'>The shadow Card v1 is the old card (top 5 by EV among the "
+            "nbap15-based F and C-NBA picks still Live at 8:50 AM ET), chosen every morning "
+            "beside the engine card: never official, never pushed. Same nights only "
+            f"({c.nights} so far), each card at its own stakes.</p>"
+            "<table class='cmp'><thead><tr><th></th><th>Engine card (official)</th>"
+            f"<th>Shadow Card v1</th></tr></thead><tbody>{body}</tbody></table>"
+            f"<p class='meta'>{escape(O.COMPARE_RULE)}</p>"
+            f"<p class='meta' data-verdict='{escape(c.verdict)}'><b>Status:</b> "
+            f"{escape(c.verdict)}</p></section>")
 
 
 def predictions_html(site: Path, ledger: Path | None = None) -> str:

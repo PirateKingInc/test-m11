@@ -126,3 +126,116 @@ def test_engine_label_rule():
     assert LB.label(P(), a(0.075, 0.05), NOW)["label"] == "TAKE"
     assert LB.label(P(), a(0.074, 0.05), NOW)["label"] == "LEAN"
     assert LB.label(P(), a(0.075, 0.05), NOW)["stake"] == 1.0
+
+
+# --- the shadow Card v1 (owner request 2026-11-05) -------------------------------------------
+
+
+def _v1(p, key, fair, signal="value", player="V", created=NOW - timedelta(hours=1), live=True):
+    """An F / C-NBA pick, with its edge (C-NBA prop bar 6 pp)."""
+    p.execute(insert(alerts).values(
+        signal=signal, sport="nba", game_id=7, game_label="NYK @ BOS", tip=TIP,
+        market="rebounds", player_name=player, side="over", line=6.5, price=110,
+        book="draftkings", fair_prob=fair, book_prob=0.45, reason="r", dedup_key=key,
+        created_at=created, quiet=True, sent=False,
+        details={"edge": fair - 0.45, "edge_source": "news"}))  # fmt: skip
+    p.execute(insert(quotes).values(
+        polled_at=NOW - timedelta(minutes=5), sport="nba", game_id=7, source="sharpapi",
+        book="draftkings", market="rebounds", player_name=player, outcome="over", line=6.5,
+        price=110 if live else 50))  # fmt: skip
+
+
+def test_shadow_card_v1_is_chosen_beside_the_engine_card_and_never_official(pdb):
+    with pdb.begin() as p:
+        _pick(p, "e", 0.2)
+        for i, fair in enumerate((0.55, 0.60, 0.52, 0.58, 0.57, 0.53)):
+            _v1(p, f"v{i}", fair, signal="value" if i % 2 else "snipe", player=f"V{i}")
+        _v1(p, "gone", 0.7, player="G", live=False)
+    [card] = CD.run(pdb, _Main(), NOW, tip_fn)  # the official card: the engine's, unchanged
+    assert [x["dedup_key"] for x in card["picks"]] == ["e"] and card["source"] == "engine"
+    [sh] = CD.run_shadow(pdb, _Main(), NOW, tip_fn)
+    assert sh["source"] == CD.SHADOW == "card-v1-shadow"
+    assert [x["dedup_key"] for x in sh["picks"]] == ["v1", "v3", "v4", "v0", "v5"]
+    assert CD.run_shadow(pdb, _Main(), NOW + timedelta(minutes=5), tip_fn) == []  # once
+    with pdb.connect() as p:
+        assert get_state(p, "shadow:nba:2026-11-05")["picks"] == sh["picks"]
+        assert [x["dedup_key"] for x in get_state(p, "card:nba:2026-11-05")["picks"]] == ["e"]
+        doc = build(p, None, "nba", NOW.date(), NOW)
+    # never on the main page: Today lists the engine's picks only
+    assert {x["signal"] for g in doc["games"] for x in g["picks"]} == {"nba-engine"}
+
+
+def test_shadow_waits_for_a_live_pick_as_card_v1_did(pdb):
+    with pdb.begin() as p:
+        _v1(p, "gone", 0.6, live=False)
+    assert CD.run_shadow(pdb, _Main(), NOW, tip_fn) == []
+    assert CD.pending(pdb, _Main(), NOW, NOW + timedelta(minutes=5), tip_fn,
+                      lambda m, s, d: TIP)  # the poller stays awake for it
+    later = NOW + timedelta(hours=2)
+    with pdb.begin() as p:
+        _v1(p, "new", 0.6, created=later - timedelta(minutes=1), player="N")
+    [sh] = CD.run_shadow(pdb, _Main(), later, tip_fn)
+    assert [x["dedup_key"] for x in sh["picks"]] == ["new"]
+
+
+def test_shadow_ledger_rows_and_same_night_comparison(pdb, tmp_path):
+    from betdata import ledger as L
+    from betdata import official as O
+    from betdata.ledger import ledger_dir
+
+    with pdb.begin() as p:
+        _pick(p, "e", 0.2)
+        _v1(p, "v", 0.6)
+        _v1(p, "w", 0.5, player="W")
+    CD.run(pdb, _Main(), NOW, tip_fn)
+    CD.run_shadow(pdb, _Main(), NOW, tip_fn)
+    with pdb.connect() as p:
+        L.sync(p, None, ledger_dir(), NOW)
+    sh = {r["pick_id"]: r for r in L.read_rows(ledger_dir() / "shadow_card.csv")}
+    assert {r["shadow"] for r in sh.values()} == {"yes"} and len(sh) == 2
+    assert {r["signal_name"] for r in sh.values()} == {"card-v1-shadow"}
+    days = L.read_rows(ledger_dir() / "card_days.csv")
+    assert sorted((d["kind"], d["picks"]) for d in days) == [("engine", "1"), ("shadow", "2")]
+    rows = O.dataset(ledger_dir())
+    assert not any(r["official"] for r in rows if r["signal"] in ("value", "snipe"))
+    c = O.comparison(rows, ledger_dir())
+    assert c.nights == 1 and c.verdict.startswith("too early to compare")
+    assert [m for m, _, _ in O.comparison_rows(c)] == [
+        "Graded picks", "W-L-P", "Units", "ROI", "Average odds", "EV at close", "Calibration"]
+
+
+def test_comparison_rule():
+    from types import SimpleNamespace as NS
+
+    from betdata import official as O
+
+    def side(n, units, lo, hi):
+        return O.Side("x", NS(graded=n, units=units), NS(ev=NS(low=lo, high=hi)))
+
+    def verdict(e, s):
+        return O.Comparison(10, e, s).verdict
+
+    assert verdict(side(199, 1, -0.1, 0.0), side(300, 5, 0.1, 0.2)).startswith("too early")
+    assert verdict(side(250, 1, -0.10, -0.02), side(250, 5, 0.01, 0.06)).startswith(
+        "recommend switching back")
+    assert verdict(side(250, 1, -0.10, 0.02), side(250, 5, 0.01, 0.06)) == "keep the engine card"
+    assert verdict(side(250, 1, -0.10, -0.02), side(250, -1, 0.01, 0.06)) == (
+        "keep the engine card")  # units must be positive
+
+
+def test_one_step_revert(monkeypatch):
+    from datetime import date
+
+    monkeypatch.setattr(CD, "NBA_CARD", "v1")
+    assert CD.signals_for("nba", date(2026, 11, 20)) == LB.SIGNALS
+    assert not CD.shadow_day("nba", date(2026, 11, 20)) and not CD.engine_day("nba",
+                                                                                date(2026, 11, 20))
+
+
+def test_research_table_and_rule_render(tmp_path):
+    from betdata.page.engine_research import compare_html
+
+    html = compare_html([], tmp_path)
+    assert "<h2>Engine card vs shadow Card v1</h2>" in html and "Same nights only (0" in html
+    assert "<th>Shadow Card v1</th>" in html and "EV at close" in html
+    assert "Comparison rule (fixed 2026-11-05)" in html and "owner&#x27;s decision" in html
