@@ -26,6 +26,9 @@ Owner-approved additions (each allowed exactly, and nothing else):
   one is kept as `ui_freeze_snapshot_m20b.txt` and the exact difference is pinned
   (APPROVED_DIFF_ENGINE_SHA). The Today renderer gained the short-card note
   ("2 picks today — the engine found no other value").
+- 2026-11-05 (the 6:15 AM ET morning update), the ETA wording only: results after the last hourly
+  run read "grading ~6:15 AM ET tomorrow" (and the card's selection time reads 6:15 AM ET). Text
+  only: the snapshot is unchanged; the Today renderer's hash is the new approved version.
 """
 
 import hashlib
@@ -94,8 +97,9 @@ class _Structure(HTMLParser):
 # the Today renderer's approved version (whitespace-normalised sha1, first 12 hex digits)
 TRACKER_SCRIPT_HISTORY = {"d866cf4bf364": "M19 renderer (pre-2026-11-04)",
                           "0103d64f91b3": "Tonight's card fold, plain statuses (2026-11-04)",
-                          "6405b2f92e7a": "engine card's short-card note (2026-11-04 override)"}
-TRACKER_SCRIPT_SHA = "6405b2f92e7a"
+                          "6405b2f92e7a": "engine card's short-card note (2026-11-04 override)",
+                          "fbc70cba5745": "ETA wording: ~6:15 AM ET tomorrow (2026-11-05)"}
+TRACKER_SCRIPT_SHA = "fbc70cba5745"
 SNAPSHOT_M19 = Path(__file__).with_name("ui_freeze_snapshot_m19.txt")
 SNAPSHOT_M20B = Path(__file__).with_name("ui_freeze_snapshot_m20b.txt")
 APPROVED_DIFF_SHA = "c1f5faf443d5"  # m19 snapshot -> m20b snapshot (2026-11-04)

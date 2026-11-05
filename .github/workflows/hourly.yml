@@ -116,7 +116,15 @@ jobs:
       - name: Run
         id: run
         continue-on-error: true
+        env:
+          SHARPAPI_KEY: ${{ secrets.SHARPAPI_KEY }}
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
         run: |
+          if [ "${{ inputs.trigger }}" = "morning" ]; then
+            # the 6:15 AM ET update (betdata/morning.py): grade, ledger, engine, both cards, page
+            uv run --no-dev betdata morning run 2>&1 | tee run.log
+            exit "${PIPESTATUS[0]}"
+          fi
           args=(--trigger "${{ inputs.trigger || github.event_name }}")
           if [ -n "$FORCE_FAIL" ]; then args+=(--fail "$FORCE_FAIL"); fi
           uv run --no-dev betdata runner run "${args[@]}" 2>&1 | tee run.log
@@ -152,6 +160,20 @@ jobs:
       - id: deploy
         if: steps.run.outputs.skipped != 'true'
         uses: actions/deploy-pages@v4
+      # The morning update's ONE push per sport (after the page is deployed), then its poller
+      # database is saved: it owns the database from 6:12 until the 7 AM poll job.
+      - name: Morning push
+        if: ${{ inputs.trigger == 'morning' && steps.run.outputs.skipped != 'true' }}
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: uv run --no-dev betdata morning push
+      - name: Save the poller database (morning update)
+        if: ${{ always() && inputs.trigger == 'morning' && steps.run.outputs.skipped != 'true' && hashFiles('data/poller.sqlite') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: data/poller.sqlite
+          key: betdata-poller-v1-${{ github.run_id }}
       # Mondays after the morning run: the weekly report; any run: milestone pushes (60 / 200
       # graded picks). Then the ledger and the report are committed to main (append-only
       # files; a rebase-and-retry loop if main moved).

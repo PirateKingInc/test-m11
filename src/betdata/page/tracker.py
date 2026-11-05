@@ -7,7 +7,7 @@ player (TEAM) vs OPP, pick and line, odds, book, label/stake, status), each jump
 below, a summary line (picks, first tip, when results post) and a note that picks are locked at
 the prices shown. A pick's status is plain words with an ETA, never "pending": "Tips 7:00 PM
 ET", "In progress" (with the score when live scores are on), "Final — grading by ~9:15 PM ET"
-(or "grading tomorrow ~9:00 AM ET"), then the result. Then today's games, each a collapsed
+(or "grading ~6:15 AM ET tomorrow"), then the result. Then today's games, each a collapsed
 row with its time (ET), teams, status and score, and the number of card picks on it. Tapping
 a game opens it: the card picks first, then "Other model picks (research, not official)"
 grouped by team. Each pick: player (TEAM) vs OPP (or the team for
@@ -101,7 +101,7 @@ SCRIPT = """<script>
     var note = d.card_note ? '<p class="meta trk-note">' + esc(d.card_note) + '.</p>' : '';
     if (!rows.length && note) return [d.card_note, note];
     if (!rows.length) return ['none yet',
-      '<p class="meta">No card picks today yet (the card is chosen at 8:50 AM ET).</p>'];
+      '<p class="meta">No card picks today yet (the card is chosen at 6:15 AM ET).</p>'];
     rows.sort(function (a, b) { return Date.parse(a[0].tip) - Date.parse(b[0].tip); });
     var now = Date.now(), first = null, last = null, late = false, open_ = 0;
     rows.forEach(function (r) {
@@ -116,8 +116,8 @@ SCRIPT = """<script>
     if (first) parts.push('first tip ' + tip(first));
     if (!open_) parts.push('all graded');
     else if (last) parts.push('results by ~' + tip(last) + (late ?
-      ' (late games tomorrow morning)' : ''));
-    else if (late) parts.push('results tomorrow ~9:00 AM ET');
+      ' (late games ~6:15 AM ET tomorrow)' : ''));
+    else if (late) parts.push('results ~6:15 AM ET tomorrow');
     return [parts.join(' · '), '<ul class="plist trk-card">' + rows.map(function (r) {
         var g = r[0], p = r[1];
         // three lines: when and which game, with the label; who and the pick (its line, odds

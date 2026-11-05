@@ -1,7 +1,7 @@
 """Tonight's card (alerts/card.py, MODEL.md "Tonight's card"): chosen once per sport and day at
-8:50 AM ET on days with games (or at the first live pick after, if none is live then), from that
-day's picks still live, top 5 by expected value; pushed to ntfy right after selection; written
-once to the ledger (card yes/no, the card's label and stake); shown above Value."""
+6:15 AM ET (8:50 until 2026-11-05) on days with games (or at the first live pick after, if none
+is live then), from that day's picks still live, top 5 by expected value; pushed to ntfy right
+after selection; written once to the ledger (card yes/no, the card's label and stake)."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -13,7 +13,7 @@ from betdata.alerts import card as CD
 from betdata.alerts.db import alert_grades, alerts, engine_for, get_state, quotes, set_state
 
 FIRST = datetime(2026, 11, 1, 0, 0, tzinfo=UTC)  # Sat Oct 31, 8:00 PM ET
-NOW = datetime(2026, 10, 31, 12, 50, tzinfo=UTC)  # Sat Oct 31, 8:50 AM ET (EDT)
+NOW = datetime(2026, 10, 31, 10, 15, tzinfo=UTC)  # Sat Oct 31, 6:15 AM ET (EDT)
 
 
 @pytest.fixture
@@ -104,9 +104,9 @@ def test_the_poller_stays_awake_until_the_card_is_chosen(pdb):
         return CD.pending(pdb, _Main(), start, end, tips, lambda m, s, d: FIRST)
 
     late = NOW + timedelta(milliseconds=9)
-    assert not pend(NOW - timedelta(minutes=20), NOW - timedelta(minutes=2))  # before 8:50
+    assert not pend(NOW - timedelta(minutes=20), NOW - timedelta(minutes=2))  # before 6:15
     assert pend(NOW - timedelta(minutes=10), NOW + timedelta(minutes=6))  # the job's start
-    assert pend(late, late + timedelta(minutes=6))  # 8:50:00.009: still awake
+    assert pend(late, late + timedelta(minutes=6))  # 6:15:00.009: still awake
     assert pend(NOW + timedelta(hours=5), NOW + timedelta(hours=5, minutes=1))  # still waiting
     assert not pend(FIRST, FIRST + timedelta(minutes=1))  # the last game has started
     assert not pend(late, late + timedelta(minutes=6), lambda m, s, d: None)  # no games

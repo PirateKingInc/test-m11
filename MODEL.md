@@ -2699,3 +2699,39 @@ three checks). Paper picks only. NFL is unchanged.
   decision.
 - **Revert:** one constant, `NBA_CARD` in `alerts/card.py` (SWITCH.md "Revert to Card v1").
 
+# Morning update at 6:15 AM ET (owner decision 2026-11-05; replaces the 8:50 AM card selection)
+
+No change to models, pick rules, thresholds or grading rules. `betdata/morning.py`.
+
+- **When:** every day with NBA or NFL games yesterday or today, at 6:15 AM ET. The clock run that
+  starts in the 6 AM ET hour sleeps to 6:15 and dispatches `hourly.yml` with trigger `morning`
+  (`runner/window.py --morning`); on a day without games it exits at once. The hourly runs
+  (7 AM - 10 PM ET) continue as before.
+- **The poller's 6 AM job** sweeps DK/FD lines from 6:00 (six games a minute in that slot, so the
+  sweep ends by 6:10) and stops at 6:12 on morning days, saving its database for the morning
+  run. The morning run saves the poller database after its push; the 7 AM poll job waits for a
+  running morning run before it restores it.
+- **Order** (each step logged; a failed step never stops the next):
+  a. **grade** — refresh schedules, final scores and box scores (`MORNING_JOBS`: ESPN NBA
+     scoreboard and box scores, the NBA injury report, nflverse schedules and injuries), then
+     grade every pick (the poller's grading). A game without a final box score (a late West
+     Coast game) stays ungraded and is graded on the next run; the push names it.
+  b. **ledger** — new picks and results appended; the official records come from it.
+  c. **engine** — the NBA engine re-simulates today's games and prices the lines in the archive
+     (the latest stored quote per book and side from the 6:00 sweep).
+  d. **select** — today's engine card and the shadow Card v1 at the same moment, 6:15 (`AT`):
+     top 5 by EV still Live, fewer if fewer qualify; if nothing is Live, the first later poll
+     with a Live pick selects it (both cards, as Card v1 always did; that later card is pushed
+     on its own, as before).
+  e. **publish** — the ledger again (card rows), then the page; the workflow deploys it.
+  f. **push** — ONE ntfy message per sport: "NBA · Last night: 3-2, +0.6u · Engine card 12-9,
+     +1.8u (21 of 500) · Today's card (4 picks):", then one line per card pick (game, time ET,
+     pick and line, odds, book, label, stake), the short-card note, and "Not graded yet: <games>
+     (no final box score yet; graded on the next run)" when a game is still ungraded. "Last
+     night" is the card picks of yesterday's card, graded, at card stakes; the record is the
+     official headline card's (NBA: the engine card) with its goal progress. A card pushed in the
+     morning message is never pushed again.
+- **ETA wording:** a game ending after the last hourly run shows "grading ~6:15 AM ET
+  tomorrow" (it was "grading tomorrow ~9:00 AM ET"). The main page layout is unchanged (the
+  UI-freeze snapshot is unchanged; the Today renderer's approved hash moved for the wording).
+

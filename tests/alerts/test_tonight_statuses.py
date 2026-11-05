@@ -24,7 +24,7 @@ def test_result_posts_on_the_next_hourly_run_after_the_expected_end():
 def test_after_the_last_run_of_the_day_results_post_tomorrow_morning():
     for tip in (_et(19, 31), _et(22), _et(20, 0)):
         e = grading_eta(tip, "nba")
-        assert e["grade_at"] is None and e["grade_text"] == "grading tomorrow ~9:00 AM ET"
+        assert e["grade_at"] is None and e["grade_text"] == "grading ~6:15 AM ET tomorrow"
     assert grading_eta(_et(13), "nfl")["grade_text"] == "grading by ~5:15 PM ET"  # 3h15m
 
 

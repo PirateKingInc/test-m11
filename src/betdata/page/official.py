@@ -65,7 +65,7 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
            f"<details class='fold' data-fold='{escape(sport)}-official'><summary><b>Official "
            f"record · {escape(name)}</b> <span class='pv'>— {escape(preview)}</span></summary>"
            "<div class='foldbody'><p class='meta'>Official picks are the daily card (up to 5, "
-           "chosen at 8:50 AM ET). Like a team's record, graded picks only; today's picks are "
+           "chosen at 6:15 AM ET). Like a team's record, graded picks only; today's picks are "
            "under Tonight's card until they are graded. Paper units, not advice.</p>"]
     if nba:
         out.append(f"<h3 class='era' data-era='{'engine' if eng_head else 'v1'}'>"

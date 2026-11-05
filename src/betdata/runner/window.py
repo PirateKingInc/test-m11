@@ -23,6 +23,9 @@ from zoneinfo import ZoneInfo
 
 EASTERN = ZoneInfo("America/New_York")
 FIRST_HOUR, LAST_HOUR = 7, 22  # Eastern, inclusive: 7am ... 10pm
+# The morning update (owner 2026-11-05, betdata/morning.py): the clock's 6 AM ET tick waits to
+# 6:15 and dispatches the hourly workflow with trigger `morning`.
+MORNING_HOUR, MORNING_MINUTE = 6, 15
 CRON_UTC_HOURS = (0, 1, 2, 3, *range(11, 24))  # .github/workflows/hourly.yml
 CRON = "0 0-3,11-23 * * *"
 # GitHub drops scheduled runs under load, most often at the top of the hour; a second trigger
@@ -56,6 +59,35 @@ def runs_on(eastern_day: date) -> list[datetime]:
     return sorted(out)
 
 
+def morning_due(now: datetime) -> bool:
+    """Is this clock run the one that starts the morning update? The clock run that starts in
+    the 6 AM ET hour (before 6:15) does, before it waits for 7:00."""
+    t = now.astimezone(EASTERN)
+    return t.hour == MORNING_HOUR and t < morning_at(now)
+
+
+def morning_main(now: datetime, sleep=None) -> int:
+    """Sleep to 6:15 AM ET and print morning=true (to $GITHUB_OUTPUT too), or morning=false."""
+    import time as _time
+
+    due = morning_due(now)
+    if due:
+        (sleep or _time.sleep)(max(0.0, (morning_at(now) - now).total_seconds()))
+    line = f"morning={'true' if due else 'false'}"
+    print(line)
+    out = os.environ.get("GITHUB_OUTPUT")
+    if out:
+        with open(out, "a") as f:
+            f.write(line + "\n")
+    return 0
+
+
+def morning_at(now: datetime) -> datetime:
+    """6:15 AM ET on `now`'s Eastern day."""
+    d = now.astimezone(EASTERN).date()
+    return datetime.combine(d, time(MORNING_HOUR, MORNING_MINUTE), tzinfo=EASTERN)
+
+
 def next_slot(now: datetime) -> datetime:
     """The next hourly slot after `now` (UTC, on the hour)."""
     return slot(now) + timedelta(hours=1)
@@ -72,6 +104,8 @@ def wait_for_next_slot(now: datetime | None = None, sleep=None) -> datetime:
 
 
 def main(argv: list[str]) -> int:
+    if len(argv) > 1 and argv[1] == "--morning":  # clock: the run started in the 6 AM ET hour
+        return morning_main(datetime.now(UTC))
     if len(argv) > 1 and argv[1] == "--wait":  # clock workflow: wait, then decide that hour
         now = wait_for_next_slot()
         argv = argv[:1]
@@ -79,7 +113,8 @@ def main(argv: list[str]) -> int:
         now = datetime.fromisoformat(argv[1]) if len(argv) > 1 else datetime.now(UTC)
     manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
               and os.environ.get("RUN_TRIGGER", "") in ("", "manual"))  # fmt: skip
-    run = manual or in_window(now)
+    morning = os.environ.get("RUN_TRIGGER", "") == "morning"  # the 6:15 AM ET update
+    run = manual or morning or in_window(now)
     line = f"run={'true' if run else 'false'}"
     print(f"{line} (slot {slot(now):%Y-%m-%d %H:%M} UTC = "
           f"{slot(now).astimezone(EASTERN):%H:%M %Z}{', manual' if manual else ''})")

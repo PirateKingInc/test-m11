@@ -1,10 +1,10 @@
 """Tonight's card (owner request 2026-10-30, MODEL.md "Tonight's card"): an in-house
 simulation of a pick service. Display only: no signal, threshold, model or grade changes.
 
-Once a day per sport, at 8:50 AM US Eastern on days that sport has games, the poller selects
+Once a day per sport, at 6:15 AM US Eastern on days that sport has games, the poller selects
 the card: the top 5 picks by expected value among that day's M18 picks (C, F, G2, G1) still
 "Live" (the alerted price, or better, is the book's latest stored quote) for games not yet
-started. If none is Live at 8:50, the card is selected at the first poll that day with any Live
+started. If none is Live at 6:15, the card is selected at the first poll that day with any Live
 pick. Picks created after selection stay off the card; fewer than 5 qualifying means a shorter
 card. Each card pick gets a label and stake at selection:
 - **TAKE** (1 unit): edge >= 1.5x its signal's threshold AND (edge source "news" OR a fresh
@@ -20,21 +20,24 @@ on the card.
 Right after selection the card is pushed to ntfy, one message per sport. The selection is stored
 once in the poller state (`card:<sport>:<day>`), saved with the poller database at :56, and
 written once to the ledger (`ledger/card.csv`, betdata/ledger.py) by the next hourly run, which
-publishes it: an 8:50 card is on the 9:00 AM page. A card prop whose player does not play (ruled
+publishes it. Since 2026-11-05 the morning update (betdata/morning.py) selects at 6:15 AM ET
+(it replaced the 8:50 AM selection) and publishes at once. A card prop whose player does not
+play (ruled
 out) is graded void, as books do (alerts/grade.py `prop_actual`); a void is kept but stays out of
 W-L-P, units and ROI. Cards start on 2026-10-31 (no backfill).
 
 Engine card (owner override 2026-11-04, MODEL.md "Engine card"): from 2026-11-05 the NBA card's
 pool is the NBA engine's picks only (signal `engine`, research name `nba-engine`), chosen by the
-same rule: the top 5 by EV among picks still Live at 8:50 AM ET, labelled TAKE (1 unit) when the
-EV is >= 1.5x the engine's threshold, else LEAN (0.5 unit). The engine card is chosen once at
-8:50, even when it is short or empty (the page and the push then say "N picks today — the engine
-found no other value"); a pick found after 8:50 stays off the card (tracked on the Research tab).
+same rule: the top 5 by EV among picks still Live at 6:15 AM ET, labelled TAKE (1 unit) when the
+EV is >= 1.5x the engine's threshold, else LEAN (0.5 unit). A short card is chosen once (the page
+and the push say "N picks today — the engine found no other value"); with nothing Live, the
+first later poll with a Live pick selects it (owner 2026-11-05, as Card v1 always did). A pick
+found after selection stays off the card (tracked on the Research tab).
 The NFL card is unchanged.
 
 Shadow Card v1 (owner request 2026-11-05, MODEL.md "Shadow Card v1"): on every engine-card day,
-also at 8:50 AM ET, the old Card v1 is selected exactly as before (top 5 by EV among the F and
-C-NBA picks still Live; if none is Live at 8:50, at the first poll with one), as `card-v1-shadow`.
+also at 6:15 AM ET, the old Card v1 is selected exactly as before (top 5 by EV among the F and
+C-NBA picks still Live; if none is Live at 6:15, at the first poll with one), as `card-v1-shadow`.
 It is never official, never on the main page and never pushed; it is stored as `shadow:<sport>:
 <day>`, written to `ledger/shadow_card.csv` and graded like the card. F and C-NBA keep generating
 candidates in the background for it only (recorded, never pushed). One constant, `NBA_CARD`,
@@ -53,7 +56,7 @@ from betdata.alerts.labels import ENGINE, LEAN, SIGNALS, STAKE, TAKE, available,
 from betdata.alerts.rules import EASTERN, decimal
 
 SIZE = 5
-AT = time(8, 50)  # Eastern
+AT = time(6, 15)  # Eastern: the morning update (owner 2026-11-05; was 8:50 until then)
 FIRST_DAY = date(2026, 10, 31)
 SPORTS = ("nba", "nfl")
 ENGINE_START = date(2026, 11, 5)  # the first engine card (owner override 2026-11-04)
@@ -108,7 +111,7 @@ def day_bounds(day: date) -> tuple[datetime, datetime]:
 
 
 def select_at(day: date) -> datetime:
-    """The card's selection time on the Eastern day: 8:50 AM ET."""
+    """The card's selection time on the Eastern day: 6:15 AM ET."""
     return datetime.combine(day, AT, EASTERN)
 
 
@@ -199,7 +202,7 @@ def shadow_in_ledger(sport: str, day: date) -> bool:
 
 
 def run_shadow(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
-    """Choose the shadow Card v1 when due (once), exactly as Card v1 was chosen: from 8:50 AM ET
+    """Choose the shadow Card v1 when due (once), exactly as Card v1 was chosen: from 6:15 AM ET
     on a day with games, at the first poll with any Live F/C-NBA pick. Never pushed."""
     day = now.astimezone(EASTERN).date()
     out = []
@@ -224,7 +227,7 @@ def run_shadow(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
 
 
 def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
-    """Choose each sport's card when due (once): from 8:50 AM ET on a day the sport has games,
+    """Choose each sport's card when due (once): from 6:15 AM ET on a day the sport has games,
     at the first poll with any Live pick. Returns the cards chosen now."""
     day = now.astimezone(EASTERN).date()
     if day < FIRST_DAY:
@@ -238,13 +241,13 @@ def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
             continue
         with main.connect() as m:
             ft = tip_fn(m, sport, day)
-        if ft is None or now < select_at(day):  # no games today, or not 8:50 yet
+        if ft is None or now < select_at(day):  # no games today, or not 6:15 yet
             continue
         with pdb.begin() as p:
             card = choose(p, sport, day, now)
-            # nothing Live yet: try again at the next poll (the engine card is chosen once, at
-            # 8:50, even when empty)
-            if not card["picks"] and not engine_day(sport, day):
+            # nothing Live yet: try again at the next poll (owner 2026-11-05: both cards, as
+            # Card v1 always did)
+            if not card["picks"]:
                 continue
             set_state(p, key(sport, day), card, now)
         out.append(card)
@@ -313,9 +316,9 @@ def last_tip(main, sport: str, day: date) -> datetime | None:
 
 def pending(pdb, main, start: datetime, end: datetime, tip_fn=first_tip,
             last_fn=last_tip) -> bool:  # fmt: skip
-    """Keeps the poller awake for the card: on a day with games, from 8:50 AM ET (due by `end`)
-    until the card is chosen or the day's last game starts. (REVIEW.md L-4: a check for 8:50
-    falling inside [start, end] missed it when the loop's clock read 8:50:00.009.)"""
+    """Keeps the poller awake for the card: on a day with games, from 6:15 AM ET (due by `end`)
+    until the card is chosen or the day's last game starts. (REVIEW.md L-4: a check for 6:15
+    falling inside [start, end] missed it when the loop's clock read 6:15:00.009.)"""
     day = start.astimezone(EASTERN).date()
     if day < FIRST_DAY or end < select_at(day):
         return False

@@ -36,6 +36,18 @@ jobs:
         with:
           sparse-checkout: src/betdata/runner/window.py
           sparse-checkout-cone-mode: false
+      # The morning update (owner 2026-11-05, betdata/morning.py): the clock run that starts in
+      # the 6 AM ET hour sleeps to 6:15 and starts the hourly workflow with trigger `morning`
+      # (it exits at once on a day without NBA or NFL games yesterday or today), then waits for
+      # 7:00 as usual. The poller's 6 AM job ends at 6:12 on those days.
+      - id: morning
+        name: Wait for 6:15 AM ET (the 6 AM run only)
+        run: python3 src/betdata/runner/window.py --morning
+      - name: Start the morning update
+        if: steps.morning.outputs.morning == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run hourly.yml --repo "${{ github.repository }}" --ref main -f trigger=morning
       - id: wait
         name: Wait for the next hour
         env:
@@ -64,6 +76,20 @@ jobs:
     environment: github-pages
     steps:
       - uses: actions/checkout@v4
+      # The morning update (6:15 AM ET) writes the poller database and saves it; a poll job
+      # that starts while it runs waits for it, so it restores that copy, not an older one.
+      - name: Wait for a running morning update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          h=$(TZ=America/New_York date +%H)
+          if [ "$h" != "06" ] && [ "$h" != "07" ]; then exit 0; fi
+          for i in $(seq 1 40); do
+            n=$(gh run list --repo "${{ github.repository }}" --workflow hourly.yml \
+                  --json status --jq '[.[] | select(.status=="in_progress" or .status=="queued")] | length' || echo 0)
+            if [ "$n" = "0" ]; then exit 0; fi
+            sleep 30
+          done
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true

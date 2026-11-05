@@ -44,7 +44,12 @@ def poller_run(
     except ImportError:
         nfl = None
     p = Poller(main, engine_for(db), Keys.from_env(), nfl_handler=nfl)
-    cycles = p.run(_until(minutes, now))
+    until = _until(minutes, now)
+    if minutes is None:  # on morning days the 6 AM job ends at 6:12 ET (betdata/morning.py)
+        from betdata.morning import poller_until
+
+        until = poller_until(main, now, until)
+    cycles = p.run(until)
     typer.echo(f"poller: {cycles} cycles, {p.skipped} skipped (hourly run), requests "
                f"{dict(p.http.count)}, errors {len(p.errors)}")  # fmt: skip
     for e in p.errors[-10:]:

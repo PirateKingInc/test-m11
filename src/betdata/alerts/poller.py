@@ -664,7 +664,7 @@ class Poller:
         """Start a new sweep when a slot begins (queue every game with a tip in the next 36
         hours), then poll up to SWEEP_GAMES_PER_CYCLE queued games: DK/FD main lines and props,
         stored change-only. Returns games polled."""
-        from betdata.alerts.archive import SWEEP_GAMES_PER_CYCLE, SWEEP_HORIZON, SWEEP_SPORTS
+        from betdata.alerts.archive import SWEEP_HORIZON, SWEEP_SPORTS, games_per_cycle
         from betdata.core.matching import sport_id
 
         if self.sharp is None:
@@ -688,7 +688,8 @@ class Poller:
                 log_.append({"slot": slot, "games": len(queue), "at": now.isoformat()})
                 set_state(p, "sweep:log", log_, now)
         done = 0
-        while queue and done < SWEEP_GAMES_PER_CYCLE:
+        per_cycle = games_per_cycle(slot or cur)
+        while queue and done < per_cycle:
             sport, gid = queue.pop(0)
             qs: list[Quote] = []
             with self.main.connect() as c:
