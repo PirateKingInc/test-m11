@@ -494,3 +494,111 @@ Pb35b75437d5d,9.0,36.0,,MIL 102-109 BOS,[],4.5,3.28,Minutes miss,2026-11-05T12:0
 P5097d7d8d0d3,3.0,35.0,,MIL 102-109 BOS,"[{""player"": ""Jayson Tatum"", ""from"": ""Questionable"", ""to"": ""Out""}, {""player"": ""Payton Pritchard"", ""from"": ""Questionable"", ""to"": ""Available""}]",5.5,-7.32,News after pick,2026-11-05T12:00:34+00:00
 P027f992feca5,9.0,24.0,,MIL 102-109 BOS,[],2.5,2.43,Variance,2026-11-05T12:00:34+00:00
 P2baa9950880f,3.0,22.0,,MIL 102-109 BOS,[],2.5,0.22,not enough data,2026-11-05T12:00:34+00:00
+P66db0b0dc207,6.0,33.0,,CLE 116-124 OKC,,5.5,-12.68,not enough data,2026-11-05T14:00:43+00:00
+Pdfd883701ac4,6.0,35.0,,CLE 116-124 OKC,,6.5,1.88,not enough data,2026-11-05T14:00:43+00:00
+P93e4c34cd5ec,1.0,25.0,,CLE 116-124 OKC,,3.5,-11.85,not enough data,2026-11-05T14:00:43+00:00
+P6353e8108468,4.0,35.0,,CLE 116-124 OKC,,4.5,-0.33,not enough data,2026-11-05T14:00:43+00:00
+P4761a18f4066,4.0,29.0,,CLE 116-124 OKC,,5.5,2.16,not enough data,2026-11-05T14:00:43+00:00
+P4ef31a9bceb8,2.0,31.0,,MIN 117-107 HOU,,3.5,-1.94,not enough data,2026-11-05T14:00:43+00:00
+P6b31e7b49970,4.0,37.0,,MIN 117-107 HOU,,2.5,4.74,not enough data,2026-11-05T14:00:43+00:00
+Pbeacf1d0f12e,4.0,33.0,,DAL 111-112 SAS,,5.5,-0.51,not enough data,2026-11-05T14:00:43+00:00
+Pc0a3e7e938ac,3.0,35.0,,DAL 111-112 SAS,,5.5,-0.01,not enough data,2026-11-05T14:00:43+00:00
+P535aa7a2587b,3.0,33.0,,DAL 111-112 SAS,,3.5,7.28,not enough data,2026-11-05T14:00:43+00:00
+P8355cacb63cb,5.0,19.0,,DAL 111-112 SAS,,4.5,-7.56,not enough data,2026-11-05T14:00:43+00:00
+P9b7bf1a989ec,4.0,21.0,,DAL 111-112 SAS,,4.5,1.58,not enough data,2026-11-05T14:00:43+00:00
+P513c6e4790ea,7.0,36.0,,DAL 111-112 SAS,,4.5,-0.11,not enough data,2026-11-05T14:00:43+00:00
+P01b7daf5f402,-30.0,,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}, {""player"": ""Josh Hart"", ""from"": ""Available"", ""to"": ""Out""}]",,0.85,News after pick,2026-11-05T14:00:43+00:00
+P429830da4fee,5.0,36.0,,DAL 111-112 SAS,,4.5,6.03,not enough data,2026-11-05T14:00:43+00:00
+Pe8ef2e61998b,7.0,36.0,,DAL 111-112 SAS,,3.5,4.04,not enough data,2026-11-05T14:00:43+00:00
+P0688d7da2456,-1.0,,,DAL 111-112 SAS,,,-0.1,not enough data,2026-11-05T14:00:43+00:00
+P590caa68867f,-13.0,,,LAL 116-103 SAC,,,-1.06,not enough data,2026-11-05T14:00:43+00:00
+P5e68c712e15a,1.0,25.0,,CHI 105-135 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,4.66,News after pick,2026-11-05T14:00:43+00:00
+P31e65128384f,,,,CHI 105-135 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,,,2026-11-05T14:00:43+00:00
+P106cd1b57279,5.0,24.0,,CHI 105-135 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",5.5,11.65,News after pick,2026-11-05T14:00:43+00:00
+Pea0fe0941811,4.0,22.0,,CHI 105-135 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,-16.08,News after pick,2026-11-05T14:00:43+00:00
+P158e27624398,,,,UTA 113-120 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",3.5,,,2026-11-05T14:00:43+00:00
+P3a40a870abb5,7.0,30.0,,UTA 113-120 NOP,[],4.5,28.68,Variance,2026-11-05T14:00:43+00:00
+Pd24c8c4f8b9b,2.0,38.0,,UTA 113-120 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",2.5,1.26,News after pick,2026-11-05T14:00:43+00:00
+P79e3d7c46aa0,5.0,37.0,,UTA 113-120 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",3.5,-10.64,News after pick,2026-11-05T14:00:43+00:00
+Pf3d51e382332,10.0,39.0,,UTA 113-120 NOP,[],6.5,-3.89,Minutes miss,2026-11-05T14:00:43+00:00
+P1adf75e6a670,10.0,,,MIN 117-107 HOU,[],,3.81,Variance,2026-11-05T14:00:43+00:00
+Pc9347a10ec96,2.0,36.0,,CHA 104-114 BKN,[],2.5,-11.2,Minutes miss,2026-11-05T14:00:43+00:00
+P712b7760a563,2.0,36.0,,CHA 104-114 BKN,[],2.5,2.35,Minutes miss,2026-11-05T14:00:43+00:00
+P4298ccdf39a2,4.0,18.0,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,5.48,News after pick,2026-11-05T14:00:43+00:00
+P3e33a5ba26eb,3.0,26.0,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",1.5,1.28,News after pick,2026-11-05T14:00:43+00:00
+P13b5e8d03bad,1.0,22.0,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",2.5,1.97,News after pick,2026-11-05T14:00:43+00:00
+P4e3300f7b3ab,1.0,27.0,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",5.5,-0.78,News after pick,2026-11-05T14:00:43+00:00
+P7c25325ad80f,5.0,22.0,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",5.5,-0.78,News after pick,2026-11-05T14:00:43+00:00
+P46fe85ebacc8,3.0,18.0,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",2.5,-0.18,News after pick,2026-11-05T14:00:43+00:00
+Pfc13e7a85c7e,6.0,35.0,,CLE 116-124 OKC,[],6.5,3.08,Variance,2026-11-05T14:00:43+00:00
+P97b8a8cf3bc5,6.0,33.0,,CLE 116-124 OKC,[],5.5,-11.26,Market disagreed,2026-11-05T14:00:43+00:00
+Pe05524df843d,3.0,33.0,,CLE 116-124 OKC,[],4.5,3.73,Variance,2026-11-05T14:00:43+00:00
+Pcb73a234a2af,4.0,35.0,,CLE 116-124 OKC,[],3.5,-0.79,Market disagreed,2026-11-05T14:00:43+00:00
+P18db6b8ec5d8,1.0,7.0,,CLE 116-124 OKC,[],8.5,-4.12,Minutes miss,2026-11-05T14:00:43+00:00
+P2d976cfe0f8e,2.0,34.0,,UTA 113-120 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",3.5,8.87,News after pick,2026-11-05T14:00:43+00:00
+Pcea8da84bb86,6.0,34.0,,UTA 113-120 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",3.5,0.8,News after pick,2026-11-05T14:00:43+00:00
+Pc9a7c8cf8fcd,1.0,32.0,,MIN 117-107 HOU,[],3.5,1.49,Variance,2026-11-05T14:00:43+00:00
+Pd8c3738fc456,2.0,31.0,,MIN 117-107 HOU,[],4.5,-2.07,Market disagreed,2026-11-05T14:00:43+00:00
+P4e4b8c212e3f,0.0,0.0,,TOR 109-128 DEN,[],2.5,0.51,,2026-11-05T14:00:43+00:00
+Pa97cc6c38b28,7.0,28.0,,TOR 109-128 DEN,[],5.5,2.32,Minutes miss,2026-11-05T14:00:43+00:00
+P5b7306d0fd09,7.0,23.0,,TOR 109-128 DEN,[],4.5,1.01,Variance,2026-11-05T14:00:43+00:00
+P74e836e8a7e1,1.0,27.0,,TOR 109-128 DEN,[],3.5,1.12,Variance,2026-11-05T14:00:43+00:00
+Pb4acd781986c,0.0,36.0,,DAL 111-112 SAS,[],4.5,0.36,Variance,2026-11-05T14:00:43+00:00
+P06fa3469ed4e,2.0,34.0,,DAL 111-112 SAS,[],2.5,0.58,Variance,2026-11-05T14:00:43+00:00
+Pdf499eef51c1,4.0,21.0,,DAL 111-112 SAS,[],3.5,1.58,Variance,2026-11-05T14:00:43+00:00
+Pcb24a7c988ca,10.0,35.0,,DAL 111-112 SAS,[],5.5,-7.93,Market disagreed,2026-11-05T14:00:43+00:00
+P43c44482a0ff,2.0,29.0,,CHA 104-114 BKN,[],1.5,3.22,Variance,2026-11-05T14:00:43+00:00
+P1fccf96043c7,4.0,27.0,,CHA 104-114 BKN,[],2.5,0.05,Variance,2026-11-05T14:00:43+00:00
+Pe66f62850057,2.0,18.0,,CHA 104-114 BKN,"[{""player"": ""Coby White"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,6.69,News after pick,2026-11-05T14:00:43+00:00
+P7f16ffd50c81,5.0,20.0,,CHA 104-114 BKN,[],2.5,0.17,Variance,2026-11-05T14:00:43+00:00
+Pccbd893f9f25,1.0,25.0,,CHI 105-135 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,6.43,News after pick,2026-11-05T14:00:43+00:00
+P3e23dfadc4d1,1.0,22.0,,CHI 105-135 NYK,"[{""player"": ""Jalen Smith"", ""from"": ""Probable"", ""to"": ""Available""}]",1.5,0.96,News after pick,2026-11-05T14:00:43+00:00
+Pf1c467024374,1.0,18.0,,MIN 117-107 HOU,[],2.5,-3.42,Minutes miss,2026-11-05T14:00:43+00:00
+Pd56d627e5e09,1.0,25.0,,LAL 116-103 SAC,[],2.5,-0.88,Market disagreed,2026-11-05T14:00:43+00:00
+P39dacd7a4e82,1.0,25.0,,LAL 116-103 SAC,[],2.5,3.67,Variance,2026-11-05T14:00:43+00:00
+P1312f48784a0,3.0,37.0,,LAL 116-103 SAC,[],3.5,-0.1,Market disagreed,2026-11-05T14:00:43+00:00
+P19630afde9e2,4.0,35.0,,MIA 117-116 LAC,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,5.08,News after pick,2026-11-05T14:00:43+00:00
+P6730b8812386,1.0,39.0,,MIA 117-116 LAC,[],2.5,1.39,Variance,2026-11-05T14:00:43+00:00
+P3a8dfca7f248,8.0,35.0,,MIA 117-116 LAC,[],4.5,7.03,Minutes miss,2026-11-05T14:00:43+00:00
+Ped5780019970,9.0,37.0,,MIA 117-116 LAC,[],5.5,-9.07,Market disagreed,2026-11-05T14:00:43+00:00
+P71f8337ef64e,4.0,27.0,,CHA 104-114 BKN,[],2.5,-0.3,Market disagreed,2026-11-05T14:00:43+00:00
+Pda94dd6818b2,8.0,27.0,,CHA 104-114 BKN,[],2.5,-1.26,Market disagreed,2026-11-05T14:00:43+00:00
+P8449f90303b3,2.0,18.0,,CHA 104-114 BKN,"[{""player"": ""Coby White"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,7.7,News after pick,2026-11-05T14:00:43+00:00
+P3e4ed6d6b0da,5.0,20.0,,CHA 104-114 BKN,[],2.5,0.06,Variance,2026-11-05T14:00:43+00:00
+Pcba55e20dbc7,5.0,27.0,,CHA 104-114 BKN,[],6.5,1.1,Variance,2026-11-05T14:00:43+00:00
+P60a7f0dd8e38,4.0,27.0,,CHA 104-114 BKN,[],3.5,2.27,Variance,2026-11-05T14:00:43+00:00
+P69de3b95a206,2.0,38.0,,UTA 113-120 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",2.5,3.03,News after pick,2026-11-05T14:00:43+00:00
+P3f9d99dcd9d4,9.0,27.0,,UTA 113-120 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",6.5,7.48,News after pick,2026-11-05T14:00:43+00:00
+Pdf9faf7f7af1,3.0,42.0,,LAL 116-103 SAC,"[{""player"": ""Precious Achiuwa"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,10.68,News after pick,2026-11-05T14:00:43+00:00
+P8bca580bfb97,4.0,35.0,,LAL 116-103 SAC,"[{""player"": ""Precious Achiuwa"", ""from"": ""Probable"", ""to"": ""Available""}]",2.5,3.67,News after pick,2026-11-05T14:00:43+00:00
+P7b9029bebf0f,2.0,38.0,,IND 107-103 MEM,[],3.5,2.08,Variance,2026-11-05T14:00:43+00:00
+P6ec377b8acc5,0.0,18.0,,CLE 116-124 OKC,[],1.5,44.51,Variance,2026-11-05T14:00:43+00:00
+P96b961e42cc6,3.0,20.0,,CLE 116-124 OKC,[],2.5,8.51,Variance,2026-11-05T14:00:43+00:00
+P7399690a51d9,0.0,18.0,,CLE 116-124 OKC,[],2.5,44.51,Variance,2026-11-05T14:00:43+00:00
+P78887b4be700,4.0,20.0,,CLE 116-124 OKC,[],3.5,8.66,Variance,2026-11-05T14:00:43+00:00
+P9c993017327a,5.0,38.0,,IND 107-103 MEM,[],7.5,-8.56,Market disagreed,2026-11-05T14:00:43+00:00
+Pf174677d5af3,9.0,24.0,,IND 107-103 MEM,[],4.5,-5.62,Market disagreed,2026-11-05T14:00:43+00:00
+Paaf05cae6a50,9.0,33.0,,IND 107-103 MEM,[],6.5,3.27,Variance,2026-11-05T14:00:43+00:00
+P97e24f00d970,5.0,38.0,,IND 107-103 MEM,[],7.5,-13.86,Market disagreed,2026-11-05T14:00:43+00:00
+Pa781d2be0c60,4.0,33.0,,IND 107-103 MEM,[],5.5,-1.55,Market disagreed,2026-11-05T14:00:43+00:00
+Pdb206891e82e,2.0,30.0,,IND 107-103 MEM,[],3.5,0.92,Variance,2026-11-05T14:00:43+00:00
+Pd3be0ae85626,3.0,29.0,,IND 107-103 MEM,[],6.5,0.73,Variance,2026-11-05T14:00:43+00:00
+P5838980e5549,13.0,25.0,,IND 107-103 MEM,[],8.5,-0.22,Market disagreed,2026-11-05T14:00:43+00:00
+Pbe75115a8b8c,7.0,30.0,,UTA 113-120 NOP,[],4.5,25.63,Variance,2026-11-05T14:00:43+00:00
+P02d899ac2dd7,9.0,44.0,,UTA 113-120 NOP,[],5.5,2.06,Minutes miss,2026-11-05T14:00:43+00:00
+Pf4dbd1f03016,7.0,21.0,,UTA 113-120 NOP,[],5.5,-2.63,Market disagreed,2026-11-05T14:00:43+00:00
+P907c7340bdc0,6.0,32.0,,TOR 109-128 DEN,[],5.5,-0.49,Market disagreed,2026-11-05T14:00:43+00:00
+P2db25dc92fd7,0.0,0.0,,TOR 109-128 DEN,[],2.5,2.92,,2026-11-05T14:00:43+00:00
+P1ead691ea7cc,2.0,30.0,,TOR 109-128 DEN,[],1.5,0.0,Variance,2026-11-05T14:00:43+00:00
+Pbd3a51c30b5c,2.0,30.0,,TOR 109-128 DEN,[],3.5,1.99,Variance,2026-11-05T14:00:43+00:00
+P9de46ef69b69,6.0,41.0,,MIA 117-116 LAC,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",5.5,3.31,News after pick,2026-11-05T14:00:43+00:00
+Pa013c489c2c2,10.0,43.0,,MIA 117-116 LAC,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",7.5,-7.04,News after pick,2026-11-05T14:00:43+00:00
+P96ef78664e4b,1.0,39.0,,MIA 117-116 LAC,[],2.5,1.14,Variance,2026-11-05T14:00:43+00:00
+P3497414fae32,14.0,41.0,,MIA 117-116 LAC,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",11.5,3.38,News after pick,2026-11-05T14:00:43+00:00
+P675eb43f25e9,4.0,13.0,,MIA 117-116 LAC,[],6.5,2.07,Minutes miss,2026-11-05T14:00:43+00:00
+P0e5c02002a57,8.0,35.0,,MIA 117-116 LAC,[],4.5,5.44,Minutes miss,2026-11-05T14:00:43+00:00
+Pec0e2d8c6151,0.0,18.0,,CLE 116-124 OKC,[],1.5,44.51,not enough data,2026-11-05T14:00:43+00:00
+P2ad6c6ec9e19,7.0,23.0,,TOR 109-128 DEN,[],4.5,1.37,Variance,2026-11-05T14:00:43+00:00
+P0cfd0a2134e8,3.0,21.0,,DAL 111-112 SAS,[],1.5,-0.82,Market disagreed,2026-11-05T14:00:43+00:00
+P951fbe57fc29,1.0,14.0,,DAL 111-112 SAS,[],4.5,-9.1,Market disagreed,2026-11-05T14:00:43+00:00
+Pb76dd7498a16,1.0,18.0,,DAL 111-112 SAS,[],4.5,9.91,Minutes miss,2026-11-05T14:00:43+00:00
