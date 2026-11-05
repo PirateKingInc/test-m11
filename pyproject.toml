@@ -37,6 +37,7 @@ betdata = "betdata.cli:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["switch_over: uses OG's real switch-over exclusion (tests/alerts/test_engine_card.py)"]
 
 [tool.ruff]
 line-length = 100

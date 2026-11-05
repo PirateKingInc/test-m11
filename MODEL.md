@@ -2768,7 +2768,10 @@ rules live in `config/cards.yaml` (`betdata/cards.py`).
 - **OG's record** continues unbroken from Card v1 (official picks Oct 31 – Nov 4: 11-9, +2.71u)
   plus every OG card from Nov 6. **Nov 5 is excluded** (the switch-over day: lines were first
   seen while F was archived): `exclude_days` in config/cards.yaml, and each such OG pick gets
-  an `og_excluded: true` annotation in `ledger/annotations.csv`; no ledger row is rewritten.
+  an `og_excluded: true` annotation in `ledger/annotations.csv`; no ledger row is rewritten. On
+  Nov 5 itself no OG card is selected or shown: the OG view of Tonight's card reads "No card
+  today (switch-over)" (the shadow card stored that morning stays research). Both cards are
+  first selected together at 6:15 AM ET on Nov 6.
 - **Each card has its own success goal** (.500+ and positive units over 500 graded picks). The
   combined "All sports" line is gone; NFL's record stays on its own tab.
 - **Page** (owner-approved change to the frozen NBA tab): a "Next Gen | OG" toggle at the top of
