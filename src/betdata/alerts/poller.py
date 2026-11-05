@@ -44,7 +44,8 @@ from betdata.alerts.notify import Alert, emit
 from betdata.db.schema import games, teams
 
 log = logging.getLogger(__name__)
-NBA_CADENCE = timedelta(minutes=3)
+NBA_CADENCE = timedelta(minutes=1)  # the official injury report in its windows (was 3 min)
+NBA_LAG_CADENCE = timedelta(minutes=3)  # lag-window price polls (unchanged: SharpAPI quota)
 NFL_CADENCE = timedelta(minutes=5)
 CLOSING_MIN = 10
 # Signal 2 boards (each 3 credits): NBA at 17:30 and 18:45 ET on game days with a tip in the
@@ -145,6 +146,8 @@ class Poller:
             self.errors.append(f"{type(e).__name__}: {e}")
             raise
         finally:
+            if getattr(self, "_news", None) is not None:  # never hold the stream past the job
+                self._news.stop()
             self._save_run(status)
         return self.cycles
 
@@ -224,6 +227,12 @@ class Poller:
             nba_on = nba.active(c, now)
         if nba_on and self._due("due:nba_report", NBA_CADENCE, now):
             self._guard("nba report", self.nba_report, now)
+        # news alerts, upgraded (owner 2026-11-05, betdata/news): the Bluesky stream is held
+        # open only in the game-day report windows; Sleeper and the claim log run there too
+        if nba_on:
+            self._guard("news", self.news_desk().cycle, now)
+        elif getattr(self, "_news", None) is not None:
+            self._news.stop()
         if self.nfl_handler is not None:
             self._guard("nfl status", self.nfl_handler.cycle, self, now)
         self._guard("lag polls", self.lag_polls, now)
@@ -234,6 +243,13 @@ class Poller:
             self._guard("g1", self.g1_check, now)
         self._guard("card", self.card, now)
         self._guard("tracker", self.tracker, now)
+
+    def news_desk(self):
+        if getattr(self, "_news", None) is None:
+            from betdata.news.desk import NewsDesk
+
+            self._news = NewsDesk(self)
+        return self._news
 
     def tracker(self, now: datetime) -> str | None:
         """Today's tracker (alerts/tracker.py): every 5 minutes in a game window, rebuilt and
@@ -562,7 +578,7 @@ class Poller:
                 continue
             keep[key] = w
             sport, gid = key.split(":")
-            cadence = NBA_CADENCE if sport == "nba" else NFL_CADENCE
+            cadence = NBA_LAG_CADENCE if sport == "nba" else NFL_CADENCE
             if self._due(f"due:lag:{key}", cadence, now):
                 self.poll_game(sport, int(gid), now, w.get("event_id"))
         if keep != windows:
@@ -754,19 +770,38 @@ class Poller:
             doc = L.predict_live(c, now, self._engine, [gid])
         return doc["games"][0] if doc["games"] else None
 
-    def engine_picks(self, gid: int, qs: list[Quote], now: datetime, trigger: str,
-                     resim: bool = False) -> list[int]:  # fmt: skip
-        from betdata.alerts import consensus as C
-        from betdata.alerts.notify import record
+    def engine_override(self, gid: int, now: datetime, player: dict, status: str) -> dict | None:
+        """The game re-simulated with one player's status set as an early source reports it
+        (news alerts, owner 2026-11-05): an extra injury row known just before now."""
+        import pandas as pd
+
+        from betdata.nba.data import load_injuries
         from betdata.nba.engine import live as L
-        from betdata.nba.engine import picks as K
 
         if not L.FIT_PATH.exists():
-            return []
-        design = K.Design.from_json(L.load_fit()[1]["design"])
-        game = self.engine_game(gid, now, resim)
-        if game is None:
-            return []
+            return None
+        with self.main.connect() as c:
+            if getattr(self, "_engine", None) is None:
+                self._engine = L.build_engine(c, now)
+            inj = load_injuries(c, self._engine.inp.g)
+            row = pd.DataFrame([{"game_id": gid, "team_id": player.get("team_id"),
+                                 "player_id": str(player.get("player_id")),
+                                 "player_name": player.get("name"), "status": status,
+                                 "known_at": pd.Timestamp(now - timedelta(seconds=1))}])
+            row["known_at"] = pd.to_datetime(row["known_at"], utc=True)
+            self._engine.inp.inj = pd.concat([inj, row], ignore_index=True)
+            try:
+                doc = L.predict_live(c, now, self._engine, [gid])
+            finally:
+                self._engine.inp.inj = inj
+        return doc["games"][0] if doc["games"] else None
+
+    def engine_candidates(self, gid: int, qs: list[Quote], now: datetime, game: dict,
+                          design) -> list:  # fmt: skip
+        """Every engine candidate at the quoted DK/FD prices (the pick rule's input)."""
+        from betdata.alerts import consensus as C
+        from betdata.nba.engine import picks as K
+
         two_way: dict = {}
         for (_, market), books in _two_way(qs, now).items():
             two_way[market] = {b: (tw.line, tw.price_a, tw.price_b) for b, tw in books.items()}
@@ -784,8 +819,22 @@ class Poller:
                 c = C.prop_consensus(p, "nba", gid, market, name, now, line)
                 return None if c is None else c.prob("over", line)
 
-            cands = (K.game_candidates(game, two_way, design, gcons)
-                     + K.prop_candidates(game, props, design, pcons, _norm))  # fmt: skip
+            return (K.game_candidates(game, two_way, design, gcons)
+                    + K.prop_candidates(game, props, design, pcons, _norm))  # fmt: skip
+
+    def engine_picks(self, gid: int, qs: list[Quote], now: datetime, trigger: str,
+                     resim: bool = False) -> list[int]:  # fmt: skip
+        from betdata.alerts.notify import record
+        from betdata.nba.engine import live as L
+        from betdata.nba.engine import picks as K
+
+        if not L.FIT_PATH.exists():
+            return []
+        design = K.Design.from_json(L.load_fit()[1]["design"])
+        game = self.engine_game(gid, now, resim)
+        if game is None:
+            return []
+        cands = self.engine_candidates(gid, qs, now, game, design)
         label, tip = self.game_label(gid)
         by_name = {pl.get("name"): pl for pl in game.get("players", [])}
         out = []

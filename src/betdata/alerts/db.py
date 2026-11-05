@@ -77,6 +77,38 @@ status_events = Table(
     UniqueConstraint("sport", "game_id", "player_key", "report_at", "new_status"),
 )
 
+# News alerts, upgraded (owner 2026-11-05, betdata/news): every early-source claim (Bluesky
+# post with clear status language about a rotation player, or a Sleeper trending-add spike)
+# and what the official report later said. Logged always, even with news alerts off.
+early_claims = Table(
+    "early_claims",
+    metadata,
+    Column("claim_id", Integer, primary_key=True),
+    Column("source", String(16), nullable=False),  # bluesky, sleeper
+    Column("account", String(128)),  # @handle (Bluesky) or "trending adds" (Sleeper)
+    Column("group_", String(16)),  # national, beat, official, hint
+    Column("player_name", String(128), nullable=False),
+    Column("team", String(8)),
+    Column("game_id", Integer),
+    Column("status", String(16)),  # Out / Available; null for a Sleeper hint
+    Column("posted_at", UTCDateTime, nullable=False),
+    Column("detected_at", UTCDateTime, nullable=False),
+    Column("text", Text),
+    Column("uri", String(256)),
+    Column("official_before", String(16)),  # the official status when the claim arrived
+    Column("ahead", Boolean, nullable=False),  # the official report did not show it yet
+    Column("corroborated", Boolean, nullable=False, default=False),  # a Sleeper spike too
+    Column("outcome", String(16), nullable=False, default="pending"),
+    # pending / confirmed / contradicted / unconfirmed (still not on the report at tip) /
+    # official first (the report already showed it: ignored) / no change (Sleeper hint)
+    Column("official_status", String(16)),
+    Column("official_at", UTCDateTime),
+    Column("lead_min", Float),  # minutes the source was ahead of the official report
+    Column("alert_ids", JSON),
+    Column("resolved_at", UTCDateTime),
+    UniqueConstraint("source", "account", "player_name", "status", "posted_at"),
+)
+
 # Every price the poller read (DK/FD from SharpAPI, Pinnacle from The Odds API, Kalshi), whether
 # for a lag window, a signal or a pre-game close. `event_id` ties a poll to the status change
 # whose 60-minute lag window it belongs to (null for other polls).

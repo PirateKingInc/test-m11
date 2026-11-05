@@ -19,6 +19,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "typer>=0.12",
     "tzdata>=2026.5",
+    "websockets>=13",
 ]
 
 [build-system]
