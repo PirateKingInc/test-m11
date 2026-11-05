@@ -179,6 +179,8 @@ def test_weekly_report_and_pushes(pdb, tmp_path):
     assert "## Official success goal" in md and ("- All sports (NBA Card v1 + NBA engine card + "
                                                   "NFL card, combined): Goal: .500+") in md
     assert "## NBA engine: every prediction vs the close" in md
+    assert "## Engine card vs shadow Card v1 (same nights only: 0)" in md
+    assert "Comparison rule (fixed 2026-11-05)" in md
     assert summary[5] == "Gates: C-NBA 1/200, F 1/200"
     posts = []
     client = httpx.Client(transport=httpx.MockTransport(

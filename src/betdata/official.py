@@ -41,11 +41,16 @@ def dataset(out: Path) -> list[dict]:
 
     rp = {r["pick_id"]: r for r in read_rows(out / REVIEW_PICK)}
     rr = {r["pick_id"]: r for r in read_rows(out / REVIEW_RESULT)}
+    sh = {r["pick_id"]: r for r in read_rows(out / "shadow_card.csv")}
     rows = []
     for r in counted(joined(out)):
         p, q = rp.get(r["pick_id"], {}), rr.get(r["pick_id"], {})
         official = r.get("card") == "yes"
+        x = sh.get(r["pick_id"], {})
         rows.append({**r, "official": official,
+                     "shadow": x.get("shadow") == "yes", "shadow_date": x.get("card_date", ""),
+                     "shadow_label": x.get("shadow_label", ""),
+                     "shadow_stake": x.get("shadow_stake", ""),
                      "day": r.get("card_date") or _et_date(r["tip"]),
                      "team": p.get("team", ""), "opponent": p.get("opponent", ""),
                      "proj_median": p.get("proj_median", ""),
@@ -58,6 +63,10 @@ def dataset(out: Path) -> list[dict]:
 
 def official_stake(r: dict) -> float:
     return _f(r.get("card_stake")) or 0.0
+
+
+def shadow_stake(r: dict) -> float:
+    return _f(r.get("shadow_stake")) or 0.0
 
 
 def flat(_r: dict) -> float:
@@ -146,25 +155,42 @@ def official(rows: list[dict], sport: str | None = None) -> list[dict]:
 ENGINE_CARD_START = "2026-11-05"
 ENGINE_CARD = "Engine card (since Nov 5)"
 CARD_V1 = "Card v1, nbap15 (Oct 31 – Nov 4)"
+# the labels after the one-step revert to Card v1 (SWITCH.md): the headline and the fold swap
+CARD_V1_REVERTED = "Card v1, nbap15 (Oct 31 – Nov 4, and again since the revert)"
+ENGINE_CARD_REVERTED = "Engine card (from Nov 5 until the revert)"
 ALL_SPORTS = "All sports"
 ALL_SPORTS_NOTE = "NBA Card v1 + NBA engine card + NFL card, combined"
 
 
+ENGINE_SIGNAL = "nba-engine"
+
+
 def engine_card(rows: list[dict]) -> list[dict]:
-    """The NBA engine card's official rows (card dates from ENGINE_CARD_START)."""
-    return [r for r in rows if r["sport"] == "nba" and r["day"] >= ENGINE_CARD_START]
+    """The NBA engine card's official rows (its picks are the engine's, from Nov 5)."""
+    return [r for r in rows if r["sport"] == "nba" and r["signal_name"] == ENGINE_SIGNAL]
 
 
 def card_v1(rows: list[dict]) -> list[dict]:
-    """The NBA Card v1 official rows (card dates before ENGINE_CARD_START)."""
-    return [r for r in rows if r["sport"] == "nba" and r["day"] < ENGINE_CARD_START]
+    """The NBA Card v1 official rows (F / C-NBA card picks: Oct 31 - Nov 4, and again after a
+    revert to Card v1, SWITCH.md)."""
+    return [r for r in rows if r["sport"] == "nba" and r["signal_name"] != ENGINE_SIGNAL]
+
+
+def nba_headline() -> str:
+    """Which NBA card is official now: "engine", or "v1" after the one-step revert."""
+    from betdata.alerts.card import NBA_CARD
+
+    return NBA_CARD
 
 
 def goal_rows(rows: list[dict], sport: str) -> list[dict]:
     """The official rows the sport's success goal counts: the NBA's restarts with the engine
-    card (owner override 2026-11-04); NFL's is every NFL card pick."""
+    card (owner override 2026-11-04) and follows the official NBA card; NFL's is every NFL
+    card pick."""
     off = official(rows, sport)
-    return engine_card(off) if sport == "nba" else off
+    if sport != "nba":
+        return off
+    return engine_card(off) if nba_headline() == "engine" else card_v1(off)
 
 
 def periods(rows: list[dict], today: date) -> dict[str, Rec]:
@@ -317,3 +343,96 @@ def context_text(g: Goal) -> str:
     o = "–" if g.avg_odds is None else (f"+{g.avg_odds}" if g.avg_odds > 0 else str(g.avg_odds))
     be = "–" if g.break_even is None else f"{100 * g.break_even:.1f}%"
     return f"avg odds {o} · break-even {be}"
+
+
+# --- Engine card vs shadow Card v1 (owner request 2026-11-05; MODEL.md "Shadow Card v1") -------
+
+COMPARE_N = 200  # graded picks each, before any comparison
+
+
+def same_nights(out: Path) -> set[str]:
+    """NBA card dates on which both the engine card and the shadow Card v1 were chosen."""
+    from betdata.ledger import read_rows
+
+    kinds: dict[str, set] = {}
+    for r in read_rows(out / "card_days.csv"):
+        if r["sport"] == "nba":
+            kinds.setdefault(r["card_date"], set()).add(r["kind"])
+    return {d for d, k in kinds.items() if {"engine", "shadow"} <= k}
+
+
+@dataclass
+class Side:
+    name: str
+    rec: Rec
+    checks: object  # betdata.checks.Checks
+
+
+@dataclass
+class Comparison:
+    nights: int
+    engine: Side
+    shadow: Side
+
+    @property
+    def verdict(self) -> str:
+        """The fixed rule (MODEL.md "Shadow Card v1: comparison rule")."""
+        e, s = self.engine, self.shadow
+        if e.rec.graded < COMPARE_N or s.rec.graded < COMPARE_N:
+            return (f"too early to compare: engine card {e.rec.graded}/{COMPARE_N}, shadow Card "
+                    f"v1 {s.rec.graded}/{COMPARE_N} graded")
+        ee, se = e.checks.ev, s.checks.ev
+        apart = se.low is not None and ee.high is not None and se.low > ee.high
+        if apart and s.rec.units > 0:
+            return "recommend switching back to Card v1 (the switch is the owner's decision)"
+        return "keep the engine card"
+
+
+def comparison(rows: list[dict], out: Path) -> Comparison:
+    """Engine card vs shadow Card v1 over the same nights only, each at its own card stakes."""
+    from betdata.checks import picks_of, three_checks
+
+    nights = same_nights(out)
+    eng = [r for r in engine_card(official(rows, "nba")) if r["day"] in nights]
+    sh = [r for r in rows if r.get("shadow") and r.get("shadow_date") in nights]
+    er, sr = record(eng, official_stake), record(sh, shadow_stake)
+    return Comparison(len(nights), Side("Engine card", er, three_checks(picks_of(er.rows))),
+                      Side("Shadow Card v1", sr, three_checks(picks_of(sr.rows))))
+
+
+def comparison_rows(c: Comparison) -> list[tuple[str, str, str]]:
+    """(metric, engine card, shadow Card v1) for the table (Research tab, weekly report)."""
+
+    def odds(r: Rec) -> str:
+        o = r.avg_odds
+        return "–" if o is None else (f"+{o}" if o > 0 else str(o))
+
+    def ev(ck) -> str:
+        e = ck.ev
+        if e.value is None:
+            return "–"
+        rng = "" if e.low is None else f" (95% {100 * e.low:+.1f} to {100 * e.high:+.1f})"
+        return f"{100 * e.value:+.1f}%{rng}"
+
+    def cal(ck) -> str:
+        c = ck.calibration
+        return "–" if c.value is None else f"ECE {c.value:.3f}, {c.note}"
+
+    def roi(r: Rec) -> str:
+        return "–" if r.roi is None else f"{100 * r.roi:+.1f}%"
+
+    e, s = c.engine, c.shadow
+    return [("Graded picks", str(e.rec.graded), str(s.rec.graded)),
+            ("W-L-P", e.rec.wlp, s.rec.wlp),
+            ("Units", f"{e.rec.units:+.2f}u", f"{s.rec.units:+.2f}u"),
+            ("ROI", roi(e.rec), roi(s.rec)),
+            ("Average odds", odds(e.rec), odds(s.rec)),
+            ("EV at close", ev(e.checks), ev(s.checks)),
+            ("Calibration", cal(e.checks), cal(s.checks))]  # fmt: skip
+
+
+COMPARE_RULE = (f"Comparison rule (fixed 2026-11-05): compare only once both cards have at least "
+                f"{COMPARE_N} graded picks over the same nights; recommend switching back to "
+                "Card v1 only if the shadow card's EV at close is higher with the 95% ranges not "
+                "overlapping AND its units are positive. The switch itself stays the owner's "
+                "decision.")

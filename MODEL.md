@@ -2643,7 +2643,7 @@ three checks). Paper picks only. NFL is unchanged.
 - **Labels** (`alerts/labels.py`): TAKE (1 unit) when the pick's EV ≥ 1.5 × the engine's
   threshold (θ = 0.05 game markets, 0.10 props), else LEAN (0.5 unit); PASS only if the price
   was gone at creation. Engine picks are labelled when created, as the M18 picks were.
-- **Archived** (no new picks; every pick stays in the ledger, every record on the Research tab,
+- **Archived** (superseded 2026-11-05 by "Shadow Card v1": they generate candidates again, for the shadow only; no new official or pushed picks; every pick stays in the ledger, every record on the Research tab,
   marked "archived"): C-NBA (the value signal on nba15/nbap15 repricing; `Poller.nba_game`,
   `NBA_ARCHIVED`), F (opening-line snipes on nbap15; the poller's `RETIRED` set), and with them
   nba15 and nbap15 as pick sources. Their hourly predictions still run (they create no picks
@@ -2674,4 +2674,28 @@ three checks). Paper picks only. NFL is unchanged.
 - **UI freeze:** the owner approved exactly the record lines above. The snapshot was
   regenerated; the previous one is kept (`tests/runner/ui_freeze_snapshot_m20b.txt`) and the
   exact difference is pinned, as is the Today renderer's new hash (the short-card note).
+
+# Shadow Card v1 (owner request 2026-11-05; the official engine card is unchanged)
+
+- **What:** every morning at 8:50 AM ET, beside the official engine card, the old Card v1 is
+  selected exactly as before (`alerts/card.py` `run_shadow`): the top 5 by EV among the
+  nbap15/nba15-based F and C-NBA picks still Live; if none is Live at 8:50, at the first poll
+  with one. Labels and stakes by the M18 rule. Signal name `card-v1-shadow`.
+- **Never official, never on the main page, never pushed.** Stored as `shadow:<sport>:<day>`,
+  written once to `ledger/shadow_card.csv`; graded like the card (the picks' own results, at the
+  shadow card's stakes). `ledger/card_days.csv` records every chosen card per day (even empty).
+- **F and C-NBA candidates resume in the background** for this purpose only: they are labelled
+  and recorded (`Poller.send` → `notify.record`), never pushed, and never in the official pool or
+  Today while the engine card is official. Their Research records keep growing, marked
+  "archived from the card · shadow Card v1 only".
+- **Comparison** (Research tab "Engine card vs shadow Card v1", and the weekly report): same
+  nights only (dates on which both cards were chosen), each at its own stakes: graded picks,
+  W-L-P, units, ROI, average odds, EV at close (closing no-vig × odds − 1, 95% range) and
+  calibration (ECE and gap), as in M20 Part A.
+- **Comparison rule (fixed 2026-11-05):** compare only once both cards have ≥ 200 graded picks
+  (same nights). Recommend switching back to Card v1 only if the shadow card's EV at close is
+  higher with the 95% ranges not overlapping (shadow low > engine high) **and** the shadow
+  card's units are positive. Otherwise: keep the engine card. The switch itself stays an owner
+  decision.
+- **Revert:** one constant, `NBA_CARD` in `alerts/card.py` (SWITCH.md "Revert to Card v1").
 

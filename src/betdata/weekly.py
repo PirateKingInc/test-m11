@@ -166,6 +166,12 @@ def build(root: Path, now: datetime, main: Connection | None,
     for name, r in sig.items():
         g = gate(r.clvs)
         md.append(f"| {name} | {_rec(r)} | {g['n']}/{GATE_N}: {g['status']} |")
+    # engine card vs shadow Card v1, same nights only (owner request 2026-11-05)
+    cmp_ = O.comparison(rows, root / "ledger")
+    md += ["", f"## Engine card vs shadow Card v1 (same nights only: {cmp_.nights})", "",
+           "| | Engine card (official) | Shadow Card v1 |", "|---|---|---|",
+           *[f"| {m} | {a} | {b} |" for m, a, b in O.comparison_rows(cmp_)], "",
+           O.COMPARE_RULE, "", f"Status: {cmp_.verdict}"]
     # every NBA engine prediction graded at the close (owner override 2026-11-04)
     from betdata.nba import engine_grades as G
 

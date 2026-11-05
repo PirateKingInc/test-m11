@@ -53,10 +53,10 @@ NBA_BOARDS_ET = ((17, 30), (18, 45))
 NFL_BOARD_BEFORE = timedelta(minutes=75)
 G1_BEFORE = timedelta(minutes=10)  # M18 G1: the early-season totals check, ten minutes out
 # M20 Part A: G1 and G2 are retired (no new picks); their ledger history and grading stay.
-# G1/G2 retired 2026-11-03 (M20 Part A); F (`snipe`) archived 2026-11-04 with C-NBA, nba15 and
-# nbap15 when the NBA engine became the card's source (owner override, MODEL.md "Engine card").
-RETIRED = frozenset({"g1", "g2", "snipe"})
-NBA_ARCHIVED = True  # C-NBA (the value signal on nba15/nbap15 repricing): no new NBA picks
+# G1/G2 retired 2026-11-03 (M20 Part A). F and C-NBA left the NBA card on 2026-11-04 (owner
+# override, MODEL.md "Engine card") but keep generating candidates in the background for the
+# shadow Card v1 (owner 2026-11-05): recorded, never pushed (`send`, card.shadow_signal).
+RETIRED = frozenset({"g1", "g2"})
 
 
 def utc(t: datetime) -> datetime:
@@ -256,6 +256,14 @@ class Poller:
         from betdata.alerts.card import push, run
 
         cards = run(self.pdb, self.main, now)
+        try:  # the shadow Card v1 (never pushed, never official)
+            from betdata.alerts.card import run_shadow
+
+            for sh in run_shadow(self.pdb, self.main, now):
+                self.notes.append(f"shadow card {sh['sport']} {sh['day']}: "
+                                  f"{len(sh['picks'])} picks")
+        except Exception as e:  # noqa: BLE001 - the shadow never stops the official card
+            self.errors.append(f"shadow card: {type(e).__name__}: {str(e)[:200]}")
         for c in cards:  # pushed right after selection, one message per sport
             sent = push(self.pdb, c, now, self.keys.ntfy_topic, self.push_client)
             self.notes.append(f"card {c['sport']} {c['day']}: {len(c['picks'])} picks, "
@@ -333,29 +341,27 @@ class Poller:
 
     def nba_game(self, store, models, gid: int, evs: list, report, now: datetime) -> None:
         first_event, ch = evs[0]
-        if not NBA_ARCHIVED:  # nba15/nbap15 repricing (archived 2026-11-04)
-            rp = models.repredict(self.main, store, ch, now)
-            with self.pdb.begin() as p:
-                p.execute(insert(repredictions).values(
-                    event_id=first_event, game_id=gid, model_version=rp.model_version,
-                    point=rp.point, margin_before=rp.margin_before,
-                    margin_after=rp.margin_after, total_before=rp.total_before,
-                    total_after=rp.total_after, props=list(rp.props),
-                    created_at=now))  # fmt: skip
+        rp = models.repredict(self.main, store, ch, now)
+        with self.pdb.begin() as p:
+            p.execute(insert(repredictions).values(
+                event_id=first_event, game_id=gid, model_version=rp.model_version,
+                point=rp.point, margin_before=rp.margin_before, margin_after=rp.margin_after,
+                total_before=rp.total_before, total_after=rp.total_after,
+                props=list(rp.props), created_at=now))  # fmt: skip
         self.open_lag("nba", gid, first_event, now)
         qs = self.poll_game("nba", gid, now, first_event)
         players = {c.player_name: c for _, c in evs}
         why = "; ".join(f"{c.player_name} {c.old_status or 'not listed'} -> "
                         f"{c.new_status or 'not listed'}" for _, c in evs)  # fmt: skip
-        if not NBA_ARCHIVED:
-            # M18 Part C: the value signal (news -> reprice -> compare with DK/FD and the
-            # consensus) replaced M16's Signal 1 for the NBA; archived 2026-11-04.
-            stated = report.report_at.astimezone(R.EASTERN).strftime("%-I:%M %p ET")
-            self.signal_value("nba", gid, first_event, report.name, rp, qs, players,
-                              f"{why} (report {stated})", report.report_at, now,
-                              models.p_over)  # fmt: skip
-        # M20: a qualifying status change re-simulates the game with the engine (since
-        # 2026-11-04 the only NBA repricing; a pick found before 8:50 AM ET can make the card)
+        stated = report.report_at.astimezone(R.EASTERN).strftime("%-I:%M %p ET")
+        reason = f"{why} (report {stated})"
+        # M18 Part C: the value signal (news -> reprice -> compare with DK/FD and the consensus)
+        # replaces M16's Signal 1 for the NBA. Since 2026-11-04 its picks feed only the shadow
+        # Card v1 while the engine card is official (recorded, never pushed: `send`).
+        self.signal_value("nba", gid, first_event, report.name, rp, qs, players, reason,
+                          report.report_at, now, models.p_over)
+        # M20: a qualifying status change re-simulates the game with the engine (a pick found
+        # before 8:50 AM ET can make the engine card)
         self._guard(f"engine {gid}", self.engine_picks, gid, qs, now, f"injury: {why}", True)
 
     # --- Signal 1 -----------------------------------------------------------------------------
@@ -690,7 +696,7 @@ class Poller:
                     qs += [q for q in self.sharp.game(c, sport, ev) if q.game_id == gid]
             new = self.store_quotes(qs, now, None, change_only=True)
             self._guard(f"consensus {gid}", self.store_consensus, sport, gid, qs, now)
-            if sport == "nba" and new and "snipe" not in RETIRED:
+            if sport == "nba" and new:
                 self._guard(f"snipes {gid}", self.snipes, gid, new, now)
             if sport == "nba":  # M20: the hourly sweep and new lines trigger engine picks
                 self._guard(f"engine {gid}", self.engine_picks, gid, qs, now,
@@ -1043,7 +1049,16 @@ class Poller:
     # --- helpers --------------------------------------------------------------------------------
 
     def send(self, a: Alert, now: datetime) -> int | None:
-        """Label, record and push one alert (notify.emit); its id, or None if a duplicate."""
+        """Label, record and push one alert (notify.emit); its id, or None if a duplicate. An
+        NBA F / C-NBA pick while the engine card is official feeds only the shadow Card v1:
+        labelled and recorded, never pushed."""
+        from betdata.alerts.card import shadow_signal
+
+        if shadow_signal(a):
+            from betdata.alerts.notify import record
+
+            with self.pdb.begin() as pc:
+                return record(pc, self.labelled(a, now), now)
         return emit(self.pdb, self.labelled(a, now), now, self.keys.ntfy_topic, self.push_client)
 
     def labelled(self, a: Alert, now: datetime) -> Alert:

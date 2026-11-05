@@ -54,10 +54,12 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
     the "All sports" goal combines both versions and the NFL card, labelled so."""
     off = O.official(rows, sport)
     nba = sport == "nba"
-    head = O.engine_card(off) if nba else off
+    eng_head = O.nba_headline() == "engine"  # "v1" after the one-step revert (SWITCH.md)
+    head = (O.engine_card(off) if eng_head else O.card_v1(off)) if nba else off
     per = O.periods(head, today)
     allt, g = per["All time"], O.goal(O.goal_rows(rows, sport))
-    preview = (f"{'Engine card' if nba else 'All time'} {allt.wlp} · {_units(allt.units)} · "
+    who = ("Engine card" if eng_head else "Card v1") if nba else "All time"
+    preview = (f"{who} {allt.wlp} · {_units(allt.units)} · "
                f"goal {g.graded} of {O.GOAL_N}, {g.status}")
     out = [f"<section class='official' data-sport='{escape(sport)}'>"
            f"<details class='fold' data-fold='{escape(sport)}-official'><summary><b>Official "
@@ -66,7 +68,8 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
            "chosen at 8:50 AM ET). Like a team's record, graded picks only; today's picks are "
            "under Tonight's card until they are graded. Paper units, not advice.</p>"]
     if nba:
-        out.append(f"<h3 class='era' data-era='engine'>{escape(O.ENGINE_CARD)}</h3>")
+        out.append(f"<h3 class='era' data-era='{'engine' if eng_head else 'v1'}'>"
+                   f"{escape(O.ENGINE_CARD if eng_head else O.CARD_V1_REVERTED)}</h3>")
     out.append("<dl class='periods'>")
     for label, rec in per.items():
         slug = label.lower().replace(" ", "-")
@@ -74,13 +77,15 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
         O.write_csv(site / href, rec.rows)
         out.append(f"<dt>{escape(label)}</dt><dd>{stat_line(rec, href)}</dd>")
     out.append("</dl>")
-    out.append(goal_html(O.goal_rows(rows, sport), "NBA engine card" if nba else name))
+    out.append(goal_html(O.goal_rows(rows, sport),
+                         ("NBA engine card" if eng_head else "NBA Card v1") if nba else name))
     if nba:
-        v1 = O.record(O.card_v1(off), O.official_stake)
-        href = "csv/nba-official-card-v1.csv"
+        v1 = O.record(O.card_v1(off) if eng_head else O.engine_card(off), O.official_stake)
+        href = f"csv/nba-official-{'card-v1' if eng_head else 'engine-card'}.csv"
         O.write_csv(site / href, v1.rows)
+        title = O.CARD_V1 if eng_head else O.ENGINE_CARD_REVERTED
         out.append(f"<details class='fold era' data-fold='nba-card-v1' data-era='v1'><summary>"
-                   f"<b>{escape(O.CARD_V1)}</b> <span class='pv'>— {v1.wlp} · "
+                   f"<b>{escape(title)}</b> <span class='pv'>— {v1.wlp} · "
                    f"{_units(v1.units)}</span></summary><div class='foldbody'>"
                    f"<p>{stat_line(v1, href)}</p></div></details>")
         # "All sports" once, on the NBA tab (as the M18 bankroll was): both NBA versions + NFL
@@ -237,8 +242,9 @@ def research_html(rows: list[dict], site: Path) -> str:
         retired = (f" <span class='meta'>retired {escape(RETIRED[name])}: no new picks"
                    "</span>" if name in RETIRED else "")  # fmt: skip
         if name in ARCHIVED:
-            retired = (f" <span class='meta archived'>archived {escape(ARCHIVED[name])}: no new "
-                       "picks, history kept</span>")
+            retired = (f" <span class='meta archived'>archived from the card "
+                       f"{escape(ARCHIVED[name])}: shadow Card v1 only, never pushed; history "
+                       "kept</span>")
         out.append(f"<li class='prop' data-signal='{escape(name)}'><div><b>{escape(name)}</b>"
                    f"{retired}</div><div>{stat_line(rec, href)}</div>"
                    f"<div class='meta' data-checks='{escape(ck.status)}'>Three checks: "

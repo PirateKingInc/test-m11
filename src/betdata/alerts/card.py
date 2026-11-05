@@ -31,6 +31,14 @@ EV is >= 1.5x the engine's threshold, else LEAN (0.5 unit). The engine card is c
 8:50, even when it is short or empty (the page and the push then say "N picks today — the engine
 found no other value"); a pick found after 8:50 stays off the card (tracked on the Research tab).
 The NFL card is unchanged.
+
+Shadow Card v1 (owner request 2026-11-05, MODEL.md "Shadow Card v1"): on every engine-card day,
+also at 8:50 AM ET, the old Card v1 is selected exactly as before (top 5 by EV among the F and
+C-NBA picks still Live; if none is Live at 8:50, at the first poll with one), as `card-v1-shadow`.
+It is never official, never on the main page and never pushed; it is stored as `shadow:<sport>:
+<day>`, written to `ledger/shadow_card.csv` and graded like the card. F and C-NBA keep generating
+candidates in the background for it only (recorded, never pushed). One constant, `NBA_CARD`,
+decides which is official: "engine" now; "v1" is the one-step revert (SWITCH.md).
 """
 
 from __future__ import annotations
@@ -49,11 +57,29 @@ AT = time(8, 50)  # Eastern
 FIRST_DAY = date(2026, 10, 31)
 SPORTS = ("nba", "nfl")
 ENGINE_START = date(2026, 11, 5)  # the first engine card (owner override 2026-11-04)
+# The NBA card's official source: "engine" (owner override 2026-11-04) or "v1" (Card v1, the
+# M18 F and C-NBA picks). Setting "v1" is the one-step revert (SWITCH.md): the official card,
+# the pushes and the Today list go back to Card v1 and the shadow card stops.
+NBA_CARD = "engine"
+SHADOW = "card-v1-shadow"
+V1_SIGNALS = ("value", "snipe")  # Card v1's NBA pool: C-NBA and F (nba15/nbap15-based)
 
 
 def engine_day(sport: str, day: date) -> bool:
     """Is the sport's card on this day the engine card (NBA from ENGINE_START)?"""
-    return sport == "nba" and day >= ENGINE_START
+    return sport == "nba" and day >= ENGINE_START and NBA_CARD == "engine"
+
+
+def shadow_day(sport: str, day: date) -> bool:
+    """Is a shadow Card v1 chosen for the sport on this day (every engine-card day)?"""
+    return engine_day(sport, day)
+
+
+def shadow_signal(a) -> bool:
+    """An alert that only feeds the shadow Card v1 (an NBA F or C-NBA pick while the engine card
+    is official): recorded, never pushed."""
+    day = a.tip.astimezone(EASTERN).date() if a.tip is not None else date.max
+    return a.sport == "nba" and a.signal in V1_SIGNALS and shadow_day("nba", day)
 
 
 def signals_for(sport: str, day: date) -> tuple[str, ...]:
@@ -70,6 +96,10 @@ def short_note(n: int) -> str:
 
 def key(sport: str, day: date) -> str:
     return f"card:{sport}:{day.isoformat()}"
+
+
+def shadow_key(sport: str, day: date) -> str:
+    return f"shadow:{sport}:{day.isoformat()}"
 
 
 def day_bounds(day: date) -> tuple[datetime, datetime]:
@@ -113,22 +143,22 @@ def _ns(r) -> SimpleNamespace:
     return SimpleNamespace(**d)
 
 
-def day_picks(p, sport: str, day: date) -> list[SimpleNamespace]:
+def day_picks(p, sport: str, day: date, signals=None) -> list[SimpleNamespace]:
     """The sport's card-pool picks for games on the Eastern day (M18 signals; the NBA engine's
-    from ENGINE_START)."""
+    from ENGINE_START; `signals` overrides, e.g. V1_SIGNALS for the shadow card)."""
     lo, hi = day_bounds(day)
     return [_ns(r) for r in p.execute(select(alerts).where(
-        alerts.c.sport == sport, alerts.c.signal.in_(signals_for(sport, day)),
+        alerts.c.sport == sport, alerts.c.signal.in_(signals or signals_for(sport, day)),
         alerts.c.tip >= lo, alerts.c.tip < hi)
         .order_by(alerts.c.created_at, alerts.c.alert_id))]  # fmt: skip
 
 
-def choose(p, sport: str, day: date, now: datetime) -> dict:
+def choose(p, sport: str, day: date, now: datetime, signals=None) -> dict:
     """The card at `now` (pure on the poller database): top SIZE live picks by EV."""
     from betdata.alerts.grade import utc
 
     pool = []
-    for a in day_picks(p, sport, day):
+    for a in day_picks(p, sport, day, signals):
         if utc(a.created_at) > now or a.tip is None or a.tip <= now:
             continue
         x = ev(a)
@@ -146,7 +176,9 @@ def choose(p, sport: str, day: date, now: datetime) -> dict:
                       "pinnacle_sides": lab.get("pinnacle_sides")})  # fmt: skip
     out = {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
            "picks": picks, "live": len(pool)}
-    if engine_day(sport, day):
+    if signals is not None:
+        out["source"] = SHADOW
+    elif engine_day(sport, day):
         out["source"] = "engine"
     return out
 
@@ -157,6 +189,38 @@ def in_ledger(sport: str, day: date) -> bool:
 
     return any(r["sport"] == sport and r["card_date"] == day.isoformat()
                for r in read_rows(ledger_dir() / "card.csv"))  # fmt: skip
+
+
+def shadow_in_ledger(sport: str, day: date) -> bool:
+    from betdata.ledger import ledger_dir, read_rows
+
+    return any(r["sport"] == sport and r["card_date"] == day.isoformat()
+               for r in read_rows(ledger_dir() / "shadow_card.csv"))  # fmt: skip
+
+
+def run_shadow(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
+    """Choose the shadow Card v1 when due (once), exactly as Card v1 was chosen: from 8:50 AM ET
+    on a day with games, at the first poll with any Live F/C-NBA pick. Never pushed."""
+    day = now.astimezone(EASTERN).date()
+    out = []
+    for sport in SPORTS:
+        if not shadow_day(sport, day) or now < select_at(day):
+            continue
+        with pdb.connect() as p:
+            if get_state(p, shadow_key(sport, day)) is not None:
+                continue
+        if shadow_in_ledger(sport, day):
+            continue
+        with main.connect() as m:
+            if tip_fn(m, sport, day) is None:
+                continue
+        with pdb.begin() as p:
+            card = choose(p, sport, day, now, V1_SIGNALS)
+            if not card["picks"]:  # nothing Live yet: try again at the next poll (as v1 did)
+                continue
+            set_state(p, shadow_key(sport, day), card, now)
+        out.append(card)
+    return out
 
 
 def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
@@ -257,12 +321,16 @@ def pending(pdb, main, start: datetime, end: datetime, tip_fn=first_tip,
         return False
     for sport in SPORTS:
         with pdb.connect() as p:
-            if get_state(p, key(sport, day)) is not None:
-                continue
+            card_done = get_state(p, key(sport, day)) is not None or in_ledger(sport, day)
+            shadow_done = (not shadow_day(sport, day)
+                           or get_state(p, shadow_key(sport, day)) is not None
+                           or shadow_in_ledger(sport, day))  # fmt: skip
+        if card_done and shadow_done:
+            continue
         with main.connect() as m:
             if tip_fn(m, sport, day) is None:
                 continue
             last = last_fn(m, sport, day)
-        if last is not None and start < last and not in_ledger(sport, day):
+        if last is not None and start < last:
             return True
     return False

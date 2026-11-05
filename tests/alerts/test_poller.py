@@ -82,44 +82,34 @@ def _spread_quotes(gid, home_line=-1.5):
             for side, line in (("home", home_line), ("away", -home_line))]  # fmt: skip
 
 
-def test_archived_c_nba_news_reprices_with_the_engine_only(setup, monkeypatch):
-    """Owner override 2026-11-04: C-NBA, nba15 and nbap15 are archived. A qualifying NBA status
-    change re-simulates the game with the engine (a card candidate if before 8:50 AM ET); no
-    nba15/nbap15 repricing, no value alert."""
-    from betdata.alerts import poller as P
+def test_shadow_card_v1_picks_are_recorded_never_pushed(setup):
+    """Owner 2026-11-05: while the engine card is official, NBA F and C-NBA picks keep being
+    generated for the shadow Card v1 only: labelled and recorded, never pushed. NFL and picks
+    for games before the engine card are pushed as before."""
+    from betdata.alerts import card as CD
 
-    assert P.NBA_ARCHIVED and "snipe" in P.RETIRED
     p, gids, ntfy = setup
-    g1, g2 = gids[0], gids[1]
-    rep = nba.Report("Injury-Report_2021-10-20_01_45PM.pdf", NOW - timedelta(minutes=15), NOW)
-    monkeypatch.setattr(nba, "active", lambda c, t: True)
-    monkeypatch.setattr(nba, "newest_report", lambda http, now, last: (rep.name, b"%PDF"))
-    monkeypatch.setattr(nba, "load_new_report", lambda e, n, pdf, now: rep)
-    monkeypatch.setattr(nba, "detect", lambda e, s, r, now: [
-        _change(g1, True), _change(g2, False, "Bench, B")])
-    p._nba_models = FakeModels()
-    FakeModels.calls = []
-    monkeypatch.setattr(p, "poll_game", lambda sport, gid, now, ev: _spread_quotes(gid))
-    eng = []
-    monkeypatch.setattr(p, "engine_picks", lambda *a: eng.append(a) or [])
-    monkeypatch.setattr(p, "signal_value", lambda *a: pytest.fail("C-NBA is archived"))
-    p.cycle(NOW)
+    tip = datetime(2026, 11, 6, 0, 0, tzinfo=UTC)
+    now = tip - timedelta(hours=10)
+
+    def a(signal, sport="nba", tip=tip, key="k"):
+        return Alert(signal, sport, gids[0], "X @ Y", tip, "spreads", "home", -1.5, 120,
+                     "draftkings", "r", key, 0.5, 0.45, details={"edge": 0.05})
+
+    assert CD.shadow_signal(a("value")) and CD.shadow_signal(a("snipe"))
+    assert not CD.shadow_signal(a("value", "nfl")) and not CD.shadow_signal(a("engine"))
+    assert not CD.shadow_signal(a("value", tip=datetime(2026, 11, 4, 23, 0, tzinfo=UTC)))
+    assert p.send(a("value", key="shadow1"), now) is not None
+    assert ntfy.posts == []  # recorded only
     with p.pdb.connect() as c:
-        assert c.execute(select(repredictions)).all() == []
-        assert c.execute(select(alerts)).all() == []
-    assert FakeModels.calls == []  # no nba15/nbap15 repricing
-    assert [(a[0], a[3].startswith("injury: Star, A"), a[4]) for a in eng
-            if str(a[3]).startswith("injury")] == [(g1, True, True)]
-    assert ntfy.posts == []
+        row = c.execute(select(alerts)).one()
+    assert row.sent is False and row.details["label"]["label"] in ("TAKE", "LEAN", "PASS")
 
 
 def test_star_out_one_cycle_one_game_one_alert(setup, monkeypatch):
     """M18 Part C (the value signal replaces Signal 1 for the NBA): a qualifying change is acted
     on in one cycle; only its game is re-predicted; DK/FD prices unchanged since the report's
     stated time are compared with the repriced consensus; exactly one alert, pushed once."""
-    from betdata.alerts import poller as P
-
-    monkeypatch.setattr(P, "NBA_ARCHIVED", False)  # C-NBA before its 2026-11-04 archiving
     p, gids, ntfy = setup
     g1, g2 = gids[0], gids[1]
     stated = NOW - timedelta(minutes=15)

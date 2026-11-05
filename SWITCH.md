@@ -7,6 +7,26 @@ PROJECT.md decision row. Differences from the plan below: the engine label is TA
 running (no picks; the frozen sport tab's sections keep their data); the engine card is chosen
 once at 8:50 even when empty.
 
+## Revert to Card v1 — one step (owner decision only)
+
+Since 2026-11-05 the old Card v1 is chosen every morning as a shadow (`card-v1-shadow`), so a
+revert needs no data work. The one step:
+
+> In `src/betdata/alerts/card.py`, change `NBA_CARD = "engine"` to `NBA_CARD = "v1"` (one PR,
+> CI green, merged before 8:30 AM ET for that day's card).
+
+What that one constant does, with no other edit:
+- the official NBA card at 8:50 AM ET is Card v1 again: top 5 by EV among the F and C-NBA picks
+  still Live, chosen as before (if none is Live at 8:50, at the first poll with one), pushed to
+  ntfy, official, TAKE/LEAN by the M18 label rule;
+- F and C-NBA picks are pushed again one by one (`Poller.send`), and Today lists them;
+- the shadow card stops (nothing is shadowed); engine picks keep being recorded as research;
+- the NBA official record's headline becomes Card v1 (both periods of it) with its own goal, and
+  the engine card's record (Nov 5 until the revert) folds below it; "All sports" still combines
+  every card pick. Nothing in the ledger changes (append-only).
+
+Add a PROJECT.md decision row with the date. To undo the revert, set `"engine"` again.
+
 ---
 
 (The original plan, written 2026-11-03:)

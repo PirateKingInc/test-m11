@@ -97,7 +97,8 @@ def test_nba_header_engine_card_headline_and_card_v1_folded(tmp_path):
     led, site = tmp_path / "ledger", tmp_path / "site"
     _ledger(led)
     rows = O.dataset(led)
-    eng = [dict(r, day="2026-11-05", pick_id=r["pick_id"] + "e") for r in rows
+    eng = [dict(r, day="2026-11-05", pick_id=r["pick_id"] + "e", signal_name="nba-engine")
+           for r in rows
            if r["pick_id"] == "w"]  # one engine-card win (stake 1.0, +1.0u)
     html = header_html(rows + eng, "nba", "NBA", TODAY, site)
     alltime, week, yest, v1 = _recs(html)
