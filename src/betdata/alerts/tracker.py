@@ -45,6 +45,7 @@ FILE = "tracker.json"
 # ET, the page out ~15 minutes later); after the last run of the day, the next morning.
 GAME_LENGTH = {"nba": timedelta(hours=2, minutes=30), "nfl": timedelta(hours=3, minutes=15)}
 POST_DELAY = timedelta(minutes=15)
+OG_SWITCH_OVER = "No card today (switch-over)"  # OG on its excluded day (config/cards.yaml)
 MORNING_ETA = (6, 15)  # "grading ~6:15 AM ET tomorrow" (the morning update, 2026-11-05)
 BDL = {"nba": "https://api.balldontlie.io/v1/games",
        "nfl": "https://api.balldontlie.io/nfl/v1/games"}  # fmt: skip
@@ -224,6 +225,9 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     card = get_state(p, card_key(sport, day)) or {}
     on_card = {x["dedup_key"]: x for x in card.get("picks", [])}
     og = get_state(p, shadow_key(sport, day)) or {}  # OG (owner 2026-11-05), NBA only
+    switch_over = sport == "nba" and day.isoformat() in C.load()[C.OG].exclude_days
+    if switch_over:  # Nov 5: no OG card (owner 2026-11-05); its picks stay research
+        og = {}
     on_og = {x["dedup_key"]: x for x in og.get("picks", [])}
     rows = p.execute(
         select(alerts, alert_grades.c.result, alert_grades.c.profit, consensus_grades.c.clv)
@@ -305,6 +309,8 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     if og:  # OG, the second official NBA card (owner 2026-11-05)
         out["og_chosen"] = True
         out["og_note"] = card_note(og)
+    elif switch_over:
+        out["og_note"] = OG_SWITCH_OVER
     if sport == "nba" and C.load():
         out["cards"] = {k: C.name(k) for k in (C.NEXTGEN, C.OG)}
     return out

@@ -23,6 +23,21 @@ def pdb(tmp_path):
 
 
 @pytest.fixture(autouse=True)
+def _no_switch_over(request, monkeypatch):
+    """These tests use Nov 5 as an ordinary day; OG's real switch-over exclusion of Nov 5 has
+    its own test (marked `switch_over`)."""
+    if "switch_over" in request.keywords:
+        return
+    import dataclasses
+
+    from betdata import cards as C
+
+    real = C.load()
+    cfg = {**real, "og": dataclasses.replace(real["og"], exclude_days=())}
+    monkeypatch.setattr(C, "load", lambda *a: cfg)
+
+
+@pytest.fixture(autouse=True)
 def _lines_from_the_poller(monkeypatch):
     """No main database here: "lines exist" = any stored quote of the sport by `now`."""
     def lines(p, m, sport, day, now):
@@ -365,3 +380,30 @@ def test_og_picks_up_to_five_by_its_own_rule_never_below_its_bar(pdb):
         title, body = CD.message(p, og, NOW)
     assert title == "Tonight's card - NBA OG - Thu Nov 5"
     assert body.splitlines()[-1] == "2 picks today — OG found no other value"
+
+
+@pytest.mark.switch_over
+def test_og_shows_no_card_on_its_switch_over_day(pdb):
+    """Nov 5 (OG's excluded day): OG is never selected, and Today's OG view says "No card
+    today (switch-over)" even where a shadow card was stored that day; its picks stay
+    research. Next Gen's card that day is unchanged."""
+    from datetime import date
+
+    from betdata.alerts.db import set_state
+
+    assert not CD.shadow_day("nba", date(2026, 11, 5)) and CD.shadow_day("nba", date(2026, 11, 6))
+    with pdb.begin() as p:
+        _v1(p, "v", 0.6)
+        _pick(p, "e", 0.2)
+    assert CD.run_shadow(pdb, _Main(), NOW, tip_fn) == []
+    with pdb.begin() as p:  # as the shadow stored before the switch-over rule existed
+        set_state(p, "shadow:nba:2026-11-05", {"sport": "nba", "day": "2026-11-05",
+                                               "source": CD.SHADOW,
+                                               "picks": [{"dedup_key": "v", "label": "LEAN",
+                                                          "stake": 0.5}]}, NOW)
+    CD.run(pdb, _Main(), NOW, tip_fn)
+    with pdb.connect() as p:
+        doc = build(p, None, "nba", NOW.date(), NOW)
+    assert doc["og_note"] == "No card today (switch-over)" and not doc.get("og_chosen")
+    picks = {x["id"]: x for g in doc["games"] for x in g["picks"]}
+    assert not any(x["og"] for x in picks.values()) and sum(x["card"] for x in picks.values()) == 1

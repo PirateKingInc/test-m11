@@ -83,8 +83,12 @@ def engine_day(sport: str, day: date) -> bool:
 
 
 def shadow_day(sport: str, day: date) -> bool:
-    """Is an OG card (Card v1's rule, stored as `shadow:`) chosen for the sport on the day?"""
-    return engine_day(sport, day) and _active("og")
+    """Is an OG card (Card v1's rule, stored as `shadow:`) chosen for the sport on the day? Not
+    on its excluded switch-over day (config/cards.yaml)."""
+    from betdata import cards as C
+
+    return (engine_day(sport, day) and _active("og")
+            and day.isoformat() not in C.load()[C.OG].exclude_days)  # fmt: skip
 
 
 def shadow_signal(a) -> bool:
