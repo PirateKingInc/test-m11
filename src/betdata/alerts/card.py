@@ -23,6 +23,14 @@ written once to the ledger (`ledger/card.csv`, betdata/ledger.py) by the next ho
 publishes it: an 8:50 card is on the 9:00 AM page. A card prop whose player does not play (ruled
 out) is graded void, as books do (alerts/grade.py `prop_actual`); a void is kept but stays out of
 W-L-P, units and ROI. Cards start on 2026-10-31 (no backfill).
+
+Engine card (owner override 2026-11-04, MODEL.md "Engine card"): from 2026-11-05 the NBA card's
+pool is the NBA engine's picks only (signal `engine`, research name `nba-engine`), chosen by the
+same rule: the top 5 by EV among picks still Live at 8:50 AM ET, labelled TAKE (1 unit) when the
+EV is >= 1.5x the engine's threshold, else LEAN (0.5 unit). The engine card is chosen once at
+8:50, even when it is short or empty (the page and the push then say "N picks today — the engine
+found no other value"); a pick found after 8:50 stays off the card (tracked on the Research tab).
+The NFL card is unchanged.
 """
 
 from __future__ import annotations
@@ -33,13 +41,31 @@ from types import SimpleNamespace
 from sqlalchemy import select
 
 from betdata.alerts.db import alerts, get_state, set_state
-from betdata.alerts.labels import LEAN, SIGNALS, STAKE, TAKE, available, label
+from betdata.alerts.labels import ENGINE, LEAN, SIGNALS, STAKE, TAKE, available, label
 from betdata.alerts.rules import EASTERN, decimal
 
 SIZE = 5
 AT = time(8, 50)  # Eastern
 FIRST_DAY = date(2026, 10, 31)
 SPORTS = ("nba", "nfl")
+ENGINE_START = date(2026, 11, 5)  # the first engine card (owner override 2026-11-04)
+
+
+def engine_day(sport: str, day: date) -> bool:
+    """Is the sport's card on this day the engine card (NBA from ENGINE_START)?"""
+    return sport == "nba" and day >= ENGINE_START
+
+
+def signals_for(sport: str, day: date) -> tuple[str, ...]:
+    """The signals whose picks are the sport's card pool (and its Today list) on the day."""
+    return (ENGINE,) if engine_day(sport, day) else SIGNALS
+
+
+def short_note(n: int) -> str:
+    """The engine card's note when it has fewer than SIZE picks."""
+    if n == 0:
+        return "No picks today — the engine found no value"
+    return f"{n} pick{'s' if n != 1 else ''} today — the engine found no other value"
 
 
 def key(sport: str, day: date) -> str:
@@ -88,11 +114,13 @@ def _ns(r) -> SimpleNamespace:
 
 
 def day_picks(p, sport: str, day: date) -> list[SimpleNamespace]:
-    """The sport's M18 picks for games on the Eastern day."""
+    """The sport's card-pool picks for games on the Eastern day (M18 signals; the NBA engine's
+    from ENGINE_START)."""
     lo, hi = day_bounds(day)
     return [_ns(r) for r in p.execute(select(alerts).where(
-        alerts.c.sport == sport, alerts.c.signal.in_(SIGNALS), alerts.c.tip >= lo,
-        alerts.c.tip < hi).order_by(alerts.c.created_at, alerts.c.alert_id))]  # fmt: skip
+        alerts.c.sport == sport, alerts.c.signal.in_(signals_for(sport, day)),
+        alerts.c.tip >= lo, alerts.c.tip < hi)
+        .order_by(alerts.c.created_at, alerts.c.alert_id))]  # fmt: skip
 
 
 def choose(p, sport: str, day: date, now: datetime) -> dict:
@@ -116,8 +144,11 @@ def choose(p, sport: str, day: date, now: datetime) -> dict:
                       "ev": round(x, 4), "edge": lab.get("edge"),
                       "threshold": lab.get("threshold"), "edge_source": lab.get("edge_source"),
                       "pinnacle_sides": lab.get("pinnacle_sides")})  # fmt: skip
-    return {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
-            "picks": picks, "live": len(pool)}
+    out = {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
+           "picks": picks, "live": len(pool)}
+    if engine_day(sport, day):
+        out["source"] = "engine"
+    return out
 
 
 def in_ledger(sport: str, day: date) -> bool:
@@ -147,7 +178,9 @@ def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
             continue
         with pdb.begin() as p:
             card = choose(p, sport, day, now)
-            if not card["picks"]:  # nothing Live yet: try again at the next poll
+            # nothing Live yet: try again at the next poll (the engine card is chosen once, at
+            # 8:50, even when empty)
+            if not card["picks"] and not engine_day(sport, day):
                 continue
             set_state(p, key(sport, day), card, now)
         out.append(card)
@@ -168,6 +201,8 @@ def message(p, card: dict, now: datetime) -> tuple[str, str]:
         when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET")
         lines.append(f"{a.game_label} {when}: {selection(a)} {_fmt_price(a.price)} at "
                      f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u")
+    if card.get("source") == "engine" and len(card["picks"]) < SIZE:
+        lines.append(short_note(len(card["picks"])))
     day = datetime.fromisoformat(card["day"]).strftime("%a %b %-d")
     return f"Tonight's card - {card['sport'].upper()} - {day}", "\n".join(lines)
 

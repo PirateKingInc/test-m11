@@ -1,5 +1,6 @@
 """M20 Part E in the poller: engine picks are recorded as research signal `nba-engine`, one per
-market per game/player, never pushed, never labelled for the card."""
+market per game/player, never pushed one by one. Since the owner override of 2026-11-04 they
+are labelled at creation (TAKE when EV >= 1.5x theta, else LEAN) and are the NBA card's pool."""
 
 import json
 from datetime import UTC, datetime, timedelta
@@ -49,4 +50,7 @@ def test_engine_pick_recorded_once_never_pushed(engine, tmp_path, monkeypatch):
         a = c.execute(select(alerts)).one()
     assert a.signal == "engine" and a.side == "home" and a.sent is False and a.study
     assert signal_name(a.signal, a.sport) == "nba-engine"
-    assert "engine" not in SIGNALS  # never labelled, carded or on the sport tabs' tracker
+    assert "engine" not in SIGNALS  # the M18 set; the engine joins the NBA pool by date
+    lab = a.details["label"]
+    want = "TAKE" if a.details["ev"] >= 1.5 * 0.03 else "LEAN"
+    assert lab["label"] == want and lab["threshold"] == 0.03

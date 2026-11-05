@@ -1,4 +1,15 @@
-# SWITCH.md — moving the NBA card to the M20 engine (for the owner; NOT executed)
+# SWITCH.md — moving the NBA card to the M20 engine
+
+**Executed 2026-11-04 by owner override** (the gate below was waived), effective with the
+2026-11-05 8:50 AM ET card: see MODEL.md "Engine card (owner override 2026-11-04)" and the
+PROJECT.md decision row. Differences from the plan below: the engine label is TAKE when EV ≥
+1.5 × θ (no news/Pinnacle condition, the owner's rule); nba15/nbap15 hourly predictions keep
+running (no picks; the frozen sport tab's sections keep their data); the engine card is chosen
+once at 8:50 even when empty.
+
+---
+
+(The original plan, written 2026-11-03:)
 
 Written 2026-11-03 with M20. Nothing here has been done. The card keeps coming from the existing
 NBA picks (C-NBA value alerts and F snipes) until the owner approves this switch in writing (an

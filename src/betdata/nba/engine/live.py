@@ -134,6 +134,12 @@ def run(engine, now: datetime, path: Path = LIVE_PATH) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, separators=(",", ":")))
     log.info("nba engine: %d games predicted", len(doc["games"]))
+    try:  # every prediction is graded later (grades.py): keep the last pre-tip document
+        from betdata.nba.engine_grades import snapshot
+
+        snapshot(doc, now, path.parent / "nba_engine_snapshots")
+    except Exception as e:  # noqa: BLE001 - a snapshot never breaks the run
+        log.warning("nba engine snapshot failed: %s", e)
     return len(doc["games"])
 
 

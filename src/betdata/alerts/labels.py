@@ -29,6 +29,7 @@ TAKE_MULT = 1.5
 START_BANKROLL = 100.0
 STARTED = date(2026, 10, 30)  # the day labels shipped: the bankroll starts here
 SIGNALS = ("value", "snipe", "g1", "g2")
+ENGINE = "engine"  # the NBA engine (M20); the NBA card's pool from 2026-11-05
 FRESH = timedelta(minutes=10)  # Pinnacle freshness, as in the consensus (alerts/consensus.py)
 
 
@@ -51,6 +52,8 @@ def edge_and_threshold(a) -> tuple[float | None, float | None]:
         edge = (None if a.fair_prob is None or a.book_prob is None
                 else a.fair_prob - a.book_prob)  # fmt: skip
         return edge, EDGE
+    if a.signal == ENGINE:  # EV per unit against the engine's frozen threshold
+        return d.get("ev"), d.get("theta")
     if a.signal == "g1":  # points below the opening total
         from betdata.nba.g1 import DROP
 
@@ -105,8 +108,10 @@ def pinnacle_sides(p, a, now: datetime) -> bool | None:
 
 
 def label(p, a, now: datetime) -> dict | None:
-    """The fixed label rules for a new pick (module docstring); None for other signals."""
-    if a.signal not in SIGNALS:
+    """The fixed label rules for a new pick (module docstring); None for other signals. An
+    engine pick (owner override 2026-11-04): TAKE when its EV >= 1.5x the engine's threshold
+    and the price is available, PASS when it is not, else LEAN."""
+    if a.signal not in SIGNALS and a.signal != ENGINE:
         return None
     d = a.details or {}
     edge, thr = edge_and_threshold(a)
@@ -120,6 +125,8 @@ def label(p, a, now: datetime) -> dict | None:
     pin = pinnacle_sides(p, a, now)
     if not avail:
         lab = PASS
+    elif a.signal == ENGINE:
+        lab = TAKE if edge >= TAKE_MULT * thr - 1e-9 else LEAN
     elif (edge >= TAKE_MULT * thr - 1e-9 and (src == "news" or pin is True)
           and not (src == "book disagreement" and cb.get("two_book"))):
         lab = TAKE

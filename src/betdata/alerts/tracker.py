@@ -212,9 +212,10 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     database (final scores, box scores), or None."""
     from types import SimpleNamespace
 
+    from betdata.alerts.card import SIZE, short_note, signals_for
     from betdata.alerts.card import key as card_key
     from betdata.alerts.gates import signal_name
-    from betdata.alerts.labels import SIGNALS, status
+    from betdata.alerts.labels import status
     from betdata.alerts.notify import BOOKS, MARKETS, _fmt_price, selection
     from betdata.ledger import pick_id
 
@@ -225,8 +226,8 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
         select(alerts, alert_grades.c.result, alert_grades.c.profit, consensus_grades.c.clv)
         .outerjoin(alert_grades, alert_grades.c.alert_id == alerts.c.alert_id)
         .outerjoin(consensus_grades, consensus_grades.c.alert_id == alerts.c.alert_id)
-        .where(alerts.c.sport == sport, alerts.c.signal.in_(SIGNALS), alerts.c.tip >= lo,
-               alerts.c.tip < hi)
+        .where(alerts.c.sport == sport, alerts.c.signal.in_(signals_for(sport, day)),
+               alerts.c.tip >= lo, alerts.c.tip < hi)
         .order_by(alerts.c.tip, alerts.c.game_label, alerts.c.created_at)).mappings().all()
     games: dict[int, dict] = {}
     scores = scores or {}
@@ -283,9 +284,14 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
             except Exception:  # noqa: BLE001 - a status never drops the pick
                 pick["price"] = None
         g["picks"].append(pick)
-    return {"sport": sport, "day": day.isoformat(), "generated_at": now.isoformat(),
-            "scores": "balldontlie" if scores else None,
-            "games": list(games.values())}  # fmt: skip
+    out = {"sport": sport, "day": day.isoformat(), "generated_at": now.isoformat(),
+           "scores": "balldontlie" if scores else None,
+           "games": list(games.values())}  # fmt: skip
+    if card.get("source") == "engine":  # the engine card (owner override 2026-11-04)
+        n = len(card.get("picks", []))
+        out["card_source"] = "engine"
+        out["card_note"] = short_note(n) if n < SIZE else ""
+    return out
 
 
 def document(p, m, now: datetime, scores_key: str | None = None, client=None) -> dict:
