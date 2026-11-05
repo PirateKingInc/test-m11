@@ -578,17 +578,28 @@ def missing_keys(settings: Settings) -> list[str]:
     )  # fmt: skip
 
 
+DEFAULT_TAB = "nba"  # every visit opens on NBA (owner 2026-11-05); no tab is remembered
+
+
+def default_tab(entries: list[SportEntry]) -> str:
+    """The tab a visit opens on: NBA when it is on the page, else the first tab."""
+    keys = [en.key for en in entries]
+    return DEFAULT_TAB if DEFAULT_TAB in keys else (keys[0] if keys else "")
+
+
 def render(entries: list[SportEntry], panels: dict[str, str], status: dict) -> str:
     tabs, sections = [], []
-    for i, en in enumerate(entries):
+    first = default_tab(entries)
+    for en in entries:
         active = en.status == ACTIVE
         soon = "" if active else " <small>coming soon</small>"
+        on = en.key == first
         tabs.append(f'<button role="tab" data-tab="{escape(en.key)}"'
-                    f'{" aria-selected=true" if i == 0 else ""}>{escape(en.name)}{soon}</button>')
+                    f'{" aria-selected=true" if on else ""}>{escape(en.name)}{soon}</button>')
         body = panels.get(en.key) or (f"<p class='soon'>{escape(en.name)} predictions are coming "
                                       "soon.</p>")  # fmt: skip
         sections.append(f'<div class="panel" id="tab-{escape(en.key)}"'
-                        f'{"" if i == 0 else " hidden"}>{body}</div>')
+                        f'{"" if on else " hidden"}>{body}</div>')
     keys, found = status.get("missing_keys") or [], status.get("detected_keys") or []
     keys_note = ("<p>API keys detected in this run: " + escape(", ".join(found) or "none")
                  + ". " + ("Sources skipped because their key is not set: "
@@ -957,10 +968,22 @@ margin:6px 0;font-size:1rem}} .gamerow.bet{{border-color:var(--acc)}}
 <script>
 (function(){{
   var tabs=document.querySelectorAll('nav button');
-  tabs.forEach(function(b){{b.addEventListener('click',function(){{
-    tabs.forEach(function(x){{x.setAttribute('aria-selected',x===b);
-      document.getElementById('tab-'+x.dataset.tab).hidden=(x!==b);}});
-  }});}});
+  function pick(b){{tabs.forEach(function(x){{x.setAttribute('aria-selected',x===b);
+    document.getElementById('tab-'+x.dataset.tab).hidden=(x!==b);}});}}
+  tabs.forEach(function(b){{b.addEventListener('click',function(){{pick(b);}});}});
+  // every visit opens on the server's default tab (NBA), never a remembered one; a link with a
+  // section anchor (#alerts) opens the tab holding it and goes there
+  function anchor(){{
+    var id=decodeURIComponent((location.hash||'').slice(1)),el=id&&document.getElementById(id);
+    if(!el)return false;
+    var p=el.closest('.panel');
+    if(p&&p.hidden)tabs.forEach(function(x){{if('tab-'+x.dataset.tab===p.id)pick(x);}});
+    if(el.tagName==='DETAILS')el.open=true;
+    el.scrollIntoView({{block:'start'}});
+    return true;
+  }}
+  if(!anchor()){{try{{history.scrollRestoration='manual';}}catch(e){{}}window.scrollTo(0,0);}}
+  window.addEventListener('hashchange',anchor);
   function fmt(iso){{return new Date(iso).toLocaleString('en-US',{{timeZone:'America/New_York',
     weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}})+' ET';}}
   function show(s){{
