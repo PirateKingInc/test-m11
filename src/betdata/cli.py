@@ -14,6 +14,7 @@ from betdata.db.schema import ingest_runs, teams, unmatched_entities, utcnow
 from betdata.ledger_cli import ledger_app
 from betdata.morning_cli import morning_app
 from betdata.nba.cli import nba_app
+from betdata.news.cli import news_app
 from betdata.nfl.cli import nfl_app
 from betdata.props.cli import props_app
 from betdata.runner.cli import page_app, runner_app
@@ -41,6 +42,7 @@ app.add_typer(poller_app, name="poller")
 app.add_typer(alerts_app, name="alerts")
 app.add_typer(ledger_app, name="ledger")
 app.add_typer(morning_app, name="morning")
+app.add_typer(news_app, name="news")
 
 
 @app.callback()

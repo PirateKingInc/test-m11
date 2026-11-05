@@ -319,6 +319,12 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         review.sync(p, m, out, now)
     except Exception as e:  # noqa: BLE001 - the review never stops the ledger
         log.warning("review sync failed: %s", e)
+    try:  # the news log: settled early-source claims (owner 2026-11-05, betdata/news)
+        from betdata.news.ledger import sync as news_sync
+
+        news_sync(p, out, now)
+    except Exception as e:  # noqa: BLE001 - the news log never stops the ledger
+        log.warning("news log failed: %s", e)
     if m is not None:  # every NBA engine prediction graded at the close (owner 2026-11-04)
         try:
             from betdata.nba.engine_grades import grade_games
