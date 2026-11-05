@@ -113,11 +113,12 @@ def test_an_ungraded_late_game_is_named_in_the_push(pdb):
     assert M.ungraded_games(rows, "nba", NOW.date() - timedelta(days=1)) == ["LAL @ POR"]
 
 
-def test_push_when_nothing_is_live_yet(pdb):
+def test_push_when_no_lines_exist_yet(pdb):
     with pdb.connect() as p:
         _t, body = M.message(p, [], "nba", NOW)
     assert "Last night: no graded card picks" in body
-    assert "Today's card: nothing Live yet — chosen at the first later poll" in body
+    assert ("Today's card: no lines posted yet for today's games — chosen at the first later "
+            "poll with lines") in body
 
 
 def test_one_push_per_sport_and_the_card_is_not_pushed_again(pdb, tmp_path):

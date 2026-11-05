@@ -6,7 +6,7 @@ else LEAN. NFL is unchanged; the archived NBA signals (C-NBA, F) are out of the 
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 
 from betdata.alerts import card as CD
 from betdata.alerts import labels as LB
@@ -20,6 +20,16 @@ TIP = datetime(2026, 11, 6, 0, 0, tzinfo=UTC)  # 7:00 PM ET
 @pytest.fixture
 def pdb(tmp_path):
     return engine_for(tmp_path / "poller.sqlite")
+
+
+@pytest.fixture(autouse=True)
+def _lines_from_the_poller(monkeypatch):
+    """No main database here: "lines exist" = any stored quote of the sport by `now`."""
+    def lines(p, m, sport, day, now):
+        return p.execute(select(quotes.c.quote_id).where(
+            quotes.c.sport == sport, quotes.c.polled_at <= now).limit(1)).first() is not None
+
+    monkeypatch.setattr(CD, "lines_exist", lines)
 
 
 def _pick(p, key, ev, signal="engine", price=110, created=NOW - timedelta(hours=1), live=True,
@@ -94,20 +104,99 @@ def test_a_short_engine_card_is_chosen_once_and_says_so(pdb):
     assert sum(x["card"] for x in picks.values()) == 2 and len(picks) == 3
 
 
-def test_with_nothing_live_the_engine_card_waits_for_the_first_live_pick(pdb):
-    """Owner 2026-11-05: with nothing Live at 6:15, the first later poll with a Live pick
-    selects the engine card (as Card v1 always did)."""
+def _quote(p, at, player="Q"):
+    p.execute(insert(quotes).values(
+        polled_at=at, sport="nba", game_id=7, source="sharpapi", book="draftkings",
+        market="rebounds", player_name=player, outcome="over", line=6.5, price=110))
+
+
+def test_case1_lines_at_615_select_now_even_empty(pdb):
+    """Lines exist at 6:15 for at least one game: the card is selected then from what is
+    available, empty here; a pick found later never joins it."""
     with pdb.begin() as p:
-        _pick(p, "gone", 0.3, live=False)
+        _pick(p, "gone", 0.3, live=False)  # a line exists, but nothing is Live
+    [card] = CD.run(pdb, _Main(), NOW, tip_fn)
+    assert card["picks"] == [] and not card.get("no_lines")
+    assert CD.card_note(card) == "No picks today — the engine found no value"
+    _t, body = CD.message(pdb.connect().__enter__(), card, NOW)
+    assert body == "No picks today — the engine found no value"
+    with pdb.begin() as p:  # a Live pick later that day: tracked on Research, never carded
+        _pick(p, "new", 0.3, created=NOW + timedelta(hours=1), player="New")
+    assert CD.run(pdb, _Main(), NOW + timedelta(hours=2), tip_fn) == []
+    with pdb.connect() as p:
+        assert get_state(p, "card:nba:2026-11-05")["picks"] == []
+        doc = build(p, None, "nba", NOW.date(), NOW + timedelta(hours=2))
+    assert doc["card_note"] == "No picks today — the engine found no value"
+    # the shadow Card v1 follows the same rule: chosen at 6:15, empty
+    [sh] = CD.run_shadow(pdb, _Main(), NOW, tip_fn)
+    assert sh["picks"] == [] and sh["source"] == CD.SHADOW
+
+
+def test_case2_no_lines_at_615_wait_for_the_first_poll_with_lines(pdb):
+    """No lines for any of today's games at 6:15: wait; the first later poll where lines
+    exist selects the card (same rules), once."""
     assert CD.run(pdb, _Main(), NOW, tip_fn) == []
+    assert CD.run_shadow(pdb, _Main(), NOW, tip_fn) == []
     with pdb.connect() as p:
         assert get_state(p, "card:nba:2026-11-05") is None
-    later = NOW + timedelta(hours=1)
+    later = NOW + timedelta(hours=3)
     with pdb.begin() as p:
-        _pick(p, "new", 0.3, created=later - timedelta(minutes=5), player="New")
+        _pick(p, "a", 0.12, created=later - timedelta(minutes=5))
+        _pick(p, "b", 0.20, created=later - timedelta(minutes=5), player="B")
     [card] = CD.run(pdb, _Main(), later, tip_fn)
-    assert [x["dedup_key"] for x in card["picks"]] == ["new"]
+    assert [x["dedup_key"] for x in card["picks"]] == ["b", "a"]
     assert card["selected_at"] == later.isoformat()
+    assert CD.card_note(card) == "2 picks today — the engine found no other value"
+    assert CD.run(pdb, _Main(), later + timedelta(minutes=5), tip_fn) == []  # once
+
+
+def test_case3_no_lines_60_minutes_before_the_first_tip_publish_empty(pdb):
+    """Still no lines 60 minutes before the day's first tip: the card is published empty with
+    "No lines posted in time", and the waiting stops."""
+    early = TIP - timedelta(minutes=61)
+    assert CD.run(pdb, _Main(), early, tip_fn) == []  # still waiting
+    cutoff = TIP - timedelta(minutes=60)
+    [card] = CD.run(pdb, _Main(), cutoff, tip_fn)
+    assert card["picks"] == [] and card["no_lines"] and card["source"] == "engine"
+    assert CD.card_note(card) == "No lines posted in time"
+    [sh] = CD.run_shadow(pdb, _Main(), cutoff, tip_fn)
+    assert sh["no_lines"] and sh["source"] == CD.SHADOW
+    with pdb.begin() as p:  # lines arrive later: the card is already chosen, once
+        _pick(p, "late", 0.3, created=cutoff + timedelta(minutes=5))
+    assert CD.run(pdb, _Main(), cutoff + timedelta(minutes=10), tip_fn) == []
+    with pdb.connect() as p:
+        doc = build(p, None, "nba", NOW.date(), cutoff + timedelta(minutes=10))
+        _t, body = CD.message(p, card, cutoff)
+    assert doc["card_note"] == "No lines posted in time" and body == "No lines posted in time"
+
+
+def test_lines_exist_reads_todays_games(engine, pdb, monkeypatch):
+    """The real check: a stored quote for one of the sport's games on the Eastern day."""
+    import importlib
+
+    from betdata.core.matching import sport_id
+    from betdata.db.schema import games, teams
+
+    monkeypatch.undo()
+    real = importlib.reload(CD).lines_exist
+    with engine.begin() as c:
+        sid = sport_id(c, "nba")
+        ids = dict(c.execute(select(teams.c.abbrev, teams.c.team_id)
+                             .where(teams.c.sport_id == sid)).all())  # fmt: skip
+        gid = c.execute(insert(games).values(
+            sport_id=sid, season=2026, season_type="REG", start_time_utc=TIP,
+            home_team_id=ids["BOS"], away_team_id=ids["NYK"],
+            status="scheduled")).inserted_primary_key[0]  # fmt: skip
+    with pdb.connect() as p, engine.connect() as m:
+        assert not real(p, m, "nba", NOW.date(), NOW)
+    with pdb.begin() as p:
+        p.execute(insert(quotes).values(
+            polled_at=NOW - timedelta(minutes=8), sport="nba", game_id=gid, source="sharpapi",
+            book="draftkings", market="spreads", outcome="home", line=-3.5, price=-110))
+    with pdb.connect() as p, engine.connect() as m:
+        assert real(p, m, "nba", NOW.date(), NOW)
+        assert not real(p, m, "nba", NOW.date(), NOW - timedelta(minutes=10))  # not yet then
+        assert not real(p, m, "nfl", NOW.date(), NOW)
 
 
 def test_engine_label_rule():
@@ -167,17 +256,18 @@ def test_shadow_card_v1_is_chosen_beside_the_engine_card_and_never_official(pdb)
     assert {x["signal"] for g in doc["games"] for x in g["picks"]} == {"nba-engine"}
 
 
-def test_shadow_waits_for_a_live_pick_as_card_v1_did(pdb):
+def test_the_poller_stays_awake_until_both_cards_are_chosen(pdb):
+    def pend(t):
+        return CD.pending(pdb, _Main(), t, t + timedelta(minutes=5), tip_fn, lambda m, s, d: TIP)
+
+    assert pend(NOW)  # no lines yet: both cards wait
     with pdb.begin() as p:
-        _v1(p, "gone", 0.6, live=False)
-    assert CD.run_shadow(pdb, _Main(), NOW, tip_fn) == []
-    assert CD.pending(pdb, _Main(), NOW, NOW + timedelta(minutes=5), tip_fn,
-                      lambda m, s, d: TIP)  # the poller stays awake for it
-    later = NOW + timedelta(hours=2)
-    with pdb.begin() as p:
-        _v1(p, "new", 0.6, created=later - timedelta(minutes=1), player="N")
+        _v1(p, "gone", 0.6, live=False)  # lines now exist
+    later = NOW + timedelta(minutes=30)
+    CD.run(pdb, _Main(), later, tip_fn)
+    assert pend(later)  # the shadow is still due
     [sh] = CD.run_shadow(pdb, _Main(), later, tip_fn)
-    assert [x["dedup_key"] for x in sh["picks"]] == ["new"]
+    assert sh["picks"] == [] and not pend(later)
 
 
 def test_shadow_ledger_rows_and_same_night_comparison(pdb, tmp_path):

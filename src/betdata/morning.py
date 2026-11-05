@@ -11,8 +11,10 @@ In this order (`run`):
   c. **engine**: re-run the NBA engine on today's games and price the lines already in the
      archive (the poller's 6:00-6:10 AM ET line sweep, alerts/archive.py);
   d. **select**: today's engine card and the shadow Card v1, at the same moment (6:15 replaces
-     8:50; same rules: top 5 by EV still Live, fewer if fewer qualify; if nothing is Live, a
-     later poll selects at the first Live pick, as before);
+     8:50; top 5 by EV still Live, fewer if fewer qualify, even none, once lines exist for any
+     of today's games; with no lines at all, the first later poll with lines selects, and 60
+     minutes before the first tip an empty "No lines posted in time" card; alerts/card.py
+     `decide`);
   e. **publish**: the ledger again (card rows), then the page (the workflow deploys it);
   f. **push**: ONE ntfy message per sport combining last night, the record and today's card
      (`push`, run by the workflow after the deploy).
@@ -268,8 +270,8 @@ def message(p, rows: list[dict], sport: str, now: datetime) -> tuple[str, str] |
     card = get_state(p, CD.key(sport, today))
     lines = []
     if card is None:
-        parts.append("Today's card: nothing Live yet — chosen at the first later poll with a "
-                     "Live pick")
+        parts.append("Today's card: no lines posted yet for today's games — chosen at the first "
+                     "later poll with lines")
     else:
         n = len(card["picks"])
         parts.append(f"Today's card ({n} pick{'s' if n != 1 else ''}):")
@@ -281,8 +283,8 @@ def message(p, rows: list[dict], sport: str, now: datetime) -> tuple[str, str] |
             when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET")
             lines.append(f"{a.game_label} {when}: {selection(a)} {_fmt_price(a.price)} at "
                          f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u")
-        if card.get("source") == "engine" and n < CD.SIZE:
-            lines.append(CD.short_note(n))
+        if card.get("source") == "engine" and CD.card_note(card):
+            lines.append(CD.card_note(card))
     late = ungraded_games(rows, sport, yday)
     if late:
         lines.append(f"Not graded yet: {', '.join(late)} (no final box score yet; graded on "

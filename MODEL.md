@@ -2719,10 +2719,8 @@ No change to models, pick rules, thresholds or grading rules. `betdata/morning.p
   b. **ledger** — new picks and results appended; the official records come from it.
   c. **engine** — the NBA engine re-simulates today's games and prices the lines in the archive
      (the latest stored quote per book and side from the 6:00 sweep).
-  d. **select** — today's engine card and the shadow Card v1 at the same moment, 6:15 (`AT`):
-     top 5 by EV still Live, fewer if fewer qualify; if nothing is Live, the first later poll
-     with a Live pick selects it (both cards, as Card v1 always did; that later card is pushed
-     on its own, as before).
+  d. **select** — today's engine card and the shadow Card v1 at the same moment, 6:15 (`AT`),
+     by the selection rule below (owner correction 2026-11-05).
   e. **publish** — the ledger again (card rows), then the page; the workflow deploys it.
   f. **push** — ONE ntfy message per sport: "NBA · Last night: 3-2, +0.6u · Engine card 12-9,
      +1.8u (21 of 500) · Today's card (4 picks):", then one line per card pick (game, time ET,
@@ -2734,4 +2732,20 @@ No change to models, pick rules, thresholds or grading rules. `betdata/morning.p
 - **ETA wording:** a game ending after the last hourly run shows "grading ~6:15 AM ET
   tomorrow" (it was "grading tomorrow ~9:00 AM ET"). The main page layout is unchanged (the
   UI-freeze snapshot is unchanged; the Today renderer's approved hash moved for the wording).
+
+## Selection rule: lines at 6:15 (owner correction 2026-11-05, to PR #329)
+
+For both the engine card and the shadow Card v1 (`alerts/card.py` `decide`); chosen **once per
+day in every case**:
+1. **Lines exist at 6:15** (a stored DK/FD line by 6:15 for at least one of today's games): the
+   card is selected at 6:15 from what is available — the top 5 by EV still Live, fewer if fewer
+   qualify, possibly none. A short or empty card is published so: "2 picks today — the engine
+   found no other value", "No picks today — the engine found no value". Picks found later that
+   day are tracked on the Research tab and never join the card.
+2. **No lines for any of today's games at 6:15:** wait, and select at the first later poll where
+   lines exist (same rules as 1). That card is pushed on its own when chosen.
+3. **Cutoff:** still no lines 60 minutes before the day's first tip: the card is published
+   empty with "No lines posted in time", and the waiting stops.
+
+The NFL card keeps its rule (at the first poll with a Live pick).
 
