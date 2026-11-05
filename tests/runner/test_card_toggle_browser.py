@@ -99,3 +99,69 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
     assert start["badges"] == 0 and og_["badges"] == 1  # the card badges follow the toggle
     assert again["official"] == ["og"] and again["days"] == ["og"], again  # after a reload
     assert back["official"] == ["nextgen"] and back["stored"] == "nextgen"
+
+
+TAB_SCRIPT = r"""
+const { chromium } = require('playwright');
+(async () => {
+  const exe = process.env.PW_CHROMIUM;
+  const b = await chromium.launch(exe ? {executablePath: exe} : {});
+  const ctx = await b.newContext({viewport: {width: 390, height: 900}});
+  const pg = await ctx.newPage();
+  const url = 'file://' + process.argv[2];
+  const st = () => pg.evaluate(() => ({
+    tab: Array.from(document.querySelectorAll('div.panel')).filter(p => !p.hidden)
+      .map(p => p.id),
+    sel: (document.querySelector('nav button[aria-selected=true]') || {}).dataset.tab,
+    y: window.scrollY, card: window.betdataNbaCard}));
+  const out = {};
+  await pg.goto(url); out.fresh = await st();
+  await pg.click('[data-cardtoggle="nba"] button[data-pick="og"]');
+  await pg.click('nav button[data-tab="nfl"]'); out.clicked = await st();
+  await pg.reload(); out.reloaded = await st();   // NFL is not remembered; OG is
+  await pg.goto(url + '#alerts'); out.anchor = await st();
+  console.log(JSON.stringify(out));
+  await b.close();
+})().catch(e => { console.error(e); process.exit(2); });
+"""
+
+
+def test_every_visit_opens_on_nba_and_anchors_still_work(tmp_path):
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+    import os
+
+    from betdata.page.build import render
+    from betdata.sports import ACTIVE, SportEntry
+
+    tabs = [SportEntry(key="nfl", name="NFL", status=ACTIVE),
+            SportEntry(key="nba", name="NBA", status=ACTIVE),
+            SportEntry(key="research", name="Research", status=ACTIVE)]  # the live order
+    from betdata.page.official import toggle_html
+
+    nba = toggle_html("nextgen") + "<section data-card='nextgen'>n</section>" + \
+        "<section data-card='og' hidden>o</section>" + "<p style='height:3000px'>long</p>"
+    html = render(tabs, {"nfl": "<p>nfl</p>", "nba": nba,
+                         "research": "<p style='height:2000px'>r</p><section id='alerts'>"
+                                     "<h2>Alerts</h2></section>"},
+                  {"last_ok_at": NOW.isoformat(), "missing_keys": [],
+                   "detected_keys": []})  # fmt: skip
+    page = tmp_path / "index.html"
+    page.write_text(html)
+    js = tmp_path / "tabs.js"
+    js.write_text(TAB_SCRIPT)
+    env = {**os.environ, **({"PW_CHROMIUM": _chromium()} if _chromium() else {})}
+    r = subprocess.run([node, str(js), str(page)], capture_output=True, text=True, env=env,
+                       timeout=120)  # fmt: skip
+    if r.returncode and ("Cannot find module 'playwright'" in r.stderr
+                         or "Executable doesn't exist" in r.stderr):  # fmt: skip
+        pytest.skip("Playwright/Chromium not installed")
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout.strip().splitlines()[-1])
+    assert out["fresh"]["tab"] == ["tab-nba"] and out["fresh"]["sel"] == "nba"
+    assert out["fresh"]["y"] == 0  # at the top of the page
+    assert out["clicked"]["tab"] == ["tab-nfl"]
+    assert out["reloaded"]["tab"] == ["tab-nba"] and out["reloaded"]["y"] == 0  # not remembered
+    assert out["reloaded"]["card"] == "og"  # the Next Gen | OG toggle still is
+    assert out["anchor"]["tab"] == ["tab-research"] and out["anchor"]["y"] > 0  # #alerts

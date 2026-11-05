@@ -2847,3 +2847,12 @@ watchlist `config/news_accounts.json`.
   followers (beat writers: 300) or Bluesky verification; official accounts must be verified
   (team names are taken by fan and impostor accounts). See PROJECT.md "News sources".
 
+# NBA is the default tab (owner request 2026-11-05)
+
+Page only; no change to picks, models, rules or grading. Every visit opens on the NBA tab, at
+the top of the page, whatever tab was used last (the tab is never remembered; tab order is
+unchanged, NFL · NBA · Research). Visitors tap NFL or Research to switch. The Next Gen | OG toggle
+keeps remembering its own choice. A link with a section anchor (e.g. `#alerts`) still goes
+there: the tab holding it opens and the page scrolls to it. The UI-freeze test pins exactly
+this change (the page shell's script).
+
