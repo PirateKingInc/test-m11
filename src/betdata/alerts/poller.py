@@ -256,14 +256,16 @@ class Poller:
         from betdata.alerts.card import push, run
 
         cards = run(self.pdb, self.main, now)
-        try:  # the shadow Card v1 (never pushed, never official)
+        try:  # OG (Card v1's rule, stored as `shadow:`), official since 2026-11-05
             from betdata.alerts.card import run_shadow
 
-            for sh in run_shadow(self.pdb, self.main, now):
-                self.notes.append(f"shadow card {sh['sport']} {sh['day']}: "
+            og = run_shadow(self.pdb, self.main, now)
+            for sh in og:
+                self.notes.append(f"OG card {sh['sport']} {sh['day']}: "
                                   f"{len(sh['picks'])} picks")
-        except Exception as e:  # noqa: BLE001 - the shadow never stops the official card
-            self.errors.append(f"shadow card: {type(e).__name__}: {str(e)[:200]}")
+            cards = [*cards, *og]  # a card chosen after 6:15 (no lines then) is pushed now
+        except Exception as e:  # noqa: BLE001 - OG never stops the other cards
+            self.errors.append(f"OG card: {type(e).__name__}: {str(e)[:200]}")
         for c in cards:  # pushed right after selection, one message per sport
             sent = push(self.pdb, c, now, self.keys.ntfy_topic, self.push_client)
             self.notes.append(f"card {c['sport']} {c['day']}: {len(c['picks'])} picks, "

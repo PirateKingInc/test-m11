@@ -28,8 +28,8 @@ def engine_html(rows: list[dict], today: date, site: Path, live: dict | None = N
     ck = three_checks(picks_of(rec.rows))
     out = ["<section class='research' data-engine='nba'><h2>NBA engine</h2>"
            "<p class='meta'>One model from the players up (minutes, rates, team totals, 10,000 "
-           "simulations a game), blended with the market. Since Nov 5 the NBA card is the top 5 "
-           "engine picks still Live at 6:15 AM ET; every engine pick is listed here, card or "
+           "simulations a game), blended with the market. Since Nov 5 its top 5 by EV still "
+           "Live at 6:15 AM ET are the Next Gen card; every engine pick is listed here, card or "
            "not.</p>"]
     if live is not None:
         n = len(live.get("games", []))
@@ -57,20 +57,20 @@ def engine_html(rows: list[dict], today: date, site: Path, live: dict | None = N
 
 
 def compare_html(rows: list[dict], ledger: Path | None = None) -> str:
-    """Engine card vs shadow Card v1, same nights only, with the fixed comparison rule under
-    the table (owner request 2026-11-05)."""
+    """Next Gen vs OG, the two official NBA cards, same nights only (both selected), with the
+    fixed comparison rule under the table (owner requests 2026-11-05)."""
     from betdata.ledger import ledger_dir
 
     c = O.comparison(rows, ledger or ledger_dir())
     body = "".join(f"<tr><th scope='row'>{escape(m)}</th><td>{escape(a)}</td>"
                    f"<td>{escape(b)}</td></tr>" for m, a, b in O.comparison_rows(c))
-    return ("<section class='research' data-compare='nba'><h2>Engine card vs shadow Card v1"
-            "</h2><p class='meta'>The shadow Card v1 is the old card (top 5 by EV among the "
-            "nbap15-based F and C-NBA picks still Live at 6:15 AM ET), chosen every morning "
-            "beside the engine card: never official, never pushed. Same nights only "
+    return ("<section class='research' data-compare='nba'><h2>Next Gen vs OG</h2>"
+            "<p class='meta'>The two official NBA cards: Next Gen (the engine's top 5 by EV) and "
+            "OG (Card v1: the top 5 by EV among the nbap15-based F and C-NBA picks), both chosen "
+            "at 6:15 AM ET. Only nights on which both were selected count "
             f"({c.nights} so far), each card at its own stakes.</p>"
-            "<table class='cmp'><thead><tr><th></th><th>Engine card (official)</th>"
-            f"<th>Shadow Card v1</th></tr></thead><tbody>{body}</tbody></table>"
+            "<table class='cmp'><thead><tr><th></th><th>Next Gen</th>"
+            f"<th>OG</th></tr></thead><tbody>{body}</tbody></table>"
             f"<p class='meta'>{escape(O.COMPARE_RULE)}</p>"
             f"<p class='meta' data-verdict='{escape(c.verdict)}'><b>Status:</b> "
             f"{escape(c.verdict)}</p></section>")

@@ -38,10 +38,12 @@ that day's games, once: `card` yes (with the card's own label and stake, `card_l
 `card_stake`, set at selection) or no (not chosen, or created after selection). The card
 bankroll counts card picks only. The creation-time `label` and `stake` above stay as they are.
 
-**Shadow Card v1** (`ledger/shadow_card.csv`, owner request 2026-11-05; alerts/card.py): the
-same, for the shadow Card v1 (poller state `shadow:<sport>:<day>`, signal `card-v1-shadow`):
-one row per F/C-NBA pick on that day's games, `shadow` yes (its label and stake) or no. Never
-official. **Card days** (`ledger/card_days.csv`): one row per chosen card (official or shadow)
+**OG card** (`ledger/shadow_card.csv`, owner requests 2026-11-05; alerts/card.py): the same
+for the NBA card "OG" (Card v1's rule; first a shadow, official since 2026-11-05; poller state
+`shadow:<sport>:<day>`, source tag `card-v1-shadow`): one row per F/C-NBA pick on that day's
+games, `shadow` yes (its label and stake) or no. The names in display and records come from
+config/cards.yaml (betdata/cards.py); OG's switch-over day is annotated `og_excluded`.
+**Card days** (`ledger/card_days.csv`): one row per chosen card (`engine`, `shadow` = OG, `v1`)
 and day, with its pick count, even when empty, so the comparison counts the same nights only.
 """
 
@@ -418,6 +420,20 @@ def annotate(out: Path, now: datetime) -> int:
         if pk["pick_id"] in M16_DUPLICATES:
             rows.append(("duplicate", "true", "repeat of an alerted change (REVIEW.md M16-4)",
                          pk))
+    # OG's switch-over day (owner decision 2026-11-05, config/cards.yaml exclude_days): its
+    # card picks stay in the ledger but out of the OG record
+    try:
+        from betdata import cards as C
+
+        excl = set(C.load()[C.OG].exclude_days)
+    except Exception:  # noqa: BLE001 - the card configuration never stops the ledger
+        excl = set()
+    if excl:
+        by_id = {pk["pick_id"]: pk for pk in read_rows(out / "picks.csv")}
+        for r in read_rows(out / "shadow_card.csv"):
+            if r["shadow"] == "yes" and r["card_date"] in excl and r["pick_id"] in by_id:
+                rows.append(("og_excluded", "true", "OG switch-over day: lines were first seen "
+                             "while F was archived (owner 2026-11-05)", by_id[r["pick_id"]]))
     return append_rows(out / "annotations.csv", ANNOTATION_FIELDS,
                        [{"key": f"{pk['pick_id']}:{field}", "pick_id": pk["pick_id"],
                          "field": field, "value": value, "noted_at": _iso(now), "note": note}

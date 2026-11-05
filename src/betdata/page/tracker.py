@@ -60,8 +60,17 @@ SCRIPT = """<script>
       (g.period ? ' · ' + esc(g.period) + (g.clock ? ' ' + esc(g.clock) : '') : '') + '</span>';
     return '';
   }
-  function badge(p) { return p.label ? ' <span class="lbl ' + esc(p.label.toLowerCase()) + '">' +
-    esc(p.label) + (p.card ? ' ' + p.stake + 'u' : '') + '</span>' : ''; }
+  // the NBA tab's two official cards (owner 2026-11-05): the toggle sets window.betdataNbaCard
+  function act(sport) {
+    return sport === 'nba' && window.betdataNbaCard === 'og' ? 'og' : 'nextgen'; }
+  function on(sport, p) { return act(sport) === 'og' ? !!p.og : !!p.card; }
+  function badge(sport, p) {
+    var og = act(sport) === 'og', c = on(sport, p);
+    var lb = og && p.og ? p.og_label : p.label, st = og && p.og ? p.og_stake : p.stake;
+    return (lb ? ' <span class="lbl ' + esc(lb.toLowerCase()) + '">' + esc(lb) +
+      (c ? ' ' + st + 'u' : '') + '</span>' : '') +
+      (p.both ? ' <span class="lbl both">on both cards</span>' : '');
+  }
   function who(p) {
     if (p.player) return esc(p.player) + (p.team ? ' (' + esc(p.team) + ')' : '') +
       (p.opp ? ' vs ' + esc(p.opp) : '');
@@ -86,10 +95,10 @@ SCRIPT = """<script>
       (p.clv != null ? '<div class="meta">CLV ' + (p.clv > 0 ? '+' : '') + p.clv +
       ' pp</div>' : '');
   }
-  function row(g, p) {
+  function row(sport, g, p) {
     var line = p.result ? result(p) : '<div>' + pstat(g, p) + '</div>';
     return '<li class="prop"><div><b>' + who(p) + '</b> · ' + esc(p.market) + '</div><div>' +
-      esc(p.pick) + ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + badge(p) + '</div>' +
+      esc(p.pick) + ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + badge(sport, p) + '</div>' +
       line + '<div class="meta">' + esc(p.signal) + '</div></li>';
   }
   function cardBlock(sport, games, d) {
@@ -97,9 +106,10 @@ SCRIPT = """<script>
     // its game below. A short engine card says so (owner override 2026-11-04).
     var rows = [];
     games.forEach(function (g) { g.picks.forEach(function (p) {
-      if (p.card) rows.push([g, p]); }); });
-    var note = d.card_note ? '<p class="meta trk-note">' + esc(d.card_note) + '.</p>' : '';
-    if (!rows.length && note) return [d.card_note, note];
+      if (on(sport, p)) rows.push([g, p]); }); });
+    var txt = act(sport) === 'og' ? d.og_note : d.card_note;
+    var note = txt ? '<p class="meta trk-note">' + esc(txt) + '.</p>' : '';
+    if (!rows.length && note) return [txt, note];
     if (!rows.length) return ['none yet',
       '<p class="meta">No card picks today yet (the card is chosen at 6:15 AM ET).</p>'];
     rows.sort(function (a, b) { return Date.parse(a[0].tip) - Date.parse(b[0].tip); });
@@ -126,25 +136,25 @@ SCRIPT = """<script>
         if (p.player && pk.indexOf(p.player) === 0) pk = pk.slice(p.player.length).trim();
         return '<li class="prop" role="button" tabindex="0" data-jump="' +
           esc(sport + '-' + g.game_id) + '"><div><b>' + esc(tip(g.tip)) + ' · ' +
-          esc(g.label) + '</b>' + badge(p) + '</div><div>' + who(p) + ' · ' + esc(pk) +
+          esc(g.label) + '</b>' + badge(sport, p) + '</div><div>' + who(p) + ' · ' + esc(pk) +
           ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + '</div>' +
           (p.result ? result(p) : '<div>' + pstat(g, p) + '</div>') + '</li>';
       }).join('') + '</ul>' + note + '<p class="meta">Picks are locked at the prices shown. ' +
       'Results post on the hourly run after each game ends.</p>'];
   }
   function game(sport, g) {
-    var card = g.picks.filter(function (p) { return p.card; });
-    var other = g.picks.filter(function (p) { return !p.card; });
+    var card = g.picks.filter(function (p) { return on(sport, p); });
+    var other = g.picks.filter(function (p) { return !on(sport, p); });
     var byTeam = {};
     other.forEach(function (p) {
       var k = p.team || 'Game'; (byTeam[k] = byTeam[k] || []).push(p); });
     var id = sport + '-' + g.game_id;
     var body = (card.length ? '<h4>Official (card) picks</h4><ul class="plist">' +
-      card.map(function (p) { return row(g, p); }).join('') + '</ul>' : '') +
+      card.map(function (p) { return row(sport, g, p); }).join('') + '</ul>' : '') +
       (other.length ? '<h4 class="research-head">Other model picks (research, not official)</h4>' +
       Object.keys(byTeam).sort().map(function (t) {
         return '<h5>' + esc(t) + '</h5><ul class="plist">' +
-          byTeam[t].map(function (p) { return row(g, p); }).join('') + '</ul>'; }).join('') :
+          byTeam[t].map(function (p) { return row(sport, g, p); }).join('') + '</ul>'; }).join('') :
       '');
     return '<details class="gamerow' + (card.length ? ' bet' : '') + '" data-game="' + esc(id) +
       '"' + (open[id] ? ' open' : '') + '><summary><b>' + esc(tip(g.tip)) + ' · ' +
@@ -209,5 +219,6 @@ SCRIPT = """<script>
     setInterval(function () { if (!document.hidden) get(0); }, 120000);
   }
   setInterval(function () { Object.keys(docs).forEach(render); }, 60000);
+  document.addEventListener('nbacard', function () { if (docs.nba) render('nba'); });
 })();
 </script>""".replace("%(repo)s", REPO)

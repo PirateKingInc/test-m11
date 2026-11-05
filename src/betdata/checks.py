@@ -24,8 +24,8 @@ ECE_MAX = 0.05
 BINS = (0.0, 0.40, 0.45, 0.50, 0.55, 0.60, 0.70, 1.0001)
 RETIRED = {"G1": "2026-11-03", "G2": "2026-11-03"}  # MODEL.md "M20: Part A"
 # archived from the NBA card when the engine became its source (owner override 2026-11-04,
-# MODEL.md "Engine card"); since 2026-11-05 they generate candidates only for the shadow Card v1
-# (never pushed, never official). Every pick stays in the ledger and its record here.
+# MODEL.md "Engine card"); since 2026-11-05 they feed the official OG card (MODEL.md "Two
+# official NBA cards"). Every pick stays in the ledger and its record here.
 ARCHIVED = {"C-NBA": "2026-11-04 (nba15/nbap15 repricing)", "F": "2026-11-04 (nbap15)"}
 
 

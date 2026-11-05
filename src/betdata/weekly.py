@@ -123,41 +123,42 @@ def build(root: Path, now: datetime, main: Connection | None,
     n_legacy = sum(r["signal_name"] == LEGACY for r in joined(root / "ledger"))
     t = now.astimezone(EASTERN)
     today = t.date()
-    off = O.official(rows)
+    from betdata import cards as C
+
     week_from = (today - timedelta(days=6)).isoformat()
-    week = [r for r in off if week_from <= r["day"] <= today.isoformat()]
-    w_rec, a_rec = O.record(week, O.official_stake), O.record(off, O.official_stake)
+
+    def wk(rs):
+        return [r for r in rs if week_from <= r["day"] <= today.isoformat()]
+
+    # each official card on its own (owner decision 2026-11-05: NBA Next Gen and OG, NFL; no
+    # combined "all sports" line)
+    cards = [(f"NBA {C.name(k)}", C.view(rows, k)) for k in (C.NEXTGEN, C.OG)]
+    cards += [(sp.upper(), O.official(rows, sp)) for sp in sorted(
+        {r["sport"] for r in O.official(rows)} - {"nba"})]  # fmt: skip
+    off = [r for _, v in cards for r in v]
+    week = wk(off)
     head = "| | W-L-P | Units | ROI | Avg odds | CLV | Graded |\n|---|---|---|---|---|---|---|"
     md = [f"# Weekly report, {today.isoformat()}", "",
           f"Written {now.isoformat(timespec='minutes')} by the hourly run. Official picks are "
-          "the daily card. Records count graded picks only, like a team's record. Paper units, "
-          "not advice. Signals stay frozen until their 200-pick gates.", "",
+          "the daily cards (NBA: Next Gen and OG, each on its own). Records count graded picks "
+          "only, like a team's record. Paper units, not advice.", "",
           *([f"Excludes {n_legacy} M16 legacy alerts (pre-M18 rules), available in the CSV.",
              ""] if n_legacy else []),
-          "## Official record (card picks)", "", head,
-          f"| Last 7 days | {_rec(w_rec)} |", f"| All time | {_rec(a_rec)} |"]
-    for sport in sorted({r["sport"] for r in off}):
-        md.append(f"| {sport.upper()}, all time | "
-                  f"{_rec(O.record(O.official(rows, sport), O.official_stake))} |")
-    # the official success goal (owner decision 2026-11-03)
-    # (owner override 2026-11-04: the NBA goal restarts with the engine card; all sports
-    # combines both NBA card versions and the NFL card)
-    goal_all = O.goal(off)
-    md += ["", "## Official success goal", "",
-           f"- {O.ALL_SPORTS} ({O.ALL_SPORTS_NOTE}): {O.goal_text(goal_all)} "
-           f"({O.context_text(goal_all)})"]
-    for sport in sorted({r["sport"] for r in off}):
-        g = O.goal(O.goal_rows(rows, sport))
-        who = "NBA engine card (since Nov 5)" if sport == "nba" else sport.upper()
-        md.append(f"- {who}: {O.goal_text(g)} ({O.context_text(g)})")
-    v1 = O.record(O.card_v1(off), O.official_stake)
-    if v1.graded:
-        md.append(f"- {O.CARD_V1}, final: {_rec(v1)}")
+          "## Official records (each card on its own)", "", head]
+    for name, v in cards:
+        md.append(f"| {name}, last 7 days | {_rec(O.record(wk(v), O.official_stake))} |")
+        md.append(f"| {name}, all time | {_rec(O.record(v, O.official_stake))} |")
+    # each card's own success goal (owner decisions 2026-11-03 and 2026-11-05)
+    md += ["", "## Official success goals (each card)", ""]
+    goals = {}
+    for name, v in cards:
+        g = goals[name] = O.goal(v)
+        md.append(f"- {name}: {O.goal_text(g)} ({O.context_text(g)})")
     md += ["", "## Why picks won or lost (official)", "",
            f"- Last 7 days: {_tags(O.tag_counts(week))}",
            f"- All time: {_tags(O.tag_counts(off))}", "",
            "## Results by day (last 7 days)", "", head]
-    for d, rs in O.by_day(week).items():
+    for d, rs in O.by_day(week).items():  # every card that day, together
         md.append(f"| {d} | {_rec(O.record(rs, O.official_stake))} |")
     md += ["", "## Research signals (not official picks; every pick, flat 1 unit)", "",
            "| Signal | W-L-P | Units | ROI | Avg odds | CLV | Graded | Gate |",
@@ -166,10 +167,10 @@ def build(root: Path, now: datetime, main: Connection | None,
     for name, r in sig.items():
         g = gate(r.clvs)
         md.append(f"| {name} | {_rec(r)} | {g['n']}/{GATE_N}: {g['status']} |")
-    # engine card vs shadow Card v1, same nights only (owner request 2026-11-05)
+    # Next Gen vs OG, same nights only (owner requests 2026-11-05)
     cmp_ = O.comparison(rows, root / "ledger")
-    md += ["", f"## Engine card vs shadow Card v1 (same nights only: {cmp_.nights})", "",
-           "| | Engine card (official) | Shadow Card v1 |", "|---|---|---|",
+    md += ["", f"## Next Gen vs OG (same nights only: {cmp_.nights})", "",
+           "| | Next Gen | OG |", "|---|---|---|",
            *[f"| {m} | {a} | {b} |" for m, a, b in O.comparison_rows(cmp_)], "",
            O.COMPARE_RULE, "", f"Status: {cmp_.verdict}"]
     # every NBA engine prediction graded at the close (owner override 2026-11-04)
@@ -189,10 +190,12 @@ def build(root: Path, now: datetime, main: Connection | None,
         return f"{r.wlp} {r.units:+.2f}u ROI {roi}"
 
     summary = [
-        f"Weekly {today.isoformat()}: card {short(w_rec)}, {w_rec.graded} graded",
-        f"Card all time {short(a_rec)}, CLV "
-        + ("–" if a_rec.clv is None else f"{a_rec.clv:+.1f} pp"),
-        f"All sports: {O.goal_text(goal_all)} ({O.context_text(goal_all)})"[:200],
+        f"Weekly {today.isoformat()}: "
+        + "; ".join(f"{n} {short(O.record(wk(v), O.official_stake))}" for n, v in cards),
+        "All time: " + "; ".join(f"{n} {short(O.record(v, O.official_stake))}"
+                                 for n, v in cards),
+        ("Goals: " + "; ".join(f"{n} {g.graded}/{O.GOAL_N} {g.status}"
+                               for n, g in goals.items()))[:200],
         f"Why (7 days): {_tags(O.tag_counts(week))}"[:180],
         "Research: " + ", ".join(f"{k} {short(r)}" for k, r in sig.items())[:220],
         "Gates: " + ", ".join(f"{k} {gate(r.clvs)['n']}/{GATE_N}" for k, r in sig.items()),

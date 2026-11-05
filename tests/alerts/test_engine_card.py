@@ -252,8 +252,14 @@ def test_shadow_card_v1_is_chosen_beside_the_engine_card_and_never_official(pdb)
         assert get_state(p, "shadow:nba:2026-11-05")["picks"] == sh["picks"]
         assert [x["dedup_key"] for x in get_state(p, "card:nba:2026-11-05")["picks"]] == ["e"]
         doc = build(p, None, "nba", NOW.date(), NOW)
-    # never on the main page: Today lists the engine's picks only
-    assert {x["signal"] for g in doc["games"] for x in g["picks"]} == {"nba-engine"}
+    # owner 2026-11-05: OG is official too, so Today lists both pools; each pick says which
+    # card it is on (the toggle picks the card)
+    picks = {x["id"]: x for g in doc["games"] for x in g["picks"]}
+    assert {x["signal"] for x in picks.values()} == {"nba-engine", "C-NBA", "F"}
+    assert sum(x["card"] for x in picks.values()) == 1
+    assert sum(x["og"] for x in picks.values()) == 5
+    assert {x["og_label"] for x in picks.values() if x["og"]} <= {"TAKE", "LEAN"}
+    assert doc["og_chosen"] and doc["cards"] == {"nextgen": "Next Gen", "og": "OG"}
 
 
 def test_the_poller_stays_awake_until_both_cards_are_chosen(pdb):
@@ -309,25 +315,53 @@ def test_comparison_rule():
 
     assert verdict(side(199, 1, -0.1, 0.0), side(300, 5, 0.1, 0.2)).startswith("too early")
     assert verdict(side(250, 1, -0.10, -0.02), side(250, 5, 0.01, 0.06)).startswith(
-        "recommend switching back")
-    assert verdict(side(250, 1, -0.10, 0.02), side(250, 5, 0.01, 0.06)) == "keep the engine card"
+        "OG is ahead by the rule")
+    assert verdict(side(250, 1, -0.10, 0.02), side(250, 5, 0.01, 0.06)) == (
+        "no card is ahead by the rule")
     assert verdict(side(250, 1, -0.10, -0.02), side(250, -1, 0.01, 0.06)) == (
-        "keep the engine card")  # units must be positive
+        "no card is ahead by the rule")  # units must be positive
 
 
-def test_one_step_revert(monkeypatch):
-    from datetime import date
+def test_retiring_a_card_stops_its_selection_only(pdb, monkeypatch):
+    """config/cards.yaml `active: false` retires a card: no new card; the other is unchanged."""
+    from betdata import cards as C
 
-    monkeypatch.setattr(CD, "NBA_CARD", "v1")
-    assert CD.signals_for("nba", date(2026, 11, 20)) == LB.SIGNALS
-    assert not CD.shadow_day("nba", date(2026, 11, 20)) and not CD.engine_day("nba",
-                                                                                date(2026, 11, 20))
+    with pdb.begin() as p:
+        _pick(p, "e", 0.2)
+        _v1(p, "v", 0.6)
+    real = C.active
+    monkeypatch.setattr(C, "active", lambda k: k != "og" and real(k))
+    assert CD.run_shadow(pdb, _Main(), NOW, tip_fn) == []
+    [card] = CD.run(pdb, _Main(), NOW, tip_fn)
+    assert [x["dedup_key"] for x in card["picks"]] == ["e"]
+    monkeypatch.setattr(C, "active", lambda k: k != "nextgen" and real(k))
+    with pdb.begin() as p:
+        p.execute(alerts.delete())
+    assert CD.run(pdb, _Main(), NOW + timedelta(days=1), tip_fn) == []
 
 
 def test_research_table_and_rule_render(tmp_path):
     from betdata.page.engine_research import compare_html
 
     html = compare_html([], tmp_path)
-    assert "<h2>Engine card vs shadow Card v1</h2>" in html and "Same nights only (0" in html
-    assert "<th>Shadow Card v1</th>" in html and "EV at close" in html
+    assert "<h2>Next Gen vs OG</h2>" in html and "were selected count (0 so far)" in html
+    assert "<th>Next Gen</th><th>OG</th>" in html and "EV at close" in html
     assert "Comparison rule (fixed 2026-11-05)" in html and "owner&#x27;s decision" in html
+
+
+def test_og_picks_up_to_five_by_its_own_rule_never_below_its_bar(pdb):
+    """OG (owner 2026-11-05): top 5 by EV among Live F/C-NBA picks with the original M18
+    labels; with fewer qualifying it shows fewer, never filled from below its bar."""
+    with pdb.begin() as p:
+        _v1(p, "a", 0.60, player="A")  # news edge 15 pp >= 1.5 x 6 pp: TAKE
+        _v1(p, "b", 0.52, player="B")  # 7 pp: LEAN
+        _v1(p, "gone", 0.70, player="G", live=False)  # not Live: never on the card
+        _pick(p, "e", 0.9, player="E")  # an engine pick: Next Gen's pool, never OG's
+    [og] = CD.run_shadow(pdb, _Main(), NOW, tip_fn)
+    assert [(x["dedup_key"], x["label"], x["stake"]) for x in og["picks"]] == [
+        ("a", "TAKE", 1.0), ("b", "LEAN", 0.5)]
+    assert CD.card_note(og) == "2 picks today — OG found no other value"
+    with pdb.connect() as p:
+        title, body = CD.message(p, og, NOW)
+    assert title == "Tonight's card - NBA OG - Thu Nov 5"
+    assert body.splitlines()[-1] == "2 picks today — OG found no other value"

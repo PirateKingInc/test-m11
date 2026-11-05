@@ -35,16 +35,16 @@ def test_header_goal_matches_the_official_record(tmp_path):
     _ledger(led)
     rows = O.dataset(led)
     html = header_html(rows, "nba", "NBA", TODAY, site)
-    # the NBA goal restarts with the engine card (owner override 2026-11-04): these picks are
-    # Card v1's, so the NBA goal is at 0; "All sports" combines both versions
-    assert "data-goal='NBA engine card' data-graded='0'" in html
-    assert "data-status='too early'" in html
+    # each NBA card has its own goal (owner decision 2026-11-05): these picks are Card v1's,
+    # so OG's (its record continues Card v1's); Next Gen's is at 0; no "All sports" line
+    assert "data-goal='Next Gen' data-graded='0'" in html
+    assert "data-status='too early'" in html and "All sports" not in html
     rec = O.record(O.official(rows), O.official_stake)
-    m = re.search(r"data-goal='All sports' data-graded='(\d+)' data-pct='([^']*)' "
+    m = re.search(r"data-goal='OG' data-graded='(\d+)' data-pct='([^']*)' "
                   r"data-units='([^']*)' data-status='([^']*)'", html)
     assert int(m.group(1)) == rec.graded and float(m.group(3)) == round(rec.units, 4)
     assert m.group(4) == ("too early · on track" if rec.wins >= rec.losses and rec.units > 0
                           else "too early · off track")
     assert "<progress max='500' value='3'" in html
     nfl = header_html(rows, "nfl", "NFL", TODAY, site)
-    assert "All sports" not in nfl and "data-goal='NFL'" in nfl
+    assert "cardtoggle" not in nfl and "data-goal='NFL'" in nfl

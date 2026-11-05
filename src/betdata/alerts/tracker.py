@@ -212,7 +212,8 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     database (final scores, box scores), or None."""
     from types import SimpleNamespace
 
-    from betdata.alerts.card import card_note, signals_for
+    from betdata import cards as C
+    from betdata.alerts.card import card_note, shadow_key, today_signals
     from betdata.alerts.card import key as card_key
     from betdata.alerts.gates import signal_name
     from betdata.alerts.labels import status
@@ -222,11 +223,13 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     lo, hi = day_bounds(day)
     card = get_state(p, card_key(sport, day)) or {}
     on_card = {x["dedup_key"]: x for x in card.get("picks", [])}
+    og = get_state(p, shadow_key(sport, day)) or {}  # OG (owner 2026-11-05), NBA only
+    on_og = {x["dedup_key"]: x for x in og.get("picks", [])}
     rows = p.execute(
         select(alerts, alert_grades.c.result, alert_grades.c.profit, consensus_grades.c.clv)
         .outerjoin(alert_grades, alert_grades.c.alert_id == alerts.c.alert_id)
         .outerjoin(consensus_grades, consensus_grades.c.alert_id == alerts.c.alert_id)
-        .where(alerts.c.sport == sport, alerts.c.signal.in_(signals_for(sport, day)),
+        .where(alerts.c.sport == sport, alerts.c.signal.in_(today_signals(sport, day)),
                alerts.c.tip >= lo, alerts.c.tip < hi)
         .order_by(alerts.c.tip, alerts.c.game_label, alerts.c.created_at)).mappings().all()
     games: dict[int, dict] = {}
@@ -260,11 +263,14 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
                 "picks": []}  # fmt: skip
         d = a.details or {}
         c = on_card.get(a.dedup_key)
-        lab = c or d.get("label") or {}
+        o = on_og.get(a.dedup_key)
+        lab = c or o or d.get("label") or {}
         stake = float(lab.get("stake", 1.0)) if lab else 1.0
         res = a.result
         units = None if res is None or a.profit is None else round(stake * a.profit, 2)
-        pick = {"id": pick_id(a.dedup_key), "card": c is not None,
+        pick = {"id": pick_id(a.dedup_key), "card": c is not None, "og": o is not None,
+                "og_label": (o or {}).get("label", ""), "og_stake": (o or {}).get("stake"),
+                "bet": C.bet_key(a.game_id, a.market, a.player_name, a.side),
                 "label": lab.get("label") or "", "stake": stake,
                 "signal": signal_name(a.signal, a.sport),
                 "pick": selection(a), "odds": _fmt_price(a.price),
@@ -284,12 +290,23 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
             except Exception:  # noqa: BLE001 - a status never drops the pick
                 pick["price"] = None
         g["picks"].append(pick)
+    # the same bet on both NBA cards (found by each card's own signal): marked on both
+    bets_ng = {x["bet"] for g in games.values() for x in g["picks"] if x["card"]}
+    bets_og = {x["bet"] for g in games.values() for x in g["picks"] if x["og"]}
+    for g in games.values():
+        for x in g["picks"]:
+            x["both"] = x["bet"] in bets_ng and x["bet"] in bets_og and (x["card"] or x["og"])
     out = {"sport": sport, "day": day.isoformat(), "generated_at": now.isoformat(),
            "scores": "balldontlie" if scores else None,
            "games": list(games.values())}  # fmt: skip
     if card.get("source") == "engine":  # the engine card (owner override 2026-11-04)
         out["card_source"] = "engine"
         out["card_note"] = card_note(card)
+    if og:  # OG, the second official NBA card (owner 2026-11-05)
+        out["og_chosen"] = True
+        out["og_note"] = card_note(og)
+    if sport == "nba" and C.load():
+        out["cards"] = {k: C.name(k) for k in (C.NEXTGEN, C.OG)}
     return out
 
 
