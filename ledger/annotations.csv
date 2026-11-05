@@ -7,3 +7,8 @@ P89c0ffdfda99:duplicate,P89c0ffdfda99,duplicate,true,2026-10-30T12:17:14+00:00,r
 P4a89a7a618aa:signal_name,P4a89a7a618aa,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
 Pddaf70680c30:signal_name,Pddaf70680c30,signal_name,m16-legacy,2026-10-30T12:17:14+00:00,M16 paper alert (pre-M18 rules)
 Pddaf70680c30:duplicate,Pddaf70680c30,duplicate,true,2026-10-30T12:17:14+00:00,repeat of an alerted change (REVIEW.md M16-4)
+P7d447bcf0477:og_excluded,P7d447bcf0477,og_excluded,true,2026-11-05T17:00:35+00:00,OG switch-over day: lines were first seen while F was archived (owner 2026-11-05)
+Pdfb3d2a6ab25:og_excluded,Pdfb3d2a6ab25,og_excluded,true,2026-11-05T17:00:35+00:00,OG switch-over day: lines were first seen while F was archived (owner 2026-11-05)
+P5813378aef4e:og_excluded,P5813378aef4e,og_excluded,true,2026-11-05T17:00:35+00:00,OG switch-over day: lines were first seen while F was archived (owner 2026-11-05)
+Pf6189f4e8b1b:og_excluded,Pf6189f4e8b1b,og_excluded,true,2026-11-05T17:00:35+00:00,OG switch-over day: lines were first seen while F was archived (owner 2026-11-05)
+P237891517aeb:og_excluded,P237891517aeb,og_excluded,true,2026-11-05T17:00:35+00:00,OG switch-over day: lines were first seen while F was archived (owner 2026-11-05)
