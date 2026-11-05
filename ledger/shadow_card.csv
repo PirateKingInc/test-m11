@@ -1,1 +1,8 @@
 pick_id,sport,card_date,shadow,shadow_label,shadow_stake,selected_at,ev,edge,threshold,edge_source,pinnacle_sides,signal_name
+P93280dd8343a,nba,2026-11-05,no,,,2026-11-05T15:05:00.000100+00:00,,,,,,card-v1-shadow
+Pbfed3c3e4e26,nba,2026-11-05,no,,,2026-11-05T15:05:00.000100+00:00,,,,,,card-v1-shadow
+P7d447bcf0477,nba,2026-11-05,yes,LEAN,0.5,2026-11-05T15:05:00.000100+00:00,0.0895,0.0736,0.06,,,card-v1-shadow
+Pdfb3d2a6ab25,nba,2026-11-05,yes,LEAN,0.5,2026-11-05T15:05:00.000100+00:00,0.1037,0.0769,0.06,,,card-v1-shadow
+P5813378aef4e,nba,2026-11-05,yes,LEAN,0.5,2026-11-05T15:05:00.000100+00:00,0.1302,0.085,0.06,,,card-v1-shadow
+Pf6189f4e8b1b,nba,2026-11-05,yes,LEAN,0.5,2026-11-05T15:05:00.000100+00:00,0.0914,0.0782,0.06,,,card-v1-shadow
+P237891517aeb,nba,2026-11-05,yes,LEAN,0.5,2026-11-05T15:05:00.000100+00:00,0.1451,0.0957,0.06,,,card-v1-shadow
