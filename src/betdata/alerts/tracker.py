@@ -212,7 +212,7 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     database (final scores, box scores), or None."""
     from types import SimpleNamespace
 
-    from betdata.alerts.card import SIZE, short_note, signals_for
+    from betdata.alerts.card import card_note, signals_for
     from betdata.alerts.card import key as card_key
     from betdata.alerts.gates import signal_name
     from betdata.alerts.labels import status
@@ -288,9 +288,8 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
            "scores": "balldontlie" if scores else None,
            "games": list(games.values())}  # fmt: skip
     if card.get("source") == "engine":  # the engine card (owner override 2026-11-04)
-        n = len(card.get("picks", []))
         out["card_source"] = "engine"
-        out["card_note"] = short_note(n) if n < SIZE else ""
+        out["card_note"] = card_note(card)
     return out
 
 

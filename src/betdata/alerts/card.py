@@ -37,10 +37,18 @@ The NFL card is unchanged.
 
 Shadow Card v1 (owner request 2026-11-05, MODEL.md "Shadow Card v1"): on every engine-card day,
 also at 6:15 AM ET, the old Card v1 is selected exactly as before (top 5 by EV among the F and
-C-NBA picks still Live; if none is Live at 6:15, at the first poll with one), as `card-v1-shadow`.
+C-NBA picks still Live, chosen by the "When" rule below), as `card-v1-shadow`.
 It is never official, never on the main page and never pushed; it is stored as `shadow:<sport>:
 <day>`, written to `ledger/shadow_card.csv` and graded like the card. F and C-NBA keep generating
-candidates in the background for it only (recorded, never pushed). One constant, `NBA_CARD`,
+candidates in the background for it only (recorded, never pushed).
+
+When (owner correction 2026-11-05, both the engine card and the shadow): if lines exist at
+6:15 for at least one of today's games, the card is selected then from what is available, even
+short or empty ("No picks today — the engine found no value"); picks found later are tracked on
+the Research tab and never join it. Only if no lines exist for any of today's games does a
+later poll select it, at the first one where lines exist. Cutoff: with still no lines 60
+minutes before the day's first tip, the card is published empty ("No lines posted in time").
+Chosen once per day in every case (`decide`). One constant, `NBA_CARD`,
 decides which is official: "engine" now; "v1" is the one-step revert (SWITCH.md).
 """
 
@@ -88,6 +96,59 @@ def shadow_signal(a) -> bool:
 def signals_for(sport: str, day: date) -> tuple[str, ...]:
     """The signals whose picks are the sport's card pool (and its Today list) on the day."""
     return (ENGINE,) if engine_day(sport, day) else SIGNALS
+
+
+NO_LINES = "No lines posted in time"
+LINES_CUTOFF = timedelta(minutes=60)  # before the day's first tip
+
+
+def lines_exist(p, main, sport: str, day: date, now: datetime) -> bool:
+    """Is any DK/FD (or other archived) line stored, by `now`, for one of the sport's games on
+    the Eastern day?"""
+    from betdata.alerts.db import quotes
+    from betdata.alerts.grade import QUOTE_SOURCES
+    from betdata.db.schema import games, sports
+
+    lo, hi = day_bounds(day)
+    gids = list(main.execute(select(games.c.game_id)
+                             .join(sports, sports.c.sport_id == games.c.sport_id)
+                             .where(sports.c.key == sport, games.c.start_time_utc >= lo,
+                                    games.c.start_time_utc < hi,
+                                    games.c.status.not_in(("postponed", "cancelled"))))
+                .scalars())  # fmt: skip
+    if not gids:
+        return False
+    return p.execute(select(quotes.c.quote_id).where(
+        quotes.c.game_id.in_(gids), quotes.c.sport == sport, quotes.c.polled_at <= now,
+        quotes.c.source.in_(QUOTE_SOURCES), quotes.c.price.is_not(None)).limit(1)).first() \
+        is not None  # fmt: skip
+
+
+def decide(p, m, sport: str, day: date, now: datetime, first: datetime, signals=None,
+           lines_fn=None) -> dict | None:
+    """The card to store now, or None to wait (module docstring "When"): lines for any of
+    today's games -> select from what is available (even empty); no lines -> wait, until 60
+    minutes before the first tip, then an empty card marked no_lines."""
+    has = (lines_fn or lines_exist)(p, m, sport, day, now)
+    if not has:
+        if now < first - LINES_CUTOFF:
+            return None
+        card = {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
+                "picks": [], "live": 0, "no_lines": True}
+        card["source"] = SHADOW if signals is not None else (
+            "engine" if engine_day(sport, day) else None)
+        if card["source"] is None:
+            del card["source"]
+        return card
+    return choose(p, sport, day, now, signals)
+
+
+def card_note(card: dict) -> str:
+    """The page and push note of a short or empty engine card ("" for a full one)."""
+    if card.get("no_lines"):
+        return NO_LINES
+    n = len(card.get("picks", []))
+    return short_note(n) if n < SIZE else ""
 
 
 def short_note(n: int) -> str:
@@ -201,9 +262,9 @@ def shadow_in_ledger(sport: str, day: date) -> bool:
                for r in read_rows(ledger_dir() / "shadow_card.csv"))  # fmt: skip
 
 
-def run_shadow(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
-    """Choose the shadow Card v1 when due (once), exactly as Card v1 was chosen: from 6:15 AM ET
-    on a day with games, at the first poll with any Live F/C-NBA pick. Never pushed."""
+def run_shadow(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> list[dict]:
+    """Choose the shadow Card v1 when due (once), by the same rule as the engine card (`decide`):
+    top 5 by EV among F/C-NBA picks still Live. Never pushed."""
     day = now.astimezone(EASTERN).date()
     out = []
     for sport in SPORTS:
@@ -215,18 +276,19 @@ def run_shadow(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
         if shadow_in_ledger(sport, day):
             continue
         with main.connect() as m:
-            if tip_fn(m, sport, day) is None:
+            ft = tip_fn(m, sport, day)
+            if ft is None:
                 continue
-        with pdb.begin() as p:
-            card = choose(p, sport, day, now, V1_SIGNALS)
-            if not card["picks"]:  # nothing Live yet: try again at the next poll (as v1 did)
-                continue
-            set_state(p, shadow_key(sport, day), card, now)
+            with pdb.begin() as p:
+                card = decide(p, m, sport, day, now, ft, V1_SIGNALS, lines_fn)
+                if card is None:  # no lines for any of today's games yet: wait
+                    continue
+                set_state(p, shadow_key(sport, day), card, now)
         out.append(card)
     return out
 
 
-def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
+def run(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> list[dict]:
     """Choose each sport's card when due (once): from 6:15 AM ET on a day the sport has games,
     at the first poll with any Live pick. Returns the cards chosen now."""
     day = now.astimezone(EASTERN).date()
@@ -241,15 +303,18 @@ def run(pdb, main, now: datetime, tip_fn=first_tip) -> list[dict]:
             continue
         with main.connect() as m:
             ft = tip_fn(m, sport, day)
-        if ft is None or now < select_at(day):  # no games today, or not 6:15 yet
-            continue
-        with pdb.begin() as p:
-            card = choose(p, sport, day, now)
-            # nothing Live yet: try again at the next poll (owner 2026-11-05: both cards, as
-            # Card v1 always did)
-            if not card["picks"]:
+            if ft is None or now < select_at(day):  # no games today, or not 6:15 yet
                 continue
-            set_state(p, key(sport, day), card, now)
+            with pdb.begin() as p:
+                if engine_day(sport, day):  # the engine card: `decide` (owner 2026-11-05)
+                    card = decide(p, m, sport, day, now, ft, None, lines_fn)
+                    if card is None:  # no lines for any of today's games yet: wait
+                        continue
+                else:  # NFL (and Card v1 after a revert): nothing Live yet -> the next poll
+                    card = choose(p, sport, day, now)
+                    if not card["picks"]:
+                        continue
+                set_state(p, key(sport, day), card, now)
         out.append(card)
     return out
 
@@ -268,8 +333,8 @@ def message(p, card: dict, now: datetime) -> tuple[str, str]:
         when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET")
         lines.append(f"{a.game_label} {when}: {selection(a)} {_fmt_price(a.price)} at "
                      f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u")
-    if card.get("source") == "engine" and len(card["picks"]) < SIZE:
-        lines.append(short_note(len(card["picks"])))
+    if card.get("source") == "engine" and card_note(card):
+        lines.append(card_note(card))
     day = datetime.fromisoformat(card["day"]).strftime("%a %b %-d")
     return f"Tonight's card - {card['sport'].upper()} - {day}", "\n".join(lines)
 
