@@ -1,7 +1,7 @@
 """The NBA engine card (owner override 2026-11-04, MODEL.md "Engine card"): from the 2026-11-05
-card, the NBA card is the top 5 engine picks by EV still Live at 8:50 AM ET, chosen once even
-when short or empty, TAKE when EV >= 1.5x the engine's threshold, else LEAN. NFL is unchanged;
-the archived NBA signals (C-NBA, F) are out of the pool."""
+card, the NBA card is the top 5 engine picks by EV still Live at selection (6:15 AM ET since
+2026-11-05; 8:50 before), a short card chosen once, TAKE when EV >= 1.5x the engine's threshold,
+else LEAN. NFL is unchanged; the archived NBA signals (C-NBA, F) are out of the pool."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -13,7 +13,7 @@ from betdata.alerts import labels as LB
 from betdata.alerts.db import alerts, engine_for, get_state, quotes
 from betdata.alerts.tracker import build
 
-NOW = datetime(2026, 11, 5, 13, 50, tzinfo=UTC)  # Thu Nov 5, 8:50 AM ET (EST)
+NOW = datetime(2026, 11, 5, 11, 15, tzinfo=UTC)  # Thu Nov 5, 6:15 AM ET (EST)
 TIP = datetime(2026, 11, 6, 0, 0, tzinfo=UTC)  # 7:00 PM ET
 
 
@@ -84,7 +84,7 @@ def test_a_short_engine_card_is_chosen_once_and_says_so(pdb):
     assert len(card["picks"]) == 2
     title, body = CD.message(pdb.connect().__enter__(), card, NOW)
     assert body.splitlines()[-1] == "2 picks today — the engine found no other value"
-    with pdb.begin() as p:  # a pick found after 8:50 stays off the card
+    with pdb.begin() as p:  # a pick found after selection stays off the card
         _pick(p, "late", 0.5, created=NOW + timedelta(minutes=20), player="Late")
     assert CD.run(pdb, _Main(), NOW + timedelta(minutes=30), tip_fn) == []
     with pdb.connect() as p:
@@ -94,18 +94,20 @@ def test_a_short_engine_card_is_chosen_once_and_says_so(pdb):
     assert sum(x["card"] for x in picks.values()) == 2 and len(picks) == 3
 
 
-def test_an_empty_engine_card_is_stored_at_850(pdb):
+def test_with_nothing_live_the_engine_card_waits_for_the_first_live_pick(pdb):
+    """Owner 2026-11-05: with nothing Live at 6:15, the first later poll with a Live pick
+    selects the engine card (as Card v1 always did)."""
     with pdb.begin() as p:
         _pick(p, "gone", 0.3, live=False)
-    [card] = CD.run(pdb, _Main(), NOW, tip_fn)
-    assert card["picks"] == [] and card["source"] == "engine"
+    assert CD.run(pdb, _Main(), NOW, tip_fn) == []
     with pdb.connect() as p:
-        assert get_state(p, "card:nba:2026-11-05")["picks"] == []
-        _t, body = CD.message(p, card, NOW)
-    assert body == "No picks today — the engine found no value"
-    with pdb.begin() as p:  # chosen once: a later live pick does not make a card
-        _pick(p, "new", 0.3, created=NOW + timedelta(hours=1), player="New")
-    assert CD.run(pdb, _Main(), NOW + timedelta(hours=2), tip_fn) == []
+        assert get_state(p, "card:nba:2026-11-05") is None
+    later = NOW + timedelta(hours=1)
+    with pdb.begin() as p:
+        _pick(p, "new", 0.3, created=later - timedelta(minutes=5), player="New")
+    [card] = CD.run(pdb, _Main(), later, tip_fn)
+    assert [x["dedup_key"] for x in card["picks"]] == ["new"]
+    assert card["selected_at"] == later.isoformat()
 
 
 def test_engine_label_rule():

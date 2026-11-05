@@ -24,6 +24,14 @@ from betdata.alerts.rules import EASTERN
 
 SWEEP_HORIZON = timedelta(hours=36)
 SWEEP_GAMES_PER_CYCLE = 3
+# The 6:00 AM ET sweep feeds the 6:15 morning update (betdata/morning.py): it must finish by
+# 6:10, so it polls twice as many games a minute (same requests in total, sooner).
+MORNING_SLOT_GAMES_PER_CYCLE = 6
+
+
+def games_per_cycle(slot: str | None) -> int:
+    return MORNING_SLOT_GAMES_PER_CYCLE if slot and slot.endswith(":0600") else (
+        SWEEP_GAMES_PER_CYCLE)
 SWEEP_SPORTS = ("nba", "nfl")
 
 

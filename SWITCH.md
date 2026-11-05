@@ -5,7 +5,7 @@
 PROJECT.md decision row. Differences from the plan below: the engine label is TAKE when EV ≥
 1.5 × θ (no news/Pinnacle condition, the owner's rule); nba15/nbap15 hourly predictions keep
 running (no picks; the frozen sport tab's sections keep their data); the engine card is chosen
-once at 8:50 even when empty.
+once at 8:50 even when empty (since 2026-11-05: at 6:15 AM ET, and with nothing Live a later poll selects it).
 
 ## Revert to Card v1 — one step (owner decision only)
 
@@ -13,11 +13,12 @@ Since 2026-11-05 the old Card v1 is chosen every morning as a shadow (`card-v1-s
 revert needs no data work. The one step:
 
 > In `src/betdata/alerts/card.py`, change `NBA_CARD = "engine"` to `NBA_CARD = "v1"` (one PR,
-> CI green, merged before 8:30 AM ET for that day's card).
+> CI green, merged before 6:00 AM ET for that day's card: since 2026-11-05 cards are chosen by
+> the 6:15 AM ET morning update, MODEL.md "Morning update").
 
 What that one constant does, with no other edit:
-- the official NBA card at 8:50 AM ET is Card v1 again: top 5 by EV among the F and C-NBA picks
-  still Live, chosen as before (if none is Live at 8:50, at the first poll with one), pushed to
+- the official NBA card at 6:15 AM ET is Card v1 again: top 5 by EV among the F and C-NBA picks
+  still Live, chosen as before (if none is Live at 6:15, at the first poll with one), pushed to
   ntfy, official, TAKE/LEAN by the M18 label rule;
 - F and C-NBA picks are pushed again one by one (`Poller.send`), and Today lists them;
 - the shadow card stops (nothing is shadowed); engine picks keep being recorded as research;

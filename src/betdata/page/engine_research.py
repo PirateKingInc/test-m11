@@ -3,8 +3,8 @@
 Today's engine picks grouped by game (Player (TEAM) vs OPP), the signal's graded record (W-L-P
 with units, graded picks only, flat 1 unit) and its three checks with their status. Research
 only until 2026-11-04; since the owner override of that day the engine's picks are the NBA card's
-pool (alerts/card.py): the ones chosen at 8:50 AM ET are official, the rest (and any found after
-8:50) are tracked here."""
+pool (alerts/card.py): the ones chosen at 6:15 AM ET are official, the rest (and any found after
+6:15) are tracked here."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ def engine_html(rows: list[dict], today: date, site: Path, live: dict | None = N
     out = ["<section class='research' data-engine='nba'><h2>NBA engine</h2>"
            "<p class='meta'>One model from the players up (minutes, rates, team totals, 10,000 "
            "simulations a game), blended with the market. Since Nov 5 the NBA card is the top 5 "
-           "engine picks still Live at 8:50 AM ET; every engine pick is listed here, card or "
+           "engine picks still Live at 6:15 AM ET; every engine pick is listed here, card or "
            "not.</p>"]
     if live is not None:
         n = len(live.get("games", []))
@@ -66,7 +66,7 @@ def compare_html(rows: list[dict], ledger: Path | None = None) -> str:
                    f"<td>{escape(b)}</td></tr>" for m, a, b in O.comparison_rows(c))
     return ("<section class='research' data-compare='nba'><h2>Engine card vs shadow Card v1"
             "</h2><p class='meta'>The shadow Card v1 is the old card (top 5 by EV among the "
-            "nbap15-based F and C-NBA picks still Live at 8:50 AM ET), chosen every morning "
+            "nbap15-based F and C-NBA picks still Live at 6:15 AM ET), chosen every morning "
             "beside the engine card: never official, never pushed. Same nights only "
             f"({c.nights} so far), each card at its own stakes.</p>"
             "<table class='cmp'><thead><tr><th></th><th>Engine card (official)</th>"

@@ -45,7 +45,7 @@ FILE = "tracker.json"
 # ET, the page out ~15 minutes later); after the last run of the day, the next morning.
 GAME_LENGTH = {"nba": timedelta(hours=2, minutes=30), "nfl": timedelta(hours=3, minutes=15)}
 POST_DELAY = timedelta(minutes=15)
-MORNING_ETA = (9, 0)  # "grading tomorrow ~9:00 AM ET"
+MORNING_ETA = (6, 15)  # "grading ~6:15 AM ET tomorrow" (the morning update, 2026-11-05)
 BDL = {"nba": "https://api.balldontlie.io/v1/games",
        "nfl": "https://api.balldontlie.io/nfl/v1/games"}  # fmt: skip
 # balldontlie abbreviations that differ from ours
@@ -177,7 +177,7 @@ def grading_eta(tip: datetime, sport: str) -> dict:
                 "grade_text": f"grading by ~{et_time(at)}"}
     h, m = MORNING_ETA
     return {"end": end.isoformat(), "grade_at": None,
-            "grade_text": f"grading tomorrow ~{h}:{m:02d} AM ET"}
+            "grade_text": f"grading ~{h}:{m:02d} AM ET tomorrow"}
 
 
 def plain_status(tip: datetime | None, sport: str, now: datetime, final: bool = False,
