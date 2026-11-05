@@ -175,8 +175,10 @@ def test_weekly_report_and_pushes(pdb, tmp_path):
     assert "| C-NBA | 0-1-0 | -1.00u" in md and "## Why picks won or lost (official)" in md
     assert "pending" not in md and "## System health" in md  # graded-only records
     assert len(summary) == 6 and summary[0].startswith("Weekly 2026-11-02: card 0-0-0")
-    assert summary[2].startswith("Goal: .500+ and positive units over 500 graded picks")
-    assert "## Official success goal" in md and "- All sports: Goal: .500+" in md
+    assert summary[2].startswith("All sports: Goal: .500+ and positive units over 500 graded")
+    assert "## Official success goal" in md and ("- All sports (NBA Card v1 + NBA engine card + "
+                                                  "NFL card, combined): Goal: .500+") in md
+    assert "## NBA engine: every prediction vs the close" in md
     assert summary[5] == "Gates: C-NBA 1/200, F 1/200"
     posts = []
     client = httpx.Client(transport=httpx.MockTransport(

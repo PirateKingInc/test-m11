@@ -92,12 +92,14 @@ SCRIPT = """<script>
       esc(p.pick) + ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + badge(p) + '</div>' +
       line + '<div class="meta">' + esc(p.signal) + '</div></li>';
   }
-  function cardBlock(sport, games) {
+  function cardBlock(sport, games, d) {
     // "Tonight's card" (owner request 2026-11-04): every card pick, by tip; a row jumps to
-    // its game below
+    // its game below. A short engine card says so (owner override 2026-11-04).
     var rows = [];
     games.forEach(function (g) { g.picks.forEach(function (p) {
       if (p.card) rows.push([g, p]); }); });
+    var note = d.card_note ? '<p class="meta trk-note">' + esc(d.card_note) + '.</p>' : '';
+    if (!rows.length && note) return [d.card_note, note];
     if (!rows.length) return ['none yet',
       '<p class="meta">No card picks today yet (the card is chosen at 8:50 AM ET).</p>'];
     rows.sort(function (a, b) { return Date.parse(a[0].tip) - Date.parse(b[0].tip); });
@@ -127,8 +129,8 @@ SCRIPT = """<script>
           esc(g.label) + '</b>' + badge(p) + '</div><div>' + who(p) + ' · ' + esc(pk) +
           ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + '</div>' +
           (p.result ? result(p) : '<div>' + pstat(g, p) + '</div>') + '</li>';
-      }).join('') + '</ul><p class="meta">Picks are locked at the prices shown. Results post ' +
-      'on the hourly run after each game ends.</p>'];
+      }).join('') + '</ul>' + note + '<p class="meta">Picks are locked at the prices shown. ' +
+      'Results post on the hourly run after each game ends.</p>'];
   }
   function game(sport, g) {
     var card = g.picks.filter(function (p) { return p.card; });
@@ -155,7 +157,7 @@ SCRIPT = """<script>
     var sec = document.querySelector('section[data-tracker="' + sport + '"]');
     var d = docs[sport]; if (!sec || !d) return;
     var games = d.games || [];
-    var cb = cardBlock(sport, games);
+    var cb = cardBlock(sport, games, d);
     var fold = document.querySelector('details[data-tonight="' + sport + '"]');
     if (fold) {
       fold.querySelector('.trk-sum').textContent = '— ' + cb[0];

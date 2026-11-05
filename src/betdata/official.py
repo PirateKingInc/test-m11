@@ -140,6 +140,33 @@ def official(rows: list[dict], sport: str | None = None) -> list[dict]:
     return [r for r in rows if r["official"] and (sport is None or r["sport"] == sport)]
 
 
+# The NBA card's two versions (owner override 2026-11-04, MODEL.md "Engine card"): Card v1 (the
+# M18 signals on nbap15, Oct 31 - Nov 4) and the engine card (from Nov 5). The success goal
+# restarts for the engine card; the all-sports goal combines every card pick, both versions.
+ENGINE_CARD_START = "2026-11-05"
+ENGINE_CARD = "Engine card (since Nov 5)"
+CARD_V1 = "Card v1, nbap15 (Oct 31 – Nov 4)"
+ALL_SPORTS = "All sports"
+ALL_SPORTS_NOTE = "NBA Card v1 + NBA engine card + NFL card, combined"
+
+
+def engine_card(rows: list[dict]) -> list[dict]:
+    """The NBA engine card's official rows (card dates from ENGINE_CARD_START)."""
+    return [r for r in rows if r["sport"] == "nba" and r["day"] >= ENGINE_CARD_START]
+
+
+def card_v1(rows: list[dict]) -> list[dict]:
+    """The NBA Card v1 official rows (card dates before ENGINE_CARD_START)."""
+    return [r for r in rows if r["sport"] == "nba" and r["day"] < ENGINE_CARD_START]
+
+
+def goal_rows(rows: list[dict], sport: str) -> list[dict]:
+    """The official rows the sport's success goal counts: the NBA's restarts with the engine
+    card (owner override 2026-11-04); NFL's is every NFL card pick."""
+    off = official(rows, sport)
+    return engine_card(off) if sport == "nba" else off
+
+
 def periods(rows: list[dict], today: date) -> dict[str, Rec]:
     """All time, last 7 days (card dates today-6 .. today) and yesterday, at card stakes."""
     t = today.isoformat()

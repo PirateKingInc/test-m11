@@ -25,6 +25,7 @@ html
               span class=pv
             div class=foldbody
               p class=meta
+              h3 class=era
               dl class=periods
                 dt
                 dd
@@ -47,6 +48,17 @@ html
                       b
                     a
                     a
+              details class=fold era
+                summary
+                  b
+                  span class=pv
+                div class=foldbody
+                  p
+                    span class=rec
+                      a
+                        b
+                      a
+                      a
         details class=fold
           summary
             b

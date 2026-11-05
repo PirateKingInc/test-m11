@@ -47,33 +47,49 @@ def stat_line(rec: O.Rec, href: str) -> str:
 def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path) -> str:
     """The official record, at the top of the tab and foldable (owner 2026-11-04): folded, its
     one-line preview gives the all-time record and the goal status; open, the periods and the
-    goal blocks. The page's fold script remembers a reader who opens it."""
+    goal blocks. The page's fold script remembers a reader who opens it.
+
+    NBA (owner override 2026-11-04): the engine card is the headline (its periods and its own
+    goal, restarted on Nov 5), Card v1 (nbap15, Oct 31 – Nov 4) is a folded line below it, and
+    the "All sports" goal combines both versions and the NFL card, labelled so."""
     off = O.official(rows, sport)
-    per = O.periods(off, today)
-    allt, g = per["All time"], O.goal(off)
-    preview = (f"All time {allt.wlp} · {_units(allt.units)} · goal {g.graded} of {O.GOAL_N}, "
-               f"{g.status}")
+    nba = sport == "nba"
+    head = O.engine_card(off) if nba else off
+    per = O.periods(head, today)
+    allt, g = per["All time"], O.goal(O.goal_rows(rows, sport))
+    preview = (f"{'Engine card' if nba else 'All time'} {allt.wlp} · {_units(allt.units)} · "
+               f"goal {g.graded} of {O.GOAL_N}, {g.status}")
     out = [f"<section class='official' data-sport='{escape(sport)}'>"
            f"<details class='fold' data-fold='{escape(sport)}-official'><summary><b>Official "
            f"record · {escape(name)}</b> <span class='pv'>— {escape(preview)}</span></summary>"
            "<div class='foldbody'><p class='meta'>Official picks are the daily card (up to 5, "
            "chosen at 8:50 AM ET). Like a team's record, graded picks only; today's picks are "
-           "under Tonight's card until they are graded. Paper units, not advice.</p>"
-           "<dl class='periods'>"]
+           "under Tonight's card until they are graded. Paper units, not advice.</p>"]
+    if nba:
+        out.append(f"<h3 class='era' data-era='engine'>{escape(O.ENGINE_CARD)}</h3>")
+    out.append("<dl class='periods'>")
     for label, rec in per.items():
         slug = label.lower().replace(" ", "-")
         href = f"csv/{sport}-official-{slug}.csv"
         O.write_csv(site / href, rec.rows)
         out.append(f"<dt>{escape(label)}</dt><dd>{stat_line(rec, href)}</dd>")
     out.append("</dl>")
-    out.append(goal_html(off, name))
-    if sport == "nba":  # "All sports" once, on the NBA tab (as the M18 bankroll was)
-        out.append(goal_html(O.official(rows), "All sports"))
+    out.append(goal_html(O.goal_rows(rows, sport), "NBA engine card" if nba else name))
+    if nba:
+        v1 = O.record(O.card_v1(off), O.official_stake)
+        href = "csv/nba-official-card-v1.csv"
+        O.write_csv(site / href, v1.rows)
+        out.append(f"<details class='fold era' data-fold='nba-card-v1' data-era='v1'><summary>"
+                   f"<b>{escape(O.CARD_V1)}</b> <span class='pv'>— {v1.wlp} · "
+                   f"{_units(v1.units)}</span></summary><div class='foldbody'>"
+                   f"<p>{stat_line(v1, href)}</p></div></details>")
+        # "All sports" once, on the NBA tab (as the M18 bankroll was): both NBA versions + NFL
+        out.append(goal_html(O.official(rows), O.ALL_SPORTS, O.ALL_SPORTS_NOTE))
     out.append("</div></details></section>")
     return "".join(out)
 
 
-def goal_html(rows: list[dict], label: str) -> str:
+def goal_html(rows: list[dict], label: str, note: str = "") -> str:
     """The official success goal's progress line (owner decision 2026-11-03): the goal and the
     card's progress, a progress bar to 500 graded picks, the status, and the card's average
     odds with the break-even win rate."""
@@ -81,7 +97,8 @@ def goal_html(rows: list[dict], label: str) -> str:
     pct = "" if g.pct is None else f"{g.pct:.4f}"
     return (f"<div class='goal' data-goal='{escape(label)}' data-graded='{g.graded}' "
             f"data-pct='{pct}' data-units='{g.units:.4f}' data-status='{escape(g.status)}'>"
-            f"<p class='meta'><b>{escape(label)}</b> · {escape(O.goal_text(g))}</p>"
+            f"<p class='meta'><b>{escape(label)}</b>{f' ({escape(note)})' if note else ''} · "
+            f"{escape(O.goal_text(g))}</p>"
             f"<progress max='{O.GOAL_N}' value='{min(g.graded, O.GOAL_N)}' "
             f"style='width:100%'>{g.graded} of {O.GOAL_N}</progress>"
             f"<p class='meta'>{escape(O.context_text(g))}</p></div>")
@@ -204,7 +221,7 @@ def research_html(rows: list[dict], site: Path) -> str:
     """Each signal's research record (all its picks, graded only, flat 1 unit), its three
     checks (M20 Part A) and the earlier M18 CLV gate."""
     from betdata.alerts.gates import GATE_N, gate
-    from betdata.checks import N_WORKS, RETIRED, picks_of, summary_line, three_checks
+    from betdata.checks import ARCHIVED, N_WORKS, RETIRED, picks_of, summary_line, three_checks
 
     out = ["<section class='research'><h2>Signals (research, not official picks)</h2>"
            "<p class='meta'>Every graded pick of each signal, card or not, at a flat 1 unit. "
@@ -219,6 +236,9 @@ def research_html(rows: list[dict], site: Path) -> str:
         ck = three_checks(picks_of(rec.rows))
         retired = (f" <span class='meta'>retired {escape(RETIRED[name])}: no new picks"
                    "</span>" if name in RETIRED else "")  # fmt: skip
+        if name in ARCHIVED:
+            retired = (f" <span class='meta archived'>archived {escape(ARCHIVED[name])}: no new "
+                       "picks, history kept</span>")
         out.append(f"<li class='prop' data-signal='{escape(name)}'><div><b>{escape(name)}</b>"
                    f"{retired}</div><div>{stat_line(rec, href)}</div>"
                    f"<div class='meta' data-checks='{escape(ck.status)}'>Three checks: "

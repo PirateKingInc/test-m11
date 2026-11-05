@@ -140,12 +140,19 @@ def build(root: Path, now: datetime, main: Connection | None,
         md.append(f"| {sport.upper()}, all time | "
                   f"{_rec(O.record(O.official(rows, sport), O.official_stake))} |")
     # the official success goal (owner decision 2026-11-03)
+    # (owner override 2026-11-04: the NBA goal restarts with the engine card; all sports
+    # combines both NBA card versions and the NFL card)
     goal_all = O.goal(off)
     md += ["", "## Official success goal", "",
-           f"- All sports: {O.goal_text(goal_all)} ({O.context_text(goal_all)})"]
+           f"- {O.ALL_SPORTS} ({O.ALL_SPORTS_NOTE}): {O.goal_text(goal_all)} "
+           f"({O.context_text(goal_all)})"]
     for sport in sorted({r["sport"] for r in off}):
-        g = O.goal(O.official(rows, sport))
-        md.append(f"- {sport.upper()}: {O.goal_text(g)} ({O.context_text(g)})")
+        g = O.goal(O.goal_rows(rows, sport))
+        who = "NBA engine card (since Nov 5)" if sport == "nba" else sport.upper()
+        md.append(f"- {who}: {O.goal_text(g)} ({O.context_text(g)})")
+    v1 = O.record(O.card_v1(off), O.official_stake)
+    if v1.graded:
+        md.append(f"- {O.CARD_V1}, final: {_rec(v1)}")
     md += ["", "## Why picks won or lost (official)", "",
            f"- Last 7 days: {_tags(O.tag_counts(week))}",
            f"- All time: {_tags(O.tag_counts(off))}", "",
@@ -159,6 +166,15 @@ def build(root: Path, now: datetime, main: Connection | None,
     for name, r in sig.items():
         g = gate(r.clvs)
         md.append(f"| {name} | {_rec(r)} | {g['n']}/{GATE_N}: {g['status']} |")
+    # every NBA engine prediction graded at the close (owner override 2026-11-04)
+    from betdata.nba import engine_grades as G
+
+    eg = G.read(root / "ledger")
+    md += ["", "## NBA engine: every prediction vs the close", ""]
+    for label, kind in (("All", None), ("Game markets", "game"), ("Player props", "prop")):
+        md.append(f"- {label}: {G.summary_line(G.summary(eg, kind))}")
+    week_eg = [r for r in eg if r["tip"] >= (now - timedelta(days=7)).isoformat()]
+    md.append(f"- Last 7 days: {G.summary_line(G.summary(week_eg))}")
     since = now - timedelta(days=7)
     md += ["", "## System health (last 7 days)", "", *health(main, poller, since), ""]
 
@@ -170,7 +186,7 @@ def build(root: Path, now: datetime, main: Connection | None,
         f"Weekly {today.isoformat()}: card {short(w_rec)}, {w_rec.graded} graded",
         f"Card all time {short(a_rec)}, CLV "
         + ("–" if a_rec.clv is None else f"{a_rec.clv:+.1f} pp"),
-        f"{O.goal_text(goal_all)} ({O.context_text(goal_all)})"[:200],
+        f"All sports: {O.goal_text(goal_all)} ({O.context_text(goal_all)})"[:200],
         f"Why (7 days): {_tags(O.tag_counts(week))}"[:180],
         "Research: " + ", ".join(f"{k} {short(r)}" for k, r in sig.items())[:220],
         "Gates: " + ", ".join(f"{k} {gate(r.clvs)['n']}/{GATE_N}" for k, r in sig.items()),

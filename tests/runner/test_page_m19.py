@@ -62,8 +62,9 @@ def _recs(html: str) -> list[dict]:
 def test_header_numbers_equal_an_independent_recount(tmp_path):
     led, site = tmp_path / "ledger", tmp_path / "site"
     _ledger(led)
-    rows = O.dataset(led)
-    html = header_html(rows, "nba", "NBA", TODAY, site)
+    # the plain one-version header (NFL's; the NBA header splits at the engine card, below)
+    rows = [dict(r, sport="nfl") for r in O.dataset(led)]
+    html = header_html(rows, "nfl", "NFL", TODAY, site)
     alltime, week, yest = _recs(html)
     # independently, from the CSVs: card picks, graded only, card stakes
     card = {r["pick_id"]: r for r in csv.DictReader((led / "card.csv").open())
@@ -75,7 +76,7 @@ def test_header_numbers_equal_an_independent_recount(tmp_path):
                 if res.get(k, {}).get("result") in ("win", "loss", "push"))
     assert (int(alltime["w"]), int(alltime["l"]), int(alltime["graded"])) == (w, lo, w + lo)
     assert float(alltime["units"]) == round(units, 4)
-    assert "<b>1-2-0</b></a> · <a href='csv/nba-official-all-time.csv'>-0.90u</a>" in html
+    assert "<b>1-2-0</b></a> · <a href='csv/nfl-official-all-time.csv'>-0.90u</a>" in html
     assert "3 graded</a>" in html
     # graded picks only: no pick total, no void and no pending count in or beside a record
     assert "pending" not in html and "void" not in html.lower() and "5 picks" not in html
@@ -85,8 +86,30 @@ def test_header_numbers_equal_an_independent_recount(tmp_path):
     for href in re.findall(r"href='([^']+)'", html):
         got = list(csv.DictReader((site / href).open()))
         assert all(r["card"] == "yes" for r in got)
-    yest_csv = list(csv.DictReader((site / "csv/nba-official-yesterday.csv").open()))
+    yest_csv = list(csv.DictReader((site / "csv/nfl-official-yesterday.csv").open()))
     assert sorted(r["pick_id"] for r in yest_csv) == ["l", "w"]  # the graded picks behind it
+
+
+def test_nba_header_engine_card_headline_and_card_v1_folded(tmp_path):
+    """Owner override 2026-11-04: the NBA record's headline is the engine card (from Nov 5, its
+    goal restarted); Card v1 (Oct 31 - Nov 4) is a folded line with its own record; "All
+    sports" combines both."""
+    led, site = tmp_path / "ledger", tmp_path / "site"
+    _ledger(led)
+    rows = O.dataset(led)
+    eng = [dict(r, day="2026-11-05", pick_id=r["pick_id"] + "e") for r in rows
+           if r["pick_id"] == "w"]  # one engine-card win (stake 1.0, +1.0u)
+    html = header_html(rows + eng, "nba", "NBA", TODAY, site)
+    alltime, week, yest, v1 = _recs(html)
+    assert (alltime["w"], alltime["l"], alltime["graded"]) == ("1", "0", "1")
+    assert (v1["w"], v1["l"], v1["graded"]) == ("1", "2", "3")
+    assert float(v1["units"]) == -0.9
+    assert "Engine card 1-0-0" in html  # the folded preview
+    goals = dict(re.findall(r"data-goal='([^']*)' data-graded='(\d+)'", html))
+    assert goals == {"NBA engine card": "1", "All sports": "4"}
+    assert "All sports</b> (NBA Card v1 + NBA engine card + NFL card, combined)" in html
+    v1_csv = list(csv.DictReader((site / "csv/nba-official-card-v1.csv").open()))
+    assert sorted(r["pick_id"] for r in v1_csv) == ["l", "o", "w"]
 
 
 def test_results_by_day_open_to_every_card_pick_with_stat_and_tag(tmp_path):

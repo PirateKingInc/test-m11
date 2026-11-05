@@ -2627,3 +2627,51 @@ No change to picks, models, rules, grading or the card selection rule.
   - if that run would be after the last run of the day (10 PM ET), it posts "tomorrow ~9:00 AM ET".
   - The tracker document carries `end`, `grade_at` and `grade_text` per game.
 - **UI freeze:** the snapshot was regenerated under this approval, and the M19 snapshot is kept. `tests/runner/test_ui_freeze.py` pins three things: the exact difference between them (the record fold and the Tonight's card fold), the Today renderer's hash, and a node syntax check of that renderer.
+
+# Engine card (owner override 2026-11-04)
+
+**Owner override, dated 2026-11-04:** the NBA engine (research signal `nba-engine`, M20) becomes
+the NBA card's source now, overriding the SWITCH.md gate (200 live engine picks passing the
+three checks). Paper picks only. NFL is unchanged.
+
+- **The NBA card, from the 2026-11-05 card** (`alerts/card.py`, `ENGINE_START`): the top 5
+  engine picks by expected value (fair × decimal odds − 1, the engine's frozen pick rule and
+  thresholds, `config/fits/nba_engine_m20.json`) among picks still Live at selection. It is
+  chosen once, at 8:50 AM ET, even when short or empty: fewer than 5 qualifying means a shorter
+  card, and the page (Tonight's card) and the push say so ("2 picks today — the engine found no
+  other value"; "No picks today — the engine found no value").
+- **Labels** (`alerts/labels.py`): TAKE (1 unit) when the pick's EV ≥ 1.5 × the engine's
+  threshold (θ = 0.05 game markets, 0.10 props), else LEAN (0.5 unit); PASS only if the price
+  was gone at creation. Engine picks are labelled when created, as the M18 picks were.
+- **Archived** (no new picks; every pick stays in the ledger, every record on the Research tab,
+  marked "archived"): C-NBA (the value signal on nba15/nbap15 repricing; `Poller.nba_game`,
+  `NBA_ARCHIVED`), F (opening-line snipes on nbap15; the poller's `RETIRED` set), and with them
+  nba15 and nbap15 as pick sources. Their hourly predictions still run (they create no picks
+  and keep the sport tab's existing sections as they are, under the UI freeze).
+- **Injury news:** the poller keeps reading the NBA injury report; a qualifying status change
+  re-simulates the game with the engine only (no nba15/nbap15 repricing). A news-driven engine
+  pick is a card candidate only if found before the 8:50 AM selection; after it, it is tracked
+  on the Research tab (and in Today as a research pick).
+- **Today** (`alerts/tracker.py`): on engine-card days the NBA list is the engine's picks
+  (card first, the rest as "Other model picks (research, not official)").
+- **Official record continuity** (`official.py`, `page/official.py`): the NBA official record
+  shows two lines: **"Engine card (since Nov 5)"** as the headline (all time, last 7 days,
+  yesterday, and its own success goal, restarted at 0 of 500), and **"Card v1, nbap15 (Oct 31 –
+  Nov 4)"** folded below it (its final record). The "All sports" goal combines both NBA card
+  versions and the NFL card, labelled so. The weekly report and its ntfy summary follow the
+  same split.
+- **Every engine prediction graded** (`nba/engine/grades.py`): each hourly run keeps the
+  engine's last pre-tip document per game (`data/derived/nba_engine_snapshots/`). Once a game
+  is final and its box score is in, the ledger step appends one row per game market (spread,
+  total, moneyline) and per projected player prop (points, rebounds, assists, threes, PRA)
+  with a stored DraftKings (else FanDuel) closing line to `ledger/engine_grades.csv`
+  (append-only): the engine's probability of the home side / the over at the closing line (no
+  push), the closing no-vig probability, and the result. The Research tab's "NBA engine"
+  section and the weekly report show, overall, for game markets and for props: the number
+  graded, the Brier score of the engine and of the close, their paired difference with a 95%
+  range, and the calibration error (ECE, ten bins) of each. A void prop (player did not play)
+  and a push are kept in the file but left out of Brier and ECE.
+- **UI freeze:** the owner approved exactly the record lines above. The snapshot was
+  regenerated; the previous one is kept (`tests/runner/ui_freeze_snapshot_m20b.txt`) and the
+  exact difference is pinned, as is the Today renderer's new hash (the short-card note).
+

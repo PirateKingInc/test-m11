@@ -305,6 +305,13 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         review.sync(p, m, out, now)
     except Exception as e:  # noqa: BLE001 - the review never stops the ledger
         log.warning("review sync failed: %s", e)
+    if m is not None:  # every NBA engine prediction graded at the close (owner 2026-11-04)
+        try:
+            from betdata.nba.engine_grades import grade_games
+
+            grade_games(p, m, out, now)
+        except Exception as e:  # noqa: BLE001 - the engine grades never stop the ledger
+            log.warning("engine grades failed: %s", e)
     return {"picks": n_p, "results": n_r, "milestones": milestones(out, now)}
 
 

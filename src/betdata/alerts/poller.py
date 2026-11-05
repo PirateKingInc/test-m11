@@ -53,7 +53,10 @@ NBA_BOARDS_ET = ((17, 30), (18, 45))
 NFL_BOARD_BEFORE = timedelta(minutes=75)
 G1_BEFORE = timedelta(minutes=10)  # M18 G1: the early-season totals check, ten minutes out
 # M20 Part A: G1 and G2 are retired (no new picks); their ledger history and grading stay.
-RETIRED = frozenset({"g1", "g2"})
+# G1/G2 retired 2026-11-03 (M20 Part A); F (`snipe`) archived 2026-11-04 with C-NBA, nba15 and
+# nbap15 when the NBA engine became the card's source (owner override, MODEL.md "Engine card").
+RETIRED = frozenset({"g1", "g2", "snipe"})
+NBA_ARCHIVED = True  # C-NBA (the value signal on nba15/nbap15 repricing): no new NBA picks
 
 
 def utc(t: datetime) -> datetime:
@@ -330,25 +333,29 @@ class Poller:
 
     def nba_game(self, store, models, gid: int, evs: list, report, now: datetime) -> None:
         first_event, ch = evs[0]
-        rp = models.repredict(self.main, store, ch, now)
-        with self.pdb.begin() as p:
-            p.execute(insert(repredictions).values(
-                event_id=first_event, game_id=gid, model_version=rp.model_version,
-                point=rp.point, margin_before=rp.margin_before, margin_after=rp.margin_after,
-                total_before=rp.total_before, total_after=rp.total_after,
-                props=list(rp.props), created_at=now))  # fmt: skip
+        if not NBA_ARCHIVED:  # nba15/nbap15 repricing (archived 2026-11-04)
+            rp = models.repredict(self.main, store, ch, now)
+            with self.pdb.begin() as p:
+                p.execute(insert(repredictions).values(
+                    event_id=first_event, game_id=gid, model_version=rp.model_version,
+                    point=rp.point, margin_before=rp.margin_before,
+                    margin_after=rp.margin_after, total_before=rp.total_before,
+                    total_after=rp.total_after, props=list(rp.props),
+                    created_at=now))  # fmt: skip
         self.open_lag("nba", gid, first_event, now)
         qs = self.poll_game("nba", gid, now, first_event)
         players = {c.player_name: c for _, c in evs}
         why = "; ".join(f"{c.player_name} {c.old_status or 'not listed'} -> "
                         f"{c.new_status or 'not listed'}" for _, c in evs)  # fmt: skip
-        stated = report.report_at.astimezone(R.EASTERN).strftime("%-I:%M %p ET")
-        reason = f"{why} (report {stated})"
-        # M18 Part C: the value signal (news -> reprice -> compare with DK/FD and the consensus)
-        # replaces M16's Signal 1 for the NBA.
-        self.signal_value("nba", gid, first_event, report.name, rp, qs, players, reason,
-                          report.report_at, now, models.p_over)
-        # M20: a qualifying status change re-simulates the game with the engine
+        if not NBA_ARCHIVED:
+            # M18 Part C: the value signal (news -> reprice -> compare with DK/FD and the
+            # consensus) replaced M16's Signal 1 for the NBA; archived 2026-11-04.
+            stated = report.report_at.astimezone(R.EASTERN).strftime("%-I:%M %p ET")
+            self.signal_value("nba", gid, first_event, report.name, rp, qs, players,
+                              f"{why} (report {stated})", report.report_at, now,
+                              models.p_over)  # fmt: skip
+        # M20: a qualifying status change re-simulates the game with the engine (since
+        # 2026-11-04 the only NBA repricing; a pick found before 8:50 AM ET can make the card)
         self._guard(f"engine {gid}", self.engine_picks, gid, qs, now, f"injury: {why}", True)
 
     # --- Signal 1 -----------------------------------------------------------------------------
@@ -683,7 +690,7 @@ class Poller:
                     qs += [q for q in self.sharp.game(c, sport, ev) if q.game_id == gid]
             new = self.store_quotes(qs, now, None, change_only=True)
             self._guard(f"consensus {gid}", self.store_consensus, sport, gid, qs, now)
-            if sport == "nba" and new:
+            if sport == "nba" and new and "snipe" not in RETIRED:
                 self._guard(f"snipes {gid}", self.snipes, gid, new, now)
             if sport == "nba":  # M20: the hourly sweep and new lines trigger engine picks
                 self._guard(f"engine {gid}", self.engine_picks, gid, qs, now,
@@ -713,7 +720,8 @@ class Poller:
                     n += 1
         return n
 
-    # --- M20 Part E: the NBA engine's picks (research, never pushed or carded) -----------------
+    # --- M20 Part E: the NBA engine's picks (the NBA card's pool from 2026-11-05; recorded, not
+    # pushed one by one: the card's push carries the chosen ones) -------------------------------
 
     def engine_game(self, gid: int, now: datetime, resim: bool) -> dict | None:
         """The engine's document for one game: the hourly file's, or re-simulated now (after
@@ -770,8 +778,11 @@ class Poller:
             cands = (K.game_candidates(game, two_way, design, gcons)
                      + K.prop_candidates(game, props, design, pcons, _norm))  # fmt: skip
         label, tip = self.game_label(gid)
+        by_name = {pl.get("name"): pl for pl in game.get("players", [])}
         out = []
         for c in K.best_picks(cands, design):
+            pl = by_name.get(c.player) or {}
+            stat = K.PROP_MARKETS.get(c.market)
             reason = (f"NBA engine ({trigger}): P({c.side}) engine {100 * c.p_engine:.1f}%, "
                       f"market {100 * c.p_market:.1f}% ({c.market_source}), fair "
                       f"{100 * c.fair:.1f}%, EV {100 * c.ev:+.1f}% at {c.book} {c.price:+d}")
@@ -780,7 +791,13 @@ class Poller:
                       True, {"p_engine": c.p_engine, "p_market": c.p_market,
                              "market_source": c.market_source, "ev": c.ev, "trigger": trigger,
                              "theta": design.theta["prop" if c.player else "game"],
-                             "version": game.get("version")})  # fmt: skip
+                             "version": game.get("version"),
+                             # the projection behind a prop (review: M19 "proj" fields)
+                             "median": (pl.get("median") or {}).get(stat),
+                             "mean_after": (pl.get("mean") or {}).get(stat),
+                             "minutes": pl.get("minutes"),
+                             "team_id": pl.get("team_id")})  # fmt: skip
+            a = self.labelled(a, now)  # TAKE / LEAN at creation (alerts/labels.py)
             with self.pdb.begin() as pc:
                 aid = record(pc, a, now)
             if aid is not None:
