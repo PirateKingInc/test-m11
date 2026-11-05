@@ -29,6 +29,13 @@ Owner-approved additions (each allowed exactly, and nothing else):
 - 2026-11-05 (the 6:15 AM ET morning update), the ETA wording only: results after the last hourly
   run read "grading ~6:15 AM ET tomorrow" (and the card's selection time reads 6:15 AM ET). Text
   only: the snapshot is unchanged; the Today renderer's hash is the new approved version.
+- 2026-11-05, two official NBA cards "Next Gen" and "OG": exactly a "Next Gen | OG" toggle (and
+  its script) at the top of the NBA tab, a second official-record section and a second Results
+  by day (one per card, the inactive one hidden), and the removal of the Engine-card heading,
+  the folded Card v1 line and the combined "All sports" goal. The snapshot was regenerated
+  under this approval; the previous one is kept as `ui_freeze_snapshot_m21.txt` and the exact
+  difference is pinned (APPROVED_DIFF_TWO_CARDS_SHA), as are the toggle script and the Today
+  renderer (which follows the toggle).
 """
 
 import hashlib
@@ -98,12 +105,16 @@ class _Structure(HTMLParser):
 TRACKER_SCRIPT_HISTORY = {"d866cf4bf364": "M19 renderer (pre-2026-11-04)",
                           "0103d64f91b3": "Tonight's card fold, plain statuses (2026-11-04)",
                           "6405b2f92e7a": "engine card's short-card note (2026-11-04 override)",
-                          "fbc70cba5745": "ETA wording: ~6:15 AM ET tomorrow (2026-11-05)"}
-TRACKER_SCRIPT_SHA = "fbc70cba5745"
+                          "fbc70cba5745": "ETA wording: ~6:15 AM ET tomorrow (2026-11-05)",
+                          "47458f1428a0": "Next Gen | OG toggle (2026-11-05)"}
+TRACKER_SCRIPT_SHA = "47458f1428a0"
+TOGGLE_SCRIPT_SHA = "6d68073346bb"
 SNAPSHOT_M19 = Path(__file__).with_name("ui_freeze_snapshot_m19.txt")
 SNAPSHOT_M20B = Path(__file__).with_name("ui_freeze_snapshot_m20b.txt")
 APPROVED_DIFF_SHA = "c1f5faf443d5"  # m19 snapshot -> m20b snapshot (2026-11-04)
-APPROVED_DIFF_ENGINE_SHA = "22651c2d3629"  # m20b snapshot -> current (engine card, 2026-11-04)
+APPROVED_DIFF_ENGINE_SHA = "22651c2d3629"  # m20b snapshot -> m21 (engine card, 2026-11-04)
+SNAPSHOT_M21 = Path(__file__).with_name("ui_freeze_snapshot_m21.txt")
+APPROVED_DIFF_TWO_CARDS_SHA = "bedb7949f2df"  # m21 snapshot -> current (two cards, 2026-11-05)
 # the lines the engine-card approval added, exactly
 ENGINE_ADDED = ["h3 class=era", "details class=fold era", "summary", "b", "span class=pv",
                 "div class=foldbody", "p", "span class=rec", "a", "b", "a", "a"]
@@ -196,7 +207,7 @@ def test_snapshot_differs_by_exactly_the_engine_card_record_lines():
     import difflib
 
     a = SNAPSHOT_M20B.read_text().splitlines()
-    b = SNAPSHOT.read_text().splitlines()
+    b = SNAPSHOT_M21.read_text().splitlines()
     d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
     assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_ENGINE_SHA, d
     lines = [x for x in d.splitlines() if not x.startswith(("+++", "---", "@@"))]
@@ -204,14 +215,46 @@ def test_snapshot_differs_by_exactly_the_engine_card_record_lines():
     assert [x[1:].strip() for x in lines] == ENGINE_ADDED
 
 
-def test_engine_card_record_lines(tmp_path):
+def test_snapshot_differs_by_exactly_the_two_card_change():
+    """2026-11-05: the toggle, the second record and Results by day sections, and nothing else
+    (the Engine-card heading and the Card v1 fold removed)."""
+    import difflib
+
+    a = SNAPSHOT_M21.read_text().splitlines()
+    b = SNAPSHOT.read_text().splitlines()
+    d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
+    assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_TWO_CARDS_SHA, d
+    added = [x[1:].strip() for x in d.splitlines() if x.startswith("+") and not x.startswith("+++")]
+    removed = [x[1:].strip() for x in d.splitlines()
+               if x.startswith("-") and not x.startswith("---")]  # fmt: skip
+    assert added[:3] == ["div class=cardtoggle role=group", "button", "button"]
+    assert added.count("section class=official") == 1 and added.count("section class=days") == 1
+    assert "h3 class=era" in removed and "details class=fold era" in removed
+    assert f"<script sha1 {TOGGLE_SCRIPT_SHA}>" in added
+
+
+def test_every_card_dependent_section_follows_the_toggle(tmp_path):
+    """The record (with its goal) and Results by day exist once per card, the OG ones hidden by
+    default; the toggle script switches every [data-card] section and tells the Today renderer
+    (Tonight's card and the Today badges), which reads the choice from localStorage."""
+    from betdata.page.official import TOGGLE_JS
+    from betdata.page.tracker import SCRIPT
+
     html = build_fixture_page(tmp_path)
-    sec = re.search(r"<section class='official' data-sport='nba'.*?</section>", html, re.S)[0]
-    assert "<h3 class='era' data-era='engine'>Engine card (since Nov 5)</h3>" in sec
-    assert "Card v1, nbap15 (Oct 31 – Nov 4)" in sec
-    assert sec.index("Engine card (since Nov 5)") < sec.index("<dl class='periods'>") < sec.index(
-        "Card v1, nbap15")
-    assert "data-fold='nba-card-v1'" in sec and "nba-card-v1' data-era='v1' open" not in sec
+    nba = html[html.index("id=\"tab-nba\""):html.index("id=\"tab-nfl\"")]
+    assert nba.count("data-cardtoggle='nba'") == 1
+    for kind in ("official", "days"):
+        tags = re.findall(rf"<section class='{kind}' data-sport='nba'([^>]*)>", nba)
+        assert tags == [" data-card='nextgen'", " data-card='og' hidden"], (kind, tags)
+    assert nba.index("data-cardtoggle") < nba.index("<section class='official'")
+    # the toggle: every [data-card] section, a remembered choice (try/catch), default Next Gen
+    assert "querySelectorAll('[data-card]')" in TOGGLE_JS
+    assert "localStorage.getItem(K)" in TOGGLE_JS and "localStorage.setItem(K" in TOGGLE_JS
+    assert TOGGLE_JS.count("try {") == 3 and "root.dataset.default || 'nextgen'" in TOGGLE_JS
+    assert "new CustomEvent('nbacard'" in TOGGLE_JS
+    # Tonight's card and the Today badges follow it
+    assert "addEventListener('nbacard'" in SCRIPT and "window.betdataNbaCard" in SCRIPT
+    assert "on both cards" in SCRIPT
 
 
 def test_goal_is_the_only_approved_addition(tmp_path):
@@ -219,7 +262,7 @@ def test_goal_is_the_only_approved_addition(tmp_path):
     blocks = goal_blocks(html)
     # the NBA header: its own goal and "All sports"; nothing else was added
     assert [re.search(r"data-goal='([^']*)'", b).group(1) for b in blocks] == [
-        "NBA engine card", "All sports"]
+        "Next Gen", "OG"]
     for b in blocks:
         p = _Structure()
         p.feed(b)

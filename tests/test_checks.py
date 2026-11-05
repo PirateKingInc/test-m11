@@ -76,9 +76,9 @@ def test_research_tab_shows_three_checks_and_retired(tmp_path):
     html = research_html(dataset(LEDGER), tmp_path)
     assert "Three checks: Calibration" in html
     assert "data-signal='G1'><div><b>G1</b> <span class='meta'>retired" in html
-    # F is archived (owner override 2026-11-04), not retired: its history stays
-    assert ("data-signal='F'><div><b>F</b> <span class='meta archived'>archived from the card "
-            "2026-11-04 (nbap15): shadow Card v1 only, never pushed; history kept</span>") in html
+    # F feeds the official OG card (owner 2026-11-05), not retired: its history stays
+    assert ("data-signal='F'><div><b>F</b> <span class='meta archived'>feeds the OG card "
+            "(archived 2026-11-04 (nbap15), official again 2026-11-05)") in html
 
 
 def test_poller_cycle_no_longer_runs_g1(monkeypatch):

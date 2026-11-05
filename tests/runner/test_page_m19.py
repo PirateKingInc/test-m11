@@ -90,38 +90,46 @@ def test_header_numbers_equal_an_independent_recount(tmp_path):
     assert sorted(r["pick_id"] for r in yest_csv) == ["l", "w"]  # the graded picks behind it
 
 
-def test_nba_header_engine_card_headline_and_card_v1_folded(tmp_path):
-    """Owner override 2026-11-04: the NBA record's headline is the engine card (from Nov 5, its
-    goal restarted); Card v1 (Oct 31 - Nov 4) is a folded line with its own record; "All
-    sports" combines both."""
+def test_nba_header_two_official_cards_each_with_its_own_record_and_goal(tmp_path):
+    """Owner decision 2026-11-05: two official NBA cards, Next Gen (the engine's, from Nov 5) and
+    OG (Card v1's record Oct 31 - Nov 4, then the OG card), each with its own record and goal,
+    behind a toggle; no combined "All sports" line."""
     led, site = tmp_path / "ledger", tmp_path / "site"
     _ledger(led)
     rows = O.dataset(led)
     eng = [dict(r, day="2026-11-05", pick_id=r["pick_id"] + "e", signal_name="nba-engine")
-           for r in rows
-           if r["pick_id"] == "w"]  # one engine-card win (stake 1.0, +1.0u)
+           for r in rows if r["pick_id"] == "w"]  # one Next Gen win (stake 1.0, +1.0u)
     html = header_html(rows + eng, "nba", "NBA", TODAY, site)
-    alltime, week, yest, v1 = _recs(html)
-    assert (alltime["w"], alltime["l"], alltime["graded"]) == ("1", "0", "1")
-    assert (v1["w"], v1["l"], v1["graded"]) == ("1", "2", "3")
-    assert float(v1["units"]) == -0.9
-    assert "Engine card 1-0-0" in html  # the folded preview
+    assert html.startswith("<div class='cardtoggle'") and "data-default='nextgen'" in html
+    ng = html[html.index("data-card='nextgen'"):html.index("data-card='og'")]
+    og = html[html.index("data-card='og'"):]
+    ng_all = _recs(ng)[0]
+    og_all = _recs(og)[0]
+    assert (ng_all["w"], ng_all["l"], ng_all["graded"]) == ("1", "0", "1")
+    assert (og_all["w"], og_all["l"], og_all["graded"]) == ("1", "2", "3")
+    assert float(og_all["units"]) == -0.9
+    assert "Official record · NBA · Next Gen" in ng and "Next Gen 1-0-0" in ng
+    assert "Official record · NBA · OG" in og and " hidden>" in og[:80]
     goals = dict(re.findall(r"data-goal='([^']*)' data-graded='(\d+)'", html))
-    assert goals == {"NBA engine card": "1", "All sports": "4"}
-    assert "All sports</b> (NBA Card v1 + NBA engine card + NFL card, combined)" in html
-    v1_csv = list(csv.DictReader((site / "csv/nba-official-card-v1.csv").open()))
-    assert sorted(r["pick_id"] for r in v1_csv) == ["l", "o", "w"]
+    assert goals == {"Next Gen": "1", "OG": "3"}
+    assert "All sports" not in html
+    og_csv = list(csv.DictReader((site / "csv/nba-og-official-all-time.csv").open()))
+    assert sorted(r["pick_id"] for r in og_csv) == ["l", "o", "w"]
 
 
 def test_results_by_day_open_to_every_card_pick_with_stat_and_tag(tmp_path):
     led, site = tmp_path / "ledger", tmp_path / "site"
     _ledger(led)
-    html = days_html(O.dataset(led), "nba", TODAY, site, et)
+    full = days_html(O.dataset(led), "nba", TODAY, site, et)
+    # the NBA tab: one Results by day per card; these picks are Card v1's, so OG's
+    assert "data-card='nextgen'" in full and "No card picks yet." in full.split(
+        "data-card='og'")[0]
+    html = full[full.index("data-card='og'"):]
     days = re.findall(r"data-day='([\d-]+)'", html)
     # newest first; Nov 2 has only a pending pick, which appears under Today, not here
     assert days == ["2026-11-01", "2026-10-31"] and "Bam Adebayo" not in html
     nov1 = html[html.index("data-day='2026-11-01'"):html.index("data-day='2026-10-31'")]
-    assert "1-1-0</b></a> · <a href='csv/nba-day-2026-11-01.csv'>+0.10u</a>" in nov1
+    assert "1-1-0</b></a> · <a href='csv/nba-og-day-2026-11-01.csv'>+0.10u</a>" in nov1
     assert "2 graded</a>" in nov1 and "pending" not in html
     assert "Anthony Black (ORL) vs MIA" in nov1 and "why: <b>Minutes miss</b>" in nov1
     assert "WIN +0.60u</span> · actual 2.0" in nov1
@@ -129,10 +137,10 @@ def test_results_by_day_open_to_every_card_pick_with_stat_and_tag(tmp_path):
     assert "<p class='meta voids'>1 void: Jalen Suggs (ORL) did not play</p>" in nov1
     assert "Losses (1): 1 Minutes miss · Wins (1): 1 Variance" in nov1
     assert "Kel'el Ware" not in nov1  # research picks are not on the day's card list
-    day_csv = list(csv.DictReader((site / "csv/nba-day-2026-11-01.csv").open()))
+    day_csv = list(csv.DictReader((site / "csv/nba-og-day-2026-11-01.csv").open()))
     assert list(day_csv[0]) == list(O.CSV_FIELDS)
-    assert {r["pick_id"]: r["card"] for r in day_csv} == {"w": "yes", "l": "yes", "v": "yes",
-                                                          "x": "no"}  # never the pending pick
+    # the card's graded and void picks of the day, never the pending one
+    assert {r["pick_id"]: r["card"] for r in day_csv} == {"w": "yes", "l": "yes", "v": "yes"}
     assert "Last 7 days, why picks won or lost: Losses (2): 1 Minutes miss, 1 News after pick" \
         in html
     assert "type='date' class='dayjump'" in html

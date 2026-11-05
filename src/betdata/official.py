@@ -149,48 +149,14 @@ def official(rows: list[dict], sport: str | None = None) -> list[dict]:
     return [r for r in rows if r["official"] and (sport is None or r["sport"] == sport)]
 
 
-# The NBA card's two versions (owner override 2026-11-04, MODEL.md "Engine card"): Card v1 (the
-# M18 signals on nbap15, Oct 31 - Nov 4) and the engine card (from Nov 5). The success goal
-# restarts for the engine card; the all-sports goal combines every card pick, both versions.
-ENGINE_CARD_START = "2026-11-05"
-ENGINE_CARD = "Engine card (since Nov 5)"
-CARD_V1 = "Card v1, nbap15 (Oct 31 – Nov 4)"
-# the labels after the one-step revert to Card v1 (SWITCH.md): the headline and the fold swap
-CARD_V1_REVERTED = "Card v1, nbap15 (Oct 31 – Nov 4, and again since the revert)"
-ENGINE_CARD_REVERTED = "Engine card (from Nov 5 until the revert)"
-ALL_SPORTS = "All sports"
-ALL_SPORTS_NOTE = "NBA Card v1 + NBA engine card + NFL card, combined"
+def goal_rows(rows: list[dict], sport: str, card: str | None = None) -> list[dict]:
+    """The official rows a success goal counts: an NBA card's own (betdata/cards.py: "Next
+    Gen" or "OG", owner decision 2026-11-05), or the sport's card (NFL)."""
+    if sport == "nba":
+        from betdata import cards as C
 
-
-ENGINE_SIGNAL = "nba-engine"
-
-
-def engine_card(rows: list[dict]) -> list[dict]:
-    """The NBA engine card's official rows (its picks are the engine's, from Nov 5)."""
-    return [r for r in rows if r["sport"] == "nba" and r["signal_name"] == ENGINE_SIGNAL]
-
-
-def card_v1(rows: list[dict]) -> list[dict]:
-    """The NBA Card v1 official rows (F / C-NBA card picks: Oct 31 - Nov 4, and again after a
-    revert to Card v1, SWITCH.md)."""
-    return [r for r in rows if r["sport"] == "nba" and r["signal_name"] != ENGINE_SIGNAL]
-
-
-def nba_headline() -> str:
-    """Which NBA card is official now: "engine", or "v1" after the one-step revert."""
-    from betdata.alerts.card import NBA_CARD
-
-    return NBA_CARD
-
-
-def goal_rows(rows: list[dict], sport: str) -> list[dict]:
-    """The official rows the sport's success goal counts: the NBA's restarts with the engine
-    card (owner override 2026-11-04) and follows the official NBA card; NFL's is every NFL
-    card pick."""
-    off = official(rows, sport)
-    if sport != "nba":
-        return off
-    return engine_card(off) if nba_headline() == "engine" else card_v1(off)
+        return C.view(rows, card or C.NEXTGEN)
+    return official(rows, sport)
 
 
 def periods(rows: list[dict], today: date) -> dict[str, Rec]:
@@ -351,7 +317,7 @@ COMPARE_N = 200  # graded picks each, before any comparison
 
 
 def same_nights(out: Path) -> set[str]:
-    """NBA card dates on which both the engine card and the shadow Card v1 were chosen."""
+    """NBA card dates on which both Next Gen (`engine`) and OG (`shadow`) were selected."""
     from betdata.ledger import read_rows
 
     kinds: dict[str, set] = {}
@@ -371,37 +337,39 @@ class Side:
 @dataclass
 class Comparison:
     nights: int
-    engine: Side
-    shadow: Side
+    engine: Side  # Next Gen
+    shadow: Side  # OG
 
     @property
     def verdict(self) -> str:
-        """The fixed rule (MODEL.md "Shadow Card v1: comparison rule")."""
+        """The fixed rule (MODEL.md "Shadow Card v1: comparison rule", relabelled Next Gen vs
+        OG on 2026-11-05)."""
         e, s = self.engine, self.shadow
         if e.rec.graded < COMPARE_N or s.rec.graded < COMPARE_N:
-            return (f"too early to compare: engine card {e.rec.graded}/{COMPARE_N}, shadow Card "
-                    f"v1 {s.rec.graded}/{COMPARE_N} graded")
+            return (f"too early to compare: Next Gen {e.rec.graded}/{COMPARE_N}, OG "
+                    f"{s.rec.graded}/{COMPARE_N} graded")
         ee, se = e.checks.ev, s.checks.ev
         apart = se.low is not None and ee.high is not None and se.low > ee.high
         if apart and s.rec.units > 0:
-            return "recommend switching back to Card v1 (the switch is the owner's decision)"
-        return "keep the engine card"
+            return "OG is ahead by the rule (retiring a card is the owner's decision)"
+        return "no card is ahead by the rule"
 
 
 def comparison(rows: list[dict], out: Path) -> Comparison:
-    """Engine card vs shadow Card v1 over the same nights only, each at its own card stakes."""
+    """Next Gen vs OG over the same nights only (both selected), each at its own stakes."""
+    from betdata import cards as C
     from betdata.checks import picks_of, three_checks
 
     nights = same_nights(out)
-    eng = [r for r in engine_card(official(rows, "nba")) if r["day"] in nights]
-    sh = [r for r in rows if r.get("shadow") and r.get("shadow_date") in nights]
-    er, sr = record(eng, official_stake), record(sh, shadow_stake)
-    return Comparison(len(nights), Side("Engine card", er, three_checks(picks_of(er.rows))),
-                      Side("Shadow Card v1", sr, three_checks(picks_of(sr.rows))))
+    eng = [r for r in C.view(rows, C.NEXTGEN) if r["day"] in nights]
+    og = [r for r in C.view(rows, C.OG) if r["day"] in nights]
+    er, sr = record(eng, official_stake), record(og, official_stake)
+    return Comparison(len(nights), Side(C.name(C.NEXTGEN), er, three_checks(picks_of(er.rows))),
+                      Side(C.name(C.OG), sr, three_checks(picks_of(sr.rows))))
 
 
 def comparison_rows(c: Comparison) -> list[tuple[str, str, str]]:
-    """(metric, engine card, shadow Card v1) for the table (Research tab, weekly report)."""
+    """(metric, Next Gen, OG) for the table (Research tab, weekly report)."""
 
     def odds(r: Rec) -> str:
         o = r.avg_odds
@@ -432,7 +400,7 @@ def comparison_rows(c: Comparison) -> list[tuple[str, str, str]]:
 
 
 COMPARE_RULE = (f"Comparison rule (fixed 2026-11-05): compare only once both cards have at least "
-                f"{COMPARE_N} graded picks over the same nights; recommend switching back to "
-                "Card v1 only if the shadow card's EV at close is higher with the 95% ranges not "
-                "overlapping AND its units are positive. The switch itself stays the owner's "
+                f"{COMPARE_N} graded picks over the same nights (only nights on which both were "
+                "selected); OG is ahead only if its EV at close is higher with the 95% ranges not "
+                "overlapping AND its units are positive. Retiring either card stays the owner's "
                 "decision.")

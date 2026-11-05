@@ -2749,3 +2749,49 @@ day in every case**:
 
 The NFL card keeps its rule (at the first poll with a Live pick).
 
+# Two official NBA cards: "Next Gen" and "OG" (owner decision 2026-11-05)
+
+No change to models, pick rules, thresholds or grading. NFL unchanged. Names, signals and record
+rules live in `config/cards.yaml` (`betdata/cards.py`).
+
+- **Next Gen** — the engine card (MODEL.md "Engine card"): top 5 by EV among the engine's picks
+  still Live at 6:15 AM ET, TAKE when EV ≥ 1.5 × θ, else LEAN; may be short or empty. Stored as
+  `card:nba:<day>`, `ledger/card.csv`. Its record runs from Nov 5.
+- **OG** — Card v1, official again (it was the shadow card): top 5 by EV among the Live F and
+  C-NBA candidates (nbap15/nba15-based), the original M18 TAKE/LEAN labels; fewer if fewer
+  qualify, never filled from below its bar. Stored as `shadow:nba:<day>` and
+  `ledger/shadow_card.csv` (source tag `card-v1-shadow` kept: the ledger is append-only).
+  F and C-NBA keep generating candidates; their alerts are recorded, not pushed one by one.
+- **Both** are chosen at 6:15 AM ET by the same "when" rule (MODEL.md "Selection rule: lines at
+  6:15": lines → select now, even short or empty; no lines → the first later poll with lines;
+  60 minutes before the first tip → empty, "No lines posted in time"), once per day.
+- **OG's record** continues unbroken from Card v1 (official picks Oct 31 – Nov 4: 11-9, +2.71u)
+  plus every OG card from Nov 6. **Nov 5 is excluded** (the switch-over day: lines were first
+  seen while F was archived): `exclude_days` in config/cards.yaml, and each such OG pick gets
+  an `og_excluded: true` annotation in `ledger/annotations.csv`; no ledger row is rewritten.
+- **Each card has its own success goal** (.500+ and positive units over 500 graded picks). The
+  combined "All sports" line is gone; NFL's record stays on its own tab.
+- **Page** (owner-approved change to the frozen NBA tab): a "Next Gen | OG" toggle at the top of
+  the NBA tab switches the official record with its goal, Tonight's card, Results by day and the
+  card badges in Today. Each viewer's choice is kept in localStorage (wrapped in try/catch;
+  Next Gen when nothing is stored). The same bet on both cards (same game, market, player and
+  side) is marked "on both cards". The UI-freeze test pins exactly this change.
+- **Research:** the comparison table is "Next Gen vs OG", same nights only (both selected),
+  with the 200-pick rule: OG is ahead only if its EV at close is higher with non-overlapping 95%
+  ranges and its units are positive; retiring a card stays the owner's decision.
+- **Morning push** (one per day at 6:15, NBA; NFL keeps its own):
+  ```
+  NBA · Fri Nov 6
+  OG: last night 3-2, +0.6u · record 14-11, +3.3u (25 of 500)
+  Today: 4 picks —
+    ORL @ MIA 7:30 PM ET: Bam Adebayo over 9.5 rebounds +140 at FanDuel, LEAN 0.5u
+  Next Gen: last night 0-0, +0.0u · record 0-0, +0.0u (0 of 500)
+  Today: No picks today — the engine found no value
+  Not graded yet: LAL @ POR (no final box score yet; graded on the next run)
+  ```
+  A pick on both cards ends with "(on both cards)". A card chosen later (no lines at 6:15) is
+  pushed on its own when chosen ("Tonight's card - NBA OG - …").
+- **Weekly report:** each card's record, last 7 days and all time, and its own goal; the Next
+  Gen vs OG table.
+- **Retiring a card:** `active: false` in config/cards.yaml (SWITCH.md).
+

@@ -18,6 +18,11 @@ html
         button role=tab
         button role=tab
       div id=tab-nba class=panel
+        div class=cardtoggle role=group
+          button
+          button
+        script
+          <script sha1 6d68073346bb>
         section class=official
           details class=fold
             summary
@@ -25,7 +30,6 @@ html
               span class=pv
             div class=foldbody
               p class=meta
-              h3 class=era
               dl class=periods
                 dt
                 dd
@@ -48,17 +52,35 @@ html
                       b
                     a
                     a
-              details class=fold era
-                summary
-                  b
-                  span class=pv
-                div class=foldbody
-                  p
-                    span class=rec
-                      a
-                        b
-                      a
-                      a
+        section class=official
+          details class=fold
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              p class=meta
+              dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
         details class=fold
           summary
             b
@@ -76,7 +98,13 @@ html
           p class=meta
           label class=jump
             input class=dayjump
-          details id=nba-day-#-#-# class=day
+          p class=meta
+        section class=days
+          h2
+          p class=meta
+          label class=jump
+            input class=dayjump
+          details id=nba-og-day-#-#-# class=day
             summary
               b
               span class=pv
@@ -113,7 +141,7 @@ html
               p class=meta voids
               p class=meta
                 a
-          details id=nba-day-#-#-# class=day
+          details id=nba-og-day-#-#-# class=day
             summary
               b
               span class=pv

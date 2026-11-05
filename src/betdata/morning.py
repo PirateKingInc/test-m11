@@ -243,11 +243,94 @@ def ungraded_games(rows: list[dict], sport: str, day: date) -> list[str]:
                    and O._et_date(r["tip"]) == d})  # fmt: skip
 
 
-def message(p, rows: list[dict], sport: str, now: datetime) -> tuple[str, str] | None:
-    """(title, body) of the sport's morning push, or None on a day without its games.
+def _pick_lines(p, card: dict, sport: str, today: date, signals, both: set) -> list[str]:
+    from betdata import cards as C
+    from betdata.alerts import card as CD
+    from betdata.alerts.notify import BOOKS, _fmt_price, selection
+    from betdata.alerts.rules import EASTERN
 
-    'NBA · Last night: 3-2, +0.6u · Engine card 12-9, +1.8u (21 of 500) · Today's card
-    (4 picks): ...', a line per card pick, then any game still ungraded."""
+    by_key = {a.dedup_key: a for a in CD.day_picks(p, sport, today, signals)}
+    out = []
+    for x in card["picks"]:
+        a = by_key.get(x["dedup_key"])
+        if a is None:
+            continue
+        when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET")
+        mark = (" (on both cards)"
+                if C.bet_key(a.game_id, a.market, a.player_name, a.side) in both else "")
+        out.append(f"  {a.game_label} {when}: {selection(a)} {_fmt_price(a.price)} at "
+                   f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u{mark}")
+    return out
+
+
+def _card_bets(p, card: dict | None, sport: str, today: date, signals) -> set[str]:
+    from betdata import cards as C
+    from betdata.alerts import card as CD
+
+    if not card:
+        return set()
+    by_key = {a.dedup_key: a for a in CD.day_picks(p, sport, today, signals)}
+    return {C.bet_key(a.game_id, a.market, a.player_name, a.side)
+            for x in card["picks"] if (a := by_key.get(x["dedup_key"])) is not None}
+
+
+def nba_message(p, rows: list[dict], now: datetime) -> tuple[str, str]:
+    """The NBA morning push: both official cards, clearly separated (owner 2026-11-05).
+
+    NBA · Fri Nov 6
+    OG: last night 3-2, +0.6u · record 14-11, +3.3u (25 of 500)
+    Today: 4 picks —
+      ORL @ MIA 7:30 PM ET: Bam Adebayo over 9.5 rebounds +140 at FanDuel, LEAN 0.5u
+    Next Gen: last night 0-0, +0.0u · record 0-0, +0.0u (0 of 500)
+    Today: No picks today — the engine found no value
+    Not graded yet: LAL @ POR (no final box score yet; graded on the next run)"""
+    from betdata import cards as C
+    from betdata import official as O
+    from betdata.alerts import card as CD
+    from betdata.alerts.db import get_state
+    from betdata.alerts.rules import EASTERN
+
+    today = now.astimezone(EASTERN).date()
+    yday = (today - timedelta(days=1)).isoformat()
+    state = {C.NEXTGEN: (get_state(p, CD.key("nba", today)), None),
+             C.OG: (get_state(p, CD.shadow_key("nba", today)), CD.V1_SIGNALS)}
+    both = (_card_bets(p, state[C.NEXTGEN][0], "nba", today, None)
+            & _card_bets(p, state[C.OG][0], "nba", today, CD.V1_SIGNALS))
+    lines = [f"NBA · {today.strftime('%a %b %-d')}"]
+    for k in (C.OG, C.NEXTGEN):
+        view = C.view(rows, k)
+        last = O.record([r for r in view if r["day"] == yday], O.official_stake)
+        rec, g = O.record(view, O.official_stake), O.goal(view)
+        lines.append(f"{C.name(k)}: last night {_wl(last)}, {_units(last.units)} · record "
+                     f"{_wl(rec)}, {_units(rec.units)} ({g.graded} of {O.GOAL_N})")
+        card, signals = state[k]
+        if not C.active(k):
+            lines.append("Today: retired (no new card)")
+        elif card is None:
+            lines.append("Today: no lines posted yet for today's games — chosen at the first "
+                         "later poll with lines")
+        else:
+            n, note = len(card["picks"]), CD.card_note(card)
+            if n == 0:
+                lines.append(f"Today: {note or 'no picks'}")
+            else:
+                lines.append(f"Today: {n} pick{'s' if n != 1 else ''} —")
+                lines += _pick_lines(p, card, "nba", today, signals, both)
+                if note:
+                    lines.append(f"  {note}")
+    late = ungraded_games(rows, "nba", today - timedelta(days=1))
+    if late:
+        lines.append(f"Not graded yet: {', '.join(late)} (no final box score yet; graded on "
+                     "the next run)")
+    return f"Morning update - NBA - {today.strftime('%a %b %-d')}", "\n".join(lines)
+
+
+def message(p, rows: list[dict], sport: str, now: datetime) -> tuple[str, str] | None:
+    """(title, body) of the sport's morning push. NBA: `nba_message` (both cards). NFL:
+    'NFL · Last night: 3-2, +0.6u · Card 12-9, +1.8u (21 of 500) · Today's card (4 picks):
+    ...', a line per card pick, then any game still ungraded."""
+    if sport == "nba":
+        return nba_message(p, rows, now)
     from betdata import official as O
     from betdata.alerts import card as CD
     from betdata.alerts.db import get_state
@@ -258,20 +341,14 @@ def message(p, rows: list[dict], sport: str, now: datetime) -> tuple[str, str] |
     yday = today - timedelta(days=1)
     off = O.official(rows, sport)
     last = O.record([r for r in off if r["day"] == yday.isoformat()], O.official_stake)
-    head = O.goal_rows(rows, sport)
-    rec, g = O.record(head, O.official_stake), O.goal(head)
-    if sport == "nba":
-        name = "Engine card" if O.nba_headline() == "engine" else "Card v1"
-    else:
-        name = "Card"
+    rec, g = O.record(off, O.official_stake), O.goal(off)
     parts = [f"{sport.upper()} · Last night: " + (f"{_wl(last)}, {_units(last.units)}"
                                                     if last.graded else "no graded card picks"),
-             f"{name} {_wl(rec)}, {_units(rec.units)} ({g.graded} of {O.GOAL_N})"]
+             f"Card {_wl(rec)}, {_units(rec.units)} ({g.graded} of {O.GOAL_N})"]
     card = get_state(p, CD.key(sport, today))
     lines = []
     if card is None:
-        parts.append("Today's card: no lines posted yet for today's games — chosen at the first "
-                     "later poll with lines")
+        parts.append("Today's card: no Live picks yet — chosen at the first later poll with one")
     else:
         n = len(card["picks"])
         parts.append(f"Today's card ({n} pick{'s' if n != 1 else ''}):")
@@ -283,8 +360,6 @@ def message(p, rows: list[dict], sport: str, now: datetime) -> tuple[str, str] |
             when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET")
             lines.append(f"{a.game_label} {when}: {selection(a)} {_fmt_price(a.price)} at "
                          f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u")
-        if card.get("source") == "engine" and CD.card_note(card):
-            lines.append(CD.card_note(card))
     late = ungraded_games(rows, sport, yday)
     if late:
         lines.append(f"Not graded yet: {', '.join(late)} (no final box score yet; graded on "
@@ -326,11 +401,11 @@ def push(pdb, out: Path, now: datetime, topic: str | None, client=None) -> dict[
             except Exception as e:  # noqa: BLE001 - a failed push never loses the update
                 status = f"error {type(e).__name__}"
         sent[sport] = status
-        with pdb.begin() as p:
-            k = CD.key(sport, day)
-            c = get_state(p, k)
-            if c is not None and "push" not in c:
-                set_state(p, k, {**c, "push": f"morning {status}"}, now)
+        with pdb.begin() as p:  # both NBA cards were in this push: never pushed again
+            for k in (CD.key(sport, day), CD.shadow_key(sport, day)):
+                c = get_state(p, k)
+                if c is not None and "push" not in c:
+                    set_state(p, k, {**c, "push": f"morning {status}"}, now)
     with pdb.begin() as p:
         st = get_state(p, STATE.format(day=day.isoformat())) or {}
         set_state(p, STATE.format(day=day.isoformat()), {**st, "push": sent}, now)

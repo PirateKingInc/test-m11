@@ -47,51 +47,98 @@ def stat_line(rec: O.Rec, href: str) -> str:
 def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path) -> str:
     """The official record, at the top of the tab and foldable (owner 2026-11-04): folded, its
     one-line preview gives the all-time record and the goal status; open, the periods and the
-    goal blocks. The page's fold script remembers a reader who opens it.
+    goal block. The page's fold script remembers a reader who opens it.
 
-    NBA (owner override 2026-11-04): the engine card is the headline (its periods and its own
-    goal, restarted on Nov 5), Card v1 (nbap15, Oct 31 – Nov 4) is a folded line below it, and
-    the "All sports" goal combines both versions and the NFL card, labelled so."""
-    off = O.official(rows, sport)
-    nba = sport == "nba"
-    eng_head = O.nba_headline() == "engine"  # "v1" after the one-step revert (SWITCH.md)
-    head = (O.engine_card(off) if eng_head else O.card_v1(off)) if nba else off
-    per = O.periods(head, today)
-    allt, g = per["All time"], O.goal(O.goal_rows(rows, sport))
-    who = ("Engine card" if eng_head else "Card v1") if nba else "All time"
-    preview = (f"{who} {allt.wlp} · {_units(allt.units)} · "
+    NBA (owner decision 2026-11-05): two official cards, "Next Gen" and "OG", each with its own
+    record and goal; a toggle at the top of the tab shows one (`toggle_html`)."""
+    if sport != "nba":
+        return card_header(O.official(rows, sport), sport, name, today, site)
+    from betdata import cards as C
+
+    default = C.default()
+    return toggle_html(default) + "".join(
+        card_header(C.view(rows, k), sport, name, today, site, k, C.name(k), k != default)
+        for k in (C.NEXTGEN, C.OG))  # fmt: skip
+
+
+def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
+                card: str | None = None, label: str = "", hidden: bool = False) -> str:
+    """One card's official record header: periods and its own success goal."""
+    per = O.periods(off, today)
+    allt, g = per["All time"], O.goal(off)
+    preview = (f"{label + ' ' if card else 'All time '}{allt.wlp} · {_units(allt.units)} · "
                f"goal {g.graded} of {O.GOAL_N}, {g.status}")
-    out = [f"<section class='official' data-sport='{escape(sport)}'>"
+    tag = f"-{card}" if card else ""
+    attrs = (f" data-card='{escape(card)}'" if card else "") + (" hidden" if hidden else "")
+    out = [f"<section class='official' data-sport='{escape(sport)}'{attrs}>"
            f"<details class='fold' data-fold='{escape(sport)}-official'><summary><b>Official "
-           f"record · {escape(name)}</b> <span class='pv'>— {escape(preview)}</span></summary>"
-           "<div class='foldbody'><p class='meta'>Official picks are the daily card (up to 5, "
-           "chosen at 6:15 AM ET). Like a team's record, graded picks only; today's picks are "
-           "under Tonight's card until they are graded. Paper units, not advice.</p>"]
-    if nba:
-        out.append(f"<h3 class='era' data-era='{'engine' if eng_head else 'v1'}'>"
-                   f"{escape(O.ENGINE_CARD if eng_head else O.CARD_V1_REVERTED)}</h3>")
-    out.append("<dl class='periods'>")
-    for label, rec in per.items():
-        slug = label.lower().replace(" ", "-")
-        href = f"csv/{sport}-official-{slug}.csv"
+           f"record · {escape(name)}{f' · {escape(label)}' if card else ''}</b> <span "
+           f"class='pv'>— {escape(preview)}</span></summary><div class='foldbody'><p "
+           "class='meta'>Official picks are the daily card (up to 5, chosen at 6:15 AM ET). "
+           "Like a team's record, graded picks only; today's picks are under Tonight's card "
+           "until they are graded. Paper units, not advice.</p><dl class='periods'>"]
+    for lab, rec in per.items():
+        slug = lab.lower().replace(" ", "-")
+        href = f"csv/{sport}{tag}-official-{slug}.csv"
         O.write_csv(site / href, rec.rows)
-        out.append(f"<dt>{escape(label)}</dt><dd>{stat_line(rec, href)}</dd>")
+        out.append(f"<dt>{escape(lab)}</dt><dd>{stat_line(rec, href)}</dd>")
     out.append("</dl>")
-    out.append(goal_html(O.goal_rows(rows, sport),
-                         ("NBA engine card" if eng_head else "NBA Card v1") if nba else name))
-    if nba:
-        v1 = O.record(O.card_v1(off) if eng_head else O.engine_card(off), O.official_stake)
-        href = f"csv/nba-official-{'card-v1' if eng_head else 'engine-card'}.csv"
-        O.write_csv(site / href, v1.rows)
-        title = O.CARD_V1 if eng_head else O.ENGINE_CARD_REVERTED
-        out.append(f"<details class='fold era' data-fold='nba-card-v1' data-era='v1'><summary>"
-                   f"<b>{escape(title)}</b> <span class='pv'>— {v1.wlp} · "
-                   f"{_units(v1.units)}</span></summary><div class='foldbody'>"
-                   f"<p>{stat_line(v1, href)}</p></div></details>")
-        # "All sports" once, on the NBA tab (as the M18 bankroll was): both NBA versions + NFL
-        out.append(goal_html(O.official(rows), O.ALL_SPORTS, O.ALL_SPORTS_NOTE))
+    out.append(goal_html(off, label or name))
     out.append("</div></details></section>")
     return "".join(out)
+
+
+def toggle_html(default: str) -> str:
+    """"Next Gen | OG" at the top of the NBA tab (owner decision 2026-11-05): it switches the
+    card block, the official record with its goal, Results by day and the card badges in Today.
+    Each viewer's choice is remembered in localStorage (default Next Gen)."""
+    from betdata import cards as C
+
+    btn = "".join(f"<button type='button' data-pick='{k}' aria-pressed='"
+                  f"{'true' if k == default else 'false'}' style='flex:1;padding:8px;"
+                  "border:0;border-radius:8px;font:inherit;font-weight:600;cursor:pointer'>"
+                  f"{escape(C.name(k))}</button>" for k in (C.NEXTGEN, C.OG))
+    return (f"<div class='cardtoggle' role='group' data-cardtoggle='nba' data-default='"
+            f"{escape(default)}' style='display:flex;gap:6px;margin:10px 0;padding:4px;"
+            f"border:1px solid var(--line);border-radius:10px'>{btn}</div>{TOGGLE_JS}")
+
+
+TOGGLE_JS = """<script>
+(function(){
+  var K = 'betdata.nbaCard';
+  var root = document.querySelector('[data-cardtoggle="nba"]');
+  if (!root) return;
+  var scope = root.closest('.panel') || document;
+  function get() {
+    try { var v = localStorage.getItem(K); if (v === 'og' || v === 'nextgen') return v; }
+    catch (e) {}
+    return root.dataset.default || 'nextgen';
+  }
+  function apply(v) {
+    scope.querySelectorAll('[data-card]').forEach(function (el) {
+      el.hidden = el.dataset.card !== v; });
+    root.querySelectorAll('button').forEach(function (b) {
+      var on = b.dataset.pick === v;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.style.background = on ? 'var(--accent, #0a7)' : 'transparent';
+      b.style.color = on ? '#fff' : 'inherit';
+    });
+    window.betdataNbaCard = v;
+    try { document.dispatchEvent(new CustomEvent('nbacard', {detail: v})); } catch (e) {}
+  }
+  root.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      try { localStorage.setItem(K, b.dataset.pick); } catch (e) {}
+      apply(b.dataset.pick);
+    });
+  });
+  window.betdataNbaCard = get();  // read by the Today renderer on its first draw
+  // the sections it switches come after this script: apply once the page is parsed
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { apply(get()); });
+  } else { apply(get()); }
+})();
+</script>"""
 
 
 def goal_html(rows: list[dict], label: str, note: str = "") -> str:
@@ -181,10 +228,27 @@ def void_line(rs: list[dict]) -> str:
 
 
 def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
-    off = O.official(rows, sport)
+    """Results by day; on the NBA tab one per card (Next Gen, OG), shown by the toggle."""
+    if sport != "nba":
+        return card_days_html(rows, O.official(rows, sport), sport, today, site, et)
+    from betdata import cards as C
+
+    both = C.on_both(rows)
+    default = C.default()
+    return "".join(card_days_html(rows, C.view(rows, k), sport, today, site, et, k,
+                                  k != default, both) for k in (C.NEXTGEN, C.OG))
+
+
+def card_days_html(rows: list[dict], off: list[dict], sport: str, today: date, site: Path, et,
+                   card: str | None = None, hidden: bool = False,
+                   both: set | None = None) -> str:  # fmt: skip
+    from betdata import cards as C
+
     days = O.by_day(off)
+    tag = f"-{card}" if card else ""
     week = [r for r in off if r["day"] >= (today - timedelta(days=6)).isoformat()]
-    out = [f"<section class='days' data-sport='{escape(sport)}'><h2>Results by day</h2>"
+    attrs = (f" data-card='{escape(card)}'" if card else "") + (" hidden" if hidden else "")
+    out = [f"<section class='days' data-sport='{escape(sport)}'{attrs}><h2>Results by day</h2>"
            f"<p class='meta'>Last 7 days, why picks won or lost: {_tags(week)}</p>"
            f"<label class='jump'>Jump to a day <input type='date' class='dayjump' "
            f"min='{escape(min(days) if days else '')}' max='{escape(today.isoformat())}'>"
@@ -193,9 +257,9 @@ def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
         out.append("<p class='meta'>No card picks yet.</p>")
     for d, rs in days.items():
         rec = O.record(rs, O.official_stake)
-        href = f"csv/{sport}-day-{d}.csv"
-        O.write_csv(site / href, [r for r in rows if r["sport"] == sport and r["day"] == d
-                                  and r.get("result")])  # graded and void, never pending
+        href = f"csv/{sport}{tag}-day-{d}.csv"
+        src = rs if card else [r for r in rows if r["sport"] == sport and r["day"] == d]
+        O.write_csv(site / href, [r for r in src if r.get("result")])  # graded and void
         label = datetime.fromisoformat(d).strftime("%a %b %-d")
         games: dict[str, list] = {}
         for r in O.graded(rs):
@@ -209,8 +273,10 @@ def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
                             f"<div class='meta'>{escape(r['signal_name'])}"
                             + (f" · why: <b>{escape(r['review_tag'])}</b>"
                                if r.get("review_tag") else "")
+                            + (" · <b>on both cards</b>" if both and C.both_mark(r, both)
+                               else "")
                             + "</div></li>" for r in ps) + "</ul></div>")  # fmt: skip
-        out.append(f"<details class='day' id='{escape(sport)}-day-{escape(d)}' "
+        out.append(f"<details class='day' id='{escape(sport)}{tag}-day-{escape(d)}' "
                    f"data-day='{escape(d)}'><summary><b>{escape(label)}</b> "
                    f"<span class='pv'>{rec.wlp} · {_units(rec.units)} · CLV {_clv(rec)}"
                    f"</span></summary><div class='foldbody'>{stat_line(rec, href)}"
@@ -242,9 +308,9 @@ def research_html(rows: list[dict], site: Path) -> str:
         retired = (f" <span class='meta'>retired {escape(RETIRED[name])}: no new picks"
                    "</span>" if name in RETIRED else "")  # fmt: skip
         if name in ARCHIVED:
-            retired = (f" <span class='meta archived'>archived from the card "
-                       f"{escape(ARCHIVED[name])}: shadow Card v1 only, never pushed; history "
-                       "kept</span>")
+            retired = (f" <span class='meta archived'>feeds the OG card (archived "
+                       f"{escape(ARCHIVED[name])}, official again 2026-11-05); picks recorded, "
+                       "not pushed one by one</span>")
         out.append(f"<li class='prop' data-signal='{escape(name)}'><div><b>{escape(name)}</b>"
                    f"{retired}</div><div>{stat_line(rec, href)}</div>"
                    f"<div class='meta' data-checks='{escape(ck.status)}'>Three checks: "
@@ -258,8 +324,9 @@ JUMP_JS = """<script>
 (function(){
   document.querySelectorAll('input.dayjump').forEach(function (inp) {
     inp.addEventListener('change', function () {
-      var sport = inp.closest('section').dataset.sport;
-      var d = document.getElementById(sport + '-day-' + inp.value);
+      var sec = inp.closest('section'), sport = sec.dataset.sport;
+      var card = sec.dataset.card ? '-' + sec.dataset.card : '';
+      var d = document.getElementById(sport + card + '-day-' + inp.value);
       if (d) { d.open = true; d.scrollIntoView({block: 'start'}); }
       else { inp.setCustomValidity('No card picks that day'); inp.reportValidity();
              inp.setCustomValidity(''); }

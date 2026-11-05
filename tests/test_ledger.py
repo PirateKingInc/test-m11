@@ -171,15 +171,16 @@ def test_weekly_report_and_pushes(pdb, tmp_path):
     with pdb.connect() as p:
         md, summary = W.build(root, NOW, None, p)
     # M19: the official card record and reason tags, one line per research signal
-    assert "## Official record (card picks)" in md and "| F | 1-0-0 | +1.10u" in md
+    assert "## Official records (each card on its own)" in md and "| F | 1-0-0 | +1.10u" in md
+    assert "| NBA Next Gen, all time |" in md and "| NBA OG, all time |" in md
     assert "| C-NBA | 0-1-0 | -1.00u" in md and "## Why picks won or lost (official)" in md
     assert "pending" not in md and "## System health" in md  # graded-only records
-    assert len(summary) == 6 and summary[0].startswith("Weekly 2026-11-02: card 0-0-0")
-    assert summary[2].startswith("All sports: Goal: .500+ and positive units over 500 graded")
-    assert "## Official success goal" in md and ("- All sports (NBA Card v1 + NBA engine card + "
-                                                  "NFL card, combined): Goal: .500+") in md
+    assert len(summary) == 6 and summary[0].startswith("Weekly 2026-11-02: NBA Next Gen 0-0-0")
+    assert summary[2].startswith("Goals: NBA Next Gen 0/500 too early; NBA OG")
+    assert "## Official success goals (each card)" in md and "All sports" not in md
+    assert "- NBA Next Gen: Goal: .500+" in md and "- NBA OG: Goal: .500+" in md
     assert "## NBA engine: every prediction vs the close" in md
-    assert "## Engine card vs shadow Card v1 (same nights only: 0)" in md
+    assert "## Next Gen vs OG (same nights only: 0)" in md
     assert "Comparison rule (fixed 2026-11-05)" in md
     assert summary[5] == "Gates: C-NBA 1/200, F 1/200"
     posts = []

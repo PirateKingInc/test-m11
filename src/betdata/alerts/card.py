@@ -35,21 +35,20 @@ first later poll with a Live pick selects it (owner 2026-11-05, as Card v1 alway
 found after selection stays off the card (tracked on the Research tab).
 The NFL card is unchanged.
 
-Shadow Card v1 (owner request 2026-11-05, MODEL.md "Shadow Card v1"): on every engine-card day,
-also at 6:15 AM ET, the old Card v1 is selected exactly as before (top 5 by EV among the F and
-C-NBA picks still Live, chosen by the "When" rule below), as `card-v1-shadow`.
-It is never official, never on the main page and never pushed; it is stored as `shadow:<sport>:
-<day>`, written to `ledger/shadow_card.csv` and graded like the card. F and C-NBA keep generating
-candidates in the background for it only (recorded, never pushed).
+Two official NBA cards (owner decision 2026-11-05, MODEL.md "Two official NBA cards";
+config/cards.yaml): "Next Gen" (the engine card above, state `card:nba:<day>`, ledger/card.csv)
+and "OG" (Card v1: top 5 by EV among the F and C-NBA picks still Live, M18 labels; state
+`shadow:nba:<day>`, ledger/shadow_card.csv; its record continues from Card v1). Both are chosen at
+6:15 AM ET by the "When" rule below and pushed together by the morning update; F and C-NBA alerts
+are recorded, never pushed one by one. `active: false` in config/cards.yaml retires a card.
 
-When (owner correction 2026-11-05, both the engine card and the shadow): if lines exist at
-6:15 for at least one of today's games, the card is selected then from what is available, even
-short or empty ("No picks today — the engine found no value"); picks found later are tracked on
-the Research tab and never join it. Only if no lines exist for any of today's games does a
-later poll select it, at the first one where lines exist. Cutoff: with still no lines 60
-minutes before the day's first tip, the card is published empty ("No lines posted in time").
-Chosen once per day in every case (`decide`). One constant, `NBA_CARD`,
-decides which is official: "engine" now; "v1" is the one-step revert (SWITCH.md).
+When (owner correction 2026-11-05, both NBA cards): if lines exist at 6:15 for at least one of
+today's games, the card is selected then from what is available, even short or empty ("No picks
+today — the engine found no value"); picks found later are tracked on the Research tab and never
+join it. Only if no lines exist for any of today's games does a later poll select it, at the
+first one where lines exist. Cutoff: with still no lines 60 minutes before the day's first tip,
+the card is published empty ("No lines posted in time"). Chosen once per day in every case
+(`decide`).
 """
 
 from __future__ import annotations
@@ -68,34 +67,41 @@ AT = time(6, 15)  # Eastern: the morning update (owner 2026-11-05; was 8:50 unti
 FIRST_DAY = date(2026, 10, 31)
 SPORTS = ("nba", "nfl")
 ENGINE_START = date(2026, 11, 5)  # the first engine card (owner override 2026-11-04)
-# The NBA card's official source: "engine" (owner override 2026-11-04) or "v1" (Card v1, the
-# M18 F and C-NBA picks). Setting "v1" is the one-step revert (SWITCH.md): the official card,
-# the pushes and the Today list go back to Card v1 and the shadow card stops.
-NBA_CARD = "engine"
-SHADOW = "card-v1-shadow"
-V1_SIGNALS = ("value", "snipe")  # Card v1's NBA pool: C-NBA and F (nba15/nbap15-based)
+SHADOW = "card-v1-shadow"  # the stored source tag of an OG card (kept: the ledger is append-only)
+V1_SIGNALS = ("value", "snipe")  # OG's (Card v1's) NBA pool: C-NBA and F (nba15/nbap15-based)
+
+
+def _active(card: str) -> bool:
+    from betdata import cards as C
+
+    return C.active(card)
 
 
 def engine_day(sport: str, day: date) -> bool:
-    """Is the sport's card on this day the engine card (NBA from ENGINE_START)?"""
-    return sport == "nba" and day >= ENGINE_START and NBA_CARD == "engine"
+    """Is the sport's card on this day the engine card, Next Gen (NBA from ENGINE_START)?"""
+    return sport == "nba" and day >= ENGINE_START
 
 
 def shadow_day(sport: str, day: date) -> bool:
-    """Is a shadow Card v1 chosen for the sport on this day (every engine-card day)?"""
-    return engine_day(sport, day)
+    """Is an OG card (Card v1's rule, stored as `shadow:`) chosen for the sport on the day?"""
+    return engine_day(sport, day) and _active("og")
 
 
 def shadow_signal(a) -> bool:
-    """An alert that only feeds the shadow Card v1 (an NBA F or C-NBA pick while the engine card
-    is official): recorded, never pushed."""
+    """An NBA F or C-NBA pick from ENGINE_START: recorded, never pushed one by one (the OG card
+    is pushed by the morning update)."""
     day = a.tip.astimezone(EASTERN).date() if a.tip is not None else date.max
-    return a.sport == "nba" and a.signal in V1_SIGNALS and shadow_day("nba", day)
+    return a.sport == "nba" and a.signal in V1_SIGNALS and engine_day("nba", day)
 
 
 def signals_for(sport: str, day: date) -> tuple[str, ...]:
-    """The signals whose picks are the sport's card pool (and its Today list) on the day."""
+    """The signals whose picks are the sport's card pool (Next Gen's for the NBA)."""
     return (ENGINE,) if engine_day(sport, day) else SIGNALS
+
+
+def today_signals(sport: str, day: date) -> tuple[str, ...]:
+    """The signals listed in the sport's Today section: both NBA cards' pools."""
+    return (ENGINE, *V1_SIGNALS) if engine_day(sport, day) else SIGNALS
 
 
 NO_LINES = "No lines posted in time"
@@ -144,18 +150,20 @@ def decide(p, m, sport: str, day: date, now: datetime, first: datetime, signals=
 
 
 def card_note(card: dict) -> str:
-    """The page and push note of a short or empty engine card ("" for a full one)."""
+    """The page and push note of a short or empty NBA card ("" for a full one)."""
     if card.get("no_lines"):
         return NO_LINES
     n = len(card.get("picks", []))
-    return short_note(n) if n < SIZE else ""
+    if n >= SIZE:
+        return ""
+    return short_note(n, "OG" if card.get("source") == SHADOW else "the engine")
 
 
-def short_note(n: int) -> str:
-    """The engine card's note when it has fewer than SIZE picks."""
+def short_note(n: int, who: str = "the engine") -> str:
+    """A card's note when it has fewer than SIZE picks."""
     if n == 0:
-        return "No picks today — the engine found no value"
-    return f"{n} pick{'s' if n != 1 else ''} today — the engine found no other value"
+        return f"No picks today — {who} found no value"
+    return f"{n} pick{'s' if n != 1 else ''} today — {who} found no other value"
 
 
 def key(sport: str, day: date) -> str:
@@ -305,6 +313,8 @@ def run(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> list[dict]
             ft = tip_fn(m, sport, day)
             if ft is None or now < select_at(day):  # no games today, or not 6:15 yet
                 continue
+            if engine_day(sport, day) and not _active("nextgen"):  # Next Gen retired
+                continue
             with pdb.begin() as p:
                 if engine_day(sport, day):  # the engine card: `decide` (owner 2026-11-05)
                     card = decide(p, m, sport, day, now, ft, None, lines_fn)
@@ -323,8 +333,10 @@ def message(p, card: dict, now: datetime) -> tuple[str, str]:
     """The ntfy push for one sport's card: (title, body), one line per pick."""
     from betdata.alerts.notify import BOOKS, _fmt_price, selection
 
+    og = card.get("source") == SHADOW
     by_key = {a.dedup_key: a for a in day_picks(p, card["sport"],
-                                                datetime.fromisoformat(card["day"]).date())}
+                                                datetime.fromisoformat(card["day"]).date(),
+                                                V1_SIGNALS if og else None)}
     lines = []
     for x in card["picks"]:
         a = by_key.get(x["dedup_key"])
@@ -333,10 +345,15 @@ def message(p, card: dict, now: datetime) -> tuple[str, str]:
         when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET")
         lines.append(f"{a.game_label} {when}: {selection(a)} {_fmt_price(a.price)} at "
                      f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u")
-    if card.get("source") == "engine" and card_note(card):
+    if card.get("source") in ("engine", SHADOW) and card_note(card):
         lines.append(card_note(card))
     day = datetime.fromisoformat(card["day"]).strftime("%a %b %-d")
-    return f"Tonight's card - {card['sport'].upper()} - {day}", "\n".join(lines)
+    who = card["sport"].upper()
+    if card.get("source") in ("engine", SHADOW):
+        from betdata import cards as C
+
+        who += " " + C.name("og" if og else "nextgen")
+    return f"Tonight's card - {who} - {day}", "\n".join(lines)
 
 
 def push(pdb, card: dict, now: datetime, topic: str | None, client=None) -> str:
@@ -358,7 +375,8 @@ def push(pdb, card: dict, now: datetime, topic: str | None, client=None) -> str:
         except Exception as e:  # noqa: BLE001 - a failed push never loses the card
             status = f"error {type(e).__name__}"
     with pdb.begin() as p:
-        k = key(card["sport"], datetime.fromisoformat(card["day"]).date())
+        d = datetime.fromisoformat(card["day"]).date()
+        k = shadow_key(card["sport"], d) if card.get("source") == SHADOW else key(card["sport"], d)
         st = get_state(p, k) or card
         set_state(p, k, {**st, "push": status}, now)
     return status

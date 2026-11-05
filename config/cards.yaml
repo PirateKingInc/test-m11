@@ -1,0 +1,23 @@
+# The official NBA cards (owner decision 2026-11-05, MODEL.md "Two official NBA cards").
+# Display names and record rules only: stored picks keep their own signals (append-only ledger).
+nba:
+  default: nextgen  # the toggle's default when a viewer has no stored choice
+  cards:
+    nextgen:
+      name: Next Gen
+      what: the NBA engine's card
+      signals: [engine]
+      state: card  # poller state card:nba:<day>, ledger/card.csv
+      since: 2026-11-05
+      active: true  # false retires it: no new card is selected; its record stays
+    og:
+      name: OG
+      what: Card v1 (F and C-NBA, nbap15/nba15-based)
+      signals: [value, snipe]
+      state: shadow  # poller state shadow:nba:<day>, ledger/shadow_card.csv
+      # its record continues from Card v1's official picks (card.csv, before Next Gen)
+      history_until: 2026-11-04
+      # switch-over: lines were first seen on Nov 5 while F was archived; also annotated on
+      # each such pick in ledger/annotations.csv (field og_excluded)
+      exclude_days: [2026-11-05]
+      active: true
