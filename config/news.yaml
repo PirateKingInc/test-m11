@@ -1,0 +1,64 @@
+# News alerts, upgraded (owner decision 2026-11-05, MODEL.md "News alerts"). Paper alerts only.
+# Early-warning sources are used ONLY when ahead of the official NBA injury report.
+bluesky:
+  # Jetstream: Bluesky's free, unauthenticated live stream (JSON over a WebSocket)
+  jetstream: wss://jetstream2.us-east.bsky.network/subscribe
+  appview: https://public.api.bsky.app/xrpc  # handle -> DID, profile checks (public, no auth)
+  # The watchlist. `handle` is filled in from the account check (`betdata news accounts`, run
+  # on a GitHub runner); accounts that do not exist or are not active are dropped and listed in
+  # PROJECT.md "News sources".
+  national:
+    - {name: Marc Stein}
+    - {name: Chris Haynes}
+    - {name: Michael Scotto}
+    - {name: Sam Amick}
+    - {name: Dan Woike}
+  beat:
+    - {name: Jon Krawczynski, team: MIN}
+    - {name: Rod Beard, team: DET}
+    - {name: Omari Sankofa II, team: DET}
+    - {name: James Ham, team: SAC}
+  official:
+    - {name: NBA}
+    - {name: Atlanta Hawks, team: ATL}
+    - {name: Boston Celtics, team: BOS}
+    - {name: Brooklyn Nets, team: BKN}
+    - {name: Charlotte Hornets, team: CHA}
+    - {name: Chicago Bulls, team: CHI}
+    - {name: Cleveland Cavaliers, team: CLE}
+    - {name: Dallas Mavericks, team: DAL}
+    - {name: Denver Nuggets, team: DEN}
+    - {name: Detroit Pistons, team: DET}
+    - {name: Golden State Warriors, team: GSW}
+    - {name: Houston Rockets, team: HOU}
+    - {name: Indiana Pacers, team: IND}
+    - {name: LA Clippers, team: LAC}
+    - {name: Los Angeles Lakers, team: LAL}
+    - {name: Memphis Grizzlies, team: MEM}
+    - {name: Miami Heat, team: MIA}
+    - {name: Milwaukee Bucks, team: MIL}
+    - {name: Minnesota Timberwolves, team: MIN}
+    - {name: New Orleans Pelicans, team: NOP}
+    - {name: New York Knicks, team: NYK}
+    - {name: Oklahoma City Thunder, team: OKC}
+    - {name: Orlando Magic, team: ORL}
+    - {name: Philadelphia 76ers, team: PHI}
+    - {name: Phoenix Suns, team: PHX}
+    - {name: Portland Trail Blazers, team: POR}
+    - {name: Sacramento Kings, team: SAC}
+    - {name: San Antonio Spurs, team: SAS}
+    - {name: Toronto Raptors, team: TOR}
+    - {name: Utah Jazz, team: UTA}
+    - {name: Washington Wizards, team: WAS}
+  active_days: 30  # an account is active if it posted within this many days
+sleeper:
+  # free, read-only, non-commercial; Sleeper asks to stay under 1,000 calls a minute and to
+  # fetch the full player list at most once a day
+  trending: https://api.sleeper.app/v1/players/nba/trending/add
+  players: https://api.sleeper.app/v1/players/nba
+  every_minutes: 5
+  lookback_hours: 1
+  limit: 50
+  spike: 3.0  # a player's adds at least 3x the previous check (and >= min_adds): a hint
+  min_adds: 25
+rotation_minutes: 15  # a rotation player: Next Gen projects >= 15 minutes

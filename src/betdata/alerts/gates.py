@@ -27,7 +27,8 @@ from betdata.db.schema import games
 GATE_N, EARLY_N = 200, 60
 # signal (and sport) -> the M18 signal name
 NAMES = {("value", "nba"): "C-NBA", ("value", "nfl"): "C-NFL", ("snipe", "nba"): "F",
-         ("g1", "nba"): "G1", ("g2", "nfl"): "G2", ("engine", "nba"): "nba-engine"}  # fmt: skip
+         ("g1", "nba"): "G1", ("g2", "nfl"): "G2", ("engine", "nba"): "nba-engine",
+         ("flash", "nba"): "news-alert"}  # fmt: skip
 
 
 def signal_name(signal: str, sport: str) -> str:

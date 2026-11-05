@@ -2798,3 +2798,52 @@ rules live in `config/cards.yaml` (`betdata/cards.py`).
   Gen vs OG table.
 - **Retiring a card:** `active: false` in config/cards.yaml (SWITCH.md).
 
+# News alerts, upgraded (owner decision 2026-11-05)
+
+Paper alerts only. No change to the two cards (Next Gen, OG), models, pick rules or grading.
+Code: `betdata/news/` (`desk.py` in the poller loop), config `config/news.yaml`, the verified
+watchlist `config/news_accounts.json`.
+
+- **Official report every minute:** in the game-day injury-report windows (`alerts/nba.py
+  active`: game days 10:00-19:30 ET, and 16:30-20:30 ET the day before), the poller checks for
+  a new NBA injury report every minute (was every 3). Lag-window price polls stay at 3 minutes.
+- **Early-warning sources, used only when ahead of the official report:**
+  - Bluesky through Jetstream (free, no auth): the poller job holds one WebSocket open only in
+    those windows, filtered on the server to the watchlist's DIDs and new posts; it reconnects
+    with a back-off and is closed when a window ends and when the job ends (:56).
+  - Sleeper's NBA trending adds (free, read-only, non-commercial) every 5 minutes in the same
+    windows; the full player list at most once a day (Sleeper's guidance). A spike (>= 3x the
+    last check and >= 25 adds) is a hint only: logged, used to corroborate, never alerted.
+  - A post counts only with clear status language about exactly one rotation player (Next Gen
+    projects >= 15 minutes): "out", "won't play", "ruled out" -> Out; "available", "starting"
+    -> Available. Hedged posts (questionable, game-time decision, expected to, ...) are ignored.
+  - If the official report already shows the change, the claim is logged "official first" and
+    ignored.
+- **On a claim ahead of the report:** Next Gen re-simulates the game with the player's status
+  set (Out / Available) and reprices the game markets and the player's teammates' props at fresh
+  DK/FD prices; an alert only for a candidate that clears Next Gen's own bar (EV >= theta: 0.05
+  game markets, 0.10 props).
+- **Every news alert:** game, pick, line, odds, book, minutes since the news, the "good down to"
+  price (the worst price with fair x decimal - 1 >= theta), labelled "News alert — not a card
+  pick", and "Unconfirmed: per @source" while ahead of the report. When the report catches up the
+  alert is marked confirmed or contradicted (unconfirmed if the report never shows it by tip).
+  Signal `flash`, research name `news-alert`: its own record on the Research tab (graded,
+  units, EV at close), never on either card or in Today.
+- **Quiet logging, always on (even with alerts off):** every claim (`early_claims` in the
+  poller database; settled ones appended to `ledger/news_sources.csv`): source, account, player,
+  status, posted and detected times, whether it was ahead, the official status and time, the
+  lead in minutes, confirmed / contradicted / unconfirmed / official first. The Research tab's
+  "News alerts" section and the weekly report show a per-source table (times first, median lead
+  when confirmed, confirmed, contradicted, unconfirmed, official first).
+- **Lag-study switch:** news alert pushes follow the M16 lag study (decision due Nov 6, taken
+  once by the poller, `signal1:decision`). If its pooled DK+FD median soft-book lag is under 5
+  minutes, alerts stay OFF (no pushes) and all logging keeps running; at 5 minutes or more they
+  are on. Before the decision they are off. The decision is written once to
+  `ledger/news_switch.csv` and shown on the Research tab and in the weekly report; its numbers
+  are recorded below when taken.
+  - Lag-study decision: pending (due 2026-11-06).
+- **Watchlist** (checked 2026-11-05 from a GitHub runner, `betdata news accounts`): kept if the
+  account exists under the person's or team's name, posted within 30 days and has >= 1,000
+  followers (beat writers: 300) or Bluesky verification; official accounts must be verified
+  (team names are taken by fan and impostor accounts). See PROJECT.md "News sources".
+

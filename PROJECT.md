@@ -38,6 +38,7 @@ Decisions that change dependencies, data rules or scope, newest last.
 | 2026-11-05 | **Shadow Card v1 (owner):** every morning at 8:50 AM ET the old Card v1 (top 5 by EV among the nbap15-based F and C-NBA picks still Live) is also selected, as `card-v1-shadow`: never official, never on the main page, never pushed, graded like the card. F and C-NBA generate candidates in the background for it only. The Research tab and the weekly report compare it with the engine card over the same nights; the comparison rule is fixed in MODEL.md (≥ 200 graded each; recommend a switch back only on higher EV at close with non-overlapping 95% ranges and positive units). The official engine card is unchanged; the switch stays an owner decision; the revert is one constant (SWITCH.md). | MODEL.md "Shadow Card v1". |
 | 2026-11-05 | **Morning update at 6:15 AM ET (owner):** one combined run every day with NBA or NFL games yesterday or today, replacing the 8:50 AM card selection: grade yesterday's and last night's games (box scores via the existing sources; a game without a final box score is graded on the next run and named in the push), update the ledger and records, run the engine on today's games with the archived lines (the 6:00-6:10 sweep), select the engine card and the shadow Card v1 at the same moment, publish the page, then ONE ntfy push per sport combining last night, the record and today's card. Hourly runs 7 AM-10 PM ET unchanged; games ending after the last hourly run read "grading ~6:15 AM ET tomorrow". No change to models, pick rules, thresholds or grading rules. | MODEL.md "Morning update". Clock run of the 6 AM hour dispatches it; the poller's 6 AM job stops at 6:12. |
 | 2026-11-05 | **Two official NBA cards, "Next Gen" and "OG" (owner):** Next Gen is the engine card (record from Nov 5, its own rules, short or empty days allowed); OG is Card v1 made official again (no longer a shadow): top 5 by EV among the Live F/C-NBA candidates with the original TAKE/LEAN labels, fewer if fewer qualify, both selected at 6:15 AM ET under the PR #330 lines rule. OG's record continues from Card v1 (Oct 31 – Nov 4: 11-9, +2.71u) plus every OG card from Nov 6; Nov 5 is excluded (switch-over) by configuration and annotation, never by rewriting the ledger. Each card has its own success goal; the combined "All sports" line is removed. A "Next Gen \| OG" toggle on the NBA tab (remembered per viewer) switches the record, Tonight's card, Results by day and Today's card badges; a pick on both cards is marked so. One combined NBA morning push per day; NFL unchanged. No change to models, pick rules, thresholds or grading. | MODEL.md "Two official NBA cards"; config/cards.yaml; SWITCH.md. |
+| 2026-11-05 | **News alerts, upgraded (owner):** the official NBA injury report checked every minute in its windows (was ~3); Bluesky (Jetstream, verified watchlist) and Sleeper trending adds used only when ahead of the official report (clear status language about a rotation player; a Sleeper spike only corroborates); an ahead claim reprices the game and teammates' props with Next Gen and alerts only above Next Gen's bar; each alert carries minutes since the news, a "good down to" price, "News alert — not a card pick" and "Unconfirmed: per @source", later marked confirmed or contradicted; quiet per-source logging always on; pushes follow the M16 lag study (under 5 minutes: off, logging only). News alerts have their own Research record. Paper alerts only; no change to the cards, models, pick rules or grading. | MODEL.md "News alerts"; PROJECT.md "News sources". |
 
 ## M13: the hourly page
 
@@ -343,3 +344,55 @@ The dev copy of the NBA history was used at 2026-02-11 22:05 UTC: the poller rea
 - **State:** `data/derived/nba_engine_live.json` (about 0.55 MB for 14 games) is kept with the rest of `data/derived` in the Actions cache. The frozen fit is `config/fits/nba_engine_m20.json` (5 KB, committed); nothing is refitted hourly.
 - **Quota:** no new source and no new call. The poller prices engine picks from the quotes its existing hourly sweep already fetches; an injury re-simulation reads only the database.
 - **Data decision:** box scores and play-by-play from the sportsdataverse / hoopR files (decision row above).
+
+## News sources (checked 2026-11-05 from a GitHub runner)
+
+Bluesky watchlist for news alerts (MODEL.md "News alerts"). Kept: exists under the person's or team's name, a post within 30 days, >= 1,000 followers (beat: 300) or Bluesky verification; official accounts must be verified. Re-check with `betdata news accounts` (needs a network that reaches public.api.bsky.app).
+
+| Kept | Group | Account | Followers | Verified | Last post |
+|---|---|---|---|---|---|
+| Marc Stein | national | @thesteinline.bsky.social | 44839 | yes | 2026-11-04 |
+| Michael Scotto | national | @mikeascotto.bsky.social | 18975 | yes | 2026-11-05 |
+| Dan Woike | national | @danwoikesports.bsky.social | 15599 | yes | 2026-11-02 |
+| Jon Krawczynski | beat | @jonkrawczynski.bsky.social | 35693 | yes | 2026-11-05 |
+| Omari Sankofa II | beat | @omarisankofa.bsky.social | 11212 | yes | 2026-11-05 |
+| James Ham | beat | @jameshamnba.bsky.social | 8152 | no | 2026-11-05 |
+| Denver Nuggets | official | @nuggets.bsky.social | 6282 | yes | 2026-11-05 |
+| Philadelphia 76ers | official | @sixersnba.bsky.social | 15189 | yes | 2026-11-05 |
+
+| Dropped | Group | Best match | Why |
+|---|---|---|---|
+| Chris Haynes | national | @chrisbhaynes.bsky.social | not active (no post in 30 days) |
+| Sam Amick | national | @samamick.bsky.social | not active (no post in 30 days) |
+| Rod Beard | beat | @detnewsrodbeard.bsky.social | not active (no post in 30 days) |
+| NBA | official | @nbadabad.bsky.social | not active (no post in 30 days) |
+| Atlanta Hawks | official | @atlhawksbr.bsky.social | not active (no post in 30 days) |
+| Boston Celtics | official | @celticsnba.bsky.social | not active (no post in 30 days) |
+| Brooklyn Nets | official | @brooklynnets.bsky.social | not active (no post in 30 days) |
+| Charlotte Hornets | official | @charlottehornetsbb.bsky.social | not active (no post in 30 days) |
+| Chicago Bulls | official | @chicagobullsu.bsky.social | not active (no post in 30 days) |
+| Cleveland Cavaliers | official | @clevelandcavaliers.bsky.social | not active (no post in 30 days) |
+| Dallas Mavericks | official | @dallasmavs.bsky.social | not active (no post in 30 days) |
+| Detroit Pistons | official | @thepistons.bsky.social | not active (no post in 30 days) |
+| Golden State Warriors | official | @warriorsofficial.bsky.social | not verified by Bluesky (official accounts must be: impostor/fan risk) |
+| Houston Rockets | official | @handle.invalid | not active (no post in 30 days) |
+| Indiana Pacers | official | @handle.invalid | not active (no post in 30 days) |
+| LA Clippers | official | @thejustinwilson.bsky.social | not active (no post in 30 days) |
+| Los Angeles Lakers | official | @lakers17.bsky.social | not verified by Bluesky (official accounts must be: impostor/fan risk) |
+| Memphis Grizzlies | official | @grizzliesbr.bsky.social | not active (no post in 30 days) |
+| Miami Heat | official | @miamiheatbeat.bsky.social | not active (no post in 30 days) |
+| Milwaukee Bucks | official | @themilwaukeebucks.bsky.social | not active (no post in 30 days) |
+| Minnesota Timberwolves | official | @mintimberwolves.bsky.social | not active (no post in 30 days) |
+| New Orleans Pelicans | official | @pelicansnba.fucknerds.town | too few followers (656) |
+| New York Knicks | official | @handle.invalid | not active (no post in 30 days) |
+| Oklahoma City Thunder | official | @okcthunderfr.bsky.social | not active (no post in 30 days) |
+| Orlando Magic | official | @orlandomagicbr.bsky.social | not active (no post in 30 days) |
+| Phoenix Suns | official | @sunsphx.bsky.social | not verified by Bluesky (official accounts must be: impostor/fan risk) |
+| Portland Trail Blazers | official | @trailblazers.bsky.social | not active (no post in 30 days) |
+| Sacramento Kings | official | @sacramentokings.bsky.social | not verified by Bluesky (official accounts must be: impostor/fan risk) |
+| San Antonio Spurs | official | @sasonsi.bsky.social | not active (no post in 30 days) |
+| Toronto Raptors | official | @torontoraptor.bsky.social | not active (no post in 30 days) |
+| Utah Jazz | official | @jazzmanmark.com | not verified by Bluesky (official accounts must be: impostor/fan risk) |
+| Washington Wizards | official | @washwizardschina.bsky.social | not active (no post in 30 days) |
+
+Sleeper: `/v1/players/nba/trending/add` (free, read-only, non-commercial terms) answered from the runner (HTTP 200, 50 rows); checked every 5 minutes in report windows, the full player list at most once a day.

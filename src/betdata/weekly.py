@@ -173,6 +173,18 @@ def build(root: Path, now: datetime, main: Connection | None,
            "| | Next Gen | OG |", "|---|---|---|",
            *[f"| {m} | {a} | {b} |" for m, a, b in O.comparison_rows(cmp_)], "",
            O.COMPARE_RULE, "", f"Status: {cmp_.verdict}"]
+    # news alerts: their own record, the switch and the per-source table (owner 2026-11-05)
+    from betdata.news import ledger as NL
+
+    na = O.record([r for r in rows if r["signal_name"] == "news-alert"])
+    md += ["", "## News alerts (not card picks)", "", NL.switch_text(root / "ledger"), "",
+           f"- Record: {_rec(na).replace(' | ', ', ')}", "",
+           "| Source | First | Median lead (min) | Confirmed | Contradicted | Unconfirmed | "
+           "Official first |", "|---|---|---|---|---|---|---|"]
+    for r in NL.source_table(NL.read(root / "ledger")):
+        md.append(f"| {r['account'] or r['source']} | {r['first']} | "
+                  f"{'–' if r['median_lead'] is None else r['median_lead']} | {r['confirmed']} | "
+                  f"{r['contradicted']} | {r['unconfirmed']} | {r['official_first']} |")
     # every NBA engine prediction graded at the close (owner override 2026-11-04)
     from betdata.nba import engine_grades as G
 

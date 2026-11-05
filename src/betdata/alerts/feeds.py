@@ -68,7 +68,7 @@ class Http:
     """One client for the poller: per-host spacing and a request count per source."""
 
     SPACING = {"sharpapi": 6.0, "the_odds_api": 1.0, "kalshi": 1.0, "espn": 1.0,
-               "nba_injury": 1.0}  # fmt: skip
+               "nba_injury": 1.0, "bsky": 1.0, "sleeper": 2.0}  # fmt: skip
 
     def __init__(self, transport: httpx.BaseTransport | None = None, sleep=time.sleep,
                  monotonic=time.monotonic):  # fmt: skip

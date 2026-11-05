@@ -703,6 +703,9 @@ def _research(rows: list[dict] | None, parts: list[list[str]], out_dir: Path,
 
             today = (now or datetime.now(UTC)).astimezone(EASTERN).date()
             eng = engine_html(rows, today, out_dir, read())
+            from betdata.page.news import news_html  # news alerts (owner 2026-11-05)
+
+            eng += news_html(rows, out_dir)
         except Exception as e:  # never lose the page over the engine section
             log.warning("nba engine section failed: %s", e)
     return head + eng + sig + "".join("\n".join(p) for p in parts)
