@@ -142,6 +142,25 @@ SCRIPT = """<script>
       }).join('') + '</ul>' + note + '<p class="meta">Picks are locked at the prices shown. ' +
       'Results post on the hourly run after each game ends.</p>'];
   }
+  function parlayBlock(x) {
+    // the Next Gen parlay (owner 2026-11-06): its own block at the bottom of Tonight's card,
+    // its own record; never part of either card's record
+    var h = '<div class="trk-parlay" style="margin-top:12px;padding-top:10px;' +
+      'border-top:2px solid var(--line)"><h4>Parlay</h4>';
+    if (x.none) return h + '<p class="meta">' + esc(x.note) + '.</p><p class="meta">' +
+      esc(x.record) + '</p></div>';
+    h += '<ul class="plist">' + x.legs.map(function (l) {
+      var who = l.who ? esc(l.who) + ' · ' : '';
+      return '<li class="prop"><div>' + who + esc(l.text) + '</div>' + (l.result ?
+        '<div class="trk-res ' + esc(l.result) + '">' + esc(l.result.toUpperCase()) +
+        '</div>' : '') + '</li>'; }).join('') + '</ul>';
+    var res = x.result ? '<span class="st ' + (x.result === 'win' ? 'live' :
+      x.result === 'loss' ? 'gone' : 'moved') + '">' + esc(x.result.toUpperCase()) + ' ' +
+      (x.units > 0 ? '+' : '') + x.units + 'u</span>' : '<span class="st sched">Open</span>';
+    return h + '<p><b>' + esc(x.odds) + '</b> at ' + esc(x.book) + ' · ' + x.kind +
+      ' legs · ' + x.stake + 'u · ' + esc(x.hits) + ' · ' + res + '</p><p class="meta">' +
+      esc(x.record) + '</p></div>';
+  }
   function game(sport, g) {
     var card = g.picks.filter(function (p) { return on(sport, p); });
     var other = g.picks.filter(function (p) { return !on(sport, p); });
@@ -168,6 +187,7 @@ SCRIPT = """<script>
     var d = docs[sport]; if (!sec || !d) return;
     var games = d.games || [];
     var cb = cardBlock(sport, games, d);
+    if (sport === 'nba' && act(sport) === 'nextgen' && d.parlay) cb[1] += parlayBlock(d.parlay);
     var fold = document.querySelector('details[data-tonight="' + sport + '"]');
     if (fold) {
       fold.querySelector('.trk-sum').textContent = '— ' + cb[0];

@@ -29,10 +29,13 @@ def test_order_grade_before_select(pdb, monkeypatch, tmp_path):
     monkeypatch.setattr(M, "engine", lambda *a: calls.append("engine") or 2)
     monkeypatch.setattr(M, "select_cards", lambda *a: calls.append("select") or (
         [{"sport": "nba", "picks": [1, 2]}], [{"sport": "nba", "picks": [1]}]))
+    monkeypatch.setattr(M, "parlay_select", lambda *a: calls.append("parlay") or {"kind": 3})
     rep = M.run(None, pdb, None, NOW, out=tmp_path, build=lambda: calls.append("page"))
-    assert rep.steps == ["grade", "ledger", "engine", "select", "publish"]
-    # the ledger is synced again after selection (card rows), then the page is built
-    assert calls == ["grade", "ledger", "engine", "select", "ledger", "page"]
+    assert rep.steps == ["grade", "ledger", "engine", "select", "parlay", "publish"]
+    # the parlay right after the cards (owner 2026-11-06); the ledger is synced again after
+    # selection (card and parlay rows), then the page is built
+    assert calls == ["grade", "ledger", "engine", "select", "parlay", "ledger", "page"]
+    assert rep.parlay == 3
     assert rep.cards == {"nba": 2} and rep.shadow == {"nba": 1} and rep.engine_picks == 2
     with pdb.connect() as p:
         st = get_state(p, "morning:2026-11-06")

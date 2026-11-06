@@ -40,6 +40,9 @@ Owner-approved additions (each allowed exactly, and nothing else):
   panels hidden), no tab is remembered, and a link with a section anchor (#alerts) opens the tab
   holding it. Exactly one line of the snapshot changes: the page shell's script hash
   (APPROVED_DIFF_DEFAULT_TAB_SHA; previous snapshot kept as `ui_freeze_snapshot_m22.txt`).
+- 2026-11-06, the Next Gen parlay: a "Parlay" block at the bottom of Tonight's card on the Next
+  Gen side, drawn by the Today renderer. The snapshot is unchanged; the renderer's approved
+  hash moves (TRACKER_SCRIPT_SHA) for exactly this block.
 """
 
 import hashlib
@@ -110,8 +113,9 @@ TRACKER_SCRIPT_HISTORY = {"d866cf4bf364": "M19 renderer (pre-2026-11-04)",
                           "0103d64f91b3": "Tonight's card fold, plain statuses (2026-11-04)",
                           "6405b2f92e7a": "engine card's short-card note (2026-11-04 override)",
                           "fbc70cba5745": "ETA wording: ~6:15 AM ET tomorrow (2026-11-05)",
-                          "47458f1428a0": "Next Gen | OG toggle (2026-11-05)"}
-TRACKER_SCRIPT_SHA = "47458f1428a0"
+                          "47458f1428a0": "Next Gen | OG toggle (2026-11-05)",
+                          "7cbd8c4fbbca": "Next Gen parlay block (2026-11-06)"}
+TRACKER_SCRIPT_SHA = "7cbd8c4fbbca"
 TOGGLE_SCRIPT_SHA = "6d68073346bb"
 SNAPSHOT_M19 = Path(__file__).with_name("ui_freeze_snapshot_m19.txt")
 SNAPSHOT_M20B = Path(__file__).with_name("ui_freeze_snapshot_m20b.txt")

@@ -39,7 +39,7 @@ SPORTS = ("nba", "nfl")
 # The refresh before grading: schedules, final scores and box scores (and the injury report)
 MORNING_JOBS = ("nba-scoreboard", "nba-boxscores", "nba-injuries", "nfl-schedules",
                 "nfl-injuries")  # fmt: skip
-STEPS = ("grade", "ledger", "engine", "select", "publish")
+STEPS = ("grade", "ledger", "engine", "select", "parlay", "publish")
 STATE = "morning:{day}"
 
 
@@ -134,6 +134,7 @@ class Report:
     engine_picks: int = 0
     cards: dict = field(default_factory=dict)  # sport -> picks chosen (None: not chosen yet)
     shadow: dict = field(default_factory=dict)
+    parlay: object = None  # 2 / 3 legs, "none", or None (not chosen: see errors)
     errors: list = field(default_factory=list)
 
 
@@ -183,6 +184,12 @@ def engine(poller, main, active, now: datetime) -> int:
     return n
 
 
+def parlay_select(pdb, poller, main, now: datetime) -> dict:
+    from betdata.parlay import select
+
+    return select(pdb, poller, main, now)
+
+
 def select_cards(pdb, main, now: datetime) -> tuple[list, list]:
     from betdata.alerts import card as CD
 
@@ -214,11 +221,17 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
     cards, shadows = got
     rep.cards = {c["sport"]: len(c["picks"]) for c in cards}
     rep.shadow = {c["sport"]: len(c["picks"]) for c in shadows}
+    # the Next Gen parlay (owner 2026-11-06): fail-safe; an error is logged and the cards,
+    # the page and the push go out without it
+    if "nba" in rep.sports:
+        doc = _step(rep, "parlay", parlay_select, pdb, poller, main, now)
+        rep.parlay = None if doc is None else ("none" if doc.get("none") else doc.get("kind"))
     _step(rep, "publish", lambda: (ledger_sync(pdb, main, out, now), build and build()))
     with pdb.begin() as p:  # the push reads this (and so does the verification)
         set_state(p, STATE.format(day=day.isoformat()),
                   {"at": now.isoformat(), "sports": rep.sports, "steps": rep.steps,
-                   "cards": rep.cards, "shadow": rep.shadow, "errors": rep.errors,
+                   "cards": rep.cards, "shadow": rep.shadow, "parlay": rep.parlay,
+                   "errors": rep.errors,
                    "engine_picks": rep.engine_picks}, now)  # fmt: skip
     return rep
 
@@ -318,6 +331,12 @@ def nba_message(p, rows: list[dict], now: datetime) -> tuple[str, str]:
                 lines += _pick_lines(p, card, "nba", today, signals, both)
                 if note:
                     lines.append(f"  {note}")
+    try:  # the Next Gen parlay (owner 2026-11-06), after Next Gen; never breaks the push
+        from betdata import parlay as PL
+
+        lines += PL.push_lines(get_state(p, PL.key(today)))
+    except Exception as e:  # noqa: BLE001
+        log.warning("parlay push section failed: %s", e)
     late = ungraded_games(rows, "nba", today - timedelta(days=1))
     if late:
         lines.append(f"Not graded yet: {', '.join(late)} (no final box score yet; graded on "

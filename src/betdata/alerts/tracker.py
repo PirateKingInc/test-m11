@@ -313,6 +313,16 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
         out["og_note"] = OG_SWITCH_OVER
     if sport == "nba" and C.load():
         out["cards"] = {k: C.name(k) for k in (C.NEXTGEN, C.OG)}
+    if sport == "nba":  # the Next Gen parlay (owner 2026-11-06); never breaks the tracker
+        try:
+            from betdata.ledger import ledger_dir
+            from betdata.parlay import page_doc
+
+            pdoc = page_doc(p, m, day, ledger_dir())
+            if pdoc is not None:
+                out["parlay"] = pdoc
+        except Exception as e:  # noqa: BLE001
+            log.warning("parlay section failed: %s", e)
     return out
 
 

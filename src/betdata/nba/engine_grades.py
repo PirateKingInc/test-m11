@@ -291,3 +291,34 @@ def read(out: Path) -> list[dict]:
     from betdata.ledger import read_rows
 
     return read_rows(out / FILE)
+
+
+# --- the parlay bars' calibration check (owner 2026-11-06; reporting only) ---------------------
+
+BANDS = ((0.65, 0.70, "65-70%"), (0.70, 0.80, "70-80%"), (0.80, 1.0001, "80%+"))
+
+
+def band_table(rows: list[dict], kind: str | None = None) -> list[dict]:
+    """How often the engine's 65-70%, 70-80% and 80%+ predictions hit: each graded prediction
+    counted on the side the engine favours (p or 1 - p), pushes and voids left out. Reporting
+    only: the parlay's bars are never changed from it."""
+    out = []
+    pts = []
+    for r in rows:
+        if r.get("y") not in ("0", "1") or (kind and r["kind"] != kind):
+            continue
+        p, y = float(r["p_engine"]), int(r["y"])
+        pts.append((p, y) if p >= 0.5 else (1 - p, 1 - y))
+    for lo, hi, name in BANDS:
+        sel = [(p, y) for p, y in pts if lo <= p < hi]
+        n = len(sel)
+        out.append({"band": name, "n": n,
+                    "predicted": None if not n else round(sum(p for p, _ in sel) / n, 4),
+                    "hit": None if not n else round(sum(y for _, y in sel) / n, 4)})
+    return out
+
+
+def band_line(t: list[dict]) -> str:
+    return " · ".join(f"{b['band']}: " + ("no predictions yet" if not b["n"] else
+                      f"{100 * b['hit']:.1f}% hit vs {100 * b['predicted']:.1f}% predicted "
+                      f"({b['n']})") for b in t)  # fmt: skip

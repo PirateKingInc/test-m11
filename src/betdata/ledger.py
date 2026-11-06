@@ -319,6 +319,12 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         review.sync(p, m, out, now)
     except Exception as e:  # noqa: BLE001 - the review never stops the ledger
         log.warning("review sync failed: %s", e)
+    try:  # the Next Gen parlay: chosen once, graded once (owner 2026-11-06, betdata/parlay)
+        from betdata.parlay import sync as parlay_sync
+
+        parlay_sync(p, m, out, now)
+    except Exception as e:  # noqa: BLE001 - the parlay never stops the ledger
+        log.warning("parlay ledger failed: %s", e)
     try:  # the news log: settled early-source claims (owner 2026-11-05, betdata/news)
         from betdata.news.ledger import sync as news_sync
 
