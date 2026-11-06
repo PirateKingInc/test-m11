@@ -192,6 +192,10 @@ def build(root: Path, now: datetime, main: Connection | None,
     md += ["", "## NBA engine: every prediction vs the close", ""]
     for label, kind in (("All", None), ("Game markets", "game"), ("Player props", "prop")):
         md.append(f"- {label}: {G.summary_line(G.summary(eg, kind))}")
+    md.append(f"- Parlay bars check (reporting only): {G.band_line(G.band_table(eg))}")
+    from betdata import parlay as PL
+
+    md.append(f"- Next Gen parlay (its own record): {PL.record(root / 'ledger').text()}")
     week_eg = [r for r in eg if r["tip"] >= (now - timedelta(days=7)).isoformat()]
     md.append(f"- Last 7 days: {G.summary_line(G.summary(week_eg))}")
     since = now - timedelta(days=7)

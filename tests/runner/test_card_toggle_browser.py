@@ -165,3 +165,56 @@ def test_every_visit_opens_on_nba_and_anchors_still_work(tmp_path):
     assert out["reloaded"]["tab"] == ["tab-nba"] and out["reloaded"]["y"] == 0  # not remembered
     assert out["reloaded"]["card"] == "og"  # the Next Gen | OG toggle still is
     assert out["anchor"]["tab"] == ["tab-research"] and out["anchor"]["y"] > 0  # #alerts
+
+
+def test_parlay_block_on_the_next_gen_side_only(tmp_path, monkeypatch):
+    """The parlay sits at the bottom of Tonight's card on the Next Gen side, with legs, book,
+    odds, chance, stake, status and its own record; the OG side never shows it."""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+    import os
+
+    import tests.runner.test_ui_freeze as F
+
+    parlay = {"none": False, "kind": 2, "book": "FanDuel", "odds": "+220", "hits":
+              "hits about 1 in 2", "stake": 0.25, "ev": 0.4, "result": None, "units": None,
+              "record": "Parlay record: 0-0 · +0.00u · ROI – · 0 graded",
+              "legs": [{"who": "Bam Adebayo (MIA) vs ORL", "text": "ORL @ MIA 7:30 PM ET: "
+                        "Bam Adebayo over 20.5 points -110 · Next Gen 68% vs market 60%",
+                        "result": None}]}  # fmt: skip
+    monkeypatch.setattr(F, "TRACKER_DOC", {**TRACKER_DOC, "parlay": parlay})
+    page = tmp_path / "index.html"
+    page.write_text(build_fixture_page(tmp_path))
+    js = tmp_path / "p.js"
+    js.write_text(r"""
+const { chromium } = require('playwright');
+(async () => {
+  const exe = process.env.PW_CHROMIUM;
+  const b = await chromium.launch(exe ? {executablePath: exe} : {});
+  const pg = await (await b.newContext({viewport: {width: 390, height: 900}})).newPage();
+  await pg.goto('file://' + process.argv[2]);
+  const t = () => pg.evaluate(() => {
+    const f = document.querySelector('details[data-tonight="nba"] .trk-cardbody');
+    const p = f.querySelector('.trk-parlay');
+    return p ? {text: p.innerText, last: f.lastElementChild === p} : null; });
+  const out = {ng: await t()};
+  await pg.click('[data-cardtoggle="nba"] button[data-pick="og"]');
+  out.og = await t();
+  console.log(JSON.stringify(out)); await b.close();
+})().catch(e => { console.error(e); process.exit(2); });
+""")
+    env = {**os.environ, **({"PW_CHROMIUM": _chromium()} if _chromium() else {})}
+    r = subprocess.run([node, str(js), str(page)], capture_output=True, text=True, env=env,
+                       timeout=120)  # fmt: skip
+    if r.returncode and ("Cannot find module 'playwright'" in r.stderr
+                         or "Executable doesn't exist" in r.stderr):  # fmt: skip
+        pytest.skip("Playwright/Chromium not installed")
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout.strip().splitlines()[-1])
+    assert out["og"] is None and out["ng"]["last"]
+    text = out["ng"]["text"]
+    for want in ("Parlay", "Bam Adebayo (MIA) vs ORL", "Next Gen 68% vs market 60%", "+220",
+                 "FanDuel", "2 legs", "0.25u", "hits about 1 in 2", "OPEN",
+                 "Parlay record: 0-0"):  # fmt: skip
+        assert want.lower() in text.lower(), (want, text)

@@ -2856,3 +2856,41 @@ keeps remembering its own choice. A link with a section anchor (e.g. `#alerts`) 
 there: the tab holding it opens and the page scrolls to it. The UI-freeze test pins exactly
 this change (the page shell's script).
 
+# Next Gen parlay (owner decision 2026-11-06)
+
+Paper picks only. No change to the two cards, models, pick rules or the grading of existing
+picks. Code: `betdata/parlay.py`; signal `ng-parlay`.
+
+- **Selection, once a day at 6:15 AM ET with the cards** (the morning update's `parlay` step,
+  right after `select`), from Next Gen's evaluation of every priced outcome of today's NBA
+  games (every engine candidate at the archived DK/FD lines, not only its picks):
+  - a leg: Next Gen's probability (the blended fair probability its pick rule uses) at or
+    above the market's no-vig probability; price between -200 and +100; one leg per game;
+  - the 3-leg candidate (default): three legs each >= 70%; the 2-leg candidate: two legs each
+    >= 65%;
+  - each candidate is priced entirely at one book, DraftKings or FanDuel, whichever gives the
+    better parlay EV with all legs there; parlay EV = product of Next Gen's leg probabilities
+    x the parlay's decimal odds - 1;
+  - the best 3-leg is chosen; the best 2-leg instead only if its EV is at least 3 percentage
+    points higher (or there is no 3-leg); neither: "No parlay today: no legs met the bar".
+  Stored once (`parlay:nba:<day>`), written once to `ledger/parlays.csv` (append-only).
+- **Stake and grading:** 0.25 units. It wins only if every leg wins; any lost leg loses it. A
+  pushed or void leg drops out and the parlay is re-priced at the remaining legs' odds; with
+  fewer than 2 legs left it grades as the remaining single leg, or void. Results once in
+  `ledger/parlay_results.csv`.
+- **Page:** inside Tonight's card on the Next Gen side of the toggle, at the bottom, a separate
+  "Parlay" block: each leg (game, time ET, player (TEAM) vs OPP, pick, line, Next Gen % vs
+  market %), the book, the parlay odds, the true chance of hitting ("hits about 1 in 3"), the
+  stake, and its status or result; and its own record line (W-L, units, ROI, graded count;
+  .500 is not its goal), never mixed into either card's record.
+- **Morning push:** a "Parlay" section after Next Gen (legs, book, odds, stake), or "No parlay
+  today".
+- **Fail-safe:** the parlay step and its push section are isolated: an error is logged and the
+  cards, the page and the 6:15 push go out without it.
+- **Calibration check (reporting only):** how often the engine's 65-70%, 70-80% and 80%+
+  predictions actually hit, from the nightly engine grades (`ledger/engine_grades.csv`, each
+  graded prediction on the side the engine favours), on the Research tab and in the weekly
+  report. The bars are never changed from it automatically. Past seasons (the M20 test
+  seasons) are added in a follow-up run: their per-prediction probabilities are not stored in
+  the repository and must be re-simulated on a runner.
+

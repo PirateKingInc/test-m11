@@ -96,6 +96,9 @@ def predictions_html(site: Path, ledger: Path | None = None) -> str:
         s = G.summary(rows, kind)
         out.append(f"<li class='prop' data-grades='{kind or 'all'}'><div><b>{label}</b></div>"
                    f"<div class='meta'>{escape(G.summary_line(s))}</div></li>")
-    out.append(f"</ul><p class='meta'><a href='{href}'>Download every graded prediction (CSV)"
+    out.append("</ul><p class='meta'><b>Parlay bars check</b> (how often the engine's "
+               "65-70%, 70-80% and 80%+ predictions hit; reporting only, the bars are not "
+               f"changed from it): {escape(G.band_line(G.band_table(rows)))}</p>")
+    out.append(f"<p class='meta'><a href='{href}'>Download every graded prediction (CSV)"
                "</a></p></div>")
     return "".join(out)
