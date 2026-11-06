@@ -1,0 +1,13 @@
+signal1:decision [('{"decided_at": "2026-11-06T22:00:33.369055+00:00", "study_start": "2026-10-23T21:03:00.000112+00:00", "soft_events": 458, "soft_median_min": 12.4, "signal1": "on", "by_book": {"draftkings": {"events": 235, "median": 12.8, "censored": 57, "under_5": 61}, "fanduel": {"events": 223, "median": 11.0, "censored": 71, "under_5": 79}, "pinnacle": {"events": 40, "median": 45.0, "censored": 19, "under_5": 3}}}', '2026-11-06 22:00:33.369055')]
+signal1:off []
+nfl_value:decision []
+nfl_value:off []
+last runs [(400, '2026-11-06 22:00:33.306264', 'ok', None), (399, '2026-11-06 21:00:30.424206', 'ok', None), (398, '2026-11-06 20:00:27.995849', 'ok', 'engine 22770: 1 picks (hourly)')]
+$ betdata alerts lag rc 0
+lag study: 398 qualifying changes with a closed 60-minute window; study start 2026-10-23 21:03 UTC
+  draftkings  events 243  median lag  13.0 min  under 5 min  63  censored at 60  59
+  fanduel     events 231  median lag  15.0 min  under 5 min  81  censored at 60  75
+  pinnacle    events  40  median lag  45.0 min  under 5 min   3  censored at 60  19
+  DK+FD pooled: 474 lags, median 13.0 min (rule: < 5 min -> Signal 1 off)
+  decision: on (2026-11-06T22:00)
+ 
