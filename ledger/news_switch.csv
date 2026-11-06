@@ -1,0 +1,2 @@
+key,decided_at,soft_events,soft_median_min,alerts,rule
+lag-decision,2026-11-06T22:00:33.369055+00:00,458,12.4,on,pooled DK+FD median lag >= 5 min: alerts on; else off (logging only)
