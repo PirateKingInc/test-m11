@@ -90,3 +90,25 @@ def test_the_same_bet_on_both_cards_is_marked(tmp_path):
     both = C.on_both(rows)
     assert both == {C.bet_key(7, "points", "Same Guy", "over")}
     assert all(C.both_mark(r, both) for r in rows)
+
+
+def test_the_page_picks_csv_keeps_every_row_with_annotations(tmp_path, monkeypatch):
+    """Regression (2026-11-06): an annotation field (og_excluded, news_status) is not a
+    picks.csv column; the export must skip it, not stop at the first annotated pick."""
+    import csv
+
+    from betdata import ledger as LG
+    from betdata.page.build import _ledger
+
+    out = tmp_path / "ledger"
+    out.mkdir()
+    from tests.test_cards import _ledger as fill
+
+    fill(out)
+    assert LG.annotate(out, NOW) >= 1  # og5 gets og_excluded
+    monkeypatch.setattr(LG, "ledger_dir", lambda: out)
+    site = tmp_path / "site"
+    rows = _ledger(site)
+    assert rows is not None and len(rows) == 5
+    got = list(csv.DictReader((site / "picks.csv").open()))
+    assert sorted(r["pick_id"] for r in got) == ["ng", "og5", "og6", "v1a", "v1b"]

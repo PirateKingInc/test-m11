@@ -736,7 +736,7 @@ def _ledger(out_dir: Path) -> list[dict] | None:
                                                    "stake", "card", "card_label",
                                                    "card_stake", "card_date",
                                                    *RESULT_FIELDS[1:]],
-                               lineterminator="\n")
+                               lineterminator="\n", extrasaction="ignore")  # annotations
             w.writeheader()
             w.writerows(rows)
         return rows

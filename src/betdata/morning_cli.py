@@ -65,9 +65,15 @@ def run_cmd(site: Path = typer.Option(SITE), db: Path = typer.Option(POLLER_DB),
             rebuilt=False)).inserted_primary_key[0]  # fmt: skip
 
     def build():
+        # the page reads "Last updated" from the latest successful run: mark this one done
+        # before building (a failed publish sets it back to failed below), or the page shows
+        # the previous run's time and a false "data is hours old" warning
+        t = datetime.now(UTC) if not at else now
+        with main.begin() as c:
+            c.execute(update(runner_runs).where(runner_runs.c.run_id == run_id).values(
+                status="ok", finished_at=t))  # fmt: skip
         with main.connect() as conn:
-            build_site(conn, settings, entries, active, site, datetime.now(UTC) if not at
-                       else now)  # fmt: skip
+            build_site(conn, settings, entries, active, site, t)
 
     rep = M.run(main, pdb, poller, now, settings=settings, registry=REGISTRY, active=active,
                 build=build)  # fmt: skip
