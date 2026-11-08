@@ -694,3 +694,59 @@ P7605a1bf2f45,13.0,36.0,,DEN 114-102 IND,[],11.5,-0.29,Market disagreed,2026-11-
 P65333fd0eb47,4.0,29.0,,DEN 114-102 IND,[],4.5,-7.53,Market disagreed,2026-11-08T03:00:29+00:00
 Pef6f81829c7c,-12.0,,,DEN 114-102 IND,[],,-1.65,Market disagreed,2026-11-08T03:00:29+00:00
 Pdc3f26889780,12.0,19.0,,DEN 114-102 IND,[],7.5,1.07,Variance,2026-11-08T03:00:29+00:00
+Pa99bd3f440f7,3.0,38.0,,HOU 99-102 PHX,[],3.5,-0.77,Market disagreed,2026-11-08T11:15:30+00:00
+P19c48d1abe70,3.0,,,HOU 99-102 PHX,[],,1.81,Variance,2026-11-08T11:15:30+00:00
+Pd360411dacd7,5.0,33.0,,NYK 109-97 CLE,"[{""player"": ""Jarrett Allen"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Sam Merrill"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,2.8,News after pick,2026-11-08T11:15:30+00:00
+P4eed84765f3c,6.0,31.0,,NYK 109-97 CLE,[],3.5,0.77,Variance,2026-11-08T11:15:30+00:00
+Pa9818a2955b4,6.0,34.0,,NYK 109-97 CLE,[],3.5,-9.78,Market disagreed,2026-11-08T11:15:30+00:00
+P81611a047bc0,3.0,29.0,,NYK 109-97 CLE,"[{""player"": ""Jarrett Allen"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Sam Merrill"", ""from"": ""Available"", ""to"": ""Out""}]",2.5,3.49,News after pick,2026-11-08T11:15:30+00:00
+Pd759e8f0840f,4.0,31.0,,NYK 109-97 CLE,[],2.5,7.28,Variance,2026-11-08T11:15:30+00:00
+Pfaa1c61fa93a,9.0,34.0,,NYK 109-97 CLE,[],6.5,2.63,Variance,2026-11-08T11:15:30+00:00
+P6ad0067d3b63,13.0,34.0,,NYK 109-97 CLE,[],12.5,1.8,Variance,2026-11-08T11:15:30+00:00
+Pe4103cad8842,6.0,30.0,,WAS 75-114 OKC,,4.5,1.45,not enough data,2026-11-08T11:15:30+00:00
+P31e5d2f23b70,3.0,13.0,,WAS 75-114 OKC,,2.5,-2.67,not enough data,2026-11-08T11:15:30+00:00
+Pf09afe7e1366,5.0,28.0,,WAS 75-114 OKC,,2.5,3.85,not enough data,2026-11-08T11:15:30+00:00
+Pe8dc53782588,9.0,29.0,,WAS 75-114 OKC,,5.5,5.96,not enough data,2026-11-08T11:15:30+00:00
+P05500e24d0ca,3.0,31.0,,WAS 75-114 OKC,,2.5,4.6,not enough data,2026-11-08T11:15:30+00:00
+P66d954fcb299,6.0,18.0,,WAS 75-114 OKC,,3.5,7.29,not enough data,2026-11-08T11:15:30+00:00
+Pd612bae063b4,,,,WAS 75-114 OKC,,2.5,,,2026-11-08T11:15:30+00:00
+P12bd68837c4a,4.0,22.0,,WAS 75-114 OKC,,4.5,2.16,not enough data,2026-11-08T11:15:30+00:00
+P29b28a747470,5.0,20.0,,WAS 75-114 OKC,,3.5,9.54,not enough data,2026-11-08T11:15:30+00:00
+P55b3ba056071,7.0,30.0,,WAS 75-114 OKC,,4.5,-1.71,not enough data,2026-11-08T11:15:30+00:00
+P7ff2c00c01f7,6.0,31.0,,WAS 75-114 OKC,,5.5,8.36,not enough data,2026-11-08T11:15:30+00:00
+P6a10e8cf7e82,1.0,39.0,,ORL 119-126 GSW,[],3.5,4.1,Variance,2026-11-08T11:15:30+00:00
+Pe7802fc6ea5e,6.0,36.0,,ORL 119-126 GSW,[],4.5,4.06,Variance,2026-11-08T11:15:30+00:00
+P9528b8cc49dc,,,,ORL 119-126 GSW,"[{""player"": ""Desmond Bane"", ""from"": ""Available"", ""to"": ""Out""}]",2.5,,,2026-11-08T11:15:30+00:00
+Pf4e37fe5e4ef,6.0,38.0,,ORL 119-126 GSW,"[{""player"": ""Desmond Bane"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,-4.62,News after pick,2026-11-08T11:15:30+00:00
+P5e48dce753e5,6.0,36.0,,ORL 119-126 GSW,[],3.5,3.03,Variance,2026-11-08T11:15:30+00:00
+Pe4fde142f7bc,7.0,39.0,,ORL 119-126 GSW,"[{""player"": ""Desmond Bane"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,-14.12,News after pick,2026-11-08T11:15:30+00:00
+P6dd16b7d2c94,,,,ORL 119-126 GSW,"[{""player"": ""Desmond Bane"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,,,2026-11-08T11:15:30+00:00
+P83efc61f39a4,4.0,30.0,,ORL 119-126 GSW,"[{""player"": ""Desmond Bane"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,-14.38,News after pick,2026-11-08T11:15:30+00:00
+P30ae310a99ea,4.0,31.0,,HOU 99-102 PHX,[],4.5,-11.55,Market disagreed,2026-11-08T11:15:30+00:00
+P0616d50337c2,7.0,31.0,,HOU 99-102 PHX,[],2.5,1.75,Variance,2026-11-08T11:15:30+00:00
+P8e6f199e29b7,0.0,13.0,,HOU 99-102 PHX,[],2.5,0.19,Minutes miss,2026-11-08T11:15:30+00:00
+Pd4c3d1b20d85,3.0,31.0,,HOU 99-102 PHX,[],2.5,1.33,Variance,2026-11-08T11:15:30+00:00
+Pb35859dead92,5.0,32.0,,HOU 99-102 PHX,[],6.5,2.77,Variance,2026-11-08T11:15:30+00:00
+Pd9b86fdd1a95,4.0,37.0,,HOU 99-102 PHX,[],3.5,4.67,Variance,2026-11-08T11:15:30+00:00
+Pb47aa99a37cb,2.0,20.0,,HOU 99-102 PHX,[],2.5,0.69,Variance,2026-11-08T11:15:30+00:00
+P094f28f97b7e,9.0,39.0,,HOU 99-102 PHX,[],6.5,0.22,Variance,2026-11-08T11:15:30+00:00
+P49ed03357e78,2.0,39.0,,HOU 99-102 PHX,[],3.5,0.19,Variance,2026-11-08T11:15:30+00:00
+P36873293065a,3.0,20.0,,HOU 99-102 PHX,[],2.5,4.07,Variance,2026-11-08T11:15:30+00:00
+P7c807125458d,7.0,39.0,,HOU 99-102 PHX,[],6.5,0.89,Variance,2026-11-08T11:15:30+00:00
+P4fcdfe165fca,3.0,28.0,,SAS 125-103 POR,,4.5,6.57,not enough data,2026-11-08T11:15:30+00:00
+P50e5838b6b23,2.0,21.0,,SAS 125-103 POR,,3.5,-9.26,not enough data,2026-11-08T11:15:30+00:00
+Pf745b16673d1,0.0,20.0,,SAS 125-103 POR,,4.5,3.74,not enough data,2026-11-08T11:15:30+00:00
+P841f97f18bd4,7.0,20.0,,SAS 125-103 POR,,4.5,0.27,not enough data,2026-11-08T11:15:30+00:00
+P386680d7d645,4.0,21.0,,SAS 125-103 POR,,3.5,1.44,not enough data,2026-11-08T11:15:30+00:00
+P058e2a14a033,0.0,20.0,,SAS 125-103 POR,,3.5,-11.2,not enough data,2026-11-08T11:15:30+00:00
+Pf794b74dd267,7.0,31.0,,BKN 121-124 ATL,[],4.5,12.94,Variance,2026-11-08T11:15:30+00:00
+P8acec9d99801,-39.0,,,WAS 75-114 OKC,,,-1.97,not enough data,2026-11-08T11:15:30+00:00
+P1613c6e8c9d9,1.0,24.0,,SAS 125-103 POR,,2.5,27.65,not enough data,2026-11-08T11:15:30+00:00
+P2121ecf177a2,1.0,25.0,,BKN 121-124 ATL,[],2.5,7.48,Variance,2026-11-08T11:15:30+00:00
+Pca47b81ed169,2.0,16.0,,BKN 121-124 ATL,[],4.5,5.8,Variance,2026-11-08T11:15:30+00:00
+Pd125be736478,-12.0,,,NYK 109-97 CLE,[],,2.52,Variance,2026-11-08T11:15:30+00:00
+Pcbf4ce74b5c7,7.0,,,ORL 119-126 GSW,"[{""player"": ""Desmond Bane"", ""from"": ""Available"", ""to"": ""Out""}]",-7.5,6.4,News after pick,2026-11-08T11:15:30+00:00
+P2a7d6ab968b8,7.0,,,ORL 119-126 GSW,"[{""player"": ""Desmond Bane"", ""from"": ""Available"", ""to"": ""Out""}]",,6.86,News after pick,2026-11-08T11:15:30+00:00
+P2b6217bd56df,4.0,24.0,,NYK 109-97 CLE,[],2.5,-2.74,Market disagreed,2026-11-08T11:15:30+00:00
+Pf0fdb2d14a67,1.0,19.0,,NYK 109-97 CLE,[],1.5,1.14,Variance,2026-11-08T11:15:30+00:00
+P1e3d8ffdfae0,0.0,24.0,,NYK 109-97 CLE,[],1.5,0.0,Variance,2026-11-08T11:15:30+00:00
