@@ -763,3 +763,56 @@ Pf0a80c8adcaa,5.0,33.0,,PHI 127-121 CHI,"[{""player"": ""Joel Embiid"", ""from""
 P000f80718528,4.0,16.0,,PHI 127-121 CHI,"[{""player"": ""Joel Embiid"", ""from"": ""Probable"", ""to"": ""Available""}]",2.5,-1.92,News after pick,2026-11-09T01:00:31+00:00
 P424a6d4e235f,-6.0,,,PHI 127-121 CHI,"[{""player"": ""Joel Embiid"", ""from"": ""Probable"", ""to"": ""Available""}, {""player"": ""Norman Powell"", ""from"": ""Available"", ""to"": ""Out""}]",,-0.06,News after pick,2026-11-09T01:00:31+00:00
 Pfd1a915582e1,18.0,,,GB 45-27 NE,,3.5,0.45,not enough data,2026-11-09T03:00:32+00:00
+P41f7ac0aac37,-15.0,,,UTA 100-115 MIN,"[{""player"": ""Keyonte George"", ""from"": ""Available"", ""to"": ""Questionable""}]",,-1.2,News after pick,2026-11-09T11:15:28+00:00
+Pb1c5e4415319,8.0,38.0,,LAL 121-116 DET,[],9.5,-0.12,Market disagreed,2026-11-09T11:15:28+00:00
+P5db816dad6a0,4.0,32.0,,LAL 121-116 DET,[],3.5,5.42,Minutes miss,2026-11-09T11:15:28+00:00
+P494b9ae6a120,0.0,20.0,,LAL 121-116 DET,[],2.5,-0.15,Market disagreed,2026-11-09T11:15:28+00:00
+Ped1973e137fe,3.0,27.0,,LAL 121-116 DET,[],2.5,3.81,Variance,2026-11-09T11:15:28+00:00
+Pf6c7770d61d4,4.0,37.0,,LAL 121-116 DET,"[{""player"": ""Luka Doncic"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,-11.99,News after pick,2026-11-09T11:15:28+00:00
+P362a7f422999,5.0,37.0,,LAL 121-116 DET,"[{""player"": ""Luka Doncic"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,-9.3,News after pick,2026-11-09T11:15:28+00:00
+P2f059bcfe429,,,,LAL 121-116 DET,"[{""player"": ""Luka Doncic"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,,,2026-11-09T11:15:28+00:00
+P80f977ca2d6e,4.0,29.0,,LAL 121-116 DET,"[{""player"": ""Luka Doncic"", ""from"": ""Questionable"", ""to"": ""Out""}]",1.5,6.91,News after pick,2026-11-09T11:15:28+00:00
+P9058d1629512,10.0,20.0,,LAL 121-116 DET,[],7.5,2.41,Variance,2026-11-09T11:15:28+00:00
+P424e199a5743,5.0,30.0,,UTA 100-115 MIN,"[{""player"": ""Keyonte George"", ""from"": ""Available"", ""to"": ""Questionable""}]",3.5,5.62,News after pick,2026-11-09T11:15:28+00:00
+P0b09d8a8c232,0.0,25.0,,UTA 100-115 MIN,[],5.5,6.09,Variance,2026-11-09T11:15:28+00:00
+Pcbe11c402e78,1.0,30.0,,UTA 100-115 MIN,[],4.5,2.17,Variance,2026-11-09T11:15:28+00:00
+P1ffcf37c4d04,3.0,33.0,,UTA 100-115 MIN,[],2.5,0.34,Variance,2026-11-09T11:15:28+00:00
+Pf6faa2a2d556,4.0,35.0,,UTA 100-115 MIN,"[{""player"": ""Keyonte George"", ""from"": ""Available"", ""to"": ""Questionable""}]",4.5,0.28,News after pick,2026-11-09T11:15:28+00:00
+P71ce6dae884d,0.0,25.0,,UTA 100-115 MIN,[],2.5,6.46,Variance,2026-11-09T11:15:28+00:00
+Pd253cc2a49fb,6.0,29.0,,UTA 100-115 MIN,"[{""player"": ""Keyonte George"", ""from"": ""Available"", ""to"": ""Questionable""}]",6.5,-3.86,News after pick,2026-11-09T11:15:28+00:00
+P3ba5a1cc9427,-20.0,,,BOS 117-97 MIL,[],,-2.65,Market disagreed,2026-11-09T11:15:33+00:00
+P90740b3ea5c8,3.0,34.0,,MIA 114-108 SAC,[],6.5,-5.41,Market disagreed,2026-11-09T11:15:33+00:00
+P7360c535c231,14.0,34.0,,MIA 114-108 SAC,[],12.5,-1.97,Market disagreed,2026-11-09T11:15:33+00:00
+P897d5c31fcb7,-6.0,,,MIA 114-108 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Available"", ""to"": ""Out""}]",,-7.12,News after pick,2026-11-09T11:15:33+00:00
+Pc8086cccc8ed,3.0,28.0,,BOS 117-97 MIL,[],4.5,0.48,Variance,2026-11-09T11:15:33+00:00
+P2ea8ec43cc80,5.0,29.0,,BOS 117-97 MIL,[],2.5,1.86,Variance,2026-11-09T11:15:33+00:00
+Pbb1d61a0a395,6.0,20.0,,BOS 117-97 MIL,[],3.5,-1.18,Market disagreed,2026-11-09T11:15:33+00:00
+P3460f6e462e1,5.0,29.0,,BOS 117-97 MIL,[],2.5,2.82,Variance,2026-11-09T11:15:33+00:00
+P409919178701,2.0,27.0,,BOS 117-97 MIL,[],4.5,1.15,Variance,2026-11-09T11:15:33+00:00
+P0e36e46f8774,2.0,23.0,,BOS 117-97 MIL,[],3.5,-0.11,Market disagreed,2026-11-09T11:15:33+00:00
+Pff7bd1ccd256,0.0,32.0,,NOP 123-139 LAC,[],2.5,3.91,Variance,2026-11-09T11:15:33+00:00
+Paf8f4d39bf7f,4.0,19.0,,NOP 123-139 LAC,[],4.5,-6.45,Market disagreed,2026-11-09T11:15:33+00:00
+Pbc06acf4e2b2,5.0,29.0,,NOP 123-139 LAC,[],3.5,3.26,Variance,2026-11-09T11:15:33+00:00
+P3721ee2c5a95,7.0,30.0,,NOP 123-139 LAC,[],4.5,0.43,Variance,2026-11-09T11:15:33+00:00
+P119db65c988c,4.0,31.0,,NOP 123-139 LAC,[],5.5,2.74,Variance,2026-11-09T11:15:33+00:00
+P87166d227b86,6.0,29.0,,NOP 123-139 LAC,[],3.5,0.1,Variance,2026-11-09T11:15:33+00:00
+Pee012ad991e4,4.0,19.0,,NOP 123-139 LAC,[],4.5,1.53,Variance,2026-11-09T11:15:33+00:00
+Pa508485c2a91,7.0,26.0,,NOP 123-139 LAC,[],5.5,-11.51,Market disagreed,2026-11-09T11:15:33+00:00
+P5e729bc7407f,11.0,40.0,,MIA 114-108 SAC,[],7.5,-6.11,Market disagreed,2026-11-09T11:15:33+00:00
+P3680697e9b68,4.0,34.0,,MIA 114-108 SAC,[],3.5,1.62,Variance,2026-11-09T11:15:33+00:00
+P79a6965b8e43,,,,MIA 114-108 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",5.5,3.41,,2026-11-09T11:15:33+00:00
+Pe0b30be00399,3.0,21.0,,MIA 114-108 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",3.5,10.27,News after pick,2026-11-09T11:15:33+00:00
+Pbf75b9b04085,8.0,34.0,,MIA 114-108 SAC,[],9.5,-1.2,Market disagreed,2026-11-09T11:15:33+00:00
+Paf50363f246d,5.0,39.0,,MIA 114-108 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",3.5,-17.88,News after pick,2026-11-09T11:15:33+00:00
+Pf30db2d636ec,12.0,28.0,,BKN 93-130 DAL,[],6.5,-4.0,Market disagreed,2026-11-09T11:15:33+00:00
+P3f010fbba223,2.0,15.0,,BKN 93-130 DAL,[],3.5,1.62,Minutes miss,2026-11-09T11:15:33+00:00
+Pc77c17f2c438,2.0,19.0,,BKN 93-130 DAL,[],1.5,,not enough data,2026-11-09T11:15:33+00:00
+P356286171cd7,1.0,21.0,,BKN 93-130 DAL,[],2.5,-0.59,Market disagreed,2026-11-09T11:15:33+00:00
+P7fb94f7d50ab,2.0,19.0,,BKN 93-130 DAL,[],2.5,12.77,Variance,2026-11-09T11:15:33+00:00
+P339ac8fe07e6,3.0,29.0,,BKN 93-130 DAL,[],3.5,2.49,Variance,2026-11-09T11:15:33+00:00
+P661431390cbe,1.0,15.0,,BKN 93-130 DAL,[],3.5,4.09,Minutes miss,2026-11-09T11:15:33+00:00
+Pdba025741697,-37.0,,,BKN 93-130 DAL,[],,5.45,Variance,2026-11-09T11:15:33+00:00
+Pfe9ee8e9bc5d,2.0,19.0,,BKN 93-130 DAL,[],1.5,,not enough data,2026-11-09T11:15:33+00:00
+P8cd26925c129,3.0,21.0,,NOP 123-139 LAC,[],2.5,-4.29,Market disagreed,2026-11-09T11:15:33+00:00
+P1abb64ffbe7d,6.0,,,MIA 114-108 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Available"", ""to"": ""Out""}]",-11.5,6.49,News after pick,2026-11-09T11:15:33+00:00
+Pf9cadef175cd,0.0,20.0,,NOP 123-139 LAC,[],2.5,1.25,Variance,2026-11-09T11:15:33+00:00
