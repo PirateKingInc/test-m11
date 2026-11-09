@@ -1,0 +1,756 @@
+{
+ "1a_league_rebounding": {
+  "2015": {
+   "team_games": 2632,
+   "reb_per_team_game": 43.71,
+   "reb_per_missed_shot": 0.8946,
+   "oreb_share": 0.2384,
+   "fga_per_team_game": 84.48
+  },
+  "2016": {
+   "team_games": 2616,
+   "reb_per_team_game": 43.39,
+   "reb_per_missed_shot": 0.893,
+   "oreb_share": 0.2329,
+   "fga_per_team_game": 85.28
+  },
+  "2017": {
+   "team_games": 2622,
+   "reb_per_team_game": 43.47,
+   "reb_per_missed_shot": 0.8937,
+   "oreb_share": 0.2227,
+   "fga_per_team_game": 85.95
+  },
+  "2018": {
+   "team_games": 2622,
+   "reb_per_team_game": 45.19,
+   "reb_per_missed_shot": 0.8935,
+   "oreb_share": 0.2288,
+   "fga_per_team_game": 89.14
+  },
+  "2019": {
+   "team_games": 1954,
+   "reb_per_team_game": 44.83,
+   "reb_per_missed_shot": 0.8917,
+   "oreb_share": 0.2255,
+   "fga_per_team_game": 88.8
+  },
+  "2020": {
+   "team_games": 2674,
+   "reb_per_team_game": 44.01,
+   "reb_per_missed_shot": 0.8968,
+   "oreb_share": 0.2208,
+   "fga_per_team_game": 87.75
+  },
+  "2021": {
+   "team_games": 2646,
+   "reb_per_team_game": 44.29,
+   "reb_per_missed_shot": 0.8944,
+   "oreb_share": 0.2319,
+   "fga_per_team_game": 87.8
+  },
+  "2022": {
+   "team_games": 2640,
+   "reb_per_team_game": 43.42,
+   "reb_per_missed_shot": 0.8931,
+   "oreb_share": 0.2402,
+   "fga_per_team_game": 88.23
+  },
+  "2023": {
+   "team_games": 2638,
+   "reb_per_team_game": 43.44,
+   "reb_per_missed_shot": 0.8917,
+   "oreb_share": 0.2423,
+   "fga_per_team_game": 88.62
+  },
+  "2024": {
+   "team_games": 2642,
+   "reb_per_team_game": 44.02,
+   "reb_per_missed_shot": 0.8873,
+   "oreb_share": 0.2524,
+   "fga_per_team_game": 89.0
+  },
+  "2025": {
+   "team_games": 2644,
+   "reb_per_team_game": 43.67,
+   "reb_per_missed_shot": 0.8847,
+   "oreb_share": 0.2602,
+   "fga_per_team_game": 88.82
+  },
+  "2026": {
+   "team_games": 292,
+   "reb_per_team_game": 44.15,
+   "reb_per_missed_shot": 0.878,
+   "oreb_share": 0.275,
+   "fga_per_team_game": 88.1
+  }
+ },
+ "1b_live_projection_error": {
+  "rebounds": {
+   "big/bench": {
+    "n": 217,
+    "mean_err": 0.28,
+    "mae": 2.66,
+    "minutes_err": -0.92
+   },
+   "big/starter": {
+    "n": 868,
+    "mean_err": 0.59,
+    "mae": 2.83,
+    "minutes_err": 0.44
+   },
+   "guard/bench": {
+    "n": 219,
+    "mean_err": -0.54,
+    "mae": 1.57,
+    "minutes_err": -2.33
+   },
+   "guard/starter": {
+    "n": 1125,
+    "mean_err": 0.07,
+    "mae": 1.82,
+    "minutes_err": 0.47
+   },
+   "wing/bench": {
+    "n": 674,
+    "mean_err": -0.03,
+    "mae": 1.76,
+    "minutes_err": 0.16
+   },
+   "wing/starter": {
+    "n": 1714,
+    "mean_err": -0.08,
+    "mae": 2.03,
+    "minutes_err": 0.01
+   }
+  },
+  "assists": {
+   "big/bench": {
+    "n": 48,
+    "mean_err": 0.05,
+    "mae": 1.73,
+    "minutes_err": -0.87
+   },
+   "big/starter": {
+    "n": 599,
+    "mean_err": -0.05,
+    "mae": 1.65,
+    "minutes_err": 0.25
+   },
+   "guard/bench": {
+    "n": 278,
+    "mean_err": -0.18,
+    "mae": 1.86,
+    "minutes_err": -2.48
+   },
+   "guard/starter": {
+    "n": 1129,
+    "mean_err": 0.19,
+    "mae": 2.19,
+    "minutes_err": 0.46
+   },
+   "wing/bench": {
+    "n": 296,
+    "mean_err": -0.27,
+    "mae": 1.19,
+    "minutes_err": 0.87
+   },
+   "wing/starter": {
+    "n": 1305,
+    "mean_err": -0.22,
+    "mae": 1.48,
+    "minutes_err": 0.07
+   }
+  },
+  "points": {
+   "big/bench": {
+    "n": 222,
+    "mean_err": -1.22,
+    "mae": 4.23,
+    "minutes_err": -1.01
+   },
+   "big/starter": {
+    "n": 867,
+    "mean_err": -0.43,
+    "mae": 5.21,
+    "minutes_err": 0.43
+   },
+   "guard/bench": {
+    "n": 291,
+    "mean_err": -1.82,
+    "mae": 4.88,
+    "minutes_err": -2.52
+   },
+   "guard/starter": {
+    "n": 1133,
+    "mean_err": -0.07,
+    "mae": 5.8,
+    "minutes_err": 0.46
+   },
+   "wing/bench": {
+    "n": 872,
+    "mean_err": -0.8,
+    "mae": 5.12,
+    "minutes_err": 0.17
+   },
+   "wing/starter": {
+    "n": 1761,
+    "mean_err": -0.95,
+    "mae": 5.29,
+    "minutes_err": 0.05
+   }
+  }
+ },
+ "1c_m16_audit_rebounds": {
+  "bets": {
+   "bets": 1991,
+   "w": 1011,
+   "l": 980,
+   "p": 0,
+   "win_rate": 0.5078,
+   "win_rate_95": [
+    0.4858,
+    0.5297
+   ],
+   "roi": 0.1057
+  },
+  "by_season": {
+   "2023": {
+    "bets": 998,
+    "w": 534,
+    "l": 464,
+    "p": 0,
+    "win_rate": 0.5351,
+    "win_rate_95": [
+     0.504,
+     0.5658
+    ],
+    "roi": 0.1345
+   },
+   "2024": {
+    "bets": 759,
+    "w": 351,
+    "l": 408,
+    "p": 0,
+    "win_rate": 0.4625,
+    "win_rate_95": [
+     0.4273,
+     0.498
+    ],
+    "roi": 0.0556
+   },
+   "2025": {
+    "bets": 234,
+    "w": 126,
+    "l": 108,
+    "p": 0,
+    "win_rate": 0.5385,
+    "win_rate_95": [
+     0.4745,
+     0.6012
+    ],
+    "roi": 0.1451
+   }
+  }
+ },
+ "1b_past_projection_error": {
+  "rebounds": {
+   "2022 big/bench": {
+    "n": 1514,
+    "mean_err": 0.19,
+    "mae": 2.61
+   },
+   "2022 big/starter": {
+    "n": 2474,
+    "mean_err": 0.21,
+    "mae": 2.99
+   },
+   "2022 guard/bench": {
+    "n": 1106,
+    "mean_err": 0.02,
+    "mae": 1.62
+   },
+   "2022 guard/starter": {
+    "n": 3101,
+    "mean_err": 0.05,
+    "mae": 1.87
+   },
+   "2022 wing/bench": {
+    "n": 4510,
+    "mean_err": -0.04,
+    "mae": 1.71
+   },
+   "2022 wing/starter": {
+    "n": 6036,
+    "mean_err": 0.06,
+    "mae": 1.94
+   },
+   "2023 big/bench": {
+    "n": 1410,
+    "mean_err": 0.13,
+    "mae": 2.54
+   },
+   "2023 big/starter": {
+    "n": 2665,
+    "mean_err": 0.32,
+    "mae": 2.99
+   },
+   "2023 guard/bench": {
+    "n": 1381,
+    "mean_err": -0.1,
+    "mae": 1.59
+   },
+   "2023 guard/starter": {
+    "n": 3941,
+    "mean_err": 0.05,
+    "mae": 1.83
+   },
+   "2023 wing/bench": {
+    "n": 5116,
+    "mean_err": -0.03,
+    "mae": 1.7
+   },
+   "2023 wing/starter": {
+    "n": 5333,
+    "mean_err": 0.05,
+    "mae": 1.92
+   },
+   "2024 big/bench": {
+    "n": 663,
+    "mean_err": -0.01,
+    "mae": 2.44
+   },
+   "2024 big/starter": {
+    "n": 1327,
+    "mean_err": 0.16,
+    "mae": 2.97
+   },
+   "2024 guard/bench": {
+    "n": 584,
+    "mean_err": -0.04,
+    "mae": 1.65
+   },
+   "2024 guard/starter": {
+    "n": 1840,
+    "mean_err": 0.05,
+    "mae": 1.84
+   },
+   "2024 wing/bench": {
+    "n": 2943,
+    "mean_err": -0.09,
+    "mae": 1.67
+   },
+   "2024 wing/starter": {
+    "n": 2882,
+    "mean_err": 0.03,
+    "mae": 2.02
+   },
+   "2025 big/bench": {
+    "n": 345,
+    "mean_err": -0.19,
+    "mae": 2.55
+   },
+   "2025 big/starter": {
+    "n": 703,
+    "mean_err": 0.2,
+    "mae": 2.9
+   },
+   "2025 guard/bench": {
+    "n": 240,
+    "mean_err": 0.12,
+    "mae": 1.84
+   },
+   "2025 guard/starter": {
+    "n": 895,
+    "mean_err": 0.13,
+    "mae": 2.06
+   },
+   "2025 wing/bench": {
+    "n": 970,
+    "mean_err": -0.19,
+    "mae": 1.82
+   },
+   "2025 wing/starter": {
+    "n": 1895,
+    "mean_err": 0.0,
+    "mae": 1.91
+   }
+  },
+  "assists": {
+   "2022 big/bench": {
+    "n": 1245,
+    "mean_err": -0.01,
+    "mae": 1.0
+   },
+   "2022 big/starter": {
+    "n": 2364,
+    "mean_err": 0.03,
+    "mae": 1.44
+   },
+   "2022 guard/bench": {
+    "n": 1120,
+    "mean_err": 0.07,
+    "mae": 1.94
+   },
+   "2022 guard/starter": {
+    "n": 3104,
+    "mean_err": 0.18,
+    "mae": 2.18
+   },
+   "2022 wing/bench": {
+    "n": 4020,
+    "mean_err": -0.04,
+    "mae": 1.24
+   },
+   "2022 wing/starter": {
+    "n": 5720,
+    "mean_err": -0.04,
+    "mae": 1.36
+   },
+   "2023 big/bench": {
+    "n": 1210,
+    "mean_err": -0.0,
+    "mae": 1.06
+   },
+   "2023 big/starter": {
+    "n": 2564,
+    "mean_err": 0.08,
+    "mae": 1.52
+   },
+   "2023 guard/bench": {
+    "n": 1395,
+    "mean_err": -0.05,
+    "mae": 1.98
+   },
+   "2023 guard/starter": {
+    "n": 3938,
+    "mean_err": 0.16,
+    "mae": 2.12
+   },
+   "2023 wing/bench": {
+    "n": 4701,
+    "mean_err": -0.05,
+    "mae": 1.22
+   },
+   "2023 wing/starter": {
+    "n": 5074,
+    "mean_err": 0.04,
+    "mae": 1.35
+   },
+   "2024 big/bench": {
+    "n": 594,
+    "mean_err": -0.09,
+    "mae": 1.06
+   },
+   "2024 big/starter": {
+    "n": 1214,
+    "mean_err": -0.0,
+    "mae": 1.52
+   },
+   "2024 guard/bench": {
+    "n": 576,
+    "mean_err": -0.06,
+    "mae": 2.03
+   },
+   "2024 guard/starter": {
+    "n": 1782,
+    "mean_err": -0.08,
+    "mae": 2.1
+   },
+   "2024 wing/bench": {
+    "n": 2664,
+    "mean_err": -0.05,
+    "mae": 1.2
+   },
+   "2024 wing/starter": {
+    "n": 2705,
+    "mean_err": -0.05,
+    "mae": 1.42
+   },
+   "2025 big/bench": {
+    "n": 71,
+    "mean_err": -0.17,
+    "mae": 0.96
+   },
+   "2025 big/starter": {
+    "n": 548,
+    "mean_err": 0.11,
+    "mae": 1.67
+   },
+   "2025 guard/bench": {
+    "n": 284,
+    "mean_err": 0.15,
+    "mae": 1.99
+   },
+   "2025 guard/starter": {
+    "n": 911,
+    "mean_err": 0.2,
+    "mae": 2.17
+   },
+   "2025 wing/bench": {
+    "n": 533,
+    "mean_err": -0.27,
+    "mae": 1.39
+   },
+   "2025 wing/starter": {
+    "n": 1406,
+    "mean_err": -0.14,
+    "mae": 1.45
+   }
+  }
+ },
+ "4_past_home_away_unders": {
+  "2022 away": {
+   "w": 755,
+   "l": 739,
+   "units": 123.2,
+   "roi": 0.082
+  },
+  "2022 home": {
+   "w": 775,
+   "l": 932,
+   "units": -45.8,
+   "roi": -0.027
+  },
+  "2023 away": {
+   "w": 513,
+   "l": 426,
+   "units": 150.4,
+   "roi": 0.16
+  },
+  "2023 home": {
+   "w": 537,
+   "l": 505,
+   "units": 89.5,
+   "roi": 0.086
+  },
+  "2024 away": {
+   "w": 259,
+   "l": 289,
+   "units": 35.6,
+   "roi": 0.065
+  },
+  "2024 home": {
+   "w": 322,
+   "l": 353,
+   "units": 46.1,
+   "roi": 0.068
+  },
+  "2025 away": {
+   "w": 109,
+   "l": 120,
+   "units": 4.2,
+   "roi": 0.018
+  },
+  "2025 home": {
+   "w": 111,
+   "l": 124,
+   "units": 3.6,
+   "roi": 0.015
+  }
+ },
+ "6_rules_on_past_seasons": {
+  "2022 filtered: rebounds": {
+   "w": 869,
+   "l": 922,
+   "units": 87.9,
+   "roi": 0.049
+  },
+  "2022 filtered: teammates out (ex post)": {
+   "w": 374,
+   "l": 441,
+   "units": -3.1,
+   "roi": -0.004
+  },
+  "2022 filtered: under 5.5+ assists": {
+   "w": 192,
+   "l": 185,
+   "units": 3.1,
+   "roi": 0.008
+  },
+  "2022 kept": {
+   "w": 489,
+   "l": 696,
+   "units": -68.4,
+   "roi": -0.058
+  },
+  "2023 filtered: rebounds": {
+   "w": 533,
+   "l": 461,
+   "units": 135.3,
+   "roi": 0.136
+  },
+  "2023 filtered: teammates out (ex post)": {
+   "w": 240,
+   "l": 307,
+   "units": -18.1,
+   "roi": -0.033
+  },
+  "2023 filtered: under 5.5+ assists": {
+   "w": 204,
+   "l": 89,
+   "units": 101.4,
+   "roi": 0.346
+  },
+  "2023 kept": {
+   "w": 405,
+   "l": 507,
+   "units": 29.2,
+   "roi": 0.032
+  },
+  "2024 filtered: rebounds": {
+   "w": 349,
+   "l": 401,
+   "units": 48.3,
+   "roi": 0.064
+  },
+  "2024 filtered: teammates out (ex post)": {
+   "w": 137,
+   "l": 166,
+   "units": -2.3,
+   "roi": -0.008
+  },
+  "2024 filtered: under 5.5+ assists": {
+   "w": 42,
+   "l": 42,
+   "units": 3.8,
+   "roi": 0.045
+  },
+  "2024 kept": {
+   "w": 227,
+   "l": 271,
+   "units": 29.2,
+   "roi": 0.059
+  },
+  "2025 filtered: rebounds": {
+   "w": 123,
+   "l": 110,
+   "units": 28.9,
+   "roi": 0.124
+  },
+  "2025 filtered: teammates out (ex post)": {
+   "w": 48,
+   "l": 60,
+   "units": -1.8,
+   "roi": -0.016
+  },
+  "2025 filtered: under 5.5+ assists": {
+   "w": 22,
+   "l": 25,
+   "units": -4.6,
+   "roi": -0.098
+  },
+  "2025 kept": {
+   "w": 113,
+   "l": 116,
+   "units": 17.9,
+   "roi": 0.078
+  }
+ },
+ "6_rules_on_past_seasons_all": {
+  "filtered: rebounds": {
+   "w": 1874,
+   "l": 1894,
+   "units": 300.4,
+   "roi": 0.08
+  },
+  "filtered: teammates out (ex post)": {
+   "w": 799,
+   "l": 974,
+   "units": -25.2,
+   "roi": -0.014
+  },
+  "filtered: under 5.5+ assists": {
+   "w": 460,
+   "l": 341,
+   "units": 103.6,
+   "roi": 0.129
+  },
+  "kept": {
+   "w": 1234,
+   "l": 1590,
+   "units": 8.0,
+   "roi": 0.003
+  }
+ },
+ "6_before_rules": {
+  "2022": {
+   "w": 1924,
+   "l": 2244,
+   "units": 19.4,
+   "roi": 0.005
+  },
+  "2023": {
+   "w": 1382,
+   "l": 1364,
+   "units": 247.9,
+   "roi": 0.09
+  },
+  "2024": {
+   "w": 755,
+   "l": 880,
+   "units": 79.0,
+   "roi": 0.048
+  },
+  "2025": {
+   "w": 306,
+   "l": 311,
+   "units": 40.4,
+   "roi": 0.065
+  }
+ },
+ "3_primary_ballhandlers_assists": {
+  "2022 others": {
+   "n": 15944,
+   "mean_err": -0.0,
+   "mae": 1.41,
+   "over_rate": 0.485
+  },
+  "2022 leader": {
+   "n": 1629,
+   "mean_err": 0.23,
+   "mae": 2.35,
+   "over_rate": 0.522
+  },
+  "2023 others": {
+   "n": 17395,
+   "mean_err": 0.02,
+   "mae": 1.47,
+   "over_rate": 0.489
+  },
+  "2023 leader": {
+   "n": 1487,
+   "mean_err": 0.27,
+   "mae": 2.22,
+   "over_rate": 0.502
+  },
+  "2024 others": {
+   "n": 8806,
+   "mean_err": -0.06,
+   "mae": 1.45,
+   "over_rate": 0.49
+  },
+  "2024 leader": {
+   "n": 729,
+   "mean_err": 0.08,
+   "mae": 2.31,
+   "over_rate": 0.483
+  },
+  "2025 others": {
+   "n": 3377,
+   "mean_err": -0.02,
+   "mae": 1.61,
+   "over_rate": 0.469
+  },
+  "2025 leader": {
+   "n": 376,
+   "mean_err": -0.02,
+   "mae": 2.33,
+   "over_rate": 0.489
+  }
+ },
+ "sources": {
+  "live_and_league": "GitHub runner, restored hourly state, 2026-11-09 (probe-env run 42704500680)",
+  "backtest": "props backtest (opening lines 2022-23 to 2025-26; nbap15 fitted on 2015-2022, so 2022 is in-sample) on the M20 working database copy of 2026-11-03"
+ }
+}

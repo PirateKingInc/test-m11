@@ -3000,3 +3000,14 @@ parlay and news alerts (`betdata/eligibility.py`).
   picks; dropping it is recommended if the picks it removed would have been profitable
   (positive units at a flat 1 unit). The owner decides.
 
+## Rules v2 diagnostics (reporting only; `reports/nba/rules_v2_diagnostics.md`)
+
+`betdata diag rules-v2` (ledger half anywhere; `--db` on a runner for the database half). The
+report covers rebounds (league rates, projection error by player type, the M16 audit),
+role expansion, primary ballhandlers, home vs away unders, Next Gen by market and size of
+disagreement, and rules a-c replayed on the stored-opening-line seasons. Headline from the first
+run (2026-11-09): on 2022-23 to 2025-26 opening lines, rules (a) and (b) would have removed
+profitable bets (rebounds +300u, ROI +8%; assist unders at 5.5+ +104u, ROI +13%) and only (c)
+removed losing ones (-25u) — a caution on rules chosen from 2026 data. Nothing in it changed a
+rule or a model; the owner decides.
+
