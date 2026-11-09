@@ -160,7 +160,7 @@ def decide(p, m, sport: str, day: date, now: datetime, first: datetime, signals=
         if card["source"] is None:
             del card["source"]
         return card
-    return choose(p, sport, day, now, signals)
+    return choose(p, sport, day, now, signals, m)
 
 
 def card_note(card: dict) -> str:
@@ -239,13 +239,20 @@ def day_picks(p, sport: str, day: date, signals=None) -> list[SimpleNamespace]:
         .order_by(alerts.c.created_at, alerts.c.alert_id))]  # fmt: skip
 
 
-def choose(p, sport: str, day: date, now: datetime, signals=None) -> dict:
-    """The card at `now` (pure on the poller database): top SIZE live picks by EV."""
+def choose(p, sport: str, day: date, now: datetime, signals=None, m=None) -> dict:
+    """The card at `now` (pure on the poller database): top SIZE live picks by EV among the
+    eligible ones (rules v2 from Nov 10, betdata/eligibility.py; `m`: the main database, for
+    the teammates-out rule)."""
+    from betdata import eligibility as EL
     from betdata.alerts.grade import utc
 
-    pool = []
+    pool, filtered = [], {}
     for a in day_picks(p, sport, day, signals):
         if utc(a.created_at) > now or a.tip is None or a.tip <= now:
+            continue
+        why = EL.alert_reason(m, a)  # rules v2: what is eligible for each card
+        if why is not None:
+            filtered[a.dedup_key] = why
             continue
         x = ev(a)
         if x is None or available(p, a, now) is not True:
@@ -266,6 +273,8 @@ def choose(p, sport: str, day: date, now: datetime, signals=None) -> dict:
                       "pinnacle_sides": lab.get("pinnacle_sides")})  # fmt: skip
     out = {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
            "picks": picks, "live": len(pool)}
+    if filtered:
+        out["filtered"] = filtered
     if signals is not None:
         out["source"] = SHADOW
     elif engine_day(sport, day):
@@ -339,7 +348,7 @@ def run(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> list[dict]
                     if card is None:  # no lines for any of today's games yet: wait
                         continue
                 else:  # NFL (and Card v1 after a revert): nothing Live yet -> the next poll
-                    card = choose(p, sport, day, now)
+                    card = choose(p, sport, day, now, None, m)
                     if not card["picks"]:
                         continue
                 set_state(p, key(sport, day), card, now)

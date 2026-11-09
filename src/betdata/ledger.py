@@ -319,6 +319,16 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         review.sync(p, m, out, now)
     except Exception as e:  # noqa: BLE001 - the review never stops the ledger
         log.warning("review sync failed: %s", e)
+    try:  # rules v2: each removed candidate's reason, once (owner 2026-11-09, eligibility.py)
+        filter_rows(p, m, out, now)
+    except Exception as e:  # noqa: BLE001 - the filter log never stops the ledger
+        log.warning("filter reasons failed: %s", e)
+    try:  # the parlay's calibration, refit on Mondays (owner 2026-11-09, calibration.py)
+        from betdata.calibration import maybe_refit
+
+        maybe_refit(out, now)
+    except Exception as e:  # noqa: BLE001
+        log.warning("calibration refit failed: %s", e)
     try:  # the Next Gen parlay: chosen once, graded once (owner 2026-11-06, betdata/parlay)
         from betdata.parlay import sync as parlay_sync
 
@@ -421,6 +431,35 @@ def card_days(p: Connection, out: Path) -> int:
                      "selected_at": c.get("selected_at", ""),
                      "picks": str(len(c.get("picks", [])))})  # fmt: skip
     return append_rows(out / "card_days.csv", CARD_DAY_FIELDS, rows, key="key")
+
+
+def filter_rows(p: Connection, m: Connection | None, out: Path, now: datetime) -> int:
+    """Rules v2 (betdata/eligibility.py): every NBA card candidate (engine, OG's F and C-NBA,
+    news alerts) for games from Nov 10 that a rule removes gets one annotation `filter` with
+    its reason; it is still graded like every pick."""
+    from betdata import eligibility as EL
+    from betdata.alerts.db import alerts
+
+    if "alerts" not in _tables(p):
+        return 0
+    from betdata.alerts.grade import utc
+
+    rows = []
+    for a in p.execute(select(alerts).where(
+            alerts.c.sport == "nba",
+            alerts.c.signal.in_((*EL.OG_SIGNALS, *EL.NEXTGEN_SIGNALS)))):  # fmt: skip
+        ns = SimpleNamespace(**dict(a._mapping))
+        ns.tip = None if ns.tip is None else utc(ns.tip)
+        if not EL.applies(ns.tip):
+            continue
+        why = EL.alert_reason(m, ns)
+        if why is None:
+            continue
+        pid = pick_id(a.dedup_key)
+        rows.append({"key": f"{pid}:filter", "pick_id": pid, "field": "filter", "value": why,
+                     "noted_at": _iso(now), "note": "rules v2 (owner 2026-11-09): not eligible "
+                     "for the cards, parlay or news alerts; still graded"})  # fmt: skip
+    return append_rows(out / "annotations.csv", ANNOTATION_FIELDS, rows, key="key")
 
 
 def annotate(out: Path, now: datetime) -> int:

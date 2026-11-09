@@ -94,12 +94,12 @@ def _store(p, key, fair, pm, price, gate_details, signal="engine", player="P"):
         d = {"edge": 0.2, "edge_source": "news"}
     p.execute(insert(alerts).values(
         signal=signal, sport="nba", game_id=7, game_label="NYK @ BOS", tip=TIP,
-        market="points", player_name=player, side="over", line=20.5, price=price,
+        market="assists", player_name=player, side="over", line=4.5, price=price,
         book="draftkings", fair_prob=fair, book_prob=pm, reason="r", dedup_key=key,
         created_at=NOW - timedelta(hours=8), quiet=True, sent=False, details=d))  # fmt: skip
     p.execute(insert(quotes).values(
         polled_at=NOW - timedelta(minutes=5), sport="nba", game_id=7, source="sharpapi",
-        book="draftkings", market="points", player_name=player, outcome="over", line=20.5,
+        book="draftkings", market="assists", player_name=player, outcome="over", line=4.5,
         price=price))  # fmt: skip
 
 

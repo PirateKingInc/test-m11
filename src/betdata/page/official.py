@@ -61,13 +61,26 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
         for k in (C.NEXTGEN, C.OG))  # fmt: skip
 
 
+V2_MARKER = "Rules v2 from Nov 10"
+V2_LABEL = "Since rules v2 (Nov 10)"
+
+
 def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
                 card: str | None = None, label: str = "", hidden: bool = False) -> str:
     """One card's official record header: periods and its own success goal."""
     per = O.periods(off, today)
     allt, g = per["All time"], O.goal(off)
+    v2 = None
+    if card:  # rules v2 (owner 2026-11-09): the record since the marker, beside the full one
+        from betdata.eligibility import RULES_V2_START
+
+        since = RULES_V2_START.isoformat()
+        v2 = O.record([r for r in off if r["day"] >= since], O.official_stake)
+        per = {"All time": per["All time"], V2_LABEL: v2,
+               **{k: v for k, v in per.items() if k != "All time"}}
     preview = (f"{label + ' ' if card else 'All time '}{allt.wlp} · {_units(allt.units)} · "
-               f"goal {g.graded} of {O.GOAL_N}, {g.status}")
+               + (f"rules v2 {v2.wlp} · " if v2 is not None else "")
+               + f"goal {g.graded} of {O.GOAL_N}, {g.status}")
     tag = f"-{card}" if card else ""
     attrs = (f" data-card='{escape(card)}'" if card else "") + (" hidden" if hidden else "")
     out = [f"<section class='official' data-sport='{escape(sport)}'{attrs}>"
@@ -76,9 +89,11 @@ def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
            f"class='pv'>— {escape(preview)}</span></summary><div class='foldbody'><p "
            "class='meta'>Official picks are the daily card (up to 5, chosen at 6:15 AM ET). "
            "Like a team's record, graded picks only; today's picks are under Tonight's card "
-           "until they are graded. Paper units, not advice.</p><dl class='periods'>"]
+           "until they are graded. Paper units, not advice."
+           + (f" <b>{escape(V2_MARKER)}</b>: card eligibility rules v2 (the goal continues on "
+              "the full record)." if card else "") + "</p><dl class='periods'>"]
     for lab, rec in per.items():
-        slug = lab.lower().replace(" ", "-")
+        slug = "since-rules-v2" if lab == V2_LABEL else lab.lower().replace(" ", "-")
         href = f"csv/{sport}{tag}-official-{slug}.csv"
         O.write_csv(site / href, rec.rows)
         out.append(f"<dt>{escape(lab)}</dt><dd>{stat_line(rec, href)}</dd>")

@@ -195,6 +195,20 @@ class NewsDesk:
         with self.poller.pdb.connect() as p:
             push_on = alerts_on(p)
             topic_ok = get_state(p, "news:pushes_off") is None
+        # rules v2 (owner 2026-11-09): news alerts are Next Gen's: assist props (no unders at
+        # 5.5+, none with 2+ key teammates out) and game markets only
+        from betdata import eligibility as EL
+
+        def eligible(c) -> bool:
+            if not EL.applies(datetime.fromisoformat(g["tip"])):
+                return True
+            tm = None
+            if c.player and c.market == "assists" and c.side == "under":
+                with self.poller.main.connect() as m:
+                    tm = EL.teammates_out(m, pl.game_id, me.get("team_id"), c.player, now)
+            return EL.reason("nextgen", c.market, c.side, c.line, tm) is None
+
+        cands = [c for c in cands if eligible(c)]
         out = []
         for c in K.best_picks(cands, design):
             theta = design.theta["prop" if c.player else "game"]

@@ -717,6 +717,9 @@ def _research(rows: list[dict] | None, parts: list[list[str]], out_dir: Path,
             from betdata.page.news import news_html  # news alerts (owner 2026-11-05)
 
             eng += news_html(rows, out_dir)
+            from betdata.page.news import filters_html  # rules v2 (owner 2026-11-09)
+
+            eng += filters_html(rows)
         except Exception as e:  # never lose the page over the engine section
             log.warning("nba engine section failed: %s", e)
     return head + eng + sig + "".join("\n".join(p) for p in parts)

@@ -30,7 +30,15 @@ html
               span class=pv
             div class=foldbody
               p class=meta
+                b
               dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
                 dt
                 dd
                   span class=rec
@@ -59,7 +67,15 @@ html
               span class=pv
             div class=foldbody
               p class=meta
+                b
               dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
                 dt
                 dd
                   span class=rec
