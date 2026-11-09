@@ -2841,7 +2841,10 @@ watchlist `config/news_accounts.json`.
   are on. Before the decision they are off. The decision is written once to
   `ledger/news_switch.csv` and shown on the Research tab and in the weekly report; its numbers
   are recorded below when taken.
-  - Lag-study decision: pending (due 2026-11-06).
+  - **Lag-study decision (taken by the poller 2026-11-06 22:00 UTC):** pooled DK+FD median
+    soft-book lag **12.4 minutes** over 458 lags (DraftKings 12.8 min over 235, FanDuel 11.0
+    min over 223; study start 2026-10-23). 12.4 >= 5, so **news alert pushes are ON**; logging
+    continues regardless. Recorded once in `ledger/news_switch.csv`.
 - **Watchlist** (checked 2026-11-05 from a GitHub runner, `betdata news accounts`): kept if the
   account exists under the person's or team's name, posted within 30 days and has >= 1,000
   followers (beat writers: 300) or Bluesky verification; official accounts must be verified
