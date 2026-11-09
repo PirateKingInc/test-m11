@@ -66,7 +66,9 @@ class Leg:
     p: float  # Next Gen's blended probability (fair): the value floor and the EV
     p_market: float  # the market's no-vig probability
     who: str = ""  # "Bam Adebayo (MIA) vs ORL", "MIA vs ORL", "Game total"
-    p_raw: float | None = None  # the engine's own raw probability: the agreement bar
+    p_raw: float | None = None  # the engine's own raw probability
+    p_cal: float | None = None  # the raw probability after the weekly calibration fit (rule h):
+    # the agreement bar since 2026-11-10 (calibration.py)
 
     @property
     def dec(self) -> float:
@@ -92,14 +94,20 @@ class Parlay:
         return self.p_hit * self.decimal - 1
 
 
-def qualifies(c, bar: float) -> bool:
+def qualifies(c, bar: float, cal=None) -> bool:
     """A leg: the blended probability at or above the market's no-vig (the value floor), price
-    in [-200, +100], and the engine's raw probability at or above the agreement bar."""
+    in [-200, +100], and the engine's probability (calibrated by `cal` when given) at or above
+    the agreement bar."""
+    agree = c.p_engine if cal is None else cal(c.p_engine)
     return (c.book in BOOKS and MIN_PRICE <= c.price <= MAX_PRICE and c.fair >= c.p_market
-            and c.p_engine >= bar)  # fmt: skip
+            and agree >= bar)  # fmt: skip
 
 
 def raw(x: Leg) -> float:
+    """The agreement probability: the calibrated engine probability when a fit exists (rule
+    h, 2026-11-10), else the engine's raw probability, else the blend."""
+    if x.p_cal is not None:
+        return x.p_cal
     return x.p if x.p_raw is None else x.p_raw
 
 
@@ -139,10 +147,11 @@ def choose(legs: list[Leg]) -> Parlay | None:
     return three
 
 
-def leg_of(c, game_id: int, label: str, tip: datetime, who: str) -> Leg:
+def leg_of(c, game_id: int, label: str, tip: datetime, who: str, cal=None) -> Leg:
     return Leg(game_id, label, tip.isoformat(), c.market, c.side, c.line, c.player,
                int(c.price), c.book, float(c.fair), float(c.p_market), who,
-               float(c.p_engine))  # fmt: skip
+               float(c.p_engine),
+               None if cal is None else round(cal(float(c.p_engine)), 4))  # fmt: skip
 
 
 def _who(c, game: dict, label: str) -> str:
@@ -159,6 +168,10 @@ def _who(c, game: dict, label: str) -> str:
 
 def candidate_legs(poller, main, now: datetime) -> list[Leg]:
     """Every priced outcome Next Gen evaluates for today's games (archived DK/FD lines)."""
+    from betdata import eligibility as EL
+    from betdata.alerts.rules import EASTERN
+    from betdata.calibration import current
+    from betdata.ledger import ledger_dir
     from betdata.morning import stored_quotes, today_games
     from betdata.nba.engine import live as L
     from betdata.nba.engine import picks as K
@@ -166,6 +179,7 @@ def candidate_legs(poller, main, now: datetime) -> list[Leg]:
     if not L.FIT_PATH.exists():
         return []
     design = K.Design.from_json(L.load_fit()[1]["design"])
+    cal = current(ledger_dir(), now.astimezone(EASTERN).date())  # rule h
     legs = []
     for gid in today_games(main, "nba", now):
         game = poller.engine_game(gid, now, False)
@@ -174,9 +188,18 @@ def candidate_legs(poller, main, now: datetime) -> list[Leg]:
         with poller.pdb.connect() as p:
             qs = stored_quotes(p, gid, now)
         label, tip = poller.game_label(gid)
+        teams = {pl.get("name"): pl.get("team_id") for pl in game.get("players", [])}
         for c in poller.engine_candidates(gid, qs, now, game, design):
-            if qualifies(c, min(BARS.values())):
-                legs.append(leg_of(c, gid, label, tip, _who(c, game, label)))
+            if not qualifies(c, min(BARS.values()), cal):
+                continue
+            # rules v2 (g): assist props and game markets only, with rules (b) and (c)
+            tm = None
+            if c.player and c.market == "assists" and c.side == "under":
+                with main.connect() as m:
+                    tm = EL.teammates_out(m, gid, teams.get(c.player), c.player, now)
+            if EL.reason("nextgen", c.market, c.side, c.line, tm) is not None:
+                continue
+            legs.append(leg_of(c, gid, label, tip, _who(c, game, label), cal))
     return legs
 
 
@@ -243,8 +266,9 @@ def leg_text(x: dict) -> str:
                         line=x["line"], player_name=x["player"])  # fmt: skip
     when = datetime.fromisoformat(x["tip"]).astimezone(EASTERN).strftime("%-I:%M %p ET")
     eng = x.get("p_raw") if x.get("p_raw") is not None else x["p"]
+    cal = (f" (calibrated {100 * x['p_cal']:.0f}%)" if x.get("p_cal") is not None else "")
     return (f"{x['game']} {when}: {selection(a)} {_fmt_price(x['price'])} · Engine "
-            f"{100 * eng:.0f}% · Market {100 * x['p_market']:.0f}%")
+            f"{100 * eng:.0f}%{cal} · Market {100 * x['p_market']:.0f}%")
 
 
 # --- grading ---------------------------------------------------------------------------------

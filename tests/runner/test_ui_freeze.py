@@ -43,6 +43,10 @@ Owner-approved additions (each allowed exactly, and nothing else):
 - 2026-11-06, the Next Gen parlay: a "Parlay" block at the bottom of Tonight's card on the Next
   Gen side, drawn by the Today renderer. The snapshot is unchanged; the renderer's approved
   hash moves (TRACKER_SCRIPT_SHA) for exactly this block.
+- 2026-11-09, rules v2 records: in each NBA card's record, a "Rules v2 from Nov 10" marker
+  (one <b>) and a "Since rules v2 (Nov 10)" row (one dt/dd with its record) next to the full
+  record. Previous snapshot kept as `ui_freeze_snapshot_m24.txt`; the difference is pinned
+  (APPROVED_DIFF_RULES_V2_SHA).
 """
 
 import hashlib
@@ -123,6 +127,8 @@ APPROVED_DIFF_SHA = "c1f5faf443d5"  # m19 snapshot -> m20b snapshot (2026-11-04)
 APPROVED_DIFF_ENGINE_SHA = "22651c2d3629"  # m20b snapshot -> m21 (engine card, 2026-11-04)
 SNAPSHOT_M21 = Path(__file__).with_name("ui_freeze_snapshot_m21.txt")
 SNAPSHOT_M22 = Path(__file__).with_name("ui_freeze_snapshot_m22.txt")
+SNAPSHOT_M24 = Path(__file__).with_name("ui_freeze_snapshot_m24.txt")
+APPROVED_DIFF_RULES_V2_SHA = "37e8a875c423"  # m24 -> current (rules v2 marker, 2026-11-09)
 APPROVED_DIFF_DEFAULT_TAB_SHA = "d60079053e6b"  # m22 -> current (NBA default tab, 2026-11-05)
 APPROVED_DIFF_TWO_CARDS_SHA = "bedb7949f2df"  # m21 snapshot -> current (two cards, 2026-11-05)
 # the lines the engine-card approval added, exactly
@@ -225,12 +231,26 @@ def test_snapshot_differs_by_exactly_the_engine_card_record_lines():
     assert [x[1:].strip() for x in lines] == ENGINE_ADDED
 
 
+def test_snapshot_differs_by_exactly_the_rules_v2_marker():
+    """2026-11-09: per NBA card, the marker's <b> and one "Since rules v2" row."""
+    import difflib
+
+    a = SNAPSHOT_M24.read_text().splitlines()
+    b = SNAPSHOT.read_text().splitlines()
+    d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
+    assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_RULES_V2_SHA, d
+    lines = [x for x in d.splitlines() if not x.startswith(("+++", "---", "@@"))]
+    assert all(x.startswith("+") for x in lines)
+    assert [x[1:].strip() for x in lines] == 2 * ["b", "dt", "dd", "span class=rec", "a", "b",
+                                                  "a", "a"]
+
+
 def test_snapshot_differs_by_exactly_the_default_tab_script():
     """2026-11-05: NBA as the default tab changes only the page shell's script."""
     import difflib
 
     a = SNAPSHOT_M22.read_text().splitlines()
-    b = SNAPSHOT.read_text().splitlines()
+    b = SNAPSHOT_M24.read_text().splitlines()
     d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
     assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_DEFAULT_TAB_SHA, d
     changed = [x for x in d.splitlines() if x[:1] in "+-" and x[:3] not in ("+++", "---")]

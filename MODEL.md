@@ -2944,3 +2944,59 @@ chosen (the Nov 9 cards and the SAC +730 pick stand) or to the grading of existi
 - Sleeper add spikes are hints, not claims: their own line ("Sleeper add spikes: N logged, M
   corroborated a claim"), left out of the claim counts. They are logged as before.
 
+# Rules v2: card eligibility (owner decision 2026-11-09; PROVISIONAL)
+
+Effective from the 6:15 AM ET update of 2026-11-10. **Provisional: the rules were chosen after
+seeing the data below**, so their live record from Nov 10 is the real test. No model refit and
+no change to how candidates are created, stored or graded: every candidate is still created,
+stored and graded as before; these rules only decide what is eligible for the cards, the
+parlay and news alerts (`betdata/eligibility.py`).
+
+## Evidence (live ledger through Nov 9, as recorded by the owner; spot-checked against the ledger)
+
+- OG prop picks (616 graded): assists 154-135, +44.4u; rebounds 132-195, -40.4u (rebound unders
+  97-148, -37.0u).
+- Assist lines of 5.5: 13-25, -12.2u. Unders with 2+ teammates Out/Doubtful at pick time:
+  11-24. Unders where the player played 5+ more minutes than projected: 13-34.
+- Next Gen graded predictions (1,545): more accurate than the close only on assists; when the
+  engine is 8+ points above the close it hits 44% (close 48%, engine 62%); its 65-80%
+  predictions hit ~54%.
+
+## The rules
+
+- **OG card:** (a) assists only: rebound picks are not eligible (nor other props or game
+  markets: "assists only"); (b) no unders on assist lines of 5.5 or higher; (c) no unders when
+  2 or more of the player's rotation teammates are Out or Doubtful at pick time; (d) otherwise
+  unchanged: top 5 by EV among eligible Live candidates, fewer if fewer qualify.
+- **Next Gen card and news alerts:** (e) player props: assists only (points, rebounds, threes
+  and PRA are tracked only), with (b) and (c); (f) game markets keep the EV bar and the
+  long-shot gate.
+- **Parlay:** (g) legs follow (a)-(c) and (e): assist props and game markets only; (h) the
+  agreement bar (70% / 65%) uses the engine's probability after a calibration fit — Platt
+  scaling of the outcome on the logit of the engine's raw probability — on all graded engine
+  predictions to date (`ledger/engine_grades.csv`), refit weekly on Mondays with only the
+  grades available then, stored with its date (`ledger/calibration_fits.csv`). The page shows
+  the calibrated number. The first fit (2026-11-09, 1,545 predictions): slope 0.394,
+  intercept -0.130, so a raw 70% calibrates to 55% and a raw 90% to 68%; a calibrated 70% needs
+  a raw engine probability near 94%, so parlays will be rare.
+- **Rotation teammates** (rule c) are the review fields' key teammates: same team, averaging
+  >= 24 minutes over their last 10 games, with their latest NBA injury-report status known when
+  the pick was created (the evidence above used the same fields).
+- **Every candidate a rule removes** is stored with its reason — "filtered: rebounds",
+  "filtered: under 5.5+ assists", "filtered: teammates out", "filtered: non-assist prop" (and
+  for OG's game markets "filtered: not assists (OG)") — as a `filter` annotation in
+  `ledger/annotations.csv` and on the card's stored selection, and is still graded.
+
+## Records stay honest
+
+- Each card's record continues with a visible marker, "Rules v2 from Nov 10", and the record
+  since the marker shown next to the full record. The 500-pick goals continue on the full
+  record.
+- **Filters table** (Research tab and weekly report): for each card and filter reason, the
+  graded record of what it removed since Nov 10 (W-L, units at a flat 1 unit, win rate vs the
+  break-even win rate at the removed picks' average odds), next to the card's own record over
+  the same period.
+- **Review rule (fixed 2026-11-09):** each filter is revisited after it has removed 100 graded
+  picks; dropping it is recommended if the picks it removed would have been profitable
+  (positive units at a flat 1 unit). The owner decides.
+

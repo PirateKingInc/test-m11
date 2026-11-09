@@ -63,3 +63,26 @@ def news_html(rows: list[dict], site: Path, ledger: Path | None = None) -> str:
     (site / "csv/news-sources.csv").write_text(src_csv.read_text() if src_csv.exists()
                                                 else ",".join(NL.FIELDS) + "\n")  # fmt: skip
     return "".join(out)
+
+
+def filters_html(rows: list[dict]) -> str:
+    """The Research tab's "Filters" section (rules v2, owner 2026-11-09)."""
+    from betdata import eligibility as EL
+
+    t = EL.filters_table(rows)
+    out = ["<section class='research' data-filters='nba'><h2>Filters (rules v2)</h2>"
+           f"<p class='meta'>Since {EL.RULES_V2_START:%b %-d}: what each card-eligibility rule "
+           "removed (still created and graded, flat 1 unit), against the card's own record over "
+           "the same period. Provisional rules, chosen after seeing the data to Nov 9.</p>"]
+    if not t:
+        out.append("<p class='meta'>No removed pick yet.</p>")
+    else:
+        out.append("<ul class='plist filters'>" + "".join(
+            f"<li class='prop' data-reason='{escape(r['reason'])}'><div><b>{escape(r['card'])}"
+            f" · {escape(r['reason'])}</b></div><div class='meta'>Removed {r['removed']} · "
+            f"graded {r['wlp']}, {r['units']:+.2f}u · win {EL.pct(r['win'])} vs needed "
+            f"{EL.pct(r['needed'])}</div><div class='meta'>Card same period: {r['card_wlp']}, "
+            f"{r['card_units']:+.2f}u ({r['card_graded']} graded) · {escape(r['status'])}</div>"
+            "</li>" for r in t) + "</ul>")  # fmt: skip
+    out.append(f"<p class='meta'>{escape(EL.REVIEW_RULE)}</p></section>")
+    return "".join(out)

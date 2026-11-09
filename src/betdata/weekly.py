@@ -173,6 +173,17 @@ def build(root: Path, now: datetime, main: Connection | None,
            "| | Next Gen | OG |", "|---|---|---|",
            *[f"| {m} | {a} | {b} |" for m, a, b in O.comparison_rows(cmp_)], "",
            O.COMPARE_RULE, "", f"Status: {cmp_.verdict}"]
+    # rules v2: what each filter removed against the card (owner 2026-11-09)
+    from betdata import eligibility as EL
+
+    md += ["", f"## Filters (rules v2, since {EL.RULES_V2_START.isoformat()})", "",
+           "| Card | Filter | Removed | Graded W-L-P | Units (flat) | Win vs needed | "
+           "Card same period | Review |", "|---|---|---|---|---|---|---|---|"]
+    for r in EL.filters_table(rows):
+        md.append(f"| {r['card']} | {r['reason']} | {r['removed']} | {r['wlp']} | "
+                  f"{r['units']:+.2f} | {EL.pct(r['win'])} vs {EL.pct(r['needed'])} | "
+                  f"{r['card_wlp']}, {r['card_units']:+.2f}u | {r['status']} |")
+    md += ["", EL.REVIEW_RULE]
     # news alerts: their own record, the switch and the per-source table (owner 2026-11-05)
     from betdata.news import ledger as NL
 
