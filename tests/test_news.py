@@ -432,5 +432,7 @@ def test_ledger_log_annotations_and_research_section(desk, engine, pdb, tmp_path
     site = tmp_path / "site"
     html = news_html(picks, site, out)
     assert "<h2>News alerts</h2>" in html and "News alert pushes: ON" in html
-    assert "<td>thesteinline.bsky.social</td><td>1</td><td>15.0</td><td>1</td>" in html
+    assert "<li class='prop' data-source='thesteinline.bsky.social'>" in html
+    assert "First 1 · median lead 15.0 min" in html and "Confirmed 1 · contradicted 0" in html
+    assert "<table" not in html and "Sleeper add spikes: 0 logged, 0 corroborated" in html
     assert "EV at close" in html and (site / "csv/news-sources.csv").exists()

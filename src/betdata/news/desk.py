@@ -201,6 +201,7 @@ class NewsDesk:
             d = {"claim_id": cid, "source": "bluesky", "account": acct.handle,
                  "posted_at": post.created_at.isoformat(), "minutes_since": round(since, 1),
                  "good_down_to": NC_.good_down_to(c.fair, theta), "ev": c.ev, "theta": theta,
+                 "edge_pp": round(K.edge_pp(c.fair, c.p_market), 4), "gate": K.gate(c.price),
                  "p_engine": c.p_engine, "p_market": c.p_market,
                  "market_source": c.market_source, "unconfirmed": True,
                  "news_status": "unconfirmed", "player_news": pl.name, "status_news": status,

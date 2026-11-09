@@ -59,7 +59,17 @@ from types import SimpleNamespace
 from sqlalchemy import select
 
 from betdata.alerts.db import alerts, get_state, set_state
-from betdata.alerts.labels import ENGINE, LEAN, SIGNALS, STAKE, TAKE, available, label
+from betdata.alerts.labels import (
+    ENGINE,
+    LEAN,
+    SIGNALS,
+    STAKE,
+    TAKE,
+    available,
+    engine_gate,
+    gate_applies,
+    label,
+)
 from betdata.alerts.rules import EASTERN, decimal
 
 SIZE = 5
@@ -239,6 +249,10 @@ def choose(p, sport: str, day: date, now: datetime, signals=None) -> dict:
             continue
         x = ev(a)
         if x is None or available(p, a, now) is not True:
+            continue
+        # Next Gen: the long-shot gate (owner 2026-11-09) from its first card, Nov 10, also
+        # for engine picks created before the gate shipped
+        if a.signal == ENGINE and gate_applies(a) and not engine_gate(a):
             continue
         pool.append((x, a))
     pool.sort(key=lambda t: -t[0])

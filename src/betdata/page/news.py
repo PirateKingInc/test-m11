@@ -38,19 +38,24 @@ def news_html(rows: list[dict], site: Path, ledger: Path | None = None) -> str:
            f"<p>Record: {stat_line(rec, href)}</p>",
            f"<p class='meta'>EV at close: {escape(ev_txt)} · Three checks: "
            f"{escape(summary_line(ck))}</p>"]
-    src = NL.source_table(NL.read(led))
+    settled = NL.read(led)
+    # claims: Bluesky posts only; Sleeper add spikes are hints, on their own line (2026-11-09)
+    src = NL.source_table([r for r in settled if r["source"] != "sleeper"])
+    hints = [r for r in settled if r["source"] == "sleeper"]
+    corrob = sum(r.get("corroborated") == "true" for r in settled if r["source"] != "sleeper")
     if not src:
         out.append("<p class='meta'>No early-source claims settled yet.</p>")
     else:
-        body = "".join(
-            f"<tr><td>{escape(r['account'] or r['source'])}</td><td>{r['first']}</td>"
-            f"<td>{'–' if r['median_lead'] is None else r['median_lead']}</td>"
-            f"<td>{r['confirmed']}</td><td>{r['contradicted']}</td><td>{r['unconfirmed']}</td>"
-            f"<td>{r['official_first']}</td></tr>" for r in src)  # fmt: skip
-        out.append("<table class='cmp news-sources'><thead><tr><th>Source</th><th>First</th>"
-                   "<th>Median lead (min)</th><th>Confirmed</th><th>Contradicted</th>"
-                   "<th>Unconfirmed</th><th>Official first</th></tr></thead>"
-                   f"<tbody>{body}</tbody></table>")
+        out.append("<ul class='plist news-sources'>" + "".join(
+            f"<li class='prop' data-source='{escape(r['account'] or r['source'])}'><div><b>"
+            f"{escape(r['account'] or r['source'])}</b></div><div class='meta'>First "
+            f"{r['first']} · median lead "
+            f"{'–' if r['median_lead'] is None else str(r['median_lead']) + ' min'}</div>"
+            f"<div class='meta'>Confirmed {r['confirmed']} · contradicted {r['contradicted']} "
+            f"· unconfirmed {r['unconfirmed']}</div><div class='meta'>Official first "
+            f"{r['official_first']}</div></li>" for r in src) + "</ul>")  # fmt: skip
+    out.append(f"<p class='meta' data-hints>Sleeper add spikes: {len(hints)} logged, {corrob} "
+               "corroborated a claim (hints only: never alerts, not counted as claims).</p>")
     out.append("<p class='meta'><a href='csv/news-sources.csv'>Every settled claim (CSV)</a>"
                "</p></section>")
     src_csv = led / NL.FILE

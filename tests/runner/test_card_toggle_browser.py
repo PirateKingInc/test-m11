@@ -218,3 +218,73 @@ const { chromium } = require('playwright');
                  "FanDuel", "2 legs", "0.25u", "hits about 1 in 2", "OPEN",
                  "Parlay record: 0-0"):  # fmt: skip
         assert want.lower() in text.lower(), (want, text)
+
+
+def test_news_alerts_box_fits_a_phone_like_the_other_sections(tmp_path):
+    """The Research tab's News alerts box (owner 2026-11-09): same container width, padding and
+    text size as the other sections, one stacked card per source, Sleeper spikes on their own
+    line, and nothing overflowing at 390 px."""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+    import os
+
+    from betdata.ledger import append_rows
+    from betdata.news import ledger as NL
+    from betdata.page.build import render
+    from betdata.page.news import news_html
+    from betdata.page.official import research_html
+    from betdata.sports import ACTIVE, SportEntry
+
+    led = tmp_path / "ledger"
+    led.mkdir()
+    rows = [{"key": f"k{i}", "source": src, "account": acct, "group": "national",
+             "player": "Some Very Long Player Name", "ahead": "true", "outcome": out,
+             "lead_min": "12.5" if out == "confirmed" else "", "corroborated": "false"}
+            for i, (src, acct, out) in enumerate([
+                ("bluesky", "averyveryverylonghandle-name.bsky.social", "confirmed"),
+                ("bluesky", "omarisankofa.bsky.social", "official first"),
+                ("sleeper", "trending adds", "no change"),
+                ("sleeper", "trending adds", "confirmed")])]  # fmt: skip
+    append_rows(led / NL.FILE, NL.FIELDS, rows, key="key")
+    site = tmp_path / "site"
+    research = research_html([], site) + news_html([], site, led)
+    assert "<table" not in research and "Sleeper add spikes: 2 logged" in research
+    tabs = [SportEntry(key="nba", name="NBA", status=ACTIVE),
+            SportEntry(key="research", name="Research", status=ACTIVE)]
+    html = render(tabs, {"nba": "<p>nba</p>", "research": research},
+                  {"last_ok_at": NOW.isoformat(), "missing_keys": [], "detected_keys": []})
+    page = tmp_path / "index.html"
+    page.write_text(html)
+    js = tmp_path / "n.js"
+    js.write_text(r"""
+const { chromium } = require('playwright');
+(async () => {
+  const exe = process.env.PW_CHROMIUM;
+  const b = await chromium.launch(exe ? {executablePath: exe} : {});
+  const pg = await (await b.newContext({viewport: {width: 390, height: 900}})).newPage();
+  await pg.goto('file://' + process.argv[2]);
+  await pg.click('nav button[data-tab="research"]');
+  console.log(JSON.stringify(await pg.evaluate(() => {
+    const box = s => { const e = document.querySelector(s), r = e.getBoundingClientRect(),
+      c = getComputedStyle(e); return {w: r.width, l: r.left, pad: c.padding, fs: c.fontSize}; };
+    const over = Array.from(document.querySelectorAll('section[data-news] *')).filter(
+      e => e.getBoundingClientRect().right > window.innerWidth + 0.5).length;
+    return {scroll: document.documentElement.scrollWidth, news: box('section[data-news]'),
+            other: box('#tab-research section.research:not([data-news])'), over,
+            cards: document.querySelectorAll('section[data-news] li.prop').length};
+  })));
+  await b.close();
+})().catch(e => { console.error(e); process.exit(2); });
+""")
+    env = {**os.environ, **({"PW_CHROMIUM": _chromium()} if _chromium() else {})}
+    r = subprocess.run([node, str(js), str(page)], capture_output=True, text=True, env=env,
+                       timeout=120)  # fmt: skip
+    if r.returncode and ("Cannot find module 'playwright'" in r.stderr
+                         or "Executable doesn't exist" in r.stderr):  # fmt: skip
+        pytest.skip("Playwright/Chromium not installed")
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout.strip().splitlines()[-1])
+    assert out["scroll"] <= 390 and out["over"] == 0, out  # nothing overflows
+    assert out["news"] == out["other"], out  # same width, position, padding, text size
+    assert out["cards"] == 2  # one card per claim source; Sleeper is not one

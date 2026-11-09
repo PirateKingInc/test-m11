@@ -3,13 +3,15 @@ only; no change to the two cards, models, pick rules or the grading of existing 
 
 **Selection** (at 6:15 AM ET with the cards, betdata/morning.py), from Next Gen's evaluation of
 every priced outcome of today's NBA games (every engine candidate, not only its picks):
-- a leg: Next Gen's probability (the blended fair probability its pick rule uses) at or above
-  the market's no-vig probability; price between -200 and +100; at most one leg per game;
-- the 3-leg candidate (default): three legs each >= 70%; the 2-leg candidate: two legs >= 65%;
+- a leg: the value floor, Next Gen's blended probability (the fair probability its pick rule
+  uses) at or above the market's no-vig probability; price between -200 and +100; at most one
+  leg per game;
+- agreement (owner 2026-11-09): the engine's own raw (unblended) probability >= 70% for the
+  3-leg candidate (default), >= 65% for the 2-leg candidate;
 - each candidate is priced entirely at one book (DraftKings or FanDuel, all legs there),
-  whichever gives the better EV; parlay EV = product of the legs' probabilities x the parlay's
-  decimal odds - 1 (at one book the best combination is the top legs by probability x decimal,
-  one per game);
+  whichever gives the better EV; parlay EV = product of the legs' blended probabilities x the
+  parlay's decimal odds - 1 (conservative); at one book the best combination is the top legs
+  by probability x decimal, one per game;
 - the best 3-leg is chosen; the best 2-leg only if its EV is at least 3 points higher (or there
   is no 3-leg); neither: no parlay today ("No parlay today: no legs met the bar").
 Chosen once per day (poller state `parlay:nba:<day>`), written once to `ledger/parlays.csv`
@@ -61,9 +63,10 @@ class Leg:
     player: str | None
     price: int
     book: str
-    p: float  # Next Gen's probability (fair)
+    p: float  # Next Gen's blended probability (fair): the value floor and the EV
     p_market: float  # the market's no-vig probability
     who: str = ""  # "Bam Adebayo (MIA) vs ORL", "MIA vs ORL", "Game total"
+    p_raw: float | None = None  # the engine's own raw probability: the agreement bar
 
     @property
     def dec(self) -> float:
@@ -90,9 +93,14 @@ class Parlay:
 
 
 def qualifies(c, bar: float) -> bool:
-    """A leg: Next Gen at or above the market's no-vig, price in [-200, +100], >= the bar."""
+    """A leg: the blended probability at or above the market's no-vig (the value floor), price
+    in [-200, +100], and the engine's raw probability at or above the agreement bar."""
     return (c.book in BOOKS and MIN_PRICE <= c.price <= MAX_PRICE and c.fair >= c.p_market
-            and c.fair >= bar)  # fmt: skip
+            and c.p_engine >= bar)  # fmt: skip
+
+
+def raw(x: Leg) -> float:
+    return x.p if x.p_raw is None else x.p_raw
 
 
 def best_at_book(legs: list[Leg], k: int) -> Parlay | None:
@@ -114,7 +122,7 @@ def best(legs: list[Leg], k: int) -> Parlay | None:
     bar = BARS[k]
     out = None
     for book in BOOKS:
-        pool = [x for x in legs if x.book == book and x.p >= bar]
+        pool = [x for x in legs if x.book == book and raw(x) >= bar]
         cand = best_at_book(pool, k)
         if cand is not None and (out is None or cand.ev > out.ev + 1e-12):
             out = cand
@@ -133,7 +141,8 @@ def choose(legs: list[Leg]) -> Parlay | None:
 
 def leg_of(c, game_id: int, label: str, tip: datetime, who: str) -> Leg:
     return Leg(game_id, label, tip.isoformat(), c.market, c.side, c.line, c.player,
-               int(c.price), c.book, float(c.fair), float(c.p_market), who)  # fmt: skip
+               int(c.price), c.book, float(c.fair), float(c.p_market), who,
+               float(c.p_engine))  # fmt: skip
 
 
 def _who(c, game: dict, label: str) -> str:
@@ -233,8 +242,9 @@ def leg_text(x: dict) -> str:
     a = SimpleNamespace(game_label=x["game"], market=x["market"], side=x["side"],
                         line=x["line"], player_name=x["player"])  # fmt: skip
     when = datetime.fromisoformat(x["tip"]).astimezone(EASTERN).strftime("%-I:%M %p ET")
-    return (f"{x['game']} {when}: {selection(a)} {_fmt_price(x['price'])} · Next Gen "
-            f"{100 * x['p']:.0f}% vs market {100 * x['p_market']:.0f}%")
+    eng = x.get("p_raw") if x.get("p_raw") is not None else x["p"]
+    return (f"{x['game']} {when}: {selection(a)} {_fmt_price(x['price'])} · Engine "
+            f"{100 * eng:.0f}% · Market {100 * x['p_market']:.0f}%")
 
 
 # --- grading ---------------------------------------------------------------------------------
