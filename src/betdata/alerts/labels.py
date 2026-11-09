@@ -107,6 +107,32 @@ def pinnacle_sides(p, a, now: datetime) -> bool | None:
     return nv[0] > implied(a.price)
 
 
+GATE_START = date(2026, 11, 10)  # the long-shot gate's first card (owner decision 2026-11-09)
+
+
+def gate_applies(a) -> bool:
+    """The long-shot gate covers Next Gen picks for games from GATE_START (and any pick created
+    with it); picks already on a card before then stand."""
+    if (a.details or {}).get("gate") is not None:
+        return True
+    if a.tip is None:
+        return False
+    from betdata.alerts.rules import EASTERN
+
+    return a.tip.astimezone(EASTERN).date() >= GATE_START
+
+
+def engine_gate(a, mult: float = 1.0) -> bool:
+    """Next Gen's fair probability beats the market's no-vig probability by the price's gate
+    (times `mult`); False when the market probability is unknown."""
+    from betdata.nba.engine.picks import passes_gate
+
+    pm = (a.details or {}).get("p_market")
+    if a.fair_prob is None or pm is None or a.price is None:
+        return False
+    return passes_gate(a.fair_prob, pm, a.price, mult)
+
+
 def label(p, a, now: datetime) -> dict | None:
     """The fixed label rules for a new pick (module docstring); None for other signals. An
     engine pick (owner override 2026-11-04): TAKE when its EV >= 1.5x the engine's threshold
@@ -126,7 +152,10 @@ def label(p, a, now: datetime) -> dict | None:
     if not avail:
         lab = PASS
     elif a.signal == ENGINE:
-        lab = TAKE if edge >= TAKE_MULT * thr - 1e-9 else LEAN
+        take = edge >= TAKE_MULT * thr - 1e-9
+        if take and gate_applies(a):  # the long-shot gate x1.5 (owner 2026-11-09)
+            take = engine_gate(a, TAKE_MULT)
+        lab = TAKE if take else LEAN
     elif (edge >= TAKE_MULT * thr - 1e-9 and (src == "news" or pin is True)
           and not (src == "book disagreement" and cb.get("two_book"))):
         lab = TAKE

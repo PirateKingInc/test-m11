@@ -2897,3 +2897,50 @@ picks. Code: `betdata/parlay.py`; signal `ng-parlay`.
   seasons) are added in a follow-up run: their per-prediction probabilities are not stored in
   the repository and must be re-simulated on a runner.
 
+# Next Gen long-shot gate, parlay agreement, News alerts box (owner decision 2026-11-09)
+
+Effective from the 6:15 AM ET morning update of 2026-11-10. No change to OG, to picks already
+chosen (the Nov 9 cards and the SAC +730 pick stand) or to the grading of existing picks.
+
+## Next Gen long-shot gate
+
+- Besides its EV bar (theta), a Next Gen pick — card picks and news alerts alike — must beat the
+  market's no-vig probability (the consensus at the book's line, else the book's own no-vig) by
+  a minimum number of probability points, by price (`nba/engine/picks.py` `gate`):
+  - up to +200 (all favourites included): >= 4 points;
+  - +201 to +400: >= 7 points;
+  - longer than +400: >= 10 points.
+  (At +730 with the market at 12%, Next Gen needs >= 22%.)
+- TAKE (1 unit) also needs the gate cleared by 1.5x (6 / 10.5 / 15 points); otherwise LEAN
+  (0.5 unit), however large the EV.
+- The pick rule keeps, per market and player, the best-EV candidate among those clearing both
+  the EV bar and the gate. Engine picks created before the gate shipped are still gated at
+  the card's selection from Nov 10 (the card checks each pick's stored fair and market
+  probabilities and price); new picks carry `edge_pp` and `gate` in their details.
+- **What it would have removed (reporting only; no re-tuning):** of Next Gen's 26 live picks
+  (2026-11-03 to 2026-11-09), 19 — all 18 priced above +200 and 1 of 8 at +200 or shorter.
+  All 19 were moneyline underdogs whose blended edge over the market was 1-3 points. Their
+  graded results: 2-15, -9.87 units at a flat 1 unit. Six were Next Gen card picks
+  (SAS @ SAC +730, HOU @ PHX +237, BOS @ MIL +480, PHI @ CHI +330, DEN @ HOU +260,
+  CLE @ CHA +284). None of the 7 kept would have moved from TAKE to LEAN. The M20 validation
+  seasons are reported separately: their per-pick prices are not stored and must be
+  re-simulated on a runner.
+
+## Next Gen parlay: agreement on the engine's own probability
+
+- The agreement bar now uses the engine's raw (unblended) probability: >= 70% for the 3-leg,
+  >= 65% for the 2-leg.
+- Unchanged: the value floor (the blended probability at or above the market's no-vig), the
+  -200 to +100 window, one leg per game, one-book pricing, the 3-leg default with the 2-leg only
+  at >= 3 points more EV, 0.25 units, and no forced tickets.
+- Parlay EV uses the blended probabilities (conservative). Each leg stores both (`p` blended,
+  `p_raw` engine) in `ledger/parlays.csv`; the page and the push show "Engine X% · Market Y%".
+
+## News alerts box (Research tab)
+
+- The same container, padding and text size as the other Research sections; one small stacked
+  card per claim source (times first, median lead, confirmed / contradicted / unconfirmed,
+  times the official report was first); nothing overflows at 390 px.
+- Sleeper add spikes are hints, not claims: their own line ("Sleeper add spikes: N logged, M
+  corroborated a claim"), left out of the claim counts. They are logged as before.
+

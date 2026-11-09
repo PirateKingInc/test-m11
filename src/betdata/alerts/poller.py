@@ -849,6 +849,9 @@ class Poller:
                       True, {"p_engine": c.p_engine, "p_market": c.p_market,
                              "market_source": c.market_source, "ev": c.ev, "trigger": trigger,
                              "theta": design.theta["prop" if c.player else "game"],
+                             # the long-shot gate (owner 2026-11-09)
+                             "edge_pp": round(K.edge_pp(c.fair, c.p_market), 4),
+                             "gate": K.gate(c.price),
                              "version": game.get("version"),
                              # the projection behind a prop (review: M19 "proj" fields)
                              "median": (pl.get("median") or {}).get(stat),

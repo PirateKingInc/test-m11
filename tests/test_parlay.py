@@ -18,8 +18,9 @@ def leg(gid, p, price, book="draftkings", pm=None, market="points", player=None)
                   player or f"P{gid}", price, book, p, pm if pm is not None else p - 0.05)
 
 
-def cand(p, price, book="draftkings", pm=None):
-    return SimpleNamespace(book=book, price=price, fair=p,
+def cand(p, price, book="draftkings", pm=None, raw=None):
+    """A candidate: blended `p` (fair), market `pm`, the engine's raw probability `raw`."""
+    return SimpleNamespace(book=book, price=price, fair=p, p_engine=p if raw is None else raw,
                            p_market=pm if pm is not None else p - 0.05)  # fmt: skip
 
 
@@ -146,7 +147,7 @@ def test_chosen_once_written_once(tmp_path, monkeypatch):
     lines = PL.push_lines(doc)
     assert lines[0].startswith("Parlay (3 legs, DraftKings): +") and "0.25u" in lines[0]
     assert "hits about 1 in" in lines[0] and len(lines) == 4
-    assert "Next Gen 74% vs market 69%" in lines[1]
+    assert "Engine 74% · Market 69%" in lines[1]
 
 
 def test_no_parlay_today(tmp_path, monkeypatch):
@@ -206,3 +207,49 @@ def test_push_section_after_next_gen(tmp_path):
     assert j > i and lines[j] == ("Parlay (2 legs, FanDuel): +220, 0.25u · hits about 1 in 2")
     assert lines[j + 1].startswith("  ORL @ MIA 7:30 PM ET: Bam Adebayo over 20.5 points -110")
     assert lines[j + 2].startswith("  BOS @ NYK 7:30 PM ET: Under 221.5")
+
+
+# --- agreement = the engine's raw probability (owner 2026-11-09) ----------------------------------
+
+
+def test_agreement_on_the_raw_engine_value_floor_and_ev_on_the_blend():
+    # raw 72% clears the 3-leg agreement bar though the blend is only 58%: a leg, if the blend
+    # is at or above the market's no-vig (the value floor)
+    assert PL.qualifies(cand(0.58, -120, pm=0.55, raw=0.72), 0.70)
+    assert not PL.qualifies(cand(0.58, -120, pm=0.60, raw=0.72), 0.70)  # below the market
+    assert not PL.qualifies(cand(0.80, -120, pm=0.55, raw=0.69), 0.70)  # blend high, raw low
+
+    def lg(gid, blend, raw_, price=-120):
+        x = leg(gid, blend, price)
+        x.p_raw = raw_
+        return x
+
+    legs = [lg(1, 0.58, 0.72), lg(2, 0.57, 0.71), lg(3, 0.56, 0.74), lg(4, 0.90, 0.60)]
+    p = PL.choose(legs)
+    assert p.kind == 3 and sorted(x.game_id for x in p.legs) == [1, 2, 3]  # not game 4
+    # EV from the blended probabilities (conservative), not the raw ones
+    assert p.p_hit == pytest.approx(0.58 * 0.57 * 0.56)
+    assert p.ev == pytest.approx(0.58 * 0.57 * 0.56 * PL.decimal(-120) ** 3 - 1)
+
+
+def test_both_probabilities_stored_and_shown(tmp_path, monkeypatch):
+    pdb = engine_for(tmp_path / "p.sqlite")
+    legs = []
+    for gid, raw_ in ((1, 0.74), (2, 0.72), (3, 0.71)):
+        x = leg(gid, 0.6, -110)
+        x.p_raw = raw_
+        legs.append(x)
+    monkeypatch.setattr(PL, "candidate_legs", lambda *a: legs)
+    doc = PL.select(pdb, None, None, NOW)
+    assert [(x["p"], x["p_raw"]) for x in doc["legs"]] == [(0.6, 0.74), (0.6, 0.72), (0.6, 0.71)]
+    out = tmp_path / "ledger"
+    out.mkdir()
+    import json
+
+    from betdata.ledger import read_rows
+
+    with pdb.connect() as p:
+        PL.sync(p, None, out, NOW)
+    [row] = read_rows(out / PL.FILE)
+    assert [(x["p"], x["p_raw"]) for x in json.loads(row["legs"])][0] == (0.6, 0.74)
+    assert "Engine 74% · Market 55%" in PL.push_lines(doc)[1]

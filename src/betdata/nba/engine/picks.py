@@ -136,19 +136,42 @@ def prop_candidates(game: dict, props: dict, design: Design, cons=None,
     return out
 
 
-def best_picks(cands: list[Candidate], design: Design) -> list[Candidate]:
-    """The best-EV candidate per (market, player) when it clears its theta."""
+# The long-shot gate (owner decision 2026-11-09, MODEL.md "Next Gen long-shot gate"): besides
+# its EV bar, a Next Gen pick must beat the market's no-vig probability by a minimum number of
+# probability points, by price; TAKE needs 1.5x that edge.
+GATE_TIERS = ((200, 0.04), (400, 0.07), (None, 0.10))  # (up to this American price, points)
+TAKE_GATE_MULT = 1.5
+
+
+def gate(price: int) -> float:
+    """The minimum edge over the market's no-vig probability at this price: up to +200 (all
+    favourites included) 4 points, +201 to +400 7 points, longer than +400 10 points."""
+    for top, pts in GATE_TIERS:
+        if top is None or price <= top:
+            return pts
+    return GATE_TIERS[-1][1]
+
+
+def edge_pp(fair: float, p_market: float) -> float:
+    return fair - p_market
+
+
+def passes_gate(fair: float, p_market: float, price: int, mult: float = 1.0) -> bool:
+    return edge_pp(fair, p_market) >= mult * gate(price) - 1e-9
+
+
+def best_picks(cands: list[Candidate], design: Design, gated: bool = True) -> list[Candidate]:
+    """The best-EV candidate per (market, player) among those that clear their theta and (since
+    2026-11-09) the long-shot gate."""
     best: dict = {}
     for c in cands:
+        th = design.theta["prop" if c.player else "game"]
+        if c.ev < th or (gated and not passes_gate(c.fair, c.p_market, c.price)):
+            continue
         k = (c.market, c.player)
         if k not in best or c.ev > best[k].ev:
             best[k] = c
-    out = []
-    for c in best.values():
-        th = design.theta["prop" if c.player else "game"]
-        if c.ev >= th:
-            out.append(c)
-    return out
+    return list(best.values())
 
 
 def dedup_key(game_id: int, c: Candidate) -> str:
