@@ -129,7 +129,10 @@ def test_combined_push_content(pdb):
         "  BOS @ NYK 7:30 PM ET: Player 0 over 20.5 points -110 at DraftKings, TAKE 1u",
         "  BOS @ NYK 7:30 PM ET: Player 1 over 20.5 points -110 at DraftKings, TAKE 1u "
         "(on both cards)",
-        "  2 picks today — the engine found no other value"]
+        "  2 picks today — the engine found no other value",
+        # Spread Picks (owner 2026-11-10): after Next Gen and OG, not chosen in this fixture
+        "Spread Picks: last night 0-0, +0.0u · record 0-0, +0.0u (0 of 50)",
+        "Spread picks: chosen with the Next Gen card"]
 
 
 def test_empty_next_gen_and_og_waiting_for_lines(pdb):

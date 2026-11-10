@@ -285,3 +285,105 @@ def test_backfill_prices_from_stored_quotes_and_is_idempotent(pdb, tmp_path):
     assert len(notes) == 2 and all(n["value"].startswith("reconstructed price: ") for n in notes)
     assert all(r["backfill"] == "true" for r in read_rows(tmp_path / "spread_card.csv"))
     assert SP.backfill(pdb, tmp_path, NOW) == []  # in the ledger now
+
+
+# --- the push section ---------------------------------------------------------------------------
+
+
+def _row(pid, day, res, profit, stake="1.0"):
+    """A Spread card ledger row (official.dataset shape)."""
+    return {"pick_id": pid, "sport": "nba", "official": False, "day": day, "result": res,
+            "profit": profit, "card_stake": "", "odds": "-110", "signal_name": SP.NAME,
+            "game": "CLE @ CHA", "tip": f"{day}T23:30:00+00:00", "clv_consensus": "",
+            "game_id": 7, "market": "spreads", "player": "", "side": "home",
+            "spread": True, "spread_date": day, "spread_stake": stake, "spread_label": "SPREAD"}
+
+
+def test_push_section_with_picks(pdb):
+    with pdb.begin() as p:
+        _alert(p, "dog")
+        _quote(p, "draftkings", "home", 8.5, -110, MADE - timedelta(minutes=5))
+        _ng(p, [_pick("dog")])
+    SP.run(pdb, None, NOW)
+    rows = [_row("a", "2026-11-10", "win", "0.9091"), _row("b", "2026-11-09", "loss", "-1.0")]
+    with pdb.connect() as p:
+        lines = SP.push_lines(p, rows, DAY)
+    assert lines == ["Spread Picks: last night 1-0, +0.9u · record 1-1, -0.1u (2 of 50)",
+                     "Spread picks: 1 —",
+                     "  CLE @ CHA 7:00 PM ET: CHA +8.5 (-110) at DraftKings · 1u "
+                     "(Next Gen ML CHA +284)"]
+
+
+def test_push_section_none_today(pdb):
+    with pdb.begin() as p:
+        _alert(p, "fav", price=-150)
+        _ng(p, [_pick("fav")])
+    SP.run(pdb, None, NOW)
+    with pdb.connect() as p:
+        assert SP.push_lines(p, [], DAY)[-1] == "Spread picks: none today"
+
+
+def test_later_next_gen_push_carries_the_section(pdb):
+    """A Next Gen card chosen after 6:15 (no lines then) is pushed by the poller; the Spread
+    section rides in that same push: no separate Spread push."""
+    with pdb.begin() as p:
+        _alert(p, "dog")
+        _quote(p, "draftkings", "home", 8.5, -110, MADE - timedelta(minutes=5))
+        _ng(p, [_pick("dog")])
+    SP.run(pdb, None, NOW)
+    with pdb.connect() as p:
+        card = get_state(p, CD.key("nba", DAY))
+        title, body = CD.message(p, card, NOW)
+    assert title.startswith("Tonight's card - NBA Next Gen")
+    assert "Spread picks: 1 —" in body and "CHA +8.5 (-110) at DraftKings · 1u" in body
+
+
+def test_morning_dry_run_three_cards_one_push(pdb, tmp_path, monkeypatch):
+    """The full morning path on fixtures: grade, ledger, engine, select (Next Gen, Spread, OG),
+    parlay, publish, then ONE NBA push with all three cards."""
+    from betdata import morning as M
+
+    with pdb.begin() as p:
+        _alert(p, "dog")
+        _alert(p, "snipe1", signal="snipe", market="assists", player="A Guy", price=120)
+        _quote(p, "draftkings", "home", 8.5, -110, MADE - timedelta(minutes=5))
+
+    def fake_ng(pdb_, main, now, *a, **k):
+        with pdb_.begin() as p:
+            _ng(p, [_pick("dog")])
+            return [get_state(p, CD.key("nba", DAY))]
+
+    def fake_og(pdb_, main, now, *a, **k):
+        with pdb_.begin() as p:
+            c = {"sport": "nba", "day": DAY.isoformat(), "source": CD.SHADOW,
+                 "picks": [_pick("snipe1")]}
+            set_state(p, CD.shadow_key("nba", DAY), c, now)
+        return [c]
+
+    monkeypatch.setattr(M, "sports_due", lambda main, now: ["nba"])
+    monkeypatch.setattr(M, "grade", lambda *a: None)
+    monkeypatch.setattr(M, "engine", lambda *a: 1)
+    monkeypatch.setattr(M, "parlay_select", lambda *a: {"none": True})
+    monkeypatch.setattr(CD, "run", fake_ng)
+    monkeypatch.setattr(CD, "run_shadow", fake_og)
+    monkeypatch.setattr(SP, "in_ledger", lambda day, out=None: False)
+    monkeypatch.setattr(M, "ledger_sync", lambda *a: {})
+
+    rep = M.run(None, pdb, None, NOW, out=tmp_path, build=lambda: None)
+    assert rep.errors == [] and rep.cards == {"nba": 1} and rep.shadow == {"nba": 1}
+    assert rep.spread == {"nba": 1}
+    sent = []
+
+    class Client:
+        def post(self, url, content, headers):
+            sent.append((headers["Title"], content.decode()))
+            return type("R", (), {"status_code": 200})()
+
+    monkeypatch.setattr("betdata.official.dataset", lambda out: [])
+    assert M.push(pdb, tmp_path, NOW, "topic", Client()) == {"nba": "http 200"}
+    (title, body), = sent  # one push
+    assert title == "Morning update - NBA - Wed Nov 11"
+    i_og, i_ng = body.index("OG:"), body.index("Next Gen:")
+    i_sp = body.index("Spread picks: 1 —")
+    assert i_og < i_ng < i_sp
+    assert "CHA +8.5 (-110) at DraftKings · 1u (Next Gen ML CHA +284)" in body
