@@ -134,6 +134,8 @@ def test_price_same_book_and_snapshot(pdb):
         a = p.execute(select(alerts).where(alerts.c.signal == SP.SIGNAL)).one()
     assert (a.line, a.price, a.book, a.side) == (8.5, -108, "fanduel", "home")
     assert pick_id("dog") in a.reason and a.details["trigger"] == pick_id("dog")
+    # the book's no-vig at the snapshot (the other side, same book): CLV / EV at close
+    assert a.details["other_price"] == -112 and 0.49 < a.book_prob < 0.51
 
 
 def test_price_falls_back_to_the_other_book(pdb):

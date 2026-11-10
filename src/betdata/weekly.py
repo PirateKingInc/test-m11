@@ -247,6 +247,11 @@ def milestone_lines(ms: list[dict], root: Path) -> list[str]:
     rows = counted(joined(root / "ledger"))
     out = []
     for m in ms:
+        from betdata import spread_review as SR
+
+        if m["signal_name"] == SR.MILESTONE:  # the Spread Picks review (owner 2026-11-10)
+            out.append(SR.ntfy_line(root / "ledger"))
+            continue
         rs = [r for r in rows if r["signal_name"] == m["signal_name"]]
         from betdata.ledger import record
 

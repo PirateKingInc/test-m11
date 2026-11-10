@@ -59,6 +59,11 @@ def ledger_publish(db: Path = typer.Option(Path("data/poller.sqlite"), help="Pol
     topic = os.environ.get("NTFY_TOPIC") or None
     now = datetime.now(UTC)
     ms = json.loads(PENDING.read_text()).get("milestones", []) if PENDING.exists() else []
+    if any(m["signal_name"] == "spread-card" for m in ms):  # the Spread Picks review report
+        from betdata.spread_review import write
+
+        with make_engine(get_settings().db_url).connect() as m:
+            typer.echo(f"spread review: wrote {write(PROJECT_ROOT, now, m)}")
     if ms:
         status = ntfy(topic, "Pick milestone", milestone_lines(ms, PROJECT_ROOT))
         typer.echo(f"milestone push: {status}")
@@ -78,3 +83,22 @@ def ledger_publish(db: Path = typer.Option(Path("data/poller.sqlite"), help="Pol
     path.write_text(md)
     typer.echo(f"weekly report: wrote {path.relative_to(PROJECT_ROOT)}; push "
                f"{ntfy(topic, 'Weekly picks report', summary)}")
+
+
+@ledger_app.command("spread-review")
+def spread_review(main_db: bool = typer.Option(False, help="Read final scores from the main "
+                                               "database (cover margins).")):
+    """Write reports/nba/spread_review.md now: the Spread Picks record, ATS vs ML, cover
+    margins, EV at close and the quiet comparison (owner 2026-11-10). Report only."""
+    from betdata.config import PROJECT_ROOT
+    from betdata.spread_review import write
+
+    now = datetime.now(UTC)
+    if main_db:
+        from betdata.config import get_settings
+        from betdata.db.engine import make_engine
+
+        with make_engine(get_settings().db_url).connect() as m:
+            typer.echo(f"wrote {write(PROJECT_ROOT, now, m)}")
+    else:
+        typer.echo(f"wrote {write(PROJECT_ROOT, now)}")

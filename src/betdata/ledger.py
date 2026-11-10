@@ -670,6 +670,12 @@ def milestones(out: Path, now: datetime) -> list[dict]:
                 new.append({"signal_name": name, "graded": str(n), "reached_at": _iso(now)})
     if new:
         _append_milestones(path, new)
+    try:  # the Spread Picks review at 50 graded picks (owner 2026-11-10), once
+        from betdata.spread_review import milestone as spread_milestone
+
+        new += spread_milestone(out, now)
+    except Exception as e:  # noqa: BLE001 - never stops the ledger
+        log.warning("spread milestone failed: %s", e)
     return new
 
 

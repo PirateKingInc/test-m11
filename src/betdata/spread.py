@@ -135,14 +135,25 @@ def _insert(p, a, trigger_pid: str, q, src: str, day: str, now: datetime,
               f"({team} ML {_fmt_price(int(a.price))} at {BOOK_NAMES.get(a.book, a.book)}); "
               f"spread at {BOOK_NAMES.get(q.book, q.book)} {snap} ({src})")
     dk = dedup(trigger_pid)
+    # the other side at the same book and snapshot: the book's no-vig probability (CLV and EV
+    # at the close are graded from it, as for every pick)
+    other = _quote(p, SimpleNamespace(game_id=a.game_id, side="away" if a.side == "home"
+                                      else "home", created_at=q.polled_at), q.book)
+    book_prob = None
+    if other is not None:
+        from betdata.alerts.rules import decimal
+
+        x, y = 1 / decimal(int(q.price)), 1 / decimal(int(other.price))
+        book_prob = x / (x + y)
     p.execute(sqlite_insert(alerts).values(
         signal=SIGNAL, sport="nba", game_id=a.game_id, game_label=a.game_label, tip=a.tip,
         market="spreads", player_name=None, side=a.side, line=q.line, price=int(q.price),
-        book=q.book, fair_prob=None, book_prob=None, reason=reason, dedup_key=dk,
+        book=q.book, fair_prob=None, book_prob=book_prob, reason=reason, dedup_key=dk,
         created_at=now, quiet=True, sent=False, send_status="spread card (morning push)",
         details={"trigger": trigger_pid, "trigger_key": a.dedup_key, "card_date": day,
                  "snapshot_at": snap, "quote_source": q.source, "price_source": src,
-                 "backfill": backfill},
+                 "backfill": backfill,
+                 "other_price": None if other is None else int(other.price)},
     ).on_conflict_do_nothing(index_elements=["dedup_key"]))  # fmt: skip
     return dk
 
