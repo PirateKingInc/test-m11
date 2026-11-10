@@ -61,9 +61,14 @@ SCRIPT = """<script>
     return '';
   }
   // the NBA tab's two official cards (owner 2026-11-05): the toggle sets window.betdataNbaCard
+  // ... and Spread Picks (owner 2026-11-10): its picks show only in the Spread view
   function act(sport) {
-    return sport === 'nba' && window.betdataNbaCard === 'og' ? 'og' : 'nextgen'; }
-  function on(sport, p) { return act(sport) === 'og' ? !!p.og : !!p.card; }
+    var v = sport === 'nba' ? window.betdataNbaCard : '';
+    return v === 'og' || v === 'spread' ? v : 'nextgen'; }
+  function on(sport, p) {
+    var a = act(sport); return a === 'og' ? !!p.og : a === 'spread' ? !!p.spread : !!p.card; }
+  function shown(sport, ps) {
+    return act(sport) === 'spread' ? ps : ps.filter(function (p) { return !p.spread; }); }
   function badge(sport, p) {
     var og = act(sport) === 'og', c = on(sport, p);
     var lb = og && p.og ? p.og_label : p.label, st = og && p.og ? p.og_stake : p.stake;
@@ -107,7 +112,8 @@ SCRIPT = """<script>
     var rows = [];
     games.forEach(function (g) { g.picks.forEach(function (p) {
       if (on(sport, p)) rows.push([g, p]); }); });
-    var txt = act(sport) === 'og' ? d.og_note : d.card_note;
+    var txt = act(sport) === 'og' ? d.og_note :
+      act(sport) === 'spread' ? d.spread_note : d.card_note;
     var note = txt ? '<p class="meta trk-note">' + esc(txt) + '.</p>' : '';
     if (!rows.length && note) return [txt, note];
     if (!rows.length) return ['none yet',
@@ -138,6 +144,7 @@ SCRIPT = """<script>
           esc(sport + '-' + g.game_id) + '"><div><b>' + esc(tip(g.tip)) + ' · ' +
           esc(g.label) + '</b>' + badge(sport, p) + '</div><div>' + who(p) + ' · ' + esc(pk) +
           ' <b>' + esc(p.odds) + '</b> at ' + esc(p.book) + '</div>' +
+          (p.trigger ? '<div class="meta">' + esc(p.trigger) + '</div>' : '') +
           (p.result ? result(p) : '<div>' + pstat(g, p) + '</div>') + '</li>';
       }).join('') + '</ul>' + note + '<p class="meta">Picks are locked at the prices shown. ' +
       'Results post on the hourly run after each game ends.</p>'];
@@ -162,8 +169,9 @@ SCRIPT = """<script>
       esc(x.record) + '</p></div>';
   }
   function game(sport, g) {
-    var card = g.picks.filter(function (p) { return on(sport, p); });
-    var other = g.picks.filter(function (p) { return !on(sport, p); });
+    var ps = shown(sport, g.picks);
+    var card = ps.filter(function (p) { return on(sport, p); });
+    var other = ps.filter(function (p) { return !on(sport, p); });
     var byTeam = {};
     other.forEach(function (p) {
       var k = p.team || 'Game'; (byTeam[k] = byTeam[k] || []).push(p); });
@@ -178,8 +186,8 @@ SCRIPT = """<script>
     return '<details class="gamerow' + (card.length ? ' bet' : '') + '" data-game="' + esc(id) +
       '"' + (open[id] ? ' open' : '') + '><summary><b>' + esc(tip(g.tip)) + ' · ' +
       esc(g.label) + '</b> ' + status(g) + (card.length ? ' <span class="lbl take">★ ' +
-      card.length + ' card</span>' : '') + ' <span class="pv">' + g.picks.length + ' pick' +
-      (g.picks.length === 1 ? '' : 's') + '</span></summary><div class="foldbody">' + body +
+      card.length + ' card</span>' : '') + ' <span class="pv">' + ps.length + ' pick' +
+      (ps.length === 1 ? '' : 's') + '</span></summary><div class="foldbody">' + body +
       '</div></details>';
   }
   function render(sport) {

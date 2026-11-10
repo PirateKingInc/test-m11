@@ -32,6 +32,9 @@ const { chromium } = require('playwright');
                       || {}).textContent,
             badges: document.querySelectorAll('section[data-tracker="nba"] li .lbl.take').length,
             both: document.querySelectorAll('section[data-tracker="nba"] .lbl.both').length,
+            props: document.querySelectorAll('section[data-tracker="nba"] li.prop').length,
+            trigger: Array.from(document.querySelectorAll(
+              'details[data-tonight="nba"] .trk-card .meta')).map(e => e.textContent),
             stored: (() => { try { return localStorage.getItem('betdata.nbaCard'); }
                              catch (e) { return 'err'; } })()};
   });
@@ -40,6 +43,10 @@ const { chromium } = require('playwright');
   out.og = await state();
   await pg.reload();
   out.reloaded = await state();
+  await pg.click('[data-cardtoggle="nba"] button[data-pick="spread"]');
+  out.spread = await state();
+  await pg.reload();
+  out.spread_reloaded = await state();
   await pg.click('[data-cardtoggle="nba"] button[data-pick="nextgen"]');
   out.back = await state();
   console.log(JSON.stringify(out));
@@ -65,9 +72,15 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
     og = {**g["picks"][0], "id": "og1", "player": "Bam Adebayo", "card": False, "og": True,
           "og_label": "TAKE", "og_stake": 1.0, "both": True, "bet": "1:reb:bam:over",
           "signal": "F", "label": "LEAN"}
-    doc = {**TRACKER_DOC, "og_chosen": True, "og_note": "1 pick today — OG found no other value",
+    # a Spread pick (owner 2026-11-10): shown only in the Spread view
+    sp = {**g["picks"][0], "id": "sp1", "player": "", "team": "MIA", "opp": "ORL",
+          "market": "Spread", "pick": "MIA +4.5", "odds": "-110", "card": False, "og": False,
+          "spread": True, "label": "SPREAD", "stake": 1.0, "signal": "dog-spread",
+          "trigger": "from Next Gen ML MIA +170", "bet": "1:spreads::home"}
+    doc = {**TRACKER_DOC, "og_chosen": True, "spread_chosen": True,
+           "og_note": "1 pick today — OG found no other value",
            "card_note": "1 pick today — the engine found no other value",
-           "games": [{**g, "picks": [both, og]}]}
+           "games": [{**g, "picks": [both, og, sp]}]}
     monkeypatch.setattr(F, "TRACKER_DOC", doc)
     page = tmp_path / "index.html"
     page.write_text(build_fixture_page(tmp_path))
@@ -87,18 +100,29 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
     assert r.returncode == 0, r.stderr
     out = json.loads(r.stdout.strip().splitlines()[-1])
     start, og_, again, back = out["start"], out["og"], out["reloaded"], out["back"]
+    spr, spr2 = out["spread"], out["spread_reloaded"]
     # default Next Gen with nothing stored
     assert start["official"] == ["nextgen"] and start["days"] == ["nextgen"]
-    assert start["pressed"] == ["true", "false"] and start["stored"] is None
+    assert start["pressed"] == ["true", "false", "false"] and start["stored"] is None
     assert start["tonight"].startswith("— Tonight: 1 card pick")
     # OG: every card-dependent section switches, and the choice is remembered
     assert og_["official"] == ["og"] and og_["days"] == ["og"]
-    assert og_["pressed"] == ["false", "true"] and og_["stored"] == "og"
+    assert og_["pressed"] == ["false", "true", "false"] and og_["stored"] == "og"
     assert og_["tonight"].startswith("— Tonight: 1 card pick")
     assert og_["both"] >= 1  # the same bet on both cards is marked so
     assert start["badges"] == 0 and og_["badges"] == 1  # the card badges follow the toggle
     assert again["official"] == ["og"] and again["days"] == ["og"], again  # after a reload
     assert back["official"] == ["nextgen"] and back["stored"] == "nextgen"
+    # Spread (owner 2026-11-10): its own record and Results by day, Tonight's card shows its
+    # pick with the triggering ML pick in small text; the choice persists; the Spread pick is
+    # hidden from Next Gen and OG (two picks there, three in the Spread view)
+    assert spr["official"] == ["spread"] and spr["days"] == ["spread"]
+    assert spr["pressed"] == ["false", "false", "true"] and spr["stored"] == "spread"
+    assert spr["tonight"].startswith("— Tonight: 1 card pick")
+    assert "from Next Gen ML MIA +170" in spr["trigger"]
+    assert start["props"] == 2 and og_["props"] == 2 and spr["props"] == 3
+    assert start["trigger"] == [] or all("Next Gen ML" not in t for t in start["trigger"])
+    assert spr2["official"] == ["spread"] and spr2["stored"] == "spread"
 
 
 TAB_SCRIPT = r"""

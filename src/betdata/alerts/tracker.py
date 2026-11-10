@@ -229,18 +229,33 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     if switch_over:  # Nov 5: no OG card (owner 2026-11-05); its picks stay research
         og = {}
     on_og = {x["dedup_key"]: x for x in og.get("picks", [])}
+    signals = today_signals(sport, day)
+    sp_card = None
+    if sport == "nba":  # Spread Picks (owner 2026-11-10): shown only in the Spread view
+        from betdata import spread as SP
+
+        if SP.active():
+            sp_card = get_state(p, SP.key(day))
+            signals = (*signals, SP.SIGNAL)
+    on_sp = {x["dedup_key"]: x for x in (sp_card or {}).get("picks", [])}
+    trig_price = {}
     rows = p.execute(
         select(alerts, alert_grades.c.result, alert_grades.c.profit, consensus_grades.c.clv)
         .outerjoin(alert_grades, alert_grades.c.alert_id == alerts.c.alert_id)
         .outerjoin(consensus_grades, consensus_grades.c.alert_id == alerts.c.alert_id)
-        .where(alerts.c.sport == sport, alerts.c.signal.in_(today_signals(sport, day)),
+        .where(alerts.c.sport == sport, alerts.c.signal.in_(signals),
                alerts.c.tip >= lo, alerts.c.tip < hi)
         .order_by(alerts.c.tip, alerts.c.game_label, alerts.c.created_at)).mappings().all()
     games: dict[int, dict] = {}
     scores = scores or {}
     for r in rows:
+        if r["signal"] == "engine":
+            trig_price[r["dedup_key"]] = r["price"]
+    for r in rows:
         a = SimpleNamespace(**{k: r[k] for k in r.keys()})
         a.tip = _utc(a.tip)
+        if a.signal == "dogsprd" and a.dedup_key not in on_sp:
+            continue  # only the stored Spread card's picks
         g = games.get(a.game_id)
         if g is None:
             aw, hm = (a.game_label or "? @ ?").split(" @ ")
@@ -293,6 +308,16 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
                 pick["price"] = status(p, a, now)
             except Exception:  # noqa: BLE001 - a status never drops the pick
                 pick["price"] = None
+        s = on_sp.get(a.dedup_key)
+        if a.signal == "dogsprd":  # Spread Picks: 1 unit flat, naming the ML pick it came from
+            team = a.game_label.split(" @ ")[1 if a.side == "home" else 0]
+            ml = trig_price.get((s or {}).get("trigger_key", ""))
+            pick.update(spread=s is not None, label=(s or {}).get("label", "SPREAD"),
+                        stake=float((s or {}).get("stake", 1.0)), card=False, og=False,
+                        trigger="" if ml is None else
+                        f"from Next Gen ML {team} {_fmt_price(int(ml))}")  # fmt: skip
+            if res is not None and a.profit is not None:
+                pick["units"] = round(pick["stake"] * a.profit, 2)
         g["picks"].append(pick)
     # the same bet on both NBA cards (found by each card's own signal): marked on both
     bets_ng = {x["bet"] for g in games.values() for x in g["picks"] if x["card"]}
@@ -313,6 +338,13 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
         out["og_note"] = OG_SWITCH_OVER
     if sport == "nba" and C.load():
         out["cards"] = {k: C.name(k) for k in (C.NEXTGEN, C.OG)}
+    if sport == "nba" and sp_card is not None:  # Spread Picks (owner 2026-11-10)
+        out["spread_chosen"] = True
+        if not sp_card.get("picks"):
+            sk = sp_card.get("skipped") or []
+            out["spread_note"] = ("No spread picks today — no Next Gen ML underdog on the card"
+                                  if not sk else "No spread picks today — "
+                                  + "; ".join(x["reason"] for x in sk))  # fmt: skip
     if sport == "nba":  # the Next Gen parlay (owner 2026-11-06); never breaks the tracker
         try:
             from betdata.ledger import ledger_dir
