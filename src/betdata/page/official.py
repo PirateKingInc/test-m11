@@ -58,7 +58,44 @@ def header_html(rows: list[dict], sport: str, name: str, today: date, site: Path
     default = C.default()
     return toggle_html(default) + "".join(
         card_header(C.view(rows, k), sport, name, today, site, k, C.name(k), k != default)
-        for k in (C.NEXTGEN, C.OG))  # fmt: skip
+        for k in nba_cards())  # fmt: skip
+
+
+def nba_cards() -> tuple[str, ...]:
+    """The NBA toggle's cards, in order: Next Gen, OG, and Spread Picks (owner 2026-11-10)
+    while it is active (a retired Spread card keeps its ledger rows, not its toggle)."""
+    from betdata import cards as C
+
+    return (C.NEXTGEN, C.OG) + ((C.SPREAD,) if C.SPREAD in C.load()
+                                and C.active(C.SPREAD) else ())  # fmt: skip
+
+
+def spread_header(off: list[dict], sport: str, today: date, site: Path, label: str,
+                  hidden: bool) -> str:  # fmt: skip
+    """The Spread Picks record (owner decision 2026-11-10): graded picks only, 1 unit flat;
+    its own review at 50 graded picks instead of the 500-pick goal."""
+    from betdata.spread import REVIEW_N
+
+    per = O.periods(off, today)
+    allt = per["All time"]
+    preview = f"{label} {allt.wlp} · {_units(allt.units)} · review {allt.graded} of {REVIEW_N}"
+    out = [f"<section class='official' data-sport='{escape(sport)}' data-card='spread'"
+           f"{' hidden' if hidden else ''}><details class='fold' data-fold='{escape(sport)}"
+           f"-official'><summary><b>Official record · NBA · {escape(label)}</b> <span "
+           f"class='pv'>— {escape(preview)}</span></summary><div class='foldbody'><p "
+           "class='meta'>One spread pick, 1 unit, on the same team as every Next Gen official "
+           "card ML underdog, at the same book and price snapshot (chosen with Next Gen at 6:15 "
+           "AM ET). Its own record: never in Next Gen's or OG's. Graded picks only; Nov 6-9 "
+           "prices were reconstructed from stored quotes. Paper units, not advice.</p>"
+           "<dl class='periods'>"]
+    for lab, rec in per.items():
+        href = f"csv/{sport}-spread-official-{lab.lower().replace(' ', '-')}.csv"
+        O.write_csv(site / href, rec.rows)
+        out.append(f"<dt>{escape(lab)}</dt><dd>{stat_line(rec, href)}</dd>")
+    out.append(f"</dl><p class='meta'>Review at {REVIEW_N} graded picks: {allt.graded} of "
+               f"{REVIEW_N} (owner 2026-11-10; nothing turns off)</p>"
+               "</div></details></section>")
+    return "".join(out)
 
 
 V2_MARKER = "Rules v2 from Nov 10"
@@ -68,6 +105,8 @@ V2_LABEL = "Since rules v2 (Nov 10)"
 def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
                 card: str | None = None, label: str = "", hidden: bool = False) -> str:
     """One card's official record header: periods and its own success goal."""
+    if card == "spread":
+        return spread_header(off, sport, today, site, label, hidden)
     per = O.periods(off, today)
     allt, g = per["All time"], O.goal(off)
     v2 = None
@@ -104,7 +143,8 @@ def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
 
 
 def toggle_html(default: str) -> str:
-    """"Next Gen | OG" at the top of the NBA tab (owner decision 2026-11-05): it switches the
+    """"Next Gen | OG | Spread" at the top of the NBA tab (owner decisions 2026-11-05 and, for
+    Spread, 2026-11-10): it switches the
     card block, the official record with its goal, Results by day and the card badges in Today.
     Each viewer's choice is remembered in localStorage (default Next Gen)."""
     from betdata import cards as C
@@ -112,12 +152,13 @@ def toggle_html(default: str) -> str:
     btn = "".join(f"<button type='button' data-pick='{k}' aria-pressed='"
                   f"{'true' if k == default else 'false'}' style='flex:1;padding:8px;"
                   "border:0;border-radius:8px;font:inherit;font-weight:600;cursor:pointer'>"
-                  f"{escape(C.name(k))}</button>" for k in (C.NEXTGEN, C.OG))
+                  f"{escape(TOGGLE_NAMES.get(k, C.name(k)))}</button>" for k in nba_cards())
     return (f"<div class='cardtoggle' role='group' data-cardtoggle='nba' data-default='"
             f"{escape(default)}' style='display:flex;gap:6px;margin:10px 0;padding:4px;"
             f"border:1px solid var(--line);border-radius:10px'>{btn}</div>{TOGGLE_JS}")
 
 
+TOGGLE_NAMES = {"spread": "Spread"}  # the toggle's short label for "Spread Picks"
 TOGGLE_JS = """<script>
 (function(){
   var K = 'betdata.nbaCard';
@@ -125,7 +166,9 @@ TOGGLE_JS = """<script>
   if (!root) return;
   var scope = root.closest('.panel') || document;
   function get() {
-    try { var v = localStorage.getItem(K); if (v === 'og' || v === 'nextgen') return v; }
+    try { var v = localStorage.getItem(K);
+      if (v === 'og' || v === 'nextgen' || (v === 'spread' && root.querySelector(
+        '[data-pick="spread"]'))) return v; }
     catch (e) {}
     return root.dataset.default || 'nextgen';
   }
@@ -251,7 +294,7 @@ def days_html(rows: list[dict], sport: str, today: date, site: Path, et) -> str:
     both = C.on_both(rows)
     default = C.default()
     return "".join(card_days_html(rows, C.view(rows, k), sport, today, site, et, k,
-                                  k != default, both) for k in (C.NEXTGEN, C.OG))
+                                  k != default, both) for k in nba_cards())
 
 
 def card_days_html(rows: list[dict], off: list[dict], sport: str, today: date, site: Path, et,
@@ -289,7 +332,9 @@ def card_days_html(rows: list[dict], off: list[dict], sport: str, today: date, s
                             + (f" · why: <b>{escape(r['review_tag'])}</b>"
                                if r.get("review_tag") else "")
                             + (" · <b>on both cards</b>" if both and C.both_mark(r, both)
-                               else "")
+                               and card != C.SPREAD else "")
+                            + (" · <b>reconstructed</b>" if card == C.SPREAD
+                               and r.get("spread_backfill") else "")
                             + "</div></li>" for r in ps) + "</ul></div>")  # fmt: skip
         out.append(f"<details class='day' id='{escape(sport)}{tag}-day-{escape(d)}' "
                    f"data-day='{escape(d)}'><summary><b>{escape(label)}</b> "

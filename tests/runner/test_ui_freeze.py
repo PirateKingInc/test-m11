@@ -47,6 +47,12 @@ Owner-approved additions (each allowed exactly, and nothing else):
   (one <b>) and a "Since rules v2 (Nov 10)" row (one dt/dd with its record) next to the full
   record. Previous snapshot kept as `ui_freeze_snapshot_m24.txt`; the difference is pinned
   (APPROVED_DIFF_RULES_V2_SHA).
+- 2026-11-10, the Spread Picks card: exactly a third toggle option ("Next Gen | OG | Spread",
+  one more button and the toggle script's new version), the Spread card's official-record
+  section (its periods and its 50-pick review line, no 500-pick goal) and its Results by day,
+  both hidden by default. Previous snapshot kept as `ui_freeze_snapshot_m25.txt`; the difference
+  is pinned (APPROVED_DIFF_SPREAD_SHA). The Today renderer's approved hash moves for the Spread
+  view (Spread picks shown only there, the triggering ML pick in small text).
 """
 
 import hashlib
@@ -118,9 +124,11 @@ TRACKER_SCRIPT_HISTORY = {"d866cf4bf364": "M19 renderer (pre-2026-11-04)",
                           "6405b2f92e7a": "engine card's short-card note (2026-11-04 override)",
                           "fbc70cba5745": "ETA wording: ~6:15 AM ET tomorrow (2026-11-05)",
                           "47458f1428a0": "Next Gen | OG toggle (2026-11-05)",
-                          "7cbd8c4fbbca": "Next Gen parlay block (2026-11-06)"}
-TRACKER_SCRIPT_SHA = "7cbd8c4fbbca"
-TOGGLE_SCRIPT_SHA = "6d68073346bb"
+                          "7cbd8c4fbbca": "Next Gen parlay block (2026-11-06)",
+                          "db5c65742992": "Spread view (2026-11-10)"}
+TRACKER_SCRIPT_SHA = "db5c65742992"
+TOGGLE_SCRIPT_SHA = "6d68073346bb"  # the two-card toggle (2026-11-05)
+TOGGLE_SCRIPT_SPREAD_SHA = "4f92a4d6e007"  # with the Spread option (2026-11-10)
 SNAPSHOT_M19 = Path(__file__).with_name("ui_freeze_snapshot_m19.txt")
 SNAPSHOT_M20B = Path(__file__).with_name("ui_freeze_snapshot_m20b.txt")
 APPROVED_DIFF_SHA = "c1f5faf443d5"  # m19 snapshot -> m20b snapshot (2026-11-04)
@@ -128,7 +136,9 @@ APPROVED_DIFF_ENGINE_SHA = "22651c2d3629"  # m20b snapshot -> m21 (engine card, 
 SNAPSHOT_M21 = Path(__file__).with_name("ui_freeze_snapshot_m21.txt")
 SNAPSHOT_M22 = Path(__file__).with_name("ui_freeze_snapshot_m22.txt")
 SNAPSHOT_M24 = Path(__file__).with_name("ui_freeze_snapshot_m24.txt")
-APPROVED_DIFF_RULES_V2_SHA = "37e8a875c423"  # m24 -> current (rules v2 marker, 2026-11-09)
+SNAPSHOT_M25 = Path(__file__).with_name("ui_freeze_snapshot_m25.txt")
+APPROVED_DIFF_RULES_V2_SHA = "37e8a875c423"  # m24 -> m25 (rules v2 marker, 2026-11-09)
+APPROVED_DIFF_SPREAD_SHA = "a11c511e0720"  # m25 -> current (Spread Picks, 2026-11-10)
 APPROVED_DIFF_DEFAULT_TAB_SHA = "d60079053e6b"  # m22 -> current (NBA default tab, 2026-11-05)
 APPROVED_DIFF_TWO_CARDS_SHA = "bedb7949f2df"  # m21 snapshot -> current (two cards, 2026-11-05)
 # the lines the engine-card approval added, exactly
@@ -236,13 +246,31 @@ def test_snapshot_differs_by_exactly_the_rules_v2_marker():
     import difflib
 
     a = SNAPSHOT_M24.read_text().splitlines()
-    b = SNAPSHOT.read_text().splitlines()
+    b = SNAPSHOT_M25.read_text().splitlines()
     d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
     assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_RULES_V2_SHA, d
     lines = [x for x in d.splitlines() if not x.startswith(("+++", "---", "@@"))]
     assert all(x.startswith("+") for x in lines)
     assert [x[1:].strip() for x in lines] == 2 * ["b", "dt", "dd", "span class=rec", "a", "b",
                                                   "a", "a"]
+
+
+def test_snapshot_differs_by_exactly_the_spread_card():
+    """2026-11-10: one toggle button, the toggle script's new version, the Spread record
+    section and its Results by day; nothing removed but the old toggle script line."""
+    import difflib
+
+    a = SNAPSHOT_M25.read_text().splitlines()
+    b = SNAPSHOT.read_text().splitlines()
+    d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
+    assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_SPREAD_SHA, d
+    added = [x[1:].strip() for x in d.splitlines() if x.startswith("+") and not x.startswith("+++")]
+    removed = [x[1:].strip() for x in d.splitlines()
+               if x.startswith("-") and not x.startswith("---")]  # fmt: skip
+    assert removed == [f"<script sha1 {TOGGLE_SCRIPT_SHA}>"]
+    assert added[:2] == ["button", f"<script sha1 {TOGGLE_SCRIPT_SPREAD_SHA}>"]
+    assert added.count("section class=official") == 1 and added.count("section class=days") == 1
+    assert "div class=goal" not in added  # its review line, not a 500-pick goal
 
 
 def test_snapshot_differs_by_exactly_the_default_tab_script():
@@ -305,7 +333,8 @@ def test_every_card_dependent_section_follows_the_toggle(tmp_path):
     assert nba.count("data-cardtoggle='nba'") == 1
     for kind in ("official", "days"):
         tags = re.findall(rf"<section class='{kind}' data-sport='nba'([^>]*)>", nba)
-        assert tags == [" data-card='nextgen'", " data-card='og' hidden"], (kind, tags)
+        assert tags == [" data-card='nextgen'", " data-card='og' hidden",
+                        " data-card='spread' hidden"], (kind, tags)
     assert nba.index("data-cardtoggle") < nba.index("<section class='official'")
     # the toggle: every [data-card] section, a remembered choice (try/catch), default Next Gen
     assert "querySelectorAll('[data-card]')" in TOGGLE_JS
