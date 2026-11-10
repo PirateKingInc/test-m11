@@ -883,3 +883,9 @@ P46fd46562f58,4.0,24.0,,NOP 87-138 GSW,[],2.5,2.37,Variance,2026-11-10T11:15:31+
 P562c69706d03,3.0,26.0,,NOP 87-138 GSW,[],2.5,-0.49,Market disagreed,2026-11-10T11:15:31+00:00
 P9d4de7e05aef,,,,BUF 23-6 MIN,,3.5,-1.45,not enough data,2026-11-10T13:00:38+00:00
 Pf685dcc12273,,,,BUF 23-6 MIN,,6.5,-1.44,not enough data,2026-11-10T13:00:38+00:00
+P169c7003cac9,-15.0,,,SAS 124-109 SAC,[],17.5,,not enough data,2026-11-10T15:00:40+00:00
+P1eda820f5861,3.0,,,HOU 99-102 PHX,[],6.5,,not enough data,2026-11-10T15:00:40+00:00
+Pc9336d8e9a66,-20.0,,,BOS 117-97 MIL,[],13.5,,not enough data,2026-11-10T15:00:40+00:00
+P153cdc17820d,-6.0,,,PHI 127-121 CHI,[],9.5,,not enough data,2026-11-10T15:00:40+00:00
+Pd3516f11e0a2,-10.0,,,DEN 100-110 HOU,[],4.5,,not enough data,2026-11-10T15:00:40+00:00
+Pcd466f0a64e0,12.0,,,CLE 112-124 CHA,"[{""player"": ""Jarrett Allen"", ""from"": ""Available"", ""to"": ""Questionable""}]",8.5,,News after pick,2026-11-10T15:00:40+00:00

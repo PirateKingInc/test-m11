@@ -1,1 +1,7 @@
 pick_id,sport,card_date,spread,spread_label,spread_stake,selected_at,trigger_pick_id,book,snapshot_at,price_source,backfill
+P169c7003cac9,nba,2026-11-06,yes,SPREAD,1.0,2026-11-10T14:00:38.326316+00:00,P04547ddd072a,fanduel,2026-11-06T01:06:00.000099+00:00,same book,true
+P1eda820f5861,nba,2026-11-07,yes,SPREAD,1.0,2026-11-10T14:00:38.326316+00:00,P19c48d1abe70,draftkings,2026-11-07T04:31:00.000106+00:00,same book,true
+Pc9336d8e9a66,nba,2026-11-08,yes,SPREAD,1.0,2026-11-10T14:00:38.326316+00:00,P3ba5a1cc9427,fanduel,2026-11-07T23:45:00.000113+00:00,same book,true
+P153cdc17820d,nba,2026-11-08,yes,SPREAD,1.0,2026-11-10T14:00:38.326316+00:00,P424a6d4e235f,fanduel,2026-11-08T11:00:30.244002+00:00,same book,true
+Pd3516f11e0a2,nba,2026-11-09,yes,SPREAD,1.0,2026-11-10T14:00:38.326316+00:00,P8c51b77102b5,fanduel,2026-11-08T23:45:00.000125+00:00,same book,true
+Pcd466f0a64e0,nba,2026-11-09,yes,SPREAD,1.0,2026-11-10T14:00:38.326316+00:00,P8e39cd86f4e8,draftkings,2026-11-09T04:30:00.000145+00:00,same book,true
