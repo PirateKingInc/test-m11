@@ -312,6 +312,12 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
     card_rows(p, out)
     shadow_rows(p, out)
     card_days(p, out)
+    try:  # the Spread Picks card (owner 2026-11-10, betdata/spread.py), each row written once
+        from betdata.spread import ledger_rows as spread_rows
+
+        spread_rows(p, out, now)
+    except Exception as e:  # noqa: BLE001 - the Spread card never stops the ledger
+        log.warning("spread ledger failed: %s", e)
     annotate(out, now)
     try:  # M19 review fields and reason tags (betdata/review.py), each row written once
         from betdata import review
@@ -559,9 +565,14 @@ def bank(rows: list[dict], label: str = "label", stake: str = "stake") -> Bank:
     return b
 
 
-def counted(rows: list[dict]) -> list[dict]:
+def counted(rows: list[dict], spread: bool = False) -> list[dict]:
     """The picks the record counts: not M16 legacy, not a duplicate."""
-    return [r for r in rows if r["signal_name"] != LEGACY and r.get("duplicate") != "true"]
+    from betdata.spread import NAME as SPREAD
+
+    # Spread Picks (owner 2026-11-10) have their own record only: never in a research table,
+    # the all-time record or a signal milestone; `spread=True` keeps them (official.dataset)
+    return [r for r in rows if r["signal_name"] != LEGACY and r.get("duplicate") != "true"
+            and (spread or r["signal_name"] != SPREAD)]
 
 
 def _f(x: str) -> float | None:

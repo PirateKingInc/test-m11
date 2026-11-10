@@ -14,7 +14,7 @@ from pathlib import Path
 import yaml
 
 PATH = Path(__file__).resolve().parents[2] / "config" / "cards.yaml"
-NEXTGEN, OG = "nextgen", "og"
+NEXTGEN, OG, SPREAD = "nextgen", "og", "spread"
 ENGINE_SIGNAL = "nba-engine"
 
 
@@ -63,10 +63,15 @@ def view(rows: list[dict], key: str) -> list[dict]:
     for r in rows:
         if r["sport"] != "nba":
             continue
-        if key == NEXTGEN:
+        if key == SPREAD:  # Spread Picks (owner 2026-11-10): its own rows, 1 unit flat
+            if r.get("spread"):
+                out.append({**r, "official": True, "day": r["spread_date"],
+                            "card_date": r["spread_date"], "card_stake": r["spread_stake"],
+                            "card_label": r["spread_label"], "card_name": c.name})
+        elif key == NEXTGEN:
             if r["official"] and r["signal_name"] == ENGINE_SIGNAL:
                 out.append({**r, "card_name": c.name})
-        else:
+        elif key == OG:
             if (r["official"] and r["signal_name"] != ENGINE_SIGNAL
                     and r["day"] <= c.history_until):  # Card v1, Oct 31 - Nov 4
                 out.append({**r, "card_name": c.name})

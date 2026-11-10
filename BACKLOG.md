@@ -126,3 +126,13 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **F crossed 200 before the M20 rule was written**, so its three-check verdict is not pre-registered. Judge F again on its next 200 picks (from 2026-11-04) under the M20 rule.
 - **Database rebuild drift:** nba15 rebuilt from today's published files reproduces its recorded test MAE within 0.015 (not bit-exact); the original runner database was not available here.
 - **Engine props for PRA:** no validation lines (PRA lines start 2024-25), so its blend weight is 0 (market only) and SharpAPI quotes no PRA; research only.
+
+## Spread Picks card (2026-11-10)
+
+- **50-pick review (fixed 2026-11-10):** at 50 graded Spread picks, `reports/nba/spread_review.md`
+  (record, units, ROI, average line, ATS vs the same teams' ML results, cover-margin
+  distribution, EV at close where closes exist) and one ntfy line. Nothing turns off; the owner
+  decides. The six Nov 6-9 picks are backfilled (reconstructed prices) and count.
+- **Spread quotes are hourly-sweep snapshots** like the other lines: the price paired with an ML
+  pick is the last stored spread at or before it, which can be up to a sweep old.
+- **Alt lines, buying points, teasers:** out of scope.

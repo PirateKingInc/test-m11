@@ -282,6 +282,13 @@ class Poller:
             cards = [*cards, *og]  # a card chosen after 6:15 (no lines then) is pushed now
         except Exception as e:  # noqa: BLE001 - OG never stops the other cards
             self.errors.append(f"OG card: {type(e).__name__}: {str(e)[:200]}")
+        try:  # Spread Picks (owner 2026-11-10): chosen with Next Gen; in Next Gen's push
+            from betdata.spread import run as spread_run
+
+            for sp in spread_run(self.pdb, self.main, now):
+                self.notes.append(f"Spread card {sp['day']}: {len(sp['picks'])} picks")
+        except Exception as e:  # noqa: BLE001 - the Spread card never stops the other cards
+            self.errors.append(f"Spread card: {type(e).__name__}: {str(e)[:200]}")
         for c in cards:  # pushed right after selection, one message per sport
             sent = push(self.pdb, c, now, self.keys.ntfy_topic, self.push_client)
             self.notes.append(f"card {c['sport']} {c['day']}: {len(c['picks'])} picks, "
@@ -1084,7 +1091,21 @@ class Poller:
                 self.notes.append(f"{n} picks reloaded from the ledger")
 
         self._guard("ledger reload", _reload)
+
+        def _spread_history():  # Spread Picks history (owner 2026-11-10): once, idempotent
+            from betdata.ledger import ledger_dir
+            from betdata.spread import backfill
+
+            for c in backfill(self.pdb, ledger_dir(), now):
+                self.notes.append(f"spread backfill {c['day']}: {len(c['picks'])} picks, "
+                                  f"{len(c['skipped'])} skipped")
+
+        self._guard("spread backfill", _spread_history)
         self._guard("grade", G.grade_all, self.main, self.pdb, now)
+
+        from betdata.spread import propagate_voids  # a voided ML pick voids its Spread pick
+
+        self._guard("spread voids", propagate_voids, self.pdb)
 
         from betdata.alerts.gates import grade_consensus  # M18 Part H
 
