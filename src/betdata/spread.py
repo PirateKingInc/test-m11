@@ -350,3 +350,63 @@ def day_alerts(p, day: date) -> dict[str, SimpleNamespace]:
 
     return {a.dedup_key: a for a in day_picks(p, "nba", day, (SIGNAL, "engine"))}
 
+
+REVIEW_N = 50  # graded Spread picks before the review (owner 2026-11-10)
+
+
+def _wl(rec) -> str:
+    return f"{rec.wins}-{rec.losses}" + (f"-{rec.pushes}" if rec.pushes else "")
+
+
+def _u(x: float) -> str:
+    return f"{x:+.1f}u" if abs(x) >= 0.05 or x == 0 else f"{x:+.2f}u"
+
+
+def push_lines(p, rows: list[dict] | None, today: date) -> list[str]:
+    """The "Spread picks" section of the NBA push, after Next Gen and OG (owner 2026-11-10):
+
+    Spread Picks: last night 1-1, -0.1u · record 4-2, +1.7u (6 of 50)
+    Spread picks: 1 —
+      CLE @ CHA 7:00 PM ET: CHA +8.5 (-110) at DraftKings · 1u (Next Gen ML CHA +284)
+    or "Spread picks: none today". `rows`: the ledger dataset (None: no record line)."""
+    from datetime import timedelta
+
+    from betdata.alerts.db import get_state
+    from betdata.alerts.notify import _fmt_price
+    from betdata.alerts.rules import EASTERN
+
+    if not active():
+        return []
+    out = []
+    if rows is not None:
+        from betdata import cards as C
+        from betdata import official as O
+
+        view = C.view(rows, C.SPREAD)
+        yday = (today - timedelta(days=1)).isoformat()
+        last = O.record([r for r in view if r["day"] == yday], O.official_stake)
+        rec = O.record(view, O.official_stake)
+        out.append(f"{C.name(C.SPREAD)}: last night {_wl(last)}, {_u(last.units)} · record "
+                   f"{_wl(rec)}, {_u(rec.units)} ({rec.graded} of {REVIEW_N})")
+    card = get_state(p, key(today))
+    if card is None:
+        out.append("Spread picks: chosen with the Next Gen card")
+        return out
+    by = day_alerts(p, today)
+    lines = []
+    for x in card.get("picks", []):
+        a, t = by.get(x["dedup_key"]), by.get(x.get("trigger_key", ""))
+        if a is None:
+            continue
+        team = team_of(a)
+        when = a.tip.astimezone(EASTERN).strftime("%-I:%M %p ET") if a.tip else ""
+        ln = " PK" if a.line == 0 else f" {a.line:+g}"
+        ml = "" if t is None else f" (Next Gen ML {team} {_fmt_price(int(t.price))})"
+        lines.append(f"  {a.game_label} {when}: {team}{ln} ({_fmt_price(int(a.price))}) at "
+                     f"{BOOK_NAMES.get(a.book, a.book)} · {x.get('stake', STAKE):g}u{ml}")
+    if not lines:
+        out.append("Spread picks: none today")
+    else:
+        out.append(f"Spread picks: {len(lines)} —")
+        out += lines
+    return out

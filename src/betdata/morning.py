@@ -350,6 +350,12 @@ def nba_message(p, rows: list[dict], now: datetime) -> tuple[str, str]:
         lines += PL.push_lines(get_state(p, PL.key(today)))
     except Exception as e:  # noqa: BLE001
         log.warning("parlay push section failed: %s", e)
+    try:  # Spread Picks (owner 2026-11-10), after Next Gen and OG; never breaks the push
+        from betdata import spread as SP
+
+        lines += SP.push_lines(p, rows, today)
+    except Exception as e:  # noqa: BLE001
+        log.warning("spread push section failed: %s", e)
     late = ungraded_games(rows, "nba", today - timedelta(days=1))
     if late:
         lines.append(f"Not graded yet: {', '.join(late)} (no final box score yet; graded on "

@@ -374,6 +374,15 @@ def message(p, card: dict, now: datetime) -> tuple[str, str]:
                      f"{BOOKS.get(a.book, a.book)}, {x['label']} {x['stake']:g}u")
     if card.get("source") in ("engine", SHADOW) and card_note(card):
         lines.append(card_note(card))
+    if card.get("source") == "engine":  # Spread Picks ride in Next Gen's push (owner 2026-11-10)
+        try:
+            from betdata import spread as SP
+
+            d = datetime.fromisoformat(card["day"]).date()
+            if get_state(p, SP.key(d)) is not None:  # chosen with this Next Gen card
+                lines += SP.push_lines(p, None, d)
+        except Exception:  # noqa: BLE001 - never breaks the card push
+            pass
     day = datetime.fromisoformat(card["day"]).strftime("%a %b %-d")
     who = card["sport"].upper()
     if card.get("source") in ("engine", SHADOW):
