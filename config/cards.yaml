@@ -1,4 +1,5 @@
-# The official NBA cards (owner decision 2026-11-05, MODEL.md "Two official NBA cards").
+# The official NBA cards; "Spread Picks" added by owner decision 2026-11-10 (MODEL.md "Spread
+# Picks card") (owner decision 2026-11-05, MODEL.md "Two official NBA cards").
 # Display names and record rules only: stored picks keep their own signals (append-only ledger).
 nba:
   default: nextgen  # the toggle's default when a viewer has no stored choice
@@ -20,4 +21,11 @@ nba:
       # switch-over: lines were first seen on Nov 5 while F was archived; also annotated on
       # each such pick in ledger/annotations.csv (field og_excluded)
       exclude_days: [2026-11-05]
+      active: true
+    spread:
+      name: Spread Picks
+      what: official ATS pick on every Next Gen official-card ML underdog
+      signals: [dogsprd]
+      state: spread  # poller state spread:nba:<day>, ledger/spread_card.csv (betdata/spread.py)
+      since: 2026-11-06
       active: true

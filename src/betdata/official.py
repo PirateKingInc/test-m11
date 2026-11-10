@@ -42,12 +42,19 @@ def dataset(out: Path) -> list[dict]:
     rp = {r["pick_id"]: r for r in read_rows(out / REVIEW_PICK)}
     rr = {r["pick_id"]: r for r in read_rows(out / REVIEW_RESULT)}
     sh = {r["pick_id"]: r for r in read_rows(out / "shadow_card.csv")}
+    sp = {r["pick_id"]: r for r in read_rows(out / "spread_card.csv")}  # Spread Picks
     rows = []
-    for r in counted(joined(out)):
+    for r in counted(joined(out), spread=True):
         p, q = rp.get(r["pick_id"], {}), rr.get(r["pick_id"], {})
         official = r.get("card") == "yes"
         x = sh.get(r["pick_id"], {})
+        y = sp.get(r["pick_id"], {})
         rows.append({**r, "official": official,
+                     "spread": y.get("spread") == "yes", "spread_date": y.get("card_date", ""),
+                     "spread_label": y.get("spread_label", ""),
+                     "spread_stake": y.get("spread_stake", ""),
+                     "spread_trigger": y.get("trigger_pick_id", ""),
+                     "spread_backfill": y.get("backfill") == "true",
                      "shadow": x.get("shadow") == "yes", "shadow_date": x.get("card_date", ""),
                      "shadow_label": x.get("shadow_label", ""),
                      "shadow_stake": x.get("shadow_stake", ""),
@@ -181,9 +188,12 @@ def by_day(rows: list[dict]) -> dict[str, list[dict]]:
 
 def signals(rows: list[dict]) -> dict[str, Rec]:
     """Each signal's research record: all its picks, flat 1 unit."""
+    from betdata.spread import NAME as SPREAD
+
     out: dict[str, list] = {}
     for r in rows:
-        out.setdefault(r["signal_name"], []).append(r)
+        if r["signal_name"] != SPREAD:  # Spread Picks: their own record only (owner 2026-11-10)
+            out.setdefault(r["signal_name"], []).append(r)
     return {k: record(v) for k, v in sorted(out.items())}
 
 

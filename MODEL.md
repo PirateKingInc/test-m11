@@ -3011,3 +3011,50 @@ profitable bets (rebounds +300u, ROI +8%; assist unders at 5.5+ +104u, ROI +13%)
 removed losing ones (-25u) — a caution on rules chosen from 2026 data. Nothing in it changed a
 rule or a model; the owner decides.
 
+
+## Spread Picks card (owner decision 2026-11-10; config/cards.yaml `spread`, betdata/spread.py)
+
+A third official NBA card with its own record. **Why:** when Next Gen puts an ML underdog on its
+official card, that team may cover the spread. Since Nov 6 the six official Next Gen ML underdogs
+went 2-4 on the moneyline and 4-2 against the spread at the closing lines in
+`ledger/engine_grades.csv`. Reviewed at 50 graded Spread picks; nothing turns off by itself.
+
+- **Trigger.** Only a Next Gen *official* card pick (card.csv `card` yes, TAKE or LEAN) on `h2h`
+  at positive American odds. It creates exactly one Spread pick on the same team (same side) to
+  cover the spread. Never from OG, non-card picks, the parlay, news alerts or favourites. The
+  ML pick stays on the Next Gen card unchanged. If the ML pick is voided, the Spread pick is
+  voided too.
+- **Pricing.** The spread at the same book (DraftKings or FanDuel) and the same snapshot as the
+  triggering ML pick: the latest stored quote of that book at or before the ML pick's
+  `created_at` (quotes are stored change-only, so that row is the line in force then).
+  Otherwise the other of DK/FD at that snapshot. If neither has a spread, no pick is created
+  and the ML pick gets a `spread_skipped` annotation with the reason. The real line and price
+  are stored; −110 is never assumed.
+- **Stake and grading.** 1 unit flat. Win = (decimal − 1), loss = −1, push = 0, void = out of
+  the record. Spread picks are ordinary ledger picks (`ledger/picks.csv`, market `spreads`,
+  signal `dogsprd`, research name `dog-spread`, reason naming the triggering ML pick id),
+  graded into `ledger/results.csv` by the normal grading path.
+- **Card ledger.** `ledger/spread_card.csv`, one write-once row per Spread pick: pick id, card
+  date, the triggering ML pick id, stake, selection time, the quote snapshot and book used, and
+  whether the price was reconstructed. Card days go to `ledger/card_days.csv` (kind `spread`).
+- **Records are fully separate:** never in the Next Gen or OG record, their 500-pick goals, the
+  parlay, the research tables or the generic signal milestones.
+- **When.** Chosen in the same 6:15 AM ET morning run, right after the Next Gen card, and so by
+  the same waiting rules (lines, the 60-minute cutoff, empty when nothing qualifies). If Next
+  Gen is chosen later (no lines at 6:15), the Spread card is chosen at that same poll.
+- **Push.** No separate push: the morning NBA push gets a "Spread picks" section after the Next
+  Gen and OG sections ("CHA +8.5 -110 at DraftKings · 1u", or "Spread picks: none today"); a
+  Next Gen card chosen later carries the section in its push.
+- **Page.** The NBA toggle is "Next Gen | OG | Spread" (default Next Gen, stored choice and URL
+  behaviour unchanged). The Spread view shows tonight's Spread picks (the triggering ML pick in
+  small text), the record and the same day-by-day history.
+- **History (counts).** The six ML underdogs of Nov 6-9 (SAC, PHX, MIL, CHI, DEN, CHA) are
+  backfilled: priced at the stored spread quote in force at the ML pick's `created_at` (same
+  book, then the other), else the nearest later stored quote, else the earliest stored spread
+  for the game and book; graded from final scores at the stored line; each annotated
+  `spread_backfill` ("reconstructed price: <book> <snapshot time>"), marked "reconstructed" on
+  the page, and counted.
+- **Review (fixed 2026-11-10):** at 50 graded Spread picks a report (record, units, ROI, average
+  line, ATS vs the same teams' ML results, cover-margin distribution, EV at close where closes
+  exist) and one ntfy line. Quiet comparison (report only): every Next Gen ML underdog prediction
+  *not* on the card, with what its spread did, from `ledger/engine_grades.csv`.

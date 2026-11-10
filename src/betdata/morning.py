@@ -10,7 +10,8 @@ In this order (`run`):
      from it);
   c. **engine**: re-run the NBA engine on today's games and price the lines already in the
      archive (the poller's 6:00-6:10 AM ET line sweep, alerts/archive.py);
-  d. **select**: today's engine card and the shadow Card v1, at the same moment (6:15 replaces
+  d. **select**: today's engine card (Next Gen), the Spread Picks card right after it (owner
+     2026-11-10, betdata/spread.py) and OG (Card v1), at the same moment (6:15 replaces
      8:50; top 5 by EV still Live, fewer if fewer qualify, even none, once lines exist for any
      of today's games; with no lines at all, the first later poll with lines selects, and 60
      minutes before the first tip an empty "No lines posted in time" card; alerts/card.py
@@ -134,6 +135,7 @@ class Report:
     engine_picks: int = 0
     cards: dict = field(default_factory=dict)  # sport -> picks chosen (None: not chosen yet)
     shadow: dict = field(default_factory=dict)
+    spread: dict = field(default_factory=dict)  # Spread Picks (owner 2026-11-10)
     parlay: object = None  # 2 / 3 legs, "none", or None (not chosen: see errors)
     errors: list = field(default_factory=list)
 
@@ -190,10 +192,19 @@ def parlay_select(pdb, poller, main, now: datetime) -> dict:
     return select(pdb, poller, main, now)
 
 
-def select_cards(pdb, main, now: datetime) -> tuple[list, list]:
+def select_cards(pdb, main, now: datetime) -> tuple[list, list, list]:
+    """Next Gen, OG, then Spread Picks right after Next Gen (owner 2026-11-10: it follows Next
+    Gen's card, so its waiting rules too)."""
+    from betdata import spread as SP
     from betdata.alerts import card as CD
 
-    return CD.run(pdb, main, now), CD.run_shadow(pdb, main, now)
+    ng = CD.run(pdb, main, now)
+    try:
+        sp = SP.run(pdb, main, now)
+    except Exception:  # noqa: BLE001 - the Spread card never stops the other cards
+        log.exception("spread card failed")
+        sp = []
+    return ng, CD.run_shadow(pdb, main, now), sp
 
 
 def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, active=(),
@@ -218,9 +229,10 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
     _step(rep, "ledger", ledger_sync, pdb, main, out, now)
     rep.engine_picks = _step(rep, "engine", engine, poller, main, active, now) or 0
     got = _step(rep, "select", select_cards, pdb, main, now) or ([], [])
-    cards, shadows = got
+    cards, shadows, *rest = got
     rep.cards = {c["sport"]: len(c["picks"]) for c in cards}
     rep.shadow = {c["sport"]: len(c["picks"]) for c in shadows}
+    rep.spread = {c["sport"]: len(c["picks"]) for c in (rest[0] if rest else [])}
     # the Next Gen parlay (owner 2026-11-06): fail-safe; an error is logged and the cards,
     # the page and the push go out without it
     if "nba" in rep.sports:
@@ -230,7 +242,8 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
     with pdb.begin() as p:  # the push reads this (and so does the verification)
         set_state(p, STATE.format(day=day.isoformat()),
                   {"at": now.isoformat(), "sports": rep.sports, "steps": rep.steps,
-                   "cards": rep.cards, "shadow": rep.shadow, "parlay": rep.parlay,
+                   "cards": rep.cards, "shadow": rep.shadow, "spread": rep.spread,
+                   "parlay": rep.parlay,
                    "errors": rep.errors,
                    "engine_picks": rep.engine_picks}, now)  # fmt: skip
     return rep
