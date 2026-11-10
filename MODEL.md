@@ -3056,5 +3056,6 @@ went 2-4 on the moneyline and 4-2 against the spread at the closing lines in
   the page, and counted.
 - **Review (fixed 2026-11-10):** at 50 graded Spread picks a report (record, units, ROI, average
   line, ATS vs the same teams' ML results, cover-margin distribution, EV at close where closes
-  exist) and one ntfy line. Quiet comparison (report only): every Next Gen ML underdog prediction
+  exist; `reports/nba/spread_review.md`, also any time with `betdata ledger spread-review`)
+  and one ntfy line. Quiet comparison (report only): every Next Gen ML underdog prediction
   *not* on the card, with what its spread did, from `ledger/engine_grades.csv`.
