@@ -21,6 +21,8 @@ nba:
       # switch-over: lines were first seen on Nov 5 while F was archived; also annotated on
       # each such pick in ledger/annotations.csv (field og_excluded)
       exclude_days: [2026-11-05]
+      # OG Ranking v2 (owner 2026-11-11, MODEL.md "OG Ranking v2"): its own ranking from this day
+      ranking_v2_since: 2026-11-12
       active: true
     spread:
       name: Spread Picks

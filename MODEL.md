@@ -3059,3 +3059,67 @@ went 2-4 on the moneyline and 4-2 against the spread at the closing lines in
   exist; `reports/nba/spread_review.md`, also any time with `betdata ledger spread-review`)
   and one ntfy line. Quiet comparison (report only): every Next Gen ML underdog prediction
   *not* on the card, with what its spread did, from `ledger/engine_grades.csv`.
+
+## OG Ranking v2 (owner decision 2026-11-11; betdata/og_ranking.py, config/cards.yaml `og`)
+
+**Why.** OG's official card was 20-25 (44%) through Nov 10 and 6-14 from Nov 7 to Nov 10. A
+ledger review traced it to the ranking, not the model's picks: ranking by EV (model probability
+x decimal odds - 1) rewards long plus prices and large disagreement with the market, where the
+model is most often wrong. All 50 OG card picks were plus money; in the slump 8 of 20 had a model
+probability under 50% and 9 of 20 had the model's own projected median on the wrong side of the
+line, while OG assist picks that missed the card went 45-37. Owner priority: the official card
+must win more than half the time; slightly shorter odds are preferred to long shots. This
+replaces OG's ranking only: the OG model (nbap15 / F / C-NBA), its probabilities and
+calibration, Rules v2, Next Gen, Spread Picks, the parlay, the long-shot gate, news alerts and
+NFL are unchanged.
+
+From the Nov 12 morning card (6:15 AM ET), OG's official card is chosen by its own selection path
+(`alerts/card.py` `decide_og`, no longer Next Gen's `decide`; the "When" rule is the same):
+1. **Candidates:** the same pool as before: F and C-NBA picks for today's games still Live at
+   selection, after Rules v2 (assists only, no unders on 5.5+ lines, no unders with 2+ key
+   teammates Out/Doubtful).
+2. **Price:** American odds from -150 to +130 inclusive at the pick's book; outside is not
+   eligible.
+3. **Median:** the OG model's projected median must be on the bet's side of the line (over:
+   median > line; under: median < line; equal is rejected). It is read from the alert's stored
+   structured fields, exactly as `review_pick.proj_median` stores it: `median` (F, the nbap15
+   distribution's median) or, where the alert has no median, `mean_after` (C-NBA, the repriced
+   projection). A pick with neither is not eligible.
+4. **One pick per player per game:** the highest model probability among that player's eligible
+   lines and books.
+5. **Rank** by the model's win probability (`fair_prob`), highest first; ties: the shorter price
+   (lower decimal odds), then the earlier `created_at`.
+6. **Up to 5;** fewer if fewer qualify, never filled with ineligible picks; none -> an empty OG
+   card with the existing note ("No picks today — OG found no value").
+7. **Stake 0.5u** for every OG card pick. The TAKE/LEAN label keeps the existing labelling logic
+   (alerts/labels.py: edge and edge source / Pinnacle, which does not depend on EV rank) and is
+   shown as before; the stake is fixed at 0.5u whatever the label (every OG card pick so far was
+   LEAN 0.5u).
+8. **Rejections are recorded:** each candidate removed by a Ranking v2 rule gets one annotation
+   `og_rank` in `ledger/annotations.csv` ("og: price outside -150..+130", "og: median not on the
+   bet's side", "og: no median", "og: duplicate player", "og: outside top 5"), next to the Rules v2
+   `filter` annotations; the Filters table shows them for OG.
+
+**OG Top 3 (shadow):** the same pool and rules, up to 3 picks, chosen in the same morning run
+(state `og3:nba:<day>`, `ledger/og_top3.csv`), 0.5u, graded every morning with every pick.
+Never on the main page, never in the push, never in an official record. Its record and a
+side-by-side with official OG (record, win %, units, ROI, average odds, picks per day, worst
+3-day stretch) are in the weekly report and in `reports/nba/og_ranking_v2.md`, rewritten each
+morning.
+
+**Record:** OG's record keeps its full history, with a "Ranking v2 from Nov 12" marker (styled as
+"Rules v2 from Nov 10") and a "Since ranking v2 (Nov 12)" row beside the all-time record; graded
+picks only.
+
+**Slump alert (a review trigger, never a switch):** after each morning grading, if official OG's
+last 15 graded Ranking v2 picks, over its most recent 3 card days, are 3-12 or worse (15 graded,
+at most 3 wins), one ntfy line: "OG review: <W-L> over the last 3 days — check
+reports/nba/og_ranking_v2.md"; at most once a day.
+
+**Review milestone:** at Nov 26 or 50 graded official Ranking v2 picks, whichever comes first,
+the comparison is written to `reports/nba/og_ranking_v2.md` and one ntfy line says the review is
+ready. Nothing switches automatically; the owner decides.
+
+**Backtest (report only):** `reports/nba/og_ranking_v2.md` also holds the hindsight replay that
+motivated this phase (Oct 31 - Nov 10, today's rules, only picks created before that day's card
+selection): the actual EV-ranked card vs Ranking v2 top 5 vs top 3.

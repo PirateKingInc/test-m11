@@ -163,6 +163,26 @@ def decide(p, m, sport: str, day: date, now: datetime, first: datetime, signals=
     return choose(p, sport, day, now, signals, m)
 
 
+def decide_og(p, m, sport: str, day: date, now: datetime, first: datetime,
+              lines_fn=None) -> dict | None:  # fmt: skip
+    """OG's own selection path (owner 2026-11-11, MODEL.md "OG Ranking v2"): the same "When" rule
+    as `decide` (lines -> select now, even empty; no lines -> wait, until 60 minutes before the
+    first tip, then an empty card marked no_lines), with OG's ranking (`choose_og`). Next Gen's
+    `decide` / `choose` are not used here, so OG's rules can change without touching Next Gen."""
+    has = (lines_fn or lines_exist)(p, m, sport, day, now)
+    if not has:
+        if now < first - LINES_CUTOFF:
+            return None
+        return {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
+                "picks": [], "live": 0, "no_lines": True, "source": SHADOW}
+    return choose_og(p, sport, day, now, m)
+
+
+def choose_og(p, sport: str, day: date, now: datetime, m=None) -> dict:
+    """OG's card at `now`: Card v1's rule (top SIZE Live F / C-NBA picks by EV, after rules v2)."""
+    return choose(p, sport, day, now, V1_SIGNALS, m)
+
+
 def card_note(card: dict) -> str:
     """The page and push note of a short or empty NBA card ("" for a full one)."""
     if card.get("no_lines"):
@@ -315,7 +335,7 @@ def run_shadow(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> lis
             if ft is None:
                 continue
             with pdb.begin() as p:
-                card = decide(p, m, sport, day, now, ft, V1_SIGNALS, lines_fn)
+                card = decide_og(p, m, sport, day, now, ft, lines_fn)  # OG's own path
                 if card is None:  # no lines for any of today's games yet: wait
                     continue
                 set_state(p, shadow_key(sport, day), card, now)

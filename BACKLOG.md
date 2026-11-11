@@ -136,3 +136,13 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **Spread quotes are hourly-sweep snapshots** like the other lines: the price paired with an ML
   pick is the last stored spread at or before it, which can be up to a sweep old.
 - **Alt lines, buying points, teasers:** out of scope.
+
+## OG Ranking v2 (2026-11-11)
+
+- **Review at Nov 26 or 50 graded official Ranking v2 picks** (whichever first): official OG vs
+  the Top 3 shadow in `reports/nba/og_ranking_v2.md`, one ntfy line. The owner decides; nothing
+  switches automatically.
+- **C-NBA has no stored median:** its alerts carry the repriced projection (`mean_after`), which
+  `review_pick.proj_median` already uses; Ranking v2 reads the same. Storing the distribution's
+  median on C-NBA alerts would make the rule exact for them.
+- **The backtest is a small hindsight sample** (11 card days) chosen after seeing the slump.
