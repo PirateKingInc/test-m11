@@ -253,3 +253,66 @@ def top3_rows(p, out, now) -> int:
     n = append_rows(out / "og_top3.csv", TOP3_FIELDS, rows)
     append_rows(out / "card_days.csv", CARD_DAY_FIELDS, days, key="key")
     return n
+
+
+# --- the slump alert (owner 2026-11-11): a review trigger, never a switch --------------------
+
+SLUMP_N = 15  # the last 15 graded official Ranking v2 picks...
+SLUMP_DAYS = 3  # ...across the most recent 3 card days
+SLUMP_WINS_MAX = 3  # 3-12 or worse
+REPORT_PATH = "reports/nba/og_ranking_v2.md"
+
+
+def slump(rows: list[dict]) -> tuple[int, int] | None:
+    """(wins, losses) when official OG's last 15 graded Ranking v2 picks, over its most recent 3
+    card days, are 3-12 or worse; else None (fewer than 15 graded picks never fire)."""
+    from betdata import cards as C
+    from betdata import official as O
+
+    v2 = [r for r in O.graded(C.view(rows, C.OG)) if r["day"] >= start().isoformat()]
+    days = sorted({r["day"] for r in v2})[-SLUMP_DAYS:]
+    last = sorted((r for r in v2 if r["day"] in days),
+                  key=lambda r: (r["day"], r.get("tip", ""), r.get("created_at", "")))
+    last = last[-SLUMP_N:]
+    if len(last) < SLUMP_N:
+        return None
+    w = sum(r["result"] == "win" for r in last)
+    lo = sum(r["result"] == "loss" for r in last)
+    return (w, lo) if w <= SLUMP_WINS_MAX else None
+
+
+def slump_line(w: int, lo: int) -> str:
+    return f"OG review: {w}-{lo} over the last 3 days — check {REPORT_PATH}"
+
+
+def slump_check(pdb, rows: list[dict], now, topic: str | None, client=None) -> str | None:
+    """After the morning grading: one ntfy line when `slump` fires, at most once a day (poller
+    state `og-slump:<day>`). Changes nothing else."""
+    import httpx
+
+    from betdata.alerts.db import get_state, set_state
+    from betdata.alerts.notify import NTFY, PAGE
+    from betdata.alerts.rules import EASTERN
+
+    day = now.astimezone(EASTERN).date().isoformat()
+    key = f"og-slump:{day}"
+    with pdb.connect() as p:
+        if get_state(p, key) is not None:
+            return None
+    s = slump(rows)
+    if s is None:
+        return None
+    line = slump_line(*s)
+    if not topic:
+        status = "no NTFY_TOPIC"
+    else:
+        try:
+            r = (client or httpx.Client(timeout=15)).post(
+                NTFY + topic, content=line.encode(),
+                headers={"Title": "OG review", "Click": PAGE, "Tags": "warning"})
+            status = f"http {r.status_code}"
+        except Exception as e:  # noqa: BLE001 - never breaks the morning
+            status = f"error {type(e).__name__}"
+    with pdb.begin() as p:
+        set_state(p, key, {"line": line, "status": status}, now)
+    return status

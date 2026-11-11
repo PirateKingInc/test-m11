@@ -456,7 +456,17 @@ def push(pdb, out: Path, now: datetime, topic: str | None, client=None) -> dict[
                 c = get_state(p, k)
                 if c is not None and "push" not in c:
                     set_state(p, k, {**c, "push": f"morning {status}"}, now)
+    extra = {}
+    if "nba" in st.get("sports", []):  # the OG slump alert (owner 2026-11-11): a review line
+        try:
+            from betdata.og_ranking import slump_check
+
+            s = slump_check(pdb, rows, now, topic, client)
+            if s is not None:
+                extra["og_slump"] = s
+        except Exception as e:  # noqa: BLE001 - never breaks the morning push
+            log.warning("og slump check failed: %s", e)
     with pdb.begin() as p:
         st = get_state(p, STATE.format(day=day.isoformat())) or {}
-        set_state(p, STATE.format(day=day.isoformat()), {**st, "push": sent}, now)
+        set_state(p, STATE.format(day=day.isoformat()), {**st, "push": sent, **extra}, now)
     return sent
