@@ -192,3 +192,57 @@ def test_filters_table_rows_for_og():
     (r,) = OR.filters_table(rows)
     assert (r["card"], r["reason"], r["removed"], r["wlp"], r["units"]) == (
         "OG", OR.PRICE, 2, "1-1-0", 0.5)
+
+
+# --- the OG Top 3 shadow ----------------------------------------------------------------------
+
+
+def test_top3_chosen_in_the_same_run_and_ledgered(pdb, tmp_path):
+    from betdata.alerts.db import get_state
+    from betdata.ledger import pick_id, read_rows
+
+    with pdb.begin() as p:
+        for i in range(6):
+            _pick(p, f"k{i}", fair=0.7 - i / 100)
+    og = _og(pdb)
+    with pdb.connect() as p:
+        t3 = get_state(p, OR.top3_key("nba", NOW.date()))
+        OR.top3_rows(p, tmp_path, NOW)
+        OR.top3_rows(p, tmp_path, NOW)  # write-once
+    assert [x["dedup_key"] for x in t3["picks"]] == _keys(og)[:3] == ["k0", "k1", "k2"]
+    assert t3["selected_at"] == og["selected_at"] and t3["source"] == OR.TOP3_SOURCE
+    rows = read_rows(tmp_path / "og_top3.csv")
+    assert [r["pick_id"] for r in rows] == [pick_id(k) for k in ("k0", "k1", "k2")]
+    assert [r["rank"] for r in rows] == ["1", "2", "3"] and rows[0]["og3_stake"] == "0.5"
+    (d,) = read_rows(tmp_path / "card_days.csv")
+    assert (d["kind"], d["picks"]) == ("og3", "3")
+
+
+def test_top3_never_pushed_shown_or_official(pdb, tmp_path):
+    """The push and the page never read the Top 3 state or file; official records ignore it."""
+    import inspect
+
+    from betdata import cards as C
+    from betdata import morning as M
+    from betdata import official as O
+    from betdata.page import official as PO
+    from betdata.page import tracker as PT
+
+    for mod in (M, PO, PT, C, O):
+        src = inspect.getsource(mod)
+        if mod is M:  # the morning run reads it only for its run report
+            body = src.split("def nba_message")[1].split("\ndef ")[0]
+            assert "og3" not in body and "top3" not in body.lower()
+        else:
+            assert "og3" not in src and "og_top3" not in src and "top3" not in src.lower()
+    from tests.test_spread_records import _ledger
+
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    _ledger(a)
+    _ledger(b)
+    (b / "og_top3.csv").write_text(",".join(OR.TOP3_FIELDS) + "\nog1,nba,2026-11-09,yes,LEAN,"
+                                   "0.5,,1,0.6,120,7.0,6.5\n")
+    va, vb = C.view(O.dataset(a), C.OG), C.view(O.dataset(b), C.OG)
+    assert va == vb

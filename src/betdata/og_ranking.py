@@ -203,3 +203,53 @@ def filters_table(rows: list[dict]) -> list[dict]:
                     "card_graded": card.graded,
                     "status": "Ranking v2 (owner 2026-11-11); reviewed with the card"})
     return out
+
+
+# --- the OG Top 3 shadow (owner 2026-11-11): never shown, pushed or counted officially ------
+
+TOP3_SOURCE = "og-top3-shadow"
+TOP3_FIELDS = ("pick_id", "sport", "card_date", "og3", "og3_label", "og3_stake", "selected_at",
+               "rank", "fair_prob", "price", "median", "line")  # fmt: skip
+
+
+def top3_key(sport: str, day) -> str:
+    return f"og3:{sport}:{day if isinstance(day, str) else day.isoformat()}"
+
+
+def top3_of(card: dict) -> dict:
+    """The Top 3 shadow from OG's Ranking v2 card: the same pool, rules and moment, the first 3
+    of the same ranking (a card of 5 is that ranking's first 5)."""
+    out = {k: card[k] for k in ("sport", "day", "selected_at") if k in card}
+    out.update(picks=list(card.get("picks", []))[:TOP3], source=TOP3_SOURCE, ranking="v2")
+    if card.get("no_lines"):
+        out["no_lines"] = True
+    return out
+
+
+def top3_rows(p, out, now) -> int:
+    """Write-once rows of ledger/og_top3.csv (one per Top 3 pick) and a card-day row (kind
+    `og3`, also when empty)."""
+    from sqlalchemy import select
+
+    from betdata.alerts.db import state
+    from betdata.ledger import CARD_DAY_FIELDS, _num, append_rows, pick_id
+
+    rows, days = [], []
+    for st in p.execute(select(state).where(state.c.key.like("og3:%"))):
+        c = st.value or {}
+        if not c.get("day"):
+            continue
+        for i, x in enumerate(c.get("picks", []), 1):
+            rows.append({"pick_id": pick_id(x["dedup_key"]), "sport": c["sport"],
+                         "card_date": c["day"], "og3": "yes", "og3_label": x.get("label", ""),
+                         "og3_stake": _num(x.get("stake", STAKE)),
+                         "selected_at": c.get("selected_at", ""), "rank": str(i),
+                         "fair_prob": _num(x.get("fair_prob")), "price": x.get("price", ""),
+                         "median": _num(x.get("median")), "line": _num(x.get("line"), 2)})
+        days.append({"key": f"{c['sport']}:{c['day']}:og3", "sport": c["sport"],
+                     "card_date": c["day"], "kind": "og3",
+                     "selected_at": c.get("selected_at", ""),
+                     "picks": str(len(c.get("picks", [])))})  # fmt: skip
+    n = append_rows(out / "og_top3.csv", TOP3_FIELDS, rows)
+    append_rows(out / "card_days.csv", CARD_DAY_FIELDS, days, key="key")
+    return n
