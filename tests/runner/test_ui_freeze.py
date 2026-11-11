@@ -53,6 +53,10 @@ Owner-approved additions (each allowed exactly, and nothing else):
   both hidden by default. Previous snapshot kept as `ui_freeze_snapshot_m25.txt`; the difference
   is pinned (APPROVED_DIFF_SPREAD_SHA). The Today renderer's approved hash moves for the Spread
   view (Spread picks shown only there, the triggering ML pick in small text).
+- 2026-11-11, OG Ranking v2: in the OG record only, a "Ranking v2 from Nov 12" marker (one <b>,
+  styled as the rules v2 marker) and a "Since ranking v2 (Nov 12)" row (one dt/dd with its
+  record). Previous snapshot kept as `ui_freeze_snapshot_m26.txt`; the difference is pinned
+  (APPROVED_DIFF_RANKING_V2_SHA). The OG Top 3 shadow is never on the main page.
 """
 
 import hashlib
@@ -138,7 +142,9 @@ SNAPSHOT_M22 = Path(__file__).with_name("ui_freeze_snapshot_m22.txt")
 SNAPSHOT_M24 = Path(__file__).with_name("ui_freeze_snapshot_m24.txt")
 SNAPSHOT_M25 = Path(__file__).with_name("ui_freeze_snapshot_m25.txt")
 APPROVED_DIFF_RULES_V2_SHA = "37e8a875c423"  # m24 -> m25 (rules v2 marker, 2026-11-09)
-APPROVED_DIFF_SPREAD_SHA = "a11c511e0720"  # m25 -> current (Spread Picks, 2026-11-10)
+APPROVED_DIFF_SPREAD_SHA = "a11c511e0720"  # m25 -> m26 (Spread Picks, 2026-11-10)
+SNAPSHOT_M26 = Path(__file__).with_name("ui_freeze_snapshot_m26.txt")
+APPROVED_DIFF_RANKING_V2_SHA = "fb5b15b3460e"  # m26 -> current (OG Ranking v2, 2026-11-11)
 APPROVED_DIFF_DEFAULT_TAB_SHA = "d60079053e6b"  # m22 -> current (NBA default tab, 2026-11-05)
 APPROVED_DIFF_TWO_CARDS_SHA = "bedb7949f2df"  # m21 snapshot -> current (two cards, 2026-11-05)
 # the lines the engine-card approval added, exactly
@@ -261,7 +267,7 @@ def test_snapshot_differs_by_exactly_the_spread_card():
     import difflib
 
     a = SNAPSHOT_M25.read_text().splitlines()
-    b = SNAPSHOT.read_text().splitlines()
+    b = SNAPSHOT_M26.read_text().splitlines()
     d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
     assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_SPREAD_SHA, d
     added = [x[1:].strip() for x in d.splitlines() if x.startswith("+") and not x.startswith("+++")]
@@ -271,6 +277,25 @@ def test_snapshot_differs_by_exactly_the_spread_card():
     assert added[:2] == ["button", f"<script sha1 {TOGGLE_SCRIPT_SPREAD_SHA}>"]
     assert added.count("section class=official") == 1 and added.count("section class=days") == 1
     assert "div class=goal" not in added  # its review line, not a 500-pick goal
+
+
+def test_snapshot_differs_by_exactly_the_ranking_v2_marker(tmp_path):
+    """2026-11-11: in the OG record only, the marker's <b> and one "Since ranking v2" row."""
+    import difflib
+
+    a = SNAPSHOT_M26.read_text().splitlines()
+    b = SNAPSHOT.read_text().splitlines()
+    d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
+    assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_RANKING_V2_SHA, d
+    lines = [x for x in d.splitlines() if not x.startswith(("+++", "---", "@@"))]
+    assert all(x.startswith("+") for x in lines)
+    assert [x[1:].strip() for x in lines] == ["b", "dt", "dd", "span class=rec", "a", "b",
+                                              "a", "a"]
+    html = build_fixture_page(tmp_path)
+    og = html[html.index("data-card='og'"):html.index("data-card='spread'")]
+    ng = html[html.index("data-card='nextgen'"):html.index("data-card='og'")]
+    assert "Ranking v2 from Nov 12" in og and "Since ranking v2 (Nov 12)" in og
+    assert "Ranking v2" not in ng
 
 
 def test_snapshot_differs_by_exactly_the_default_tab_script():

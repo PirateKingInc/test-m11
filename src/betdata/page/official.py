@@ -100,6 +100,8 @@ def spread_header(off: list[dict], sport: str, today: date, site: Path, label: s
 
 V2_MARKER = "Rules v2 from Nov 10"
 V2_LABEL = "Since rules v2 (Nov 10)"
+RANK_MARKER = "Ranking v2 from Nov 12"  # OG only (owner 2026-11-11, MODEL.md "OG Ranking v2")
+RANK_LABEL = "Since ranking v2 (Nov 12)"
 
 
 def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
@@ -117,6 +119,13 @@ def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
         v2 = O.record([r for r in off if r["day"] >= since], O.official_stake)
         per = {"All time": per["All time"], V2_LABEL: v2,
                **{k: v for k, v in per.items() if k != "All time"}}
+    rank = None
+    if card == "og":  # OG Ranking v2 (owner 2026-11-11): its record since the marker
+        from betdata.og_ranking import start
+
+        rank = O.record([r for r in off if r["day"] >= start().isoformat()], O.official_stake)
+        per = {k: v for k, v in [*list(per.items())[:2], (RANK_LABEL, rank),
+                                 *list(per.items())[2:]]}
     preview = (f"{label + ' ' if card else 'All time '}{allt.wlp} · {_units(allt.units)} · "
                + (f"rules v2 {v2.wlp} · " if v2 is not None else "")
                + f"goal {g.graded} of {O.GOAL_N}, {g.status}")
@@ -130,9 +139,13 @@ def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
            "Like a team's record, graded picks only; today's picks are under Tonight's card "
            "until they are graded. Paper units, not advice."
            + (f" <b>{escape(V2_MARKER)}</b>: card eligibility rules v2 (the goal continues on "
-              "the full record)." if card else "") + "</p><dl class='periods'>"]
+              "the full record)." if card else "")
+           + (f" <b>{escape(RANK_MARKER)}</b>: OG ranks its picks by the model's win probability "
+              "(-150 to +130, the model's median on the bet's side; the full record continues)."
+              if rank is not None else "") + "</p><dl class='periods'>"]
     for lab, rec in per.items():
-        slug = "since-rules-v2" if lab == V2_LABEL else lab.lower().replace(" ", "-")
+        slug = ("since-rules-v2" if lab == V2_LABEL else "since-ranking-v2" if lab == RANK_LABEL
+                else lab.lower().replace(" ", "-"))
         href = f"csv/{sport}{tag}-official-{slug}.csv"
         O.write_csv(site / href, rec.rows)
         out.append(f"<dt>{escape(lab)}</dt><dd>{stat_line(rec, href)}</dd>")
