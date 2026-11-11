@@ -179,7 +179,12 @@ def decide_og(p, m, sport: str, day: date, now: datetime, first: datetime,
 
 
 def choose_og(p, sport: str, day: date, now: datetime, m=None) -> dict:
-    """OG's card at `now`: Card v1's rule (top SIZE Live F / C-NBA picks by EV, after rules v2)."""
+    """OG's card at `now`: before Ranking v2, Card v1's rule (top SIZE Live F / C-NBA picks by
+    EV, after rules v2); from its first day (Nov 12), Ranking v2 (betdata/og_ranking.py)."""
+    from betdata import og_ranking as OR
+
+    if OR.applies(day):
+        return OR.card(p, sport, day, now, m)
     return choose(p, sport, day, now, V1_SIGNALS, m)
 
 
