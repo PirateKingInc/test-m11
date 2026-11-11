@@ -889,3 +889,55 @@ Pc9336d8e9a66,-20.0,,,BOS 117-97 MIL,[],13.5,,not enough data,2026-11-10T15:00:4
 P153cdc17820d,-6.0,,,PHI 127-121 CHI,[],9.5,,not enough data,2026-11-10T15:00:40+00:00
 Pd3516f11e0a2,-10.0,,,DEN 100-110 HOU,[],4.5,,not enough data,2026-11-10T15:00:40+00:00
 Pcd466f0a64e0,12.0,,,CLE 112-124 CHA,"[{""player"": ""Jarrett Allen"", ""from"": ""Available"", ""to"": ""Questionable""}]",8.5,,News after pick,2026-11-10T15:00:40+00:00
+P4df1bda46c46,2.0,28.0,,MIL 85-117 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,8.04,News after pick,2026-11-11T11:15:36+00:00
+Pc81b6c6bd567,1.0,17.0,,MIL 85-117 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,1.68,News after pick,2026-11-11T11:15:36+00:00
+Pfb96c2132a20,,,,MIL 85-117 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,,,2026-11-11T11:15:36+00:00
+P68d8b2a0dd58,3.0,25.0,,MIL 85-117 NYK,"[{""player"": ""Tyler Herro"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,2.8,News after pick,2026-11-11T11:15:36+00:00
+Pa1fb01e3e280,,,,MIL 85-117 NYK,"[{""player"": ""Tyler Herro"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,,,2026-11-11T11:15:36+00:00
+P03dc4caf5ef9,16.0,27.0,,MIL 85-117 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",12.5,-0.49,News after pick,2026-11-11T11:15:36+00:00
+P907b5214c3f8,,,,MIL 85-117 NYK,"[{""player"": ""Josh Hart"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,,,2026-11-11T11:15:36+00:00
+P4a1040331806,3.0,26.0,,MIL 85-117 NYK,"[{""player"": ""Tyler Herro"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,-13.82,News after pick,2026-11-11T11:15:36+00:00
+P4a591bdc95c7,5.0,25.0,,MIL 85-117 NYK,"[{""player"": ""Tyler Herro"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,0.19,News after pick,2026-11-11T11:15:36+00:00
+Pbba7d7d59736,5.0,26.0,,MIL 85-117 NYK,"[{""player"": ""Tyler Herro"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,-2.26,News after pick,2026-11-11T11:15:36+00:00
+P33e07d058a4d,4.0,34.0,,BOS 123-101 PHI,,5.5,7.84,not enough data,2026-11-11T11:15:41+00:00
+P8807e5cd6fa1,1.0,30.0,,BOS 123-101 PHI,,3.5,1.05,not enough data,2026-11-11T11:15:41+00:00
+Pfc113c9cafa4,5.0,32.0,,BOS 123-101 PHI,,2.5,-14.03,not enough data,2026-11-11T11:15:41+00:00
+Pad5fdb7e3677,4.0,32.0,,BOS 123-101 PHI,,6.5,0.08,not enough data,2026-11-11T11:15:41+00:00
+P1ce2ab176135,1.0,34.0,,BOS 123-101 PHI,,3.5,0.96,not enough data,2026-11-11T11:15:41+00:00
+P4d46465e103e,4.0,32.0,,BOS 123-101 PHI,,5.5,8.37,not enough data,2026-11-11T11:15:41+00:00
+Pb47f8e542e16,6.0,30.0,,BOS 123-101 PHI,,2.5,2.75,not enough data,2026-11-11T11:15:41+00:00
+P3247b4b870f5,8.0,29.0,,BOS 123-101 PHI,,6.5,6.34,not enough data,2026-11-11T11:15:41+00:00
+P5292e3f44b1f,0.0,19.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",1.5,5.42,News after pick,2026-11-11T11:15:41+00:00
+P6c1c7b715353,2.0,31.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,4.77,News after pick,2026-11-11T11:15:41+00:00
+Pac57785eb152,2.0,30.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",1.5,5.52,News after pick,2026-11-11T11:15:41+00:00
+Pd782720ab991,8.0,38.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",7.5,7.72,News after pick,2026-11-11T11:15:41+00:00
+P5ff46d416d54,4.0,32.0,,BOS 123-101 PHI,[],6.5,0.77,Variance,2026-11-11T11:15:41+00:00
+Pe4bb2404a489,6.0,30.0,,BOS 123-101 PHI,[],2.5,3.12,Variance,2026-11-11T11:15:41+00:00
+P010cf35be78b,4.0,31.0,,MIA 115-109 UTA,"[{""player"": ""Lauri Markkanen"", ""from"": ""Questionable"", ""to"": ""Out""}]",5.5,-14.62,News after pick,2026-11-11T11:15:41+00:00
+P6de7e4f2718f,2.0,31.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,5.18,News after pick,2026-11-11T11:15:41+00:00
+P629fa2aaa4d2,2.0,30.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",1.5,6.67,News after pick,2026-11-11T11:15:41+00:00
+P8feb3c61ea5d,4.0,31.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",5.5,1.48,News after pick,2026-11-11T11:15:41+00:00
+P3ffb72f21c10,0.0,19.0,,MIA 115-109 UTA,"[{""player"": ""Giannis Antetokounmpo"", ""from"": ""Probable"", ""to"": ""Available""}]",3.5,1.56,News after pick,2026-11-11T11:15:41+00:00
+Pb4317c043447,5.0,24.0,,MIA 115-109 UTA,"[{""player"": ""Lauri Markkanen"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,7.56,News after pick,2026-11-11T11:15:41+00:00
+Pb4dfba76c903,6.0,36.0,,ORL 107-100 SAC,"[{""player"": ""Tristan da Silva"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,-9.82,News after pick,2026-11-11T11:15:41+00:00
+Pe05abf0a96dd,,,,ORL 107-100 SAC,"[{""player"": ""Tristan Da Silva"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,,,2026-11-11T11:15:41+00:00
+P17c767f3c69f,3.0,33.0,,ORL 107-100 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Questionable"", ""to"": ""Available""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",2.5,-0.37,News after pick,2026-11-11T11:15:41+00:00
+Pd9b2ebe96a2f,5.0,33.0,,ORL 107-100 SAC,"[{""player"": ""Tristan da Silva"", ""from"": ""Available"", ""to"": ""Out""}]",5.5,-10.51,News after pick,2026-11-11T11:15:41+00:00
+Pe10a29dff961,4.0,36.0,,ORL 107-100 SAC,"[{""player"": ""Tristan da Silva"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,-7.38,News after pick,2026-11-11T11:15:41+00:00
+P31101bf428ec,5.0,24.0,,ORL 107-100 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Questionable"", ""to"": ""Available""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",5.5,-0.29,News after pick,2026-11-11T11:15:41+00:00
+P8306a66a9c37,3.0,14.0,,ORL 107-100 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Questionable"", ""to"": ""Available""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",5.5,23.97,News after pick,2026-11-11T11:15:41+00:00
+Pc380405afe46,2.0,24.0,,ORL 107-100 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Questionable"", ""to"": ""Available""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",12.5,1.48,News after pick,2026-11-11T11:15:41+00:00
+Pd28576a81425,4.0,34.0,,ORL 107-100 SAC,"[{""player"": ""Domantas Sabonis"", ""from"": ""Questionable"", ""to"": ""Available""}, {""player"": ""Keegan Murray"", ""from"": ""Questionable"", ""to"": ""Available""}]",4.5,7.19,News after pick,2026-11-11T11:15:41+00:00
+Pff69f6dd6656,11.0,33.0,,ORL 107-100 SAC,"[{""player"": ""Tristan da Silva"", ""from"": ""Available"", ""to"": ""Out""}]",8.5,5.77,News after pick,2026-11-11T11:15:41+00:00
+P3dd50f2d641e,3.0,24.0,,OKC 103-123 POR,[],3.5,5.27,Variance,2026-11-11T11:15:41+00:00
+Pde6cae5bf4ac,5.0,24.0,,OKC 103-123 POR,[],3.5,4.83,Variance,2026-11-11T11:15:41+00:00
+P0b917d32dcf8,1.0,19.0,,OKC 103-123 POR,[],2.5,1.06,Variance,2026-11-11T11:15:41+00:00
+Pe21a678b0066,3.0,24.0,,OKC 103-123 POR,[],4.5,0.46,Variance,2026-11-11T11:15:41+00:00
+P824b21892e04,3.0,31.0,,OKC 103-123 POR,[],3.5,1.27,Variance,2026-11-11T11:15:41+00:00
+P67c3e67681b3,8.0,29.0,,OKC 103-123 POR,[],4.5,-4.4,Market disagreed,2026-11-11T11:15:41+00:00
+Paaee851fb18f,3.0,28.0,,OKC 103-123 POR,[],3.5,5.87,Variance,2026-11-11T11:15:41+00:00
+P3df7cf6c7723,1.0,25.0,,OKC 103-123 POR,[],3.5,1.12,Variance,2026-11-11T11:15:41+00:00
+P0ff27a4934d0,6.0,34.0,,OKC 103-123 POR,[],6.5,-0.52,Market disagreed,2026-11-11T11:15:41+00:00
+P4f743d8b26e3,0.0,14.0,,ORL 107-100 SAC,[],1.5,-0.33,Minutes miss,2026-11-11T11:15:41+00:00
+Pa6288683c032,1.0,24.0,,ORL 107-100 SAC,[],1.5,0.57,Variance,2026-11-11T11:15:41+00:00
+P4fdc38fbe6dc,2.0,34.0,,ORL 107-100 SAC,[],1.5,-1.17,Market disagreed,2026-11-11T11:15:41+00:00
