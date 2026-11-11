@@ -279,3 +279,65 @@ def test_og_record_marker_and_since_ranking_v2(tmp_path):
     assert O.record(off, O.official_stake).graded == 4
     ng = card_header(off, "nba", "NBA", date(2026, 11, 13), tmp_path, "nextgen", "Next Gen")
     assert "Ranking v2" not in ng
+
+
+# --- the slump alert --------------------------------------------------------------------------
+
+
+def _og_rows(results_by_day):
+    """OG card rows (official.dataset shape, as C.view(rows, OG) reads them)."""
+    rows, i = [], 0
+    for day, res in results_by_day:
+        for r in res:
+            i += 1
+            rows.append({"pick_id": f"p{i}", "sport": "nba", "official": False,
+                         "signal_name": "F", "shadow": True, "shadow_date": day,
+                         "shadow_stake": "0.5", "shadow_label": "LEAN", "day": day,
+                         "result": r, "profit": {"win": "1.0", "loss": "-1.0"}.get(r, ""),
+                         "odds": "100", "tip": f"{day}T23:{i % 60:02d}:00+00:00",
+                         "created_at": f"{day}T11:00:00+00:00", "clv_consensus": ""})
+    return rows
+
+
+def _days(*res):
+    return [(f"2026-11-{12 + i}", r) for i, r in enumerate(res)]
+
+
+def test_slump_fires_at_3_12_not_4_11():
+    l5, w1l4 = ["loss"] * 5, ["win"] + ["loss"] * 4
+    assert OR.slump(_og_rows(_days(w1l4, w1l4, w1l4))) == (3, 12)
+    w2l3 = ["win"] * 2 + ["loss"] * 3
+    assert OR.slump(_og_rows(_days(w2l3, w1l4, w1l4))) is None  # 4-11
+    assert OR.slump(_og_rows(_days(l5, l5, w1l4))) == (1, 14)  # worse fires too
+    assert OR.slump(_og_rows(_days(l5, l5, ["loss"] * 4))) is None  # 14 graded: never
+    assert OR.slump(_og_rows(_days(l5, l5, l5 + [""]))) == (0, 15)  # pending never counts
+    # only the most recent 3 card days: an older bad day is outside the window
+    assert OR.slump(_og_rows(_days(l5, ["win"] * 5, w1l4, w1l4))) is None
+    # Ranking v2 picks only: days before Nov 12 never count
+    old = _og_rows([("2026-11-10", l5), ("2026-11-11", l5)])
+    assert OR.slump(old + _og_rows(_days(l5))) is None
+
+
+def test_slump_alert_once_a_day(tmp_path):
+    from betdata.alerts.db import engine_for, get_state
+
+    pdb = engine_for(tmp_path / "p.sqlite")
+    sent = []
+
+    class Client:
+        def post(self, url, content, headers):
+            sent.append((headers["Title"], content.decode()))
+            return type("R", (), {"status_code": 200})()
+
+    w1l4 = ["win"] + ["loss"] * 4
+    rows = _og_rows(_days(w1l4, w1l4, w1l4))
+    now = datetime(2026, 11, 15, 11, 16, tzinfo=UTC)
+    assert OR.slump_check(pdb, rows, now, "t", Client()) == "http 200"
+    assert OR.slump_check(pdb, rows, now, "t", Client()) is None  # once a day
+    assert sent == [("OG review", "OG review: 3-12 over the last 3 days — check "
+                                  "reports/nba/og_ranking_v2.md")]
+    with pdb.connect() as p:
+        assert get_state(p, "og-slump:2026-11-15")["status"] == "http 200"
+    ok = _og_rows(_days(["win"] * 5, ["win"] * 5, ["win"] * 5))
+    assert OR.slump_check(pdb, ok, now + timedelta(days=1), "t", Client()) is None
+    assert len(sent) == 1
