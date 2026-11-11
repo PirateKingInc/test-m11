@@ -184,6 +184,14 @@ def build(root: Path, now: datetime, main: Connection | None,
                   f"{r['units']:+.2f} | {EL.pct(r['win'])} vs {EL.pct(r['needed'])} | "
                   f"{r['card_wlp']}, {r['card_units']:+.2f}u | {r['status']} |")
     md += ["", EL.REVIEW_RULE]
+    try:  # OG Ranking v2 vs the OG Top 3 shadow (owner 2026-11-11; report only)
+        from betdata import og_review as OGR
+
+        a, b = OGR.comparison(rows, root / "ledger")
+        md += ["", "## OG Ranking v2 vs OG Top 3 (shadow; never official)", "",
+               *OGR.table(a, b), "", f"Details and the backtest: {OGR.REPORT_PATH}"]
+    except Exception as e:  # noqa: BLE001 - never breaks the weekly report
+        md += ["", f"OG Ranking v2 comparison unavailable: {type(e).__name__}"]
     # news alerts: their own record, the switch and the per-source table (owner 2026-11-05)
     from betdata.news import ledger as NL
 
@@ -251,6 +259,11 @@ def milestone_lines(ms: list[dict], root: Path) -> list[str]:
 
         if m["signal_name"] == SR.MILESTONE:  # the Spread Picks review (owner 2026-11-10)
             out.append(SR.ntfy_line(root / "ledger"))
+            continue
+        from betdata import og_review as OGR
+
+        if m["signal_name"] == OGR.MILESTONE:  # the OG Ranking v2 review (owner 2026-11-11)
+            out.append(OGR.ntfy_line(root / "ledger"))
             continue
         rs = [r for r in rows if r["signal_name"] == m["signal_name"]]
         from betdata.ledger import record

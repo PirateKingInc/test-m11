@@ -59,6 +59,10 @@ def ledger_publish(db: Path = typer.Option(Path("data/poller.sqlite"), help="Pol
     topic = os.environ.get("NTFY_TOPIC") or None
     now = datetime.now(UTC)
     ms = json.loads(PENDING.read_text()).get("milestones", []) if PENDING.exists() else []
+    if any(m["signal_name"] == "og-ranking-v2" for m in ms):  # the OG Ranking v2 review
+        from betdata.og_review import write as og_write
+
+        typer.echo(f"og ranking v2 review: wrote {og_write(PROJECT_ROOT, now)}")
     if any(m["signal_name"] == "spread-card" for m in ms):  # the Spread Picks review report
         from betdata.spread_review import write
 
@@ -102,3 +106,13 @@ def spread_review(main_db: bool = typer.Option(False, help="Read final scores fr
             typer.echo(f"wrote {write(PROJECT_ROOT, now, m)}")
     else:
         typer.echo(f"wrote {write(PROJECT_ROOT, now)}")
+
+
+@ledger_app.command("og-review")
+def og_review():
+    """Write reports/nba/og_ranking_v2.md now: official OG (Ranking v2) vs the OG Top 3
+    shadow, and the hindsight backtest (owner 2026-11-11). Report only."""
+    from betdata.config import PROJECT_ROOT
+    from betdata.og_review import write
+
+    typer.echo(f"wrote {write(PROJECT_ROOT, datetime.now(UTC))}")

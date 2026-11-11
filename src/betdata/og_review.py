@@ -1,0 +1,236 @@
+"""OG Ranking v2 review (owner decision 2026-11-11, MODEL.md "OG Ranking v2"): official OG
+(Ranking v2 picks) vs the OG Top 3 shadow, in `reports/nba/og_ranking_v2.md` (rewritten every
+morning) and the weekly report; the review milestone at Nov 26 or 50 graded official Ranking v2
+picks; and the hindsight backtest that motivated the change. Report only: nothing switches.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from datetime import date, datetime
+from pathlib import Path
+
+from betdata.og_ranking import REPORT_PATH, STAKE, start
+
+MILESTONE = "og-ranking-v2"
+REVIEW_N = 50
+REVIEW_DATE = date(2026, 11, 26)
+BACKTEST = Path("reports") / "nba" / "og_ranking_v2_backtest.json"
+OWNER_REPLAY = {"actual": "20-25", "top5": "23-20", "top3": "16-11"}
+
+
+def _f(x) -> float | None:
+    return None if x in ("", None) else float(x)
+
+
+def official_rows(rows: list[dict]) -> list[dict]:
+    """Official OG Ranking v2 picks (OG card rows from the Ranking v2 date)."""
+    from betdata import cards as C
+
+    return [r for r in C.view(rows, C.OG) if r["day"] >= start().isoformat()]
+
+
+def top3_rows(out: Path) -> list[dict]:
+    """The Top 3 shadow's picks with their results, each at its own 0.5u stake."""
+    from betdata.ledger import read_rows
+
+    res = {r["pick_id"]: r for r in read_rows(out / "results.csv")}
+    picks = {r["pick_id"]: r for r in read_rows(out / "picks.csv")}
+    rows = []
+    for r in read_rows(out / "og_top3.csv"):
+        x, p = res.get(r["pick_id"], {}), picks.get(r["pick_id"], {})
+        rows.append({**p, "pick_id": r["pick_id"], "day": r["card_date"],
+                     "card_stake": r["og3_stake"], "odds": p.get("odds") or r["price"],
+                     "result": x.get("result", ""), "profit": x.get("profit", ""),
+                     "clv_consensus": x.get("clv_consensus", "")})  # fmt: skip
+    return rows
+
+
+def card_days(out: Path, kind: str) -> list[str]:
+    from betdata.ledger import read_rows
+
+    return sorted({r["card_date"] for r in read_rows(out / "card_days.csv")
+                   if r["sport"] == "nba" and r["kind"] == kind
+                   and r["card_date"] >= start().isoformat()})  # fmt: skip
+
+
+@dataclass
+class Side:
+    name: str
+    rec: object
+    days: int
+    picks: int
+    worst: tuple  # (days, W-L, units)
+
+
+def worst_stretch(rows: list[dict], days: list[str]) -> tuple:
+    """The worst 3 consecutive card days by units (fewer days: all of them)."""
+    from betdata import official as O
+
+    if not days:
+        return ("–", "0-0", 0.0)
+    span = 3 if len(days) >= 3 else len(days)
+    best = None
+    for i in range(len(days) - span + 1):
+        ds = days[i:i + span]
+        rec = O.record([r for r in rows if r["day"] in ds], O.official_stake)
+        if best is None or rec.units < best[2]:
+            best = (f"{ds[0]} to {ds[-1]}", f"{rec.wins}-{rec.losses}", round(rec.units, 2))
+    return best
+
+
+def side(name: str, rows: list[dict], days: list[str]) -> Side:
+    from betdata import official as O
+
+    rec = O.record(rows, O.official_stake)
+    return Side(name, rec, len(days), sum(1 for r in rows if r["day"] in days),
+                worst_stretch(rows, days))
+
+
+def comparison(rows: list[dict], out: Path) -> tuple[Side, Side]:
+    return (side("OG official (Ranking v2, top 5)", official_rows(rows), card_days(out, "shadow")),
+            side("OG Top 3 (shadow)", top3_rows(out), card_days(out, "og3")))
+
+
+def _pct(rec) -> str:
+    d = rec.wins + rec.losses
+    return "–" if not d else f"{100 * rec.wins / d:.1f}%"
+
+
+def _odds(rec) -> str:
+    o = rec.avg_odds
+    return "–" if o is None else (f"+{o}" if o > 0 else str(o))
+
+
+def table(a: Side, b: Side) -> list[str]:
+    def roi(s):
+        return "–" if s.rec.roi is None else f"{100 * s.rec.roi:+.1f}%"
+
+    def ppd(s):
+        return "–" if not s.days else f"{s.picks / s.days:.1f}"
+
+    def worst(s):
+        return f"{s.worst[1]}, {s.worst[2]:+.2f}u ({s.worst[0]})"
+
+    return ["| | " + a.name + " | " + b.name + " |", "|---|---|---|",
+            f"| Record (W-L-P) | {a.rec.wlp} | {b.rec.wlp} |",
+            f"| Win % | {_pct(a.rec)} | {_pct(b.rec)} |",
+            f"| Units (0.5u) | {a.rec.units:+.2f} | {b.rec.units:+.2f} |",
+            f"| ROI | {roi(a)} | {roi(b)} |",
+            f"| Average odds | {_odds(a.rec)} | {_odds(b.rec)} |",
+            f"| Picks per day | {ppd(a)} ({a.picks} over {a.days} days) | "
+            f"{ppd(b)} ({b.picks} over {b.days} days) |",
+            f"| Worst 3-day stretch | {worst(a)} | {worst(b)} |"]  # fmt: skip
+
+
+# --- the hindsight backtest (report only) ------------------------------------------------------
+
+
+def backtest(root: Path, rows: list[dict]) -> list[str]:
+    """The replay that motivated Ranking v2 (MODEL.md): the actual EV-ranked OG card vs Ranking
+    v2 top 5 vs top 3, Oct 31 - Nov 10 (Nov 5 excluded, as in the OG record)."""
+    from betdata import cards as C
+    from betdata import official as O
+
+    path = root / BACKTEST
+    if not path.exists():
+        return ["Backtest data not found."]
+    data = json.loads(path.read_text())
+    actual = [r for r in C.view(rows, C.OG) if "2026-10-31" <= r["day"] <= "2026-11-10"]
+    a = O.record(actual, O.official_stake)
+
+    def rec(pool: str, n: int):
+        w = lo = pu = 0
+        u = 0.0
+        per = []
+        for d, x in sorted(data[pool].items()):
+            ps = x["picks"][:n]
+            dw = sum(p["result"] == "win" for p in ps)
+            dl = sum(p["result"] == "loss" for p in ps)
+            w, lo, pu = w + dw, lo + dl, pu + sum(p["result"] == "push" for p in ps)
+            u += sum(STAKE * float(p["profit"] or 0) for p in ps
+                     if p["result"] in ("win", "loss", "push"))  # fmt: skip
+            per.append(f"{d[5:]}: {len(ps)} ({dw}-{dl})")
+        return f"{w}-{lo}" + (f"-{pu}" if pu else ""), round(u, 2), per
+
+    out = ["**Hindsight replay, not live results.** Oct 31 - Nov 10 (Nov 5 excluded, as in the "
+           "OG record), each day replayed on the runner at its stored card-selection time with "
+           "today's rules (Rules v2 on every day) and only picks created before that selection; "
+           "units at 0.5u.", "",
+           "| Card | Record | Units (0.5u) | Owner's replay | Picks per day |",
+           "|---|---|---|---|---|",
+           f"| Actual OG card (EV-ranked) | {a.wins}-{a.losses} | {a.units:+.2f} | "
+           f"{OWNER_REPLAY['actual']} | 5 a day |"]
+    for pool, label in (("live", "Live at selection (the live rule)"),
+                        ("created", "every pick created before selection")):
+        for n, k in ((5, "top5"), (3, "top3")):
+            r, u, per = rec(pool, n)
+            out.append(f"| Ranking v2 top {n}, {label} | {r} | {u:+.2f} | {OWNER_REPLAY[k]} | "
+                       f"{', '.join(per)} |")
+    out += ["", "Why the numbers differ from the owner's 23-20 / 16-11: this replay applies "
+            "every live rule at the stored selection moment (Rules v2 including the "
+            "teammates-out rule from the injury report known then, the Live check on stored "
+            "quotes, one pick per player, the probability / price tie-breaks), counts "
+            "graded picks only (voids and not-yet-graded picks are out), and uses the stored "
+            "median fields (`median`, else `mean_after`). Short days are days with fewer than "
+            "5 eligible picks; they are never filled."]
+    return out
+
+
+# --- the report and the milestone --------------------------------------------------------------
+
+
+def report(root: Path, now: datetime) -> str:
+    from betdata import official as O
+
+    out = root / "ledger"
+    rows = O.dataset(out)
+    a, b = comparison(rows, out)
+    g = official_rows(rows)
+    n = O.record(g, O.official_stake).graded
+    md = [f"# OG Ranking v2 ({now.date().isoformat()})", "",
+          f"Owner decision 2026-11-11 (MODEL.md \"OG Ranking v2\"): from {start():%b %-d} OG "
+          "ranks its pool by the model's win probability, -150 to +130, median on the bet's "
+          "side, one pick per player, up to 5 at 0.5u. The OG Top 3 is a shadow: never shown, "
+          "pushed or counted officially. Nothing switches automatically; the owner decides.", "",
+          f"Review: at {REVIEW_DATE:%b %-d} or {REVIEW_N} graded official Ranking v2 picks, "
+          f"whichever first ({n} graded so far).", "",
+          f"## Official OG vs OG Top 3 (since {start():%b %-d}, graded only)", "",
+          *table(a, b), "",
+          "## Backtest (hindsight replay)", "", *backtest(root, rows), ""]  # fmt: skip
+    return "\n".join(md) + "\n"
+
+
+def write(root: Path, now: datetime) -> Path:
+    path = root / REPORT_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(report(root, now))
+    return path
+
+
+def milestone(out: Path, now: datetime) -> list[dict]:
+    """The review, once: at REVIEW_DATE (Eastern) or REVIEW_N graded official picks."""
+    from betdata import official as O
+    from betdata.alerts.rules import EASTERN
+    from betdata.ledger import _append_milestones, _iso, read_rows
+
+    if any(r["signal_name"] == MILESTONE for r in read_rows(out / "milestones.csv")):
+        return []
+    n = O.record(official_rows(O.dataset(out)), O.official_stake).graded
+    today = now.astimezone(EASTERN).date() if now is not None else date.min
+    if n < REVIEW_N and today < REVIEW_DATE:
+        return []
+    new = [{"signal_name": MILESTONE, "graded": str(min(n, REVIEW_N) if n >= REVIEW_N else n),
+            "reached_at": _iso(now)}]
+    _append_milestones(out / "milestones.csv", new)
+    return new
+
+
+def ntfy_line(out: Path) -> str:
+    from betdata import official as O
+
+    rec = O.record(official_rows(O.dataset(out)), O.official_stake)
+    return (f"OG Ranking v2 review ready: official {rec.wlp}, {rec.units:+.2f}u over "
+            f"{rec.graded} graded picks — see {REPORT_PATH} (vs the Top 3 shadow; nothing "
+            "switches, owner decides)")

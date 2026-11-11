@@ -24,21 +24,22 @@ def pdb(tmp_path, monkeypatch):
 
 def _pick(p, key, *, fair=0.6, price=-110, line=4.5, side="over", median=5.0, player=None,
           market="assists", signal="snipe", made=None, book="draftkings", gid=7, mean=None,
-          live=True):
-    d = {"edge": 0.05, "edge_source": "book"}
+          live=True, details=None):
+    d = dict(details or {"edge": 0.05, "edge_source": "book"})
+    pn = None if market == "h2h" else (player or key)
     if median is not None:
         d["median"] = median
     if mean is not None:
         d["mean_after"] = mean
     p.execute(insert(alerts).values(
         signal=signal, sport="nba", game_id=gid, game_label="NYK @ BOS", tip=TIP, market=market,
-        player_name=player or key, side=side, line=line, price=price, book=book,
+        player_name=pn, side=side, line=line, price=price, book=book,
         fair_prob=fair, book_prob=0.5, reason="r", dedup_key=key,
         created_at=made or NOW - timedelta(hours=2), quiet=True, sent=False, details=d))
     if live:
         p.execute(insert(quotes).values(
             polled_at=NOW - timedelta(minutes=5 + next(_n) % 3), sport="nba", game_id=gid,
-            source="sharpapi", book=book, market=market, player_name=player or key,
+            source="sharpapi", book=book, market=market, player_name=pn,
             outcome=side, line=line, price=price))  # fmt: skip
 
 
@@ -341,3 +342,145 @@ def test_slump_alert_once_a_day(tmp_path):
     ok = _og_rows(_days(["win"] * 5, ["win"] * 5, ["win"] * 5))
     assert OR.slump_check(pdb, ok, now + timedelta(days=1), "t", Client()) is None
     assert len(sent) == 1
+
+
+# --- the review: report, milestone, backtest ----------------------------------------------------
+
+
+def _ledger_og(out, n_days, per_day=5, results=None):
+    """A ledger with OG Ranking v2 card picks from Nov 12 (shadow_card.csv) and a Top 3."""
+    import csv
+
+    from betdata.ledger import CARD_DAY_FIELDS, PICK_FIELDS, RESULT_FIELDS, SHADOW_FIELDS
+
+    def w(name, fields, rows):
+        with (out / name).open("w", newline="") as f:
+            x = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore", lineterminator="\n")
+            x.writeheader()
+            x.writerows(rows)
+
+    picks, res, sh, t3, days = [], [], [], [], []
+    for d in range(n_days):
+        day = f"2026-11-{12 + d}"
+        days += [{"key": f"nba:{day}:{k}", "sport": "nba", "card_date": day, "kind": k,
+                  "picks": "x"} for k in ("shadow", "og3")]
+        for i in range(per_day):
+            pid = f"P{d}{i}"
+            r = (results or (lambda d, i: "win" if i % 2 == 0 else "loss"))(d, i)
+            picks.append({"pick_id": pid, "dedup_key": pid, "sport": "nba", "game_id": "7",
+                          "game": "NYK @ BOS", "tip": f"{day}T23:30:00+00:00",
+                          "created_at": f"{day}T11:00:00+00:00", "market": "assists",
+                          "player": pid, "side": "over", "line": "4.5", "odds": "-110",
+                          "book": "draftkings", "signal": "snipe", "signal_name": "F"})
+            res.append({"pick_id": pid, "result": r,
+                        "profit": "0.9091" if r == "win" else "-1.0"})
+            sh.append({"pick_id": pid, "sport": "nba", "card_date": day, "shadow": "yes",
+                       "shadow_label": "LEAN", "shadow_stake": "0.5"})
+            if i < 3:
+                t3.append({"pick_id": pid, "sport": "nba", "card_date": day, "og3": "yes",
+                           "og3_label": "LEAN", "og3_stake": "0.5", "rank": str(i + 1),
+                           "price": "-110"})
+    w("picks.csv", PICK_FIELDS, picks)
+    w("results.csv", RESULT_FIELDS, res)
+    w("shadow_card.csv", SHADOW_FIELDS, sh)
+    w("og_top3.csv", OR.TOP3_FIELDS, t3)
+    w("card_days.csv", CARD_DAY_FIELDS, days)
+
+
+def test_review_report_side_by_side(tmp_path):
+    from betdata import og_review as OGR
+
+    (tmp_path / "ledger").mkdir()
+    _ledger_og(tmp_path / "ledger", 4)
+    md = OGR.report(tmp_path, NOW + timedelta(days=4))
+    assert "| Record (W-L-P) | 12-8-0 | 8-4-0 |" in md  # top 5 vs top 3 (i = 0, 2 win)
+    assert "| Picks per day | 5.0 (20 over 4 days) | 3.0 (12 over 4 days) |" in md
+    assert "Worst 3-day stretch" in md and "Backtest data not found." in md
+    assert OGR.write(tmp_path, NOW).read_text().startswith("# OG Ranking v2")
+
+
+def test_worst_three_day_stretch():
+    from betdata import og_review as OGR
+
+    def row(day, res):
+        return {"day": day, "result": res, "profit": "1.0" if res == "win" else "-1.0",
+                "card_stake": "0.5", "odds": "100", "clv_consensus": ""}
+
+    days = ["2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15"]
+    rows = [row(days[0], "win"), row(days[1], "loss"), row(days[2], "loss"),
+            row(days[3], "loss")]
+    assert OGR.worst_stretch(rows, days) == ("2026-11-13 to 2026-11-15", "0-3", -1.5)
+
+
+def test_milestone_at_50_graded_or_nov_26_once(tmp_path):
+    from betdata import og_review as OGR
+
+    _ledger_og(tmp_path, 9)  # 45 graded
+    now = datetime(2026, 11, 21, 12, tzinfo=UTC)
+    assert OGR.milestone(tmp_path, now) == []
+    _ledger_og(tmp_path, 10)  # 50 graded
+    (m,) = OGR.milestone(tmp_path, now)
+    assert (m["signal_name"], m["graded"]) == ("og-ranking-v2", "50")
+    assert OGR.milestone(tmp_path, now) == []  # once
+    other = tmp_path / "o"
+    other.mkdir()
+    _ledger_og(other, 2)  # 10 graded, but Nov 26
+    (m2,) = OGR.milestone(other, datetime(2026, 11, 26, 12, tzinfo=UTC))
+    assert m2["graded"] == "10"
+    assert OGR.ntfy_line(other).startswith("OG Ranking v2 review ready: official 6-4-0")
+
+
+def test_morning_dry_run_all_cards_and_top3_one_push(pdb, tmp_path, monkeypatch):
+    """Next Gen, OG (Ranking v2), Spread Picks, the parlay and the OG Top 3 shadow chosen in one
+    morning run, then ONE NBA push (the Top 3 never in it)."""
+    import functools
+
+    from betdata import morning as M
+    from betdata import spread as SP
+    from betdata.alerts.db import get_state
+
+    with pdb.begin() as p:
+        for i in range(4):
+            _pick(p, f"og{i}", fair=0.7 - i / 100)
+        _pick(p, "eng", signal="engine", market="h2h", side="home", line=None, price=250,
+              median=None, fair=0.4, details={"ev": 0.4, "theta": 0.10, "p_market": 0.28})
+        p.execute(insert(quotes).values(polled_at=NOW - timedelta(hours=3), sport="nba",
+                                        game_id=7, source="sharpapi", book="draftkings",
+                                        market="spreads", outcome="home", line=7.5,
+                                        price=-110))  # fmt: skip
+    tip = lambda m, s, d: TIP if s == "nba" else None  # noqa: E731
+    run_ng, run_og = CD.run, CD.run_shadow
+    monkeypatch.setattr(CD, "run", functools.partial(run_ng, tip_fn=tip))
+    monkeypatch.setattr(CD, "run_shadow", functools.partial(run_og, tip_fn=tip))
+    monkeypatch.setattr(CD, "in_ledger", lambda *a: False)
+    monkeypatch.setattr(CD, "shadow_in_ledger", lambda *a: False)
+    monkeypatch.setattr(SP, "in_ledger", lambda *a, **k: False)
+    monkeypatch.setattr(M, "sports_due", lambda main, now: ["nba"])
+    monkeypatch.setattr(M, "grade", lambda *a: None)
+    monkeypatch.setattr(M, "engine", lambda *a: 1)
+    monkeypatch.setattr(M, "ledger_sync", lambda *a: {})
+    monkeypatch.setattr(M, "parlay_select", lambda *a: {"none": True})
+    rep = M.run(_Main(), pdb, None, NOW, out=tmp_path, build=lambda: None)
+    assert rep.errors == [], rep.errors
+    assert rep.cards == {"nba": 1} and rep.shadow == {"nba": 4} and rep.spread == {"nba": 1}
+    assert rep.og3 == {"nba": 3} and rep.parlay == "none"
+    with pdb.connect() as p:
+        og = get_state(p, CD.shadow_key("nba", NOW.date()))
+        t3 = get_state(p, OR.top3_key("nba", NOW.date()))
+    assert og["ranking"] == "v2" and [x["dedup_key"] for x in og["picks"]] == [
+        "og0", "og1", "og2", "og3"]
+    assert [x["dedup_key"] for x in t3["picks"]] == ["og0", "og1", "og2"]
+    sent = []
+
+    class Client:
+        def post(self, url, content, headers):
+            sent.append((headers["Title"], content.decode()))
+            return type("R", (), {"status_code": 200})()
+
+    monkeypatch.setattr("betdata.official.dataset", lambda out: [])
+    monkeypatch.setattr("betdata.og_review.write", lambda root, now: None)
+    assert M.push(pdb, tmp_path, NOW, "topic", Client()) == {"nba": "http 200"}
+    ((title, body),) = sent  # one push
+    assert title == "Morning update - NBA - Thu Nov 12"
+    assert "OG:" in body and "Next Gen:" in body and "Spread picks: 1 —" in body
+    assert "Top 3" not in body and "top 3" not in body

@@ -1,0 +1,1170 @@
+{
+ "live": {
+  "2026-10-31": {
+   "selected_at": "2026-10-31T13:03:00.000118+00:00",
+   "eligible": 7,
+   "filtered": 34,
+   "rejected": {
+    "og: median not on the bet's side": 2,
+    "og: price outside -150..+130": 2
+   },
+   "picks": [
+    {
+     "pid": "Peabf57a0acac",
+     "player": "Shai Gilgeous-Alexander",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -112,
+     "fair": 0.555,
+     "median": 7.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pd2d28fef2eff",
+     "player": "Donovan Mitchell",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 114,
+     "fair": 0.555,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.14"
+    },
+    {
+     "pid": "P7c25b5a6ea13",
+     "player": "Kevin Durant",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 128,
+     "fair": 0.538,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.28"
+    },
+    {
+     "pid": "Pbfaf075a7aea",
+     "player": "Myles Turner",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": 107,
+     "fair": 0.537,
+     "median": 1.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P0e7884d7931f",
+     "player": "Kingston Flemings",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 124,
+     "fair": 0.533,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.24"
+    }
+   ]
+  },
+  "2026-11-01": {
+   "selected_at": "2026-11-01T13:50:00.000137+00:00",
+   "eligible": 4,
+   "filtered": 30,
+   "rejected": {
+    "og: median not on the bet's side": 1,
+    "og: price outside -150..+130": 1
+   },
+   "picks": [
+    {
+     "pid": "P139e59ea964f",
+     "player": "Derrick White",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 106,
+     "fair": 0.582,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.06"
+    },
+    {
+     "pid": "Pe92bbf34c84d",
+     "player": "Scottie Barnes",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -107,
+     "fair": 0.571,
+     "median": 7.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pbe7c3df5402f",
+     "player": "Jarace Walker",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 116,
+     "fair": 0.567,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.16"
+    },
+    {
+     "pid": "P9ca5162209a3",
+     "player": "Kelly Oubre Jr.",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": 104,
+     "fair": 0.531,
+     "median": 1.0,
+     "result": "win",
+     "profit": "1.04"
+    }
+   ]
+  },
+  "2026-11-02": {
+   "selected_at": "2026-11-02T13:50:00.000118+00:00",
+   "eligible": 24,
+   "filtered": 76,
+   "rejected": {
+    "og: duplicate player": 1,
+    "og: median not on the bet's side": 6,
+    "og: price outside -150..+130": 8
+   },
+   "picks": [
+    {
+     "pid": "Pe106546df2e8",
+     "player": "Donovan Mitchell",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 108,
+     "fair": 0.604,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P23c1fc52b284",
+     "player": "Scottie Barnes",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -110,
+     "fair": 0.591,
+     "median": 7.0,
+     "result": "win",
+     "profit": "0.9091"
+    },
+    {
+     "pid": "P5a33b5665c44",
+     "player": "Draymond Green",
+     "market": "assists",
+     "side": "over",
+     "line": 6.5,
+     "price": 120,
+     "fair": 0.58,
+     "median": 8.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P61574194489b",
+     "player": "Jeremiah Fears",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": -114,
+     "fair": 0.577,
+     "median": 5.0,
+     "result": "win",
+     "profit": "0.8772"
+    },
+    {
+     "pid": "P0e76a723474c",
+     "player": "Keaton Wagler",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": 120,
+     "fair": 0.555,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    }
+   ]
+  },
+  "2026-11-04": {
+   "selected_at": "2026-11-04T13:50:00.000135+00:00",
+   "eligible": 15,
+   "filtered": 74,
+   "rejected": {
+    "og: duplicate player": 1,
+    "og: median not on the bet's side": 4,
+    "og: price outside -150..+130": 6
+   },
+   "picks": [
+    {
+     "pid": "P8449f90303b3",
+     "player": "Coby White",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": -110,
+     "fair": 0.597,
+     "median": 2.0,
+     "result": "win",
+     "profit": "0.9091"
+    },
+    {
+     "pid": "Pf174677d5af3",
+     "player": "Cam Spencer",
+     "market": "assists",
+     "side": "over",
+     "line": 4.5,
+     "price": -108,
+     "fair": 0.581,
+     "median": 6.0,
+     "result": "win",
+     "profit": "0.9259"
+    },
+    {
+     "pid": "P97e24f00d970",
+     "player": "Andrew Nembhard",
+     "market": "assists",
+     "side": "over",
+     "line": 8.5,
+     "price": 110,
+     "fair": 0.578,
+     "median": 10.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pb4acd781986c",
+     "player": "Dylan Harper",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": -104,
+     "fair": 0.555,
+     "median": 4.0,
+     "result": "win",
+     "profit": "0.9615"
+    },
+    {
+     "pid": "P7074fc4214da",
+     "player": "Paul George",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": -108,
+     "fair": 0.554,
+     "median": 4.0,
+     "result": "loss",
+     "profit": "-1.0"
+    }
+   ]
+  },
+  "2026-11-06": {
+   "selected_at": "2026-11-06T11:15:29.033674+00:00",
+   "eligible": 9,
+   "filtered": 31,
+   "rejected": {
+    "og: duplicate player": 2,
+    "og: median not on the bet's side": 2,
+    "og: price outside -150..+130": 5
+   },
+   "picks": [
+    {
+     "pid": "Pe827362c1006",
+     "player": "Darius Acuff Jr.",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -110,
+     "fair": 0.569,
+     "median": 7.0,
+     "result": "win",
+     "profit": "0.9091"
+    },
+    {
+     "pid": "P79589ed92001",
+     "player": "Dylan Harper",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 124,
+     "fair": 0.56,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.24"
+    },
+    {
+     "pid": "Pfde6cc0c4d92",
+     "player": "Max Christie",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": 108,
+     "fair": 0.557,
+     "median": 1.0,
+     "result": "win",
+     "profit": "1.08"
+    },
+    {
+     "pid": "Pb61fb64296a6",
+     "player": "Jaxson Hayes",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": -103,
+     "fair": 0.544,
+     "median": 1.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P11bbdc026ee8",
+     "player": "Cam Spencer",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": 128,
+     "fair": 0.534,
+     "median": 6.0,
+     "result": "loss",
+     "profit": "-1.0"
+    }
+   ]
+  },
+  "2026-11-07": {
+   "selected_at": "2026-11-07T11:15:33.777658+00:00",
+   "eligible": 14,
+   "filtered": 31,
+   "rejected": {
+    "og: price outside -150..+130": 5
+   },
+   "picks": [
+    {
+     "pid": "Pe8dc53782588",
+     "player": "Shai Gilgeous-Alexander",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -106,
+     "fair": 0.593,
+     "median": 7.0,
+     "result": "win",
+     "profit": "0.9434"
+    },
+    {
+     "pid": "P8d33dea2ba6e",
+     "player": "Andrew Nembhard",
+     "market": "assists",
+     "side": "over",
+     "line": 7.5,
+     "price": 104,
+     "fair": 0.56,
+     "median": 9.0,
+     "result": "win",
+     "profit": "1.04"
+    },
+    {
+     "pid": "P8e6f199e29b7",
+     "player": "Reed Sheppard",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 129,
+     "fair": 0.547,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pd759e8f0840f",
+     "player": "Mikal Bridges",
+     "market": "assists",
+     "side": "under",
+     "line": 2.5,
+     "price": 126,
+     "fair": 0.547,
+     "median": 2.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P31e5d2f23b70",
+     "player": "Alex Caruso",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 109,
+     "fair": 0.544,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.09"
+    }
+   ]
+  },
+  "2026-11-08": {
+   "selected_at": "2026-11-08T11:15:30.036930+00:00",
+   "eligible": 3,
+   "filtered": 29,
+   "rejected": {
+    "og: median not on the bet's side": 6,
+    "og: price outside -150..+130": 3
+   },
+   "picks": [
+    {
+     "pid": "Pbc06acf4e2b2",
+     "player": "Jeremiah Fears",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 108,
+     "fair": 0.582,
+     "median": 5.0,
+     "result": "win",
+     "profit": "1.08"
+    },
+    {
+     "pid": "Pe0b30be00399",
+     "player": "Malik Monk",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 111,
+     "fair": 0.559,
+     "median": 4.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pbb1d61a0a395",
+     "player": "Ryan Rollins",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 128,
+     "fair": 0.512,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.28"
+    }
+   ]
+  },
+  "2026-11-09": {
+   "selected_at": "2026-11-09T11:15:33.220108+00:00",
+   "eligible": 4,
+   "filtered": 20,
+   "rejected": {
+    "og: median not on the bet's side": 1,
+    "og: price outside -150..+130": 3
+   },
+   "picks": [
+    {
+     "pid": "P92fa0deef086",
+     "player": "Scottie Barnes",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -125,
+     "fair": 0.583,
+     "median": 7.0,
+     "result": "void",
+     "profit": "0.0"
+    },
+    {
+     "pid": "Pd88cf9830499",
+     "player": "Donovan Mitchell",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 108,
+     "fair": 0.527,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.08"
+    },
+    {
+     "pid": "Pc43730a52c5a",
+     "player": "Duncan Robinson",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 130,
+     "fair": 0.507,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P5bbceddc669b",
+     "player": "Cedric Coward",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 119,
+     "fair": 0.501,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.19"
+    }
+   ]
+  },
+  "2026-11-10": {
+   "selected_at": "2026-11-10T11:15:31.642671+00:00",
+   "eligible": 3,
+   "filtered": 33,
+   "rejected": {
+    "og: median not on the bet's side": 2,
+    "og: price outside -150..+130": 3
+   },
+   "picks": [
+    {
+     "pid": "P6de7e4f2718f",
+     "player": "Pelle Larsson",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": 100,
+     "fair": 0.544,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.0"
+    },
+    {
+     "pid": "Pc81b6c6bd567",
+     "player": "Mikal Bridges",
+     "market": "assists",
+     "side": "under",
+     "line": 2.5,
+     "price": 119,
+     "fair": 0.538,
+     "median": 2.0,
+     "result": "win",
+     "profit": "1.19"
+    },
+    {
+     "pid": "Pfb96c2132a20",
+     "player": "Josh Hart",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": 110,
+     "fair": 0.507,
+     "median": 3.0,
+     "result": "void",
+     "profit": "0.0"
+    }
+   ]
+  }
+ },
+ "created": {
+  "2026-10-31": {
+   "selected_at": "2026-10-31T13:03:00.000118+00:00",
+   "eligible": 13,
+   "filtered": 34,
+   "rejected": {
+    "og: median not on the bet's side": 3,
+    "og: price outside -150..+130": 5
+   },
+   "picks": [
+    {
+     "pid": "P6650b78c8a32",
+     "player": "Scoot Henderson",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": -118,
+     "fair": 0.623,
+     "median": 2.0,
+     "result": "win",
+     "profit": "0.8475"
+    },
+    {
+     "pid": "P7514c3b3d069",
+     "player": "Dylan Harper",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": -145,
+     "fair": 0.616,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P32b9b278926d",
+     "player": "Darius Acuff Jr.",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -119,
+     "fair": 0.589,
+     "median": 7.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P6fd5783790df",
+     "player": "Cameron Boozer",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": 114,
+     "fair": 0.569,
+     "median": 7.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Peabf57a0acac",
+     "player": "Shai Gilgeous-Alexander",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -112,
+     "fair": 0.555,
+     "median": 7.0,
+     "result": "loss",
+     "profit": "-1.0"
+    }
+   ]
+  },
+  "2026-11-01": {
+   "selected_at": "2026-11-01T13:50:00.000137+00:00",
+   "eligible": 4,
+   "filtered": 30,
+   "rejected": {
+    "og: median not on the bet's side": 2,
+    "og: price outside -150..+130": 2
+   },
+   "picks": [
+    {
+     "pid": "P139e59ea964f",
+     "player": "Derrick White",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 106,
+     "fair": 0.582,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.06"
+    },
+    {
+     "pid": "Pe92bbf34c84d",
+     "player": "Scottie Barnes",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -107,
+     "fair": 0.571,
+     "median": 7.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pbe7c3df5402f",
+     "player": "Jarace Walker",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 116,
+     "fair": 0.567,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.16"
+    },
+    {
+     "pid": "P9ca5162209a3",
+     "player": "Kelly Oubre Jr.",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": 104,
+     "fair": 0.531,
+     "median": 1.0,
+     "result": "win",
+     "profit": "1.04"
+    }
+   ]
+  },
+  "2026-11-02": {
+   "selected_at": "2026-11-02T13:50:00.000118+00:00",
+   "eligible": 35,
+   "filtered": 76,
+   "rejected": {
+    "og: duplicate player": 4,
+    "og: median not on the bet's side": 10,
+    "og: price outside -150..+130": 10
+   },
+   "picks": [
+    {
+     "pid": "P2980c5525274",
+     "player": "Anthony Black",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": -125,
+     "fair": 0.627,
+     "median": 3.0,
+     "result": "void",
+     "profit": "0.0"
+    },
+    {
+     "pid": "Pe106546df2e8",
+     "player": "Donovan Mitchell",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 108,
+     "fair": 0.604,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P23c1fc52b284",
+     "player": "Scottie Barnes",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -110,
+     "fair": 0.591,
+     "median": 7.0,
+     "result": "win",
+     "profit": "0.9091"
+    },
+    {
+     "pid": "P5a33b5665c44",
+     "player": "Draymond Green",
+     "market": "assists",
+     "side": "over",
+     "line": 6.5,
+     "price": 120,
+     "fair": 0.58,
+     "median": 8.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pbe83608e274b",
+     "player": "Jarrett Allen",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": -109,
+     "fair": 0.579,
+     "median": 1.0,
+     "result": "win",
+     "profit": "0.9174"
+    }
+   ]
+  },
+  "2026-11-04": {
+   "selected_at": "2026-11-04T13:50:00.000135+00:00",
+   "eligible": 31,
+   "filtered": 74,
+   "rejected": {
+    "og: duplicate player": 9,
+    "og: median not on the bet's side": 9,
+    "og: price outside -150..+130": 15
+   },
+   "picks": [
+    {
+     "pid": "P6ec377b8acc5",
+     "player": "Meleek Thomas",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": -132,
+     "fair": 0.772,
+     "median": 1.0,
+     "result": "win",
+     "profit": "0.7576"
+    },
+    {
+     "pid": "P9c993017327a",
+     "player": "Andrew Nembhard",
+     "market": "assists",
+     "side": "over",
+     "line": 7.5,
+     "price": -139,
+     "fair": 0.624,
+     "median": 10.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pe66f62850057",
+     "player": "Coby White",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": -114,
+     "fair": 0.597,
+     "median": 2.0,
+     "result": "win",
+     "profit": "0.8772"
+    },
+    {
+     "pid": "P2d976cfe0f8e",
+     "player": "Jeremiah Fears",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": -110,
+     "fair": 0.596,
+     "median": 5.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P907c7340bdc0",
+     "player": "Scottie Barnes",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -133,
+     "fair": 0.596,
+     "median": 7.0,
+     "result": "win",
+     "profit": "0.7519"
+    }
+   ]
+  },
+  "2026-11-06": {
+   "selected_at": "2026-11-06T11:15:29.033674+00:00",
+   "eligible": 11,
+   "filtered": 31,
+   "rejected": {
+    "og: duplicate player": 3,
+    "og: median not on the bet's side": 2,
+    "og: price outside -150..+130": 5
+   },
+   "picks": [
+    {
+     "pid": "Pe827362c1006",
+     "player": "Darius Acuff Jr.",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -110,
+     "fair": 0.569,
+     "median": 7.0,
+     "result": "win",
+     "profit": "0.9091"
+    },
+    {
+     "pid": "P79589ed92001",
+     "player": "Dylan Harper",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 124,
+     "fair": 0.56,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.24"
+    },
+    {
+     "pid": "Pfde6cc0c4d92",
+     "player": "Max Christie",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": 108,
+     "fair": 0.557,
+     "median": 1.0,
+     "result": "win",
+     "profit": "1.08"
+    },
+    {
+     "pid": "Pb61fb64296a6",
+     "player": "Jaxson Hayes",
+     "market": "assists",
+     "side": "under",
+     "line": 1.5,
+     "price": -103,
+     "fair": 0.544,
+     "median": 1.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pbf2034c9db11",
+     "player": "Ty Jerome",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -104,
+     "fair": 0.537,
+     "median": 6.0,
+     "result": "loss",
+     "profit": "-1.0"
+    }
+   ]
+  },
+  "2026-11-07": {
+   "selected_at": "2026-11-07T11:15:33.777658+00:00",
+   "eligible": 15,
+   "filtered": 31,
+   "rejected": {
+    "og: duplicate player": 1,
+    "og: price outside -150..+130": 5
+   },
+   "picks": [
+    {
+     "pid": "P0075afc6ff5e",
+     "player": "Andrew Nembhard",
+     "market": "assists",
+     "side": "over",
+     "line": 6.5,
+     "price": -136,
+     "fair": 0.609,
+     "median": 9.0,
+     "result": "win",
+     "profit": "0.7353"
+    },
+    {
+     "pid": "Pe8dc53782588",
+     "player": "Shai Gilgeous-Alexander",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -106,
+     "fair": 0.593,
+     "median": 7.0,
+     "result": "win",
+     "profit": "0.9434"
+    },
+    {
+     "pid": "P8e6f199e29b7",
+     "player": "Reed Sheppard",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 129,
+     "fair": 0.547,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pd759e8f0840f",
+     "player": "Mikal Bridges",
+     "market": "assists",
+     "side": "under",
+     "line": 2.5,
+     "price": 126,
+     "fair": 0.547,
+     "median": 2.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P31e5d2f23b70",
+     "player": "Alex Caruso",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 109,
+     "fair": 0.544,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.09"
+    }
+   ]
+  },
+  "2026-11-08": {
+   "selected_at": "2026-11-08T11:15:30.036930+00:00",
+   "eligible": 3,
+   "filtered": 29,
+   "rejected": {
+    "og: median not on the bet's side": 7,
+    "og: price outside -150..+130": 6
+   },
+   "picks": [
+    {
+     "pid": "Pbc06acf4e2b2",
+     "player": "Jeremiah Fears",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 108,
+     "fair": 0.582,
+     "median": 5.0,
+     "result": "win",
+     "profit": "1.08"
+    },
+    {
+     "pid": "Pe0b30be00399",
+     "player": "Malik Monk",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 111,
+     "fair": 0.559,
+     "median": 4.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "Pbb1d61a0a395",
+     "player": "Ryan Rollins",
+     "market": "assists",
+     "side": "over",
+     "line": 3.5,
+     "price": 128,
+     "fair": 0.512,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.28"
+    }
+   ]
+  },
+  "2026-11-09": {
+   "selected_at": "2026-11-09T11:15:33.220108+00:00",
+   "eligible": 4,
+   "filtered": 20,
+   "rejected": {
+    "og: median not on the bet's side": 1,
+    "og: price outside -150..+130": 3
+   },
+   "picks": [
+    {
+     "pid": "P92fa0deef086",
+     "player": "Scottie Barnes",
+     "market": "assists",
+     "side": "over",
+     "line": 5.5,
+     "price": -125,
+     "fair": 0.583,
+     "median": 7.0,
+     "result": "void",
+     "profit": "0.0"
+    },
+    {
+     "pid": "Pd88cf9830499",
+     "player": "Donovan Mitchell",
+     "market": "assists",
+     "side": "under",
+     "line": 4.5,
+     "price": 108,
+     "fair": 0.527,
+     "median": 4.0,
+     "result": "win",
+     "profit": "1.08"
+    },
+    {
+     "pid": "Pc43730a52c5a",
+     "player": "Duncan Robinson",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 130,
+     "fair": 0.507,
+     "median": 3.0,
+     "result": "loss",
+     "profit": "-1.0"
+    },
+    {
+     "pid": "P5bbceddc669b",
+     "player": "Cedric Coward",
+     "market": "assists",
+     "side": "over",
+     "line": 2.5,
+     "price": 119,
+     "fair": 0.501,
+     "median": 3.0,
+     "result": "win",
+     "profit": "1.19"
+    }
+   ]
+  },
+  "2026-11-10": {
+   "selected_at": "2026-11-10T11:15:31.642671+00:00",
+   "eligible": 6,
+   "filtered": 33,
+   "rejected": {
+    "og: duplicate player": 1,
+    "og: median not on the bet's side": 2,
+    "og: price outside -150..+130": 5
+   },
+   "picks": [
+    {
+     "pid": "P6c1c7b715353",
+     "player": "Pelle Larsson",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": -102,
+     "fair": 0.544,
+     "median": 3.0,
+     "result": "win",
+     "profit": "0.9804"
+    },
+    {
+     "pid": "P8807e5cd6fa1",
+     "player": "Paul George",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": -106,
+     "fair": 0.542,
+     "median": 3.0,
+     "result": "win",
+     "profit": "0.9434"
+    },
+    {
+     "pid": "Pc81b6c6bd567",
+     "player": "Mikal Bridges",
+     "market": "assists",
+     "side": "under",
+     "line": 2.5,
+     "price": 119,
+     "fair": 0.538,
+     "median": 2.0,
+     "result": "win",
+     "profit": "1.19"
+    },
+    {
+     "pid": "Pfb96c2132a20",
+     "player": "Josh Hart",
+     "market": "assists",
+     "side": "under",
+     "line": 3.5,
+     "price": 110,
+     "fair": 0.507,
+     "median": 3.0,
+     "result": "void",
+     "profit": "0.0"
+    },
+    {
+     "pid": "P5292e3f44b1f",
+     "player": "Andrew Wiggins",
+     "market": "assists",
+     "side": "over",
+     "line": 1.5,
+     "price": 118,
+     "fair": 0.506,
+     "median": 2.0,
+     "result": "loss",
+     "profit": "-1.0"
+    }
+   ]
+  }
+ }
+}
