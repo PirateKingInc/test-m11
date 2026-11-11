@@ -466,6 +466,12 @@ def push(pdb, out: Path, now: datetime, topic: str | None, client=None) -> dict[
                 extra["og_slump"] = s
         except Exception as e:  # noqa: BLE001 - never breaks the morning push
             log.warning("og slump check failed: %s", e)
+        try:  # reports/nba/og_ranking_v2.md, rewritten every morning (committed with the ledger)
+            from betdata.og_review import write as og_write
+
+            og_write(out.parent, now)
+        except Exception as e:  # noqa: BLE001
+            log.warning("og ranking report failed: %s", e)
     with pdb.begin() as p:
         st = get_state(p, STATE.format(day=day.isoformat())) or {}
         set_state(p, STATE.format(day=day.isoformat()), {**st, "push": sent, **extra}, now)
