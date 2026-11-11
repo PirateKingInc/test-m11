@@ -136,6 +136,7 @@ class Report:
     cards: dict = field(default_factory=dict)  # sport -> picks chosen (None: not chosen yet)
     shadow: dict = field(default_factory=dict)
     spread: dict = field(default_factory=dict)  # Spread Picks (owner 2026-11-10)
+    og3: dict = field(default_factory=dict)  # the OG Top 3 shadow (owner 2026-11-11)
     parlay: object = None  # 2 / 3 legs, "none", or None (not chosen: see errors)
     errors: list = field(default_factory=list)
 
@@ -233,6 +234,16 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
     rep.cards = {c["sport"]: len(c["picks"]) for c in cards}
     rep.shadow = {c["sport"]: len(c["picks"]) for c in shadows}
     rep.spread = {c["sport"]: len(c["picks"]) for c in (rest[0] if rest else [])}
+    try:  # the OG Top 3 shadow, chosen with OG (never pushed, shown or counted officially)
+        from betdata.alerts.db import get_state
+        from betdata.og_ranking import top3_key
+
+        with pdb.connect() as p:
+            t3 = get_state(p, top3_key("nba", day))
+        if t3 is not None:
+            rep.og3 = {"nba": len(t3.get("picks", []))}
+    except Exception:  # noqa: BLE001
+        log.exception("og top 3 state failed")
     # the Next Gen parlay (owner 2026-11-06): fail-safe; an error is logged and the cards,
     # the page and the push go out without it
     if "nba" in rep.sports:
@@ -243,6 +254,7 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
         set_state(p, STATE.format(day=day.isoformat()),
                   {"at": now.isoformat(), "sports": rep.sports, "steps": rep.steps,
                    "cards": rep.cards, "shadow": rep.shadow, "spread": rep.spread,
+                   "og3": rep.og3,
                    "parlay": rep.parlay,
                    "errors": rep.errors,
                    "engine_picks": rep.engine_picks}, now)  # fmt: skip

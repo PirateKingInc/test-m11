@@ -344,6 +344,10 @@ def run_shadow(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> lis
                 if card is None:  # no lines for any of today's games yet: wait
                     continue
                 set_state(p, shadow_key(sport, day), card, now)
+                from betdata import og_ranking as OR
+
+                if OR.applies(day):  # the OG Top 3 shadow: same ranking, same moment, 3 picks
+                    set_state(p, OR.top3_key(sport, day), OR.top3_of(card), now)
         out.append(card)
     return out
 
