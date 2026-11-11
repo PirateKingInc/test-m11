@@ -329,6 +329,12 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         filter_rows(p, m, out, now)
     except Exception as e:  # noqa: BLE001 - the filter log never stops the ledger
         log.warning("filter reasons failed: %s", e)
+    try:  # OG Ranking v2: each rejected candidate's reason, once (owner 2026-11-11)
+        from betdata.og_ranking import annotation_rows
+
+        annotation_rows(p, out, now)
+    except Exception as e:  # noqa: BLE001
+        log.warning("og ranking reasons failed: %s", e)
     try:  # the parlay's calibration, refit on Mondays (owner 2026-11-09, calibration.py)
         from betdata.calibration import maybe_refit
 

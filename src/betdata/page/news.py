@@ -70,6 +70,12 @@ def filters_html(rows: list[dict]) -> str:
     from betdata import eligibility as EL
 
     t = EL.filters_table(rows)
+    try:  # OG Ranking v2's rejections (owner 2026-11-11), after the Rules v2 rows
+        from betdata import og_ranking as OR
+
+        t = t + OR.filters_table(rows)
+    except Exception:  # noqa: BLE001 - never breaks the Research tab
+        pass
     out = ["<section class='research' data-filters='nba'><h2>Filters (rules v2)</h2>"
            f"<p class='meta'>Since {EL.RULES_V2_START:%b %-d}: what each card-eligibility rule "
            "removed (still created and graded, flat 1 unit), against the card's own record over "
