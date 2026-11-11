@@ -246,3 +246,36 @@ def test_top3_never_pushed_shown_or_official(pdb, tmp_path):
                                    "0.5,,1,0.6,120,7.0,6.5\n")
     va, vb = C.view(O.dataset(a), C.OG), C.view(O.dataset(b), C.OG)
     assert va == vb
+
+
+# --- the record marker ------------------------------------------------------------------------
+
+
+def _off(pid, day, res, profit):
+    return {"pick_id": pid, "sport": "nba", "official": True, "day": day, "result": res,
+            "profit": profit, "card_stake": "0.5", "odds": "110", "signal_name": "F",
+            "clv_consensus": "", "game": "NYK @ BOS", "tip": f"{day}T23:30:00+00:00",
+            "player": pid, "market": "assists", "side": "over", "line": "4.5",
+            "book": "draftkings", "game_id": 7, "created_at": f"{day}T11:00:00+00:00"}
+
+
+def test_og_record_marker_and_since_ranking_v2(tmp_path):
+    import re
+    from datetime import date
+
+    from betdata import official as O
+    from betdata.page.official import card_header
+
+    off = [_off("a", "2026-11-10", "loss", "-1"), _off("b", "2026-11-11", "win", "1.1"),
+           _off("c", "2026-11-12", "win", "0.9"), _off("d", "2026-11-12", "loss", "-1"),
+           _off("e", "2026-11-13", "", "")]  # pending: never counted
+    h = card_header(off, "nba", "NBA", date(2026, 11, 13), tmp_path, "og", "OG")
+    assert "<b>Ranking v2 from Nov 12</b>" in h
+    rows = dict(re.findall(r"<dt>([^<]*)</dt><dd><span class='rec'[^>]*><a [^>]*><b>([^<]*)",
+                           h))
+    assert rows["All time"] == "2-2-0"  # the full history, unchanged
+    assert rows["Since ranking v2 (Nov 12)"] == "1-1-0"  # Ranking v2 picks only
+    assert list(rows)[:3] == ["All time", "Since rules v2 (Nov 10)", "Since ranking v2 (Nov 12)"]
+    assert O.record(off, O.official_stake).graded == 4
+    ng = card_header(off, "nba", "NBA", date(2026, 11, 13), tmp_path, "nextgen", "Next Gen")
+    assert "Ranking v2" not in ng
