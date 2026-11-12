@@ -318,6 +318,12 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         spread_rows(p, out, now)
     except Exception as e:  # noqa: BLE001 - the Spread card never stops the ledger
         log.warning("spread ledger failed: %s", e)
+    try:  # the Action card (owner 2026-11-12, betdata/action.py), each row written once
+        from betdata.action import ledger_rows as action_rows
+
+        action_rows(p, out, now)
+    except Exception as e:  # noqa: BLE001 - never stops the ledger
+        log.warning("action ledger failed: %s", e)
     annotate(out, now)
     try:  # M19 review fields and reason tags (betdata/review.py), each row written once
         from betdata import review

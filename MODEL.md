@@ -3171,3 +3171,55 @@ The verdict changes no rule, pick or grade (owner 2026-11-12): F keeps feeding O
   their existing logic; `reports/nba/og_ranking_v2.md` shows each pick's label and EV on the
   calibrated probability (report only). The page keeps showing the raw probability (UI freeze;
   BACKLOG item for owner approval).
+
+## Action card (owner decision 2026-11-12; betdata/action.py, config/cards.yaml `action`)
+
+**Why.** OG Ranking v2 is selective and can publish fewer than 5 picks or none (Nov 12, a 2-game
+slate: 0). Users who want daily action get it without weakening the official OG record, which
+must stay above .500 to be trusted. Action picks are the best picks OG did **not** make official,
+published every day under their own, clearly unofficial label and record. They also test the
+filters live: if Action picks win, OG's rules are too strict; if they lose, the rules earn their
+keep. Nothing official changes: OG, Next Gen, the Top 3 shadow, Spread Picks and the parlay pick
+exactly as before.
+
+- **When:** every NBA card day from Nov 13, in the 6:15 AM ET morning run, right after OG Ranking
+  v2 and the Top 3 shadow, at the same moment and so by the same waiting rules (lines, the
+  60-minute cutoff); an OG card chosen later chooses Action at the same poll.
+- **Pool:** every OG candidate — F and C-NBA picks for the day's games, created by OG's selection
+  time and still Live then — that is not on the official OG card, in any market F or C-NBA
+  produces (today rebounds and assists; a market added to F later joins by itself). Rules v2
+  rejects, Ranking v2 rejects and eligible picks ranked below OG's top 5 all count.
+- **Same player:** allowed on both OG and Action, and more than once within Action, when the
+  markets differ. Never the same player, game and market twice: a candidate whose
+  player-game-market is on the official OG card (any line, side or book) is out, and Action keeps
+  one pick per player-game-market (the highest model probability).
+- **Rank** by F's calibrated probability (the F fit in force for the day, as OG Ranking v2; the
+  same order as the raw probability), highest first; ties: shorter price, then earlier
+  created_at. **Take 3**; fewer if fewer exist; none -> an empty Action card.
+- **Stake 0.25u flat** at the pick's price; no TAKE/LEAN labels.
+- **Reason tag:** each Action pick stores why it was not official, every rule it fails, in Rules
+  v2 then Ranking v2 order ("rebounds", "non-assist market", "under 5.5+ assists", "teammates
+  out", "no model probability", "outside price range", "no median", "median wrong side",
+  "duplicate player", "ranked below top 5"); the first is shown ("missed: rebounds").
+- **Ledger:** `ledger/action_card.csv` (write-once rows referencing the existing F / C-NBA pick
+  rows: no duplicate pick rows; graded by their existing results) and a card-day row (kind
+  `action`). Its record is fully separate: never in OG, Next Gen, Spread Picks, the parlay, the
+  success goal or the monetization bar.
+- **Page:** "Next Gen | OG | Spread | Action" (default Next Gen). The Action view: "Action picks —
+  not official. The best picks OG passed on.", tonight's picks with price, stake and reason tag,
+  the record (graded only) with "By reason" and "By market" breakdowns, and Results by day.
+- **Push:** a section after Spread picks, "Action picks (not official)", one line per pick
+  ("Ivica Zubac u9.5 reb +116 · 0.25u · missed: rebounds"), or "Action picks: none today".
+- **Review at 100 graded Action picks** (report only): `reports/nba/action_review.md` — record,
+  units, ROI, by reason (vs the same reason in the Filters table), by market, same-player stacks,
+  Action vs official OG over the same days — and one ntfy line. Nothing changes automatically. The
+  weekly report has an Action section. The report also carries a hindsight replay of Oct 31 -
+  Nov 12 (labelled; never in the live record).
+
+## Empty and short card reasons (owner decision 2026-11-12)
+
+When an NBA card publishes fewer than its usual number of picks (OG and Next Gen 5, Action 3),
+the push and that card's view say why in one line built from stored data, e.g. "OG: no picks —
+2-game slate; 7 candidates: 4 rebounds, 2 under 5.5+ assists, 1 outside price range." or "Next
+Gen: no picks — no edge found on 4 games." The generic "found no value" text stays only where no
+specific reason is stored (e.g. a card pushed later by the poller).

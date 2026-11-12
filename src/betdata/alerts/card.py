@@ -348,6 +348,10 @@ def run_shadow(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> lis
 
                 if OR.applies(day):  # the OG Top 3 shadow: same ranking, same moment, 3 picks
                     set_state(p, OR.top3_key(sport, day), OR.top3_of(card), now)
+                from betdata import action as AC
+
+                if AC.applies(day):  # the Action card (owner 2026-11-12): not official
+                    set_state(p, AC.key(day), AC.choose(p, day, now, card, m), now)
         out.append(card)
     return out
 
