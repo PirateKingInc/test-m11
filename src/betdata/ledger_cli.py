@@ -131,3 +131,26 @@ def f_verdict():
 
     path, res = write(PROJECT_ROOT, datetime.now(UTC))
     typer.echo(f"F verdict: {res.verdict}; wrote {path}")
+
+
+@ledger_app.command("walkforward")
+def walkforward(rule: str = typer.Option("all", help="all, or one of: actual, v2top5, "
+                                         "v2top3, v2cal, segcal"),
+                cutoff: str = typer.Option(None, help="Split mode: parameters frozen before "
+                                           "this date (YYYY-MM-DD), days scored from it."),
+                write: bool = typer.Option(True, help="Write reports/nba/walkforward.md.")):
+    """Walk-forward evaluation of OG card rules over the ledger, with no look-ahead (owner
+    2026-11-12; report only, it changes no card)."""
+    from datetime import date
+
+    from betdata import walkforward as WF
+    from betdata.config import PROJECT_ROOT
+    from betdata.ledger import ledger_dir
+
+    cut = None if cutoff is None else date.fromisoformat(cutoff)
+    data = WF.load(ledger_dir())
+    rules = WF.RULES if rule == "all" else (rule,)
+    for line in WF.table([(WF.NAMES.get(r, r), WF.run(data, r, cut)) for r in rules]):
+        typer.echo(line)
+    if write:
+        typer.echo(f"wrote {WF.write(PROJECT_ROOT, datetime.now(UTC), cut)}")
