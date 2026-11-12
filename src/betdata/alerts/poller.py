@@ -282,6 +282,13 @@ class Poller:
             cards = [*cards, *og]  # a card chosen after 6:15 (no lines then) is pushed now
         except Exception as e:  # noqa: BLE001 - OG never stops the other cards
             self.errors.append(f"OG card: {type(e).__name__}: {str(e)[:200]}")
+        try:  # Action live adds (owner 2026-11-12): picks posted after the morning card
+            from betdata.action import live_adds
+
+            for x in live_adds(self.pdb, self.main, now, self.keys.ntfy_topic, self.push_client):
+                self.notes.append(f"Action add {x['player']} {x['market']}: {x.get('push')}")
+        except Exception as e:  # noqa: BLE001 - never stops the cards
+            self.errors.append(f"Action adds: {type(e).__name__}: {str(e)[:200]}")
         try:  # Spread Picks (owner 2026-11-10): chosen with Next Gen; in Next Gen's push
             from betdata.spread import run as spread_run
 

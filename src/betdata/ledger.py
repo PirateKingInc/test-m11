@@ -322,6 +322,9 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         from betdata.action import ledger_rows as action_rows
 
         action_rows(p, out, now)
+        from betdata.action import adds_ledger_rows
+
+        adds_ledger_rows(p, out, now)  # the Action card's live adds
     except Exception as e:  # noqa: BLE001 - never stops the ledger
         log.warning("action ledger failed: %s", e)
     annotate(out, now)
