@@ -171,6 +171,8 @@ html
                 b
               p class=meta
                 b
+              p class=meta
+                b
         details class=fold
           summary
             b
