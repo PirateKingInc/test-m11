@@ -66,8 +66,40 @@ def nba_cards() -> tuple[str, ...]:
     while it is active (a retired Spread card keeps its ledger rows, not its toggle)."""
     from betdata import cards as C
 
-    return (C.NEXTGEN, C.OG) + ((C.SPREAD,) if C.SPREAD in C.load()
-                                and C.active(C.SPREAD) else ())  # fmt: skip
+    return (C.NEXTGEN, C.OG) + tuple(k for k in (C.SPREAD, C.ACTION)
+                                     if k in C.load() and C.active(k))  # fmt: skip
+
+
+ACTION_HEAD = "Action picks — not official. The best picks OG passed on."
+
+
+def action_header(off: list[dict], sport: str, today: date, site: Path, label: str,
+                  hidden: bool) -> str:  # fmt: skip
+    """The Action card's record (owner decision 2026-11-12): not official, graded picks only,
+    0.25u flat, with its record by reason tag and by market."""
+    from betdata import action as AC
+
+    per = O.periods(off, today)
+    allt = per["All time"]
+    preview = f"{label} {allt.wlp} · {_units(allt.units)} · not official"
+    out = [f"<section class='official' data-sport='{escape(sport)}' data-card='action'"
+           f"{' hidden' if hidden else ''}><details class='fold' data-fold='{escape(sport)}"
+           f"-official'><summary><b>Record · NBA · {escape(label)}</b> <span "
+           f"class='pv'>— {escape(preview)}</span></summary><div class='foldbody'><p "
+           f"class='meta'><b>{escape(ACTION_HEAD)}</b> Up to 3 a day, 0.25u each, chosen with "
+           "OG at 6:15 AM ET; each shows why OG did not make it official. Never part of OG's "
+           "record. Graded picks only. Paper units, not advice.</p><dl class='periods'>"]
+    for lab, rec in per.items():
+        href = f"csv/{sport}-action-{lab.lower().replace(' ', '-')}.csv"
+        O.write_csv(site / href, rec.rows)
+        out.append(f"<dt>{escape(lab)}</dt><dd>{stat_line(rec, href)}</dd>")
+    out.append("</dl>")
+    for title, by in (("By reason", "reason"), ("By market", "market")):
+        parts = AC.breakdown(off, by)
+        txt = " · ".join(f"{k}: {r.wlp}, {_units(r.units)}" for k, r in parts.items())
+        out.append(f"<p class='meta'><b>{title}</b>: {escape(txt or 'no graded picks yet')}</p>")
+    out.append("</div></details></section>")
+    return "".join(out)
 
 
 def spread_header(off: list[dict], sport: str, today: date, site: Path, label: str,
@@ -109,6 +141,8 @@ def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
     """One card's official record header: periods and its own success goal."""
     if card == "spread":
         return spread_header(off, sport, today, site, label, hidden)
+    if card == "action":
+        return action_header(off, sport, today, site, label, hidden)
     per = O.periods(off, today)
     allt, g = per["All time"], O.goal(off)
     v2 = None
@@ -171,7 +205,7 @@ def toggle_html(default: str) -> str:
             f"border:1px solid var(--line);border-radius:10px'>{btn}</div>{TOGGLE_JS}")
 
 
-TOGGLE_NAMES = {"spread": "Spread"}  # the toggle's short label for "Spread Picks"
+TOGGLE_NAMES = {"spread": "Spread", "action": "Action"}  # short toggle labels
 TOGGLE_JS = """<script>
 (function(){
   var K = 'betdata.nbaCard';
@@ -180,8 +214,8 @@ TOGGLE_JS = """<script>
   var scope = root.closest('.panel') || document;
   function get() {
     try { var v = localStorage.getItem(K);
-      if (v === 'og' || v === 'nextgen' || (v === 'spread' && root.querySelector(
-        '[data-pick="spread"]'))) return v; }
+      if (v === 'og' || v === 'nextgen' || ((v === 'spread' || v === 'action') &&
+        root.querySelector('[data-pick="' + v + '"]'))) return v; }
     catch (e) {}
     return root.dataset.default || 'nextgen';
   }
@@ -346,6 +380,8 @@ def card_days_html(rows: list[dict], off: list[dict], sport: str, today: date, s
                                if r.get("review_tag") else "")
                             + (" · <b>on both cards</b>" if both and C.both_mark(r, both)
                                and card != C.SPREAD else "")
+                            + (f" · missed: <b>{escape(r.get('action_reason', ''))}</b>"
+                               if card == C.ACTION else "")
                             + (" · <b>reconstructed</b>" if card == C.SPREAD
                                and r.get("spread_backfill") else "")
                             + "</div></li>" for r in ps) + "</ul></div>")  # fmt: skip

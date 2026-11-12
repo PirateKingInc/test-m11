@@ -47,6 +47,12 @@ const { chromium } = require('playwright');
   out.spread = await state();
   await pg.reload();
   out.spread_reloaded = await state();
+  await pg.click('[data-cardtoggle="nba"] button[data-pick="action"]');
+  out.action = await state();
+  out.action_text = await pg.evaluate(() =>
+    document.querySelector('details[data-tonight="nba"] .trk-cardbody').innerText);
+  await pg.reload();
+  out.action_reloaded = await state();
   await pg.click('[data-cardtoggle="nba"] button[data-pick="nextgen"]');
   out.back = await state();
   console.log(JSON.stringify(out));
@@ -77,10 +83,15 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
           "market": "Spread", "pick": "MIA +4.5", "odds": "-110", "card": False, "og": False,
           "spread": True, "label": "SPREAD", "stake": 1.0, "signal": "dog-spread",
           "trigger": "from Next Gen ML MIA +170", "bet": "1:spreads::home"}
-    doc = {**TRACKER_DOC, "og_chosen": True, "spread_chosen": True,
+    # an Action pick (owner 2026-11-12): only in the Action view, with stake and reason
+    ac = {**g["picks"][0], "id": "ac1", "player": "Ivica Zubac", "market": "Rebounds",
+          "pick": "under 9.5", "odds": "+116", "card": False, "og": False, "action": True,
+          "action_stake": 0.25, "action_note": "missed: rebounds", "label": "",
+          "signal": "F", "bet": "1:reb:zubac:under"}
+    doc = {**TRACKER_DOC, "og_chosen": True, "spread_chosen": True, "action_chosen": True,
            "og_note": "1 pick today — OG found no other value",
            "card_note": "1 pick today — the engine found no other value",
-           "games": [{**g, "picks": [both, og, sp]}]}
+           "games": [{**g, "picks": [both, og, sp, ac]}]}
     monkeypatch.setattr(F, "TRACKER_DOC", doc)
     page = tmp_path / "index.html"
     page.write_text(build_fixture_page(tmp_path))
@@ -101,13 +112,14 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
     out = json.loads(r.stdout.strip().splitlines()[-1])
     start, og_, again, back = out["start"], out["og"], out["reloaded"], out["back"]
     spr, spr2 = out["spread"], out["spread_reloaded"]
+    act, act2 = out["action"], out["action_reloaded"]
     # default Next Gen with nothing stored
     assert start["official"] == ["nextgen"] and start["days"] == ["nextgen"]
-    assert start["pressed"] == ["true", "false", "false"] and start["stored"] is None
+    assert start["pressed"] == ["true", "false", "false", "false"] and start["stored"] is None
     assert start["tonight"].startswith("— Tonight: 1 card pick")
     # OG: every card-dependent section switches, and the choice is remembered
     assert og_["official"] == ["og"] and og_["days"] == ["og"]
-    assert og_["pressed"] == ["false", "true", "false"] and og_["stored"] == "og"
+    assert og_["pressed"] == ["false", "true", "false", "false"] and og_["stored"] == "og"
     assert og_["tonight"].startswith("— Tonight: 1 card pick")
     assert og_["both"] >= 1  # the same bet on both cards is marked so
     assert start["badges"] == 0 and og_["badges"] == 1  # the card badges follow the toggle
@@ -117,12 +129,18 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
     # pick with the triggering ML pick in small text; the choice persists; the Spread pick is
     # hidden from Next Gen and OG (two picks there, three in the Spread view)
     assert spr["official"] == ["spread"] and spr["days"] == ["spread"]
-    assert spr["pressed"] == ["false", "false", "true"] and spr["stored"] == "spread"
+    assert spr["pressed"] == ["false", "false", "true", "false"] and spr["stored"] == "spread"
     assert spr["tonight"].startswith("— Tonight: 1 card pick")
     assert "from Next Gen ML MIA +170" in spr["trigger"]
-    assert start["props"] == 2 and og_["props"] == 2 and spr["props"] == 3
+    assert start["props"] == 3 and og_["props"] == 3 and spr["props"] == 4
     assert start["trigger"] == [] or all("Next Gen ML" not in t for t in start["trigger"])
     assert spr2["official"] == ["spread"] and spr2["stored"] == "spread"
+    # Action (owner 2026-11-12): its own record and days, its picks with 0.25u and the reason
+    assert act["official"] == ["action"] and act["days"] == ["action"]
+    assert act["pressed"] == ["false", "false", "false", "true"] and act["stored"] == "action"
+    assert act["tonight"].startswith("— Tonight: 1 card pick")
+    assert "0.25u" in out["action_text"] and "missed: rebounds" in out["action_text"]
+    assert act2["official"] == ["action"] and act2["stored"] == "action"
 
 
 TAB_SCRIPT = r"""

@@ -22,8 +22,9 @@ html
           button
           button
           button
+          button
         script
-          <script sha1 4f92a4d6e007>
+          <script sha1 af62d28260ec>
         section class=official
           details class=fold
             summary
@@ -136,6 +137,40 @@ html
                     a
                     a
               p class=meta
+        section class=official
+          details class=fold
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              p class=meta
+                b
+              dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+              p class=meta
+                b
+              p class=meta
+                b
         details class=fold
           summary
             b
@@ -222,6 +257,12 @@ html
                       b
               p class=meta
                 a
+        section class=days
+          h2
+          p class=meta
+          label class=jump
+            input class=dayjump
+          p class=meta
         section class=days
           h2
           p class=meta

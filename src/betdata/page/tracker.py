@@ -64,12 +64,16 @@ SCRIPT = """<script>
   // ... and Spread Picks (owner 2026-11-10): its picks show only in the Spread view
   function act(sport) {
     var v = sport === 'nba' ? window.betdataNbaCard : '';
-    return v === 'og' || v === 'spread' ? v : 'nextgen'; }
+    return v === 'og' || v === 'spread' || v === 'action' ? v : 'nextgen'; }
   function on(sport, p) {
-    var a = act(sport); return a === 'og' ? !!p.og : a === 'spread' ? !!p.spread : !!p.card; }
+    var a = act(sport); return a === 'og' ? !!p.og : a === 'spread' ? !!p.spread :
+      a === 'action' ? !!p.action : !!p.card; }
   function shown(sport, ps) {
     return act(sport) === 'spread' ? ps : ps.filter(function (p) { return !p.spread; }); }
   function badge(sport, p) {
+    // Action (owner 2026-11-12): no label, its 0.25u stake and why OG passed on it
+    if (act(sport) === 'action' && p.action) return ' <span class="lbl">' + p.action_stake +
+      'u</span> <span class="meta">' + esc(p.action_note) + '</span>';
     var og = act(sport) === 'og', c = on(sport, p);
     var lb = og && p.og ? p.og_label : p.label, st = og && p.og ? p.og_stake : p.stake;
     return (lb ? ' <span class="lbl ' + esc(lb.toLowerCase()) + '">' + esc(lb) +
@@ -113,7 +117,8 @@ SCRIPT = """<script>
     games.forEach(function (g) { g.picks.forEach(function (p) {
       if (on(sport, p)) rows.push([g, p]); }); });
     var txt = act(sport) === 'og' ? d.og_note :
-      act(sport) === 'spread' ? d.spread_note : d.card_note;
+      act(sport) === 'spread' ? d.spread_note :
+      act(sport) === 'action' ? d.action_note : d.card_note;
     var note = txt ? '<p class="meta trk-note">' + esc(txt) + '.</p>' : '';
     if (!rows.length && note) return [txt, note];
     if (!rows.length) return ['none yet',
