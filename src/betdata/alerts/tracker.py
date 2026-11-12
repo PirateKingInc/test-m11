@@ -238,6 +238,13 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
             sp_card = get_state(p, SP.key(day))
             signals = (*signals, SP.SIGNAL)
     on_sp = {x["dedup_key"]: x for x in (sp_card or {}).get("picks", [])}
+    ac_card = None
+    if sport == "nba":  # the Action card (owner 2026-11-12): not official
+        from betdata import action as AC
+
+        if AC.active():
+            ac_card = get_state(p, AC.key(day))
+    on_ac = {x["dedup_key"]: x for x in (ac_card or {}).get("picks", [])}
     trig_price = {}
     rows = p.execute(
         select(alerts, alert_grades.c.result, alert_grades.c.profit, consensus_grades.c.clv)
@@ -308,6 +315,10 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
                 pick["price"] = status(p, a, now)
             except Exception:  # noqa: BLE001 - a status never drops the pick
                 pick["price"] = None
+        x_ac = on_ac.get(a.dedup_key)
+        if x_ac is not None:  # an Action pick: its stake and why OG passed on it
+            pick.update(action=True, action_stake=float(x_ac.get("stake", 0.25)),
+                        action_note=f"missed: {x_ac.get('reason', '?')}")
         s = on_sp.get(a.dedup_key)
         if a.signal == "dogsprd":  # Spread Picks: 1 unit flat, naming the ML pick it came from
             team = a.game_label.split(" @ ")[1 if a.side == "home" else 0]
@@ -347,6 +358,13 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
         out["og_note"] = OG_SWITCH_OVER
     if sport == "nba" and C.load():
         out["cards"] = {k: C.name(k) for k in (C.NEXTGEN, C.OG)}
+    if sport == "nba" and ac_card is not None:  # Action (owner 2026-11-12)
+        from betdata import card_reasons as CR
+
+        out["action_chosen"] = True
+        why = CR.action(ac_card)
+        if why:
+            out["action_note"] = why[:1].upper() + why[1:]
     if sport == "nba" and sp_card is not None:  # Spread Picks (owner 2026-11-10)
         out["spread_chosen"] = True
         if not sp_card.get("picks"):

@@ -1,0 +1,249 @@
+html
+  head
+    meta
+    meta
+    meta
+    title
+    style
+      <style sha1 020ed4aeb1bb>
+  body
+    header class=top
+      h1
+      p class=updated
+        span id=updated
+      div id=warn
+    main
+      nav role=tablist
+        button role=tab
+        button role=tab
+        button role=tab
+      div id=tab-nba class=panel
+        div class=cardtoggle role=group
+          button
+          button
+          button
+        script
+          <script sha1 4f92a4d6e007>
+        section class=official
+          details class=fold
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              p class=meta
+                b
+              dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+        section class=official
+          details class=fold
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              p class=meta
+                b
+                b
+              dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+        section class=official
+          details class=fold
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              p class=meta
+              dl class=periods
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+                dt
+                dd
+                  span class=rec
+                    a
+                      b
+                    a
+                    a
+              p class=meta
+        details class=fold
+          summary
+            b
+            span class=pv trk-sum
+          div class=foldbody trk-cardbody
+            p class=meta
+        section class=tracker
+          h2
+          p class=meta trk-meta
+          div class=trk-body
+            p class=meta
+          script class=trk-data
+        section class=days
+          h2
+          p class=meta
+          label class=jump
+            input class=dayjump
+          p class=meta
+        section class=days
+          h2
+          p class=meta
+          label class=jump
+            input class=dayjump
+          details id=nba-og-day-#-#-# class=day
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              span class=rec
+                a
+                  b
+                a
+                a
+              p class=meta
+              div class=trk-game
+                h4
+                ul class=plist
+                  li class=prop
+                    div
+                      b
+                    div
+                      b
+                      span class=lbl lean
+                    div
+                      span class=st live
+                    div class=meta
+                      b
+                  li class=prop
+                    div
+                      b
+                    div
+                      b
+                      span class=lbl lean
+                    div
+                      span class=st gone
+                    div class=meta
+                      b
+              p class=meta voids
+              p class=meta
+                a
+          details id=nba-og-day-#-#-# class=day
+            summary
+              b
+              span class=pv
+            div class=foldbody
+              span class=rec
+                a
+                  b
+                a
+                a
+              p class=meta
+              div class=trk-game
+                h4
+                ul class=plist
+                  li class=prop
+                    div
+                      b
+                    div
+                      b
+                      span class=lbl lean
+                    div
+                      span class=st gone
+                    div class=meta
+                      b
+              p class=meta
+                a
+        section class=days
+          h2
+          p class=meta
+          label class=jump
+            input class=dayjump
+          p class=meta
+        details class=fold
+          summary
+            b
+            span class=pv
+          div class=foldbody
+            p
+            p
+              a
+            p
+              a
+            p
+      div id=tab-nfl class=panel
+        p class=soon
+    footer
+      p
+        b
+    script id=status
+    script
+      <script sha1 36130eaf24d8>
