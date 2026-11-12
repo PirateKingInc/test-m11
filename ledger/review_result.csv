@@ -941,3 +941,82 @@ P0ff27a4934d0,6.0,34.0,,OKC 103-123 POR,[],6.5,-0.52,Market disagreed,2026-11-11
 P4f743d8b26e3,0.0,14.0,,ORL 107-100 SAC,[],1.5,-0.33,Minutes miss,2026-11-11T11:15:41+00:00
 Pa6288683c032,1.0,24.0,,ORL 107-100 SAC,[],1.5,0.57,Variance,2026-11-11T11:15:41+00:00
 P4fdc38fbe6dc,2.0,34.0,,ORL 107-100 SAC,[],1.5,-1.17,Market disagreed,2026-11-11T11:15:41+00:00
+P61af601203a2,1.0,22.0,,WAS 101-114 IND,[],1.5,,Minutes miss,2026-11-12T11:15:26+00:00
+Paaaae2302bdb,10.0,34.0,,WAS 101-114 IND,[],7.5,11.69,Variance,2026-11-12T11:15:26+00:00
+P45998cdd3d27,0.0,34.0,,WAS 101-114 IND,[],2.5,5.92,Variance,2026-11-12T11:15:26+00:00
+P0903cd60c19d,12.0,31.0,,WAS 101-114 IND,[],10.5,-6.86,Minutes miss,2026-11-12T11:15:26+00:00
+P80cac5ea2815,2.0,34.0,,WAS 101-114 IND,[],2.5,5.97,Variance,2026-11-12T11:15:26+00:00
+Pc6850052ac8f,3.0,33.0,,CLE 115-107 NYK,[],3.5,6.19,Variance,2026-11-12T11:15:26+00:00
+P59699a934848,2.0,17.0,,CLE 115-107 NYK,[],2.5,8.26,Minutes miss,2026-11-12T11:15:26+00:00
+P2e2083be4e31,5.0,35.0,,CLE 115-107 NYK,[],6.5,7.4,Variance,2026-11-12T11:15:26+00:00
+Pa0ab9f554c22,0.0,23.0,,CLE 115-107 NYK,[],3.5,10.65,Minutes miss,2026-11-12T11:15:26+00:00
+P0ff36d9e09de,4.0,33.0,,CLE 115-107 NYK,[],5.5,3.07,Variance,2026-11-12T11:15:26+00:00
+Ped8bcd2cfc00,6.0,36.0,,CLE 115-107 NYK,[],4.5,-2.13,Market disagreed,2026-11-12T11:15:26+00:00
+Pdb7266068add,2.0,17.0,,CLE 115-107 NYK,[],2.5,9.09,Minutes miss,2026-11-12T11:15:26+00:00
+P6252db0424c0,5.0,35.0,,CLE 115-107 NYK,[],6.5,7.04,Variance,2026-11-12T11:15:26+00:00
+P17e00706fa55,1.0,17.0,,CLE 115-107 NYK,[],2.5,-2.49,Minutes miss,2026-11-12T11:15:26+00:00
+P32d81a69f724,14.0,32.0,,CLE 115-107 NYK,[],7.5,5.81,Minutes miss,2026-11-12T11:15:26+00:00
+Pec8eb714a11a,4.0,34.0,,WAS 101-114 IND,[],8.5,-1.74,Market disagreed,2026-11-12T11:15:26+00:00
+Pd29632d60eac,12.0,31.0,,WAS 101-114 IND,[],10.5,-1.58,Minutes miss,2026-11-12T11:15:26+00:00
+P6a80ed22b8b7,1.0,32.0,,BOS 98-93 TOR,"[{""player"": ""Immanuel Quickley"", ""from"": ""Questionable"", ""to"": ""Available""}]",1.5,8.92,News after pick,2026-11-12T11:15:26+00:00
+Pefca997efac5,1.0,35.0,,BOS 98-93 TOR,"[{""player"": ""Immanuel Quickley"", ""from"": ""Questionable"", ""to"": ""Available""}]",2.5,,News after pick,2026-11-12T11:15:26+00:00
+Pf2a6b5fb6084,3.0,20.0,,BOS 98-93 TOR,"[{""player"": ""Collin Murray-Boyles"", ""from"": ""Questionable"", ""to"": ""Available""}, {""player"": ""Immanuel Quickley"", ""from"": ""Questionable"", ""to"": ""Available""}]",1.5,,News after pick,2026-11-12T11:15:26+00:00
+Peda0fa5a81a1,3.0,18.0,,BOS 98-93 TOR,"[{""player"": ""Paul George"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,-14.33,News after pick,2026-11-12T11:15:26+00:00
+P18bd0128f6f1,4.0,28.0,,BOS 98-93 TOR,"[{""player"": ""Immanuel Quickley"", ""from"": ""Questionable"", ""to"": ""Available""}]",3.5,6.46,News after pick,2026-11-12T11:15:26+00:00
+Pd1fc2494fff3,9.0,32.0,,BOS 98-93 TOR,"[{""player"": ""Immanuel Quickley"", ""from"": ""Questionable"", ""to"": ""Available""}]",7.5,5.82,News after pick,2026-11-12T11:15:26+00:00
+P45213b7612fb,,,,BOS 98-93 TOR,"[{""player"": ""Paul George"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,,,2026-11-12T11:15:26+00:00
+Pf96c1699fca4,7.0,38.0,,BOS 98-93 TOR,"[{""player"": ""Paul George"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,-3.61,News after pick,2026-11-12T11:15:26+00:00
+Pc59e9c523f25,-5.0,,,BOS 98-93 TOR,"[{""player"": ""Immanuel Quickley"", ""from"": ""Questionable"", ""to"": ""Available""}]",,1.52,News after pick,2026-11-12T11:15:26+00:00
+P08e5a36e373e,1.0,29.0,,SAS 124-119 CHI,"[{""player"": ""Devin Vassell"", ""from"": ""Questionable"", ""to"": ""Out""}]",5.5,0.07,News after pick,2026-11-12T11:15:32+00:00
+P51f3bc40295a,2.0,25.0,,SAS 124-119 CHI,"[{""player"": ""Caleb Wilson"", ""from"": ""Available"", ""to"": ""Questionable""}]",6.5,12.42,News after pick,2026-11-12T11:15:32+00:00
+P13e48642b537,5.0,19.0,,BKN 145-111 NOP,[],4.5,1.73,Variance,2026-11-12T11:15:32+00:00
+P5f001a7a3a11,3.0,28.0,,BKN 145-111 NOP,[],2.5,-9.16,Market disagreed,2026-11-12T11:15:32+00:00
+Pa7049cbf34e2,,,,BKN 145-111 NOP,"[{""player"": ""Nolan Traore"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,,,2026-11-12T11:15:32+00:00
+P5309b6b9c21f,1.0,29.0,,BKN 145-111 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",4.5,1.56,News after pick,2026-11-12T11:15:32+00:00
+P92f006545128,4.0,25.0,,GSW 108-115 HOU,[],1.5,-14.31,Market disagreed,2026-11-12T11:15:32+00:00
+P583994fd7fdc,0.0,36.0,,GSW 108-115 HOU,[],3.5,13.04,Variance,2026-11-12T11:15:32+00:00
+P6ed9b22715eb,5.0,27.0,,GSW 108-115 HOU,[],4.5,1.08,Variance,2026-11-12T11:15:32+00:00
+P0ff3b64779ce,7.0,29.0,,GSW 108-115 HOU,[],6.5,0.5,Variance,2026-11-12T11:15:32+00:00
+P4a0a8e6d90f3,2.0,17.0,,GSW 108-115 HOU,[],1.5,,Minutes miss,2026-11-12T11:15:32+00:00
+P7fc6eecbf731,2.0,27.0,,DEN 123-118 MEM,[],2.5,-0.96,Market disagreed,2026-11-12T11:15:32+00:00
+P09595872e2ab,1.0,20.0,,DEN 123-118 MEM,[],1.5,,not enough data,2026-11-12T11:15:32+00:00
+Pb4b8615df0fb,2.0,31.0,,SAS 124-119 CHI,"[{""player"": ""Caleb Wilson"", ""from"": ""Available"", ""to"": ""Questionable""}]",1.5,-3.61,News after pick,2026-11-12T11:15:32+00:00
+Pbfb7ca035db8,9.0,31.0,,SAS 124-119 CHI,"[{""player"": ""Devin Vassell"", ""from"": ""Questionable"", ""to"": ""Out""}]",5.5,1.35,News after pick,2026-11-12T11:15:32+00:00
+P1f5d1b8c81b7,,,,SAS 124-119 CHI,"[{""player"": ""Caleb Wilson"", ""from"": ""Available"", ""to"": ""Questionable""}]",1.5,,,2026-11-12T11:15:32+00:00
+P86d529f1386a,1.0,29.0,,SAS 124-119 CHI,"[{""player"": ""Devin Vassell"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,0.68,News after pick,2026-11-12T11:15:32+00:00
+P7f8c5e4796ae,,,,SAS 124-119 CHI,"[{""player"": ""Devin Vassell"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,,,2026-11-12T11:15:32+00:00
+P9064c2774128,2.0,31.0,,DEN 123-118 MEM,[],2.5,5.17,Variance,2026-11-12T11:15:32+00:00
+Pd206a31153af,3.0,25.0,,BKN 145-111 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",1.5,13.9,News after pick,2026-11-12T11:15:32+00:00
+P11d457a5a9c5,5.0,29.0,,BKN 145-111 NOP,[],5.5,-10.73,Market disagreed,2026-11-12T11:15:32+00:00
+P6398aabc702f,2.0,30.0,,BKN 145-111 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",2.5,-2.11,News after pick,2026-11-12T11:15:32+00:00
+P8ff14844f4a9,3.0,28.0,,BKN 145-111 NOP,[],2.5,-11.45,Market disagreed,2026-11-12T11:15:32+00:00
+P29b8694f7f4b,2.0,28.0,,BKN 145-111 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",5.5,-10.73,News after pick,2026-11-12T11:15:32+00:00
+P6876cb25e867,,,,BKN 145-111 NOP,"[{""player"": ""Trey Murphy III"", ""from"": ""Probable"", ""to"": ""Out""}]",4.5,,,2026-11-12T11:15:32+00:00
+P1bc021cf2a10,0.0,19.0,,GSW 108-115 HOU,[],1.5,,not enough data,2026-11-12T11:15:32+00:00
+Pe49223f6e92b,4.0,29.0,,GSW 108-115 HOU,[],3.5,0.58,Variance,2026-11-12T11:15:32+00:00
+P6b5d64b7ed66,0.0,6.0,,GSW 108-115 HOU,[],3.5,2.68,Minutes miss,2026-11-12T11:15:32+00:00
+Pde2b54edb0f0,4.0,25.0,,GSW 108-115 HOU,[],3.5,-1.65,Market disagreed,2026-11-12T11:15:32+00:00
+Pb0ca5d312d8c,10.0,36.0,,GSW 108-115 HOU,[],6.5,5.62,Variance,2026-11-12T11:15:32+00:00
+P1f7d028dc375,3.0,32.0,,OKC 108-118 POR,,4.5,-9.8,not enough data,2026-11-12T11:15:32+00:00
+Pe97de385a5c4,3.0,32.0,,OKC 108-118 POR,,3.5,2.39,not enough data,2026-11-12T11:15:32+00:00
+Pe86da1142413,6.0,31.0,,OKC 108-118 POR,,3.5,-8.06,not enough data,2026-11-12T11:15:32+00:00
+P006ed4767f65,1.0,23.0,,LAL 123-112 MIL,"[{""player"": ""Myles Turner"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Tyler Herro"", ""from"": ""Available"", ""to"": ""Questionable""}]",3.5,-11.15,News after pick,2026-11-12T11:15:32+00:00
+Pe597b89db25f,11.0,29.0,,LAL 123-112 MIL,"[{""player"": ""Quentin Grimes"", ""from"": ""Questionable"", ""to"": ""Out""}]",10.5,2.55,News after pick,2026-11-12T11:15:32+00:00
+Pc046786308ec,1.0,20.0,,LAL 123-112 MIL,"[{""player"": ""Quentin Grimes"", ""from"": ""Questionable"", ""to"": ""Out""}]",2.5,6.93,News after pick,2026-11-12T11:15:32+00:00
+P29e348aed850,5.0,32.0,,LAL 123-112 MIL,"[{""player"": ""Quentin Grimes"", ""from"": ""Questionable"", ""to"": ""Out""}]",7.5,7.36,News after pick,2026-11-12T11:15:32+00:00
+P05b908c41c45,,,,LAL 123-112 MIL,"[{""player"": ""Myles Turner"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Tyler Herro"", ""from"": ""Available"", ""to"": ""Questionable""}]",4.5,,,2026-11-12T11:15:32+00:00
+Pe8a893d8a70b,9.0,21.0,,LAL 123-112 MIL,"[{""player"": ""Quentin Grimes"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,9.3,News after pick,2026-11-12T11:15:32+00:00
+P3b5f4e315368,5.0,30.0,,LAL 123-112 MIL,"[{""player"": ""Myles Turner"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Tyler Herro"", ""from"": ""Available"", ""to"": ""Questionable""}]",4.5,12.31,News after pick,2026-11-12T11:15:32+00:00
+P85a4c80d05f1,1.0,39.0,,ORL 123-108 UTA,,7.5,8.31,not enough data,2026-11-12T11:15:32+00:00
+P3060d01b336c,2.0,36.0,,OKC 108-118 POR,,5.5,-0.36,not enough data,2026-11-12T11:15:32+00:00
+P24fd39bf6377,2.0,29.0,,OKC 108-118 POR,,3.5,-19.5,not enough data,2026-11-12T11:15:32+00:00
+P3e420af88528,3.0,35.0,,OKC 108-118 POR,,6.5,1.96,not enough data,2026-11-12T11:15:32+00:00
+Paa0c1b06f472,3.0,32.0,,OKC 108-118 POR,,3.5,3.03,not enough data,2026-11-12T11:15:32+00:00
+P0893c8c4259d,3.0,30.0,,OKC 108-118 POR,,3.5,0.85,not enough data,2026-11-12T11:15:32+00:00
+Pb49236b25f55,10.0,,,OKC 108-118 POR,"[{""player"": ""Ajay Mitchell"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Chet Holmgren"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jalen Williams"", ""from"": ""Available"", ""to"": ""Out""}]",-2.5,12.5,News after pick,2026-11-12T11:15:32+00:00
+P66f13d2b8eec,10.0,,,OKC 108-118 POR,"[{""player"": ""Ajay Mitchell"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Chet Holmgren"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jalen Williams"", ""from"": ""Available"", ""to"": ""Out""}]",,8.02,News after pick,2026-11-12T11:15:32+00:00
+P8f29afdf608d,2.0,26.0,,LAL 123-112 MIL,[],1.5,0.18,Variance,2026-11-12T11:15:32+00:00
+Pfb707272c044,7.0,24.0,,LAL 123-112 MIL,[],2.5,-21.02,Market disagreed,2026-11-12T11:15:32+00:00
+P15fde990e50d,5.0,23.0,,LAL 123-112 MIL,[],2.5,-0.05,Market disagreed,2026-11-12T11:15:32+00:00
+Pd9f5705b1fb4,7.0,33.0,,ORL 123-108 UTA,[],3.5,2.03,Variance,2026-11-12T11:15:32+00:00
+P30e0824a5321,7.0,17.0,,OKC 108-118 POR,[],5.5,3.34,Variance,2026-11-12T11:15:32+00:00

@@ -1,4 +1,4 @@
-# OG Ranking v2 (2026-11-11)
+# OG Ranking v2 (2026-11-12)
 
 Owner decision 2026-11-11 (MODEL.md "OG Ranking v2"): from Nov 12 OG ranks its pool by the model's win probability, -150 to +130, median on the bet's side, one pick per player, up to 5 at 0.5u. The OG Top 3 is a shadow: never shown, pushed or counted officially. Nothing switches automatically; the owner decides.
 
@@ -13,8 +13,14 @@ Review: at Nov 26 or 50 graded official Ranking v2 picks, whichever first (0 gra
 | Units (0.5u) | +0.00 | +0.00 |
 | ROI | – | – |
 | Average odds | – | – |
-| Picks per day | – (0 over 0 days) | – (0 over 0 days) |
-| Worst 3-day stretch | 0-0, +0.00u (–) | 0-0, +0.00u (–) |
+| Picks per day | 0.0 (0 over 1 days) | 0.0 (0 over 1 days) |
+| Worst 3-day stretch | 0-0, +0.00u (2026-11-12 to 2026-11-12) | 0-0, +0.00u (2026-11-12 to 2026-11-12) |
+
+## Calibrated probability (report only)
+
+F's weekly calibration (MODEL.md "F calibration") on each official pick: the card ranks on it (the same picks and order as the raw probability); its labels and stakes stay on the existing logic. The page shows the raw probability.
+
+No official Ranking v2 picks yet.
 
 ## Backtest (hindsight replay)
 
