@@ -3294,7 +3294,11 @@ rebound losses that led to Rules v2 are rebound **unders** (42% whether or not t
 keeps them), while rebound overs that pass Ranking v2's median rule went 27-16 (63%, +16.5u) and
 rebound overs failing it went 15-33. This is hindsight evidence on 43 picks, so Rules v3 comes
 with a live guardrail and a review point. The split is recomputed by code in
-`reports/nba/rules_v3.md`, beside the 2023-2025 replay (threes_backtest pipeline).
+`reports/nba/rules_v3.md`, beside the 2023-2025 replay (threes_backtest pipeline). **The old
+seasons do not agree** (report of 2026-11-12): under Ranking v2, 2023-2025 rebound overs went
+264-314 (45.7%, -8.9u, pretip) while rebound unders went 2797-2586 (52.0%, +334u), and adding
+rebound overs to the assist card lowered its units per pick slightly. The owner's decision stands
+on the live evidence; the guardrail and the review are what test it.
 
 **Records.** The OG record gets the marker "Rules v3 from Nov 13: rebound overs back" (history,
 earlier markers and the "Since ranking v2" row unchanged). `og_ranking_v2.md` adds a "Rebound

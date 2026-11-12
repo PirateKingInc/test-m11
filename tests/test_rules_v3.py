@@ -123,3 +123,79 @@ def test_rebound_overs_line(monkeypatch):
     monkeypatch.setattr(C, "view", lambda rows, card: rows)
     assert RV.rebound_overs_line(rows).startswith(
         "- Rebound overs (official, Rules v3 from Nov 13): 1-0-0, win 100.0%")
+
+
+def _guard_rows(reb_results):
+    """Official OG rows from Nov 13: the given rebound-over results, 4 a day, each day ending
+    with 5 assist wins (so the slump rules stay quiet)."""
+    from tests.test_og_ranking import _og_rows
+
+    days = []
+    for i in range(0, len(reb_results), 4):
+        days.append((f"2026-11-{13 + i // 4}", list(reb_results[i:i + 4]) + ["win"] * 5))
+    rows = _og_rows(days)
+    for r in rows:
+        k = int(r["pick_id"][1:]) - 1
+        r["market"], r["side"] = ("rebounds", "over") if k % 9 < 4 else ("assists", "over")
+    return rows
+
+
+def test_guardrail_fires_at_7_13_not_8_12():
+    seven = _guard_rows(["win"] * 7 + ["loss"] * 13)
+    assert OR.slump_rule(seven) is None
+    assert OR.rebound_overs_guard(seven) == (7, 13)
+    assert OR.guard_line(7, 13) == ("OG review: rebound overs 7-13 over last 20 — see "
+                                    "reports/nba/og_ranking_v2.md")
+    assert OR.rebound_overs_guard(_guard_rows(["win"] * 8 + ["loss"] * 12)) is None
+    assert OR.rebound_overs_guard(_guard_rows(["loss"] * 16)) is None  # fewer than 20
+    # only the last 20 decided count, pushes and voids skipped
+    more = _guard_rows(["win"] * 4 + ["win"] * 7 + ["push", "void"] + ["loss"] * 13
+                       + ["loss"] * 3)  # fmt: skip
+    assert OR.rebound_overs_guard(more) == (4, 16)
+
+
+def test_guardrail_once_a_day_with_the_slump_alert(tmp_path):
+    from datetime import UTC, datetime
+
+    from betdata.alerts.db import engine_for
+    from tests.test_og_ranking import _days, _og_rows
+
+    db = engine_for(tmp_path / "p.sqlite")
+    sent = []
+
+    class Client:
+        def post(self, url, content, headers):
+            sent.append((headers["Title"], content.decode()))
+            return type("R", (), {"status_code": 200})()
+
+    rows = _guard_rows(["win"] * 7 + ["loss"] * 13)
+    now = datetime(2026, 11, 19, 11, 16, tzinfo=UTC)
+    assert OR.slump_check(db, rows, now, "t", Client()) == "http 200"
+    assert sent == [("OG review", "OG review: rebound overs 7-13 over last 20 — see "
+                                  "reports/nba/og_ranking_v2.md")]
+    slumping = _og_rows(_days(["loss"] * 9))  # the slump alert the same day: still once a day
+    assert OR.slump_check(db, slumping, now, "t", Client()) is None
+    assert OR.slump_check(db, rows, now, "t", Client()) is None
+    assert len(sent) == 1
+    # both fire on a later day: one alert, the slump line first
+    both = rows + _og_rows([("2026-11-20", ["loss"] * 9)])
+    assert OR.slump_check(db, both, now + timedelta(days=1), "t", Client()) == "http 200"
+    assert len(sent) == 2 and "rebound overs" not in sent[-1][1]
+
+
+def test_review_side_split(monkeypatch):
+    import betdata.cards as C
+    from betdata import og_review as RV
+
+    def r(card, mk, sd, res):
+        return {"card": card, "day": "2026-11-13", "market": mk, "side": sd, "result": res,
+                "profit": "0.9" if res == "win" else "-1.0", "card_stake": "0.5",
+                "odds": "-110", "clv_consensus": "", "action_stake": "0.25"}
+
+    rows = [r("og", "rebounds", "over", "win"), r("og", "assists", "under", "loss"),
+            r("action", "rebounds", "over", "loss"), r("action", "threes", "under", "win")]
+    monkeypatch.setattr(C, "view", lambda rows, card: [x for x in rows if x["card"] == card])
+    t = "\n".join(RV.side_split(rows))
+    assert "Rebound overs (Action, from Nov 13): 0-1-0" in t
+    assert "| rebounds · over | 1-0-0, +0.45u (100%) | 0-1-0" in t
+    assert "| threes · under | 0-0-0, +0.00u | 1-0-0" in t

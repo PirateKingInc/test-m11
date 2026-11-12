@@ -337,9 +337,31 @@ def slump_line(w: int, lo: int, which: str = "3 days") -> str:
     return f"OG review: {w}-{lo} over {span} — check {REPORT_PATH}"
 
 
+GUARD_N = 20  # Rules v3 guardrail (owner 2026-11-12): the last 20 decided official rebound overs
+GUARD_WINS_MAX = 7  # ...at 7-13 or worse
+
+
+def rebound_overs_guard(rows: list[dict]) -> tuple[int, int] | None:
+    """(wins, losses) when official OG rebound overs under Rules v3 (from Nov 13) are 7-13 or
+    worse over their last 20 decided picks (pushes and voids excluded), else None."""
+    from betdata.eligibility import RULES_V3_START
+
+    ro = [r for r in _decided(rows) if r["day"] >= RULES_V3_START.isoformat()
+          and r.get("market") == "rebounds" and r.get("side") == "over"][-GUARD_N:]  # fmt: skip
+    if len(ro) < GUARD_N:
+        return None
+    w = sum(r["result"] == "win" for r in ro)
+    return (w, GUARD_N - w) if w <= GUARD_WINS_MAX else None
+
+
+def guard_line(w: int, lo: int) -> str:
+    return f"OG review: rebound overs {w}-{lo} over last {GUARD_N} — see {REPORT_PATH}"
+
+
 def slump_check(pdb, rows: list[dict], now, topic: str | None, client=None) -> str | None:
-    """After the morning grading: one ntfy line when `slump` fires, at most once a day (poller
-    state `og-slump:<day>`). Changes nothing else."""
+    """After the morning grading: one ntfy line when `slump` fires, or else (Rules v3) when the
+    rebound overs guardrail fires; at most one OG review alert a day (poller state
+    `og-slump:<day>`). Changes nothing else."""
     import httpx
 
     from betdata.alerts.db import get_state, set_state
@@ -352,9 +374,10 @@ def slump_check(pdb, rows: list[dict], now, topic: str | None, client=None) -> s
         if get_state(p, key) is not None:
             return None
     s = slump_rule(rows)
-    if s is None:
+    g = rebound_overs_guard(rows) if s is None else None
+    if s is None and g is None:
         return None
-    line = slump_line(s[1], s[2], s[0])
+    line = slump_line(s[1], s[2], s[0]) if s is not None else guard_line(*g)
     if not topic:
         status = "no NTFY_TOPIC"
     else:
