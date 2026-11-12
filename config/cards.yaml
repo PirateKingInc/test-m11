@@ -31,3 +31,10 @@ nba:
       state: spread  # poller state spread:nba:<day>, ledger/spread_card.csv (betdata/spread.py)
       since: 2026-11-06
       active: true
+    action:
+      name: Action
+      what: best 3 picks OG did not make official; not official
+      signals: [snipe, value]  # the existing F / C-NBA picks (no new pick rows)
+      state: action  # poller state action:nba:<day>, ledger/action_card.csv (betdata/action.py)
+      since: 2026-11-13
+      active: true

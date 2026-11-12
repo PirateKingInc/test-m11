@@ -156,3 +156,10 @@ Items deliberately left out of M12, with the reason. Newest first.
   column shows what each OG pick's label and EV would be on the calibrated probability.
 - **Per-segment calibration** (assists over vs under, by line) is research only
   (`reports/nba/walkforward.md`); not in production.
+
+## Action card (2026-11-12)
+
+- **Review at 100 graded Action picks:** `reports/nba/action_review.md` (record, by reason vs the
+  Filters table, by market, same-player stacks, vs official OG on the same days) and one ntfy
+  line. The owner decides whether any OG rule changes; nothing changes automatically.
+- **Action picks from Next Gen's engine, NFL, and new F markets:** out of scope (separate phases).
