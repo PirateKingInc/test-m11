@@ -3123,3 +3123,39 @@ ready. Nothing switches automatically; the owner decides.
 **Backtest (report only):** `reports/nba/og_ranking_v2.md` also holds the hindsight replay that
 motivated this phase (Oct 31 - Nov 10, today's rules, only picks created before that day's card
 selection): the actual EV-ranked card vs Ranking v2 top 5 vs top 3.
+
+## F verdict: the next 200 picks from Nov 4 (run 2026-11-12; `reports/nba/f_verdict.md`)
+
+The pre-registered re-judgment (BACKLOG.md M20: "Judge F again on its next 200 picks (from
+2026-11-04) under the M20 rule"), run as written by `betdata/f_verdict.py`: F's first 200 graded
+picks (win/loss/push; voids, m16-legacy and duplicates excluded) created on or after 2026-11-04
+00:00 ET, in grading order (results.csv row order), with the M20 Part A three checks exactly as
+`betdata/checks.py` implements them.
+
+**Verdict: F does not work** — it fails all three checks (80-120, -25.8u at 1u flat):
+- calibration: mean model probability 51.9% vs a 40.0% win rate; ECE 0.129 (max 0.05); gap
+  +11.9 pp, 95% range +5.1 to +18.6 pp (significantly overconfident);
+- Brier vs the no-vig consensus close: +0.0175 (95% +0.0039 to +0.0311), worse than the close;
+- EV at close: -4.3% (95% -6.6% to -2.1%).
+Not the verdict (labelled so in the report): all 314 F picks graded since Nov 4 also fail all
+three; the window with one pick per player per game (158 picks) fails calibration and EV at
+close, and its Brier range reaches 0 (-0.0018 to +0.0288), so it fails that check as well.
+The verdict changes no rule, pick or grade (owner 2026-11-12): F keeps feeding OG.
+
+## F calibration (owner decision 2026-11-12; `betdata/calibration.py`)
+
+- **Fit:** one global Platt fit for F — logistic regression of the result (win = 1) on
+  logit(fair_prob) — on all graded F picks (win/loss), one per player per game (the highest model
+  probability), refitted every Monday in the same job as the parlay's calibration refit
+  (`ledger.sync` -> `calibration.maybe_refit`). Each fit is a row of `ledger/calibration_fits.csv`
+  (model `F`, fit date, n, slope, intercept).
+- **Guard:** a fit is kept only if it is increasing (slope > 0) and n >= 200; otherwise the
+  previous fit stays in force and the reason is logged.
+- **Stored:** each new F pick gets its calibrated probability as a write-once `f_cal`
+  annotation (with the fit date it used); old rows are never rewritten.
+- **Ranking:** OG Ranking v2 ranks on the calibrated probability. Because the fit is increasing,
+  the picks and their order are identical to ranking on the raw probability (proven on every
+  stored day since Nov 12 and on the backtest days, plus a property test). TAKE/LEAN labels keep
+  their existing logic; `reports/nba/og_ranking_v2.md` shows each pick's label and EV on the
+  calibrated probability (report only). The page keeps showing the raw probability (UI freeze;
+  BACKLOG item for owner approval).

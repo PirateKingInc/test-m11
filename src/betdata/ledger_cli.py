@@ -59,6 +59,10 @@ def ledger_publish(db: Path = typer.Option(Path("data/poller.sqlite"), help="Pol
     topic = os.environ.get("NTFY_TOPIC") or None
     now = datetime.now(UTC)
     ms = json.loads(PENDING.read_text()).get("milestones", []) if PENDING.exists() else []
+    if any(m["signal_name"] == "F:verdict-nov4" for m in ms):  # F's verdict report
+        from betdata.f_verdict import write as f_write
+
+        typer.echo(f"F verdict: wrote {f_write(PROJECT_ROOT, now)[0]}")
     if any(m["signal_name"] == "og-ranking-v2" for m in ms):  # the OG Ranking v2 review
         from betdata.og_review import write as og_write
 
@@ -116,3 +120,14 @@ def og_review():
     from betdata.og_review import write
 
     typer.echo(f"wrote {write(PROJECT_ROOT, datetime.now(UTC))}")
+
+
+@ledger_app.command("f-verdict")
+def f_verdict():
+    """Write reports/nba/f_verdict.md: F's pre-registered re-judgment (next 200 graded from
+    Nov 4 under the M20 three checks; owner 2026-11-12). Report only."""
+    from betdata.config import PROJECT_ROOT
+    from betdata.f_verdict import write
+
+    path, res = write(PROJECT_ROOT, datetime.now(UTC))
+    typer.echo(f"F verdict: {res.verdict}; wrote {path}")

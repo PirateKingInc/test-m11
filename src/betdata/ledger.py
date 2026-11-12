@@ -683,6 +683,12 @@ def milestones(out: Path, now: datetime) -> list[dict]:
         new += spread_milestone(out, now)
     except Exception as e:  # noqa: BLE001 - never stops the ledger
         log.warning("spread milestone failed: %s", e)
+    try:  # F's pre-registered verdict (next 200 from Nov 4; owner 2026-11-12), once
+        from betdata.f_verdict import milestone as f_milestone
+
+        new += f_milestone(out, now)
+    except Exception as e:  # noqa: BLE001 - never stops the ledger
+        log.warning("F verdict milestone failed: %s", e)
     try:  # the OG Ranking v2 review: Nov 26 or 50 graded picks (owner 2026-11-11), once
         from betdata.og_review import milestone as og_milestone
 
