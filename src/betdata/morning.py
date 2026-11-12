@@ -137,6 +137,8 @@ class Report:
     shadow: dict = field(default_factory=dict)
     spread: dict = field(default_factory=dict)  # Spread Picks (owner 2026-11-10)
     og3: dict = field(default_factory=dict)  # the OG Top 3 shadow (owner 2026-11-11)
+    action: dict = field(default_factory=dict)  # the Action card (owner 2026-11-12)
+    slate: int | None = None  # NBA games today
     parlay: object = None  # 2 / 3 legs, "none", or None (not chosen: see errors)
     errors: list = field(default_factory=list)
 
@@ -220,6 +222,13 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
     rep.sports = sports_due(main, now)
     if not rep.sports:
         return rep
+    try:  # the NBA slate size, for the short / empty card reasons (owner 2026-11-12)
+        from betdata.card_reasons import slate
+
+        with main.connect() as m:
+            rep.slate = slate(m, day)
+    except Exception:  # noqa: BLE001
+        rep.slate = None
 
     def _grade():  # a. the refresh (final scores, box scores), then the grading
         if settings is not None:
@@ -242,6 +251,12 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
             t3 = get_state(p, top3_key("nba", day))
         if t3 is not None:
             rep.og3 = {"nba": len(t3.get("picks", []))}
+        from betdata.action import key as action_key
+
+        with pdb.connect() as p:
+            ac = get_state(p, action_key(day))
+        if ac is not None:
+            rep.action = {"nba": len(ac.get("picks", []))}
     except Exception:  # noqa: BLE001
         log.exception("og top 3 state failed")
     # the Next Gen parlay (owner 2026-11-06): fail-safe; an error is logged and the cards,
@@ -254,7 +269,7 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
         set_state(p, STATE.format(day=day.isoformat()),
                   {"at": now.isoformat(), "sports": rep.sports, "steps": rep.steps,
                    "cards": rep.cards, "shadow": rep.shadow, "spread": rep.spread,
-                   "og3": rep.og3,
+                   "og3": rep.og3, "action": rep.action, "slate": rep.slate,
                    "parlay": rep.parlay,
                    "errors": rep.errors,
                    "engine_picks": rep.engine_picks}, now)  # fmt: skip
@@ -322,6 +337,7 @@ def nba_message(p, rows: list[dict], now: datetime) -> tuple[str, str]:
     Next Gen: last night 0-0, +0.0u · record 0-0, +0.0u (0 of 500)
     Today: No picks today — the engine found no value
     Not graded yet: LAL @ POR (no final box score yet; graded on the next run)"""
+    from betdata import card_reasons as CR
     from betdata import cards as C
     from betdata import official as O
     from betdata.alerts import card as CD
@@ -330,6 +346,7 @@ def nba_message(p, rows: list[dict], now: datetime) -> tuple[str, str]:
 
     today = now.astimezone(EASTERN).date()
     yday = (today - timedelta(days=1)).isoformat()
+    slate = (get_state(p, STATE.format(day=today.isoformat())) or {}).get("slate")
     state = {C.NEXTGEN: (get_state(p, CD.key("nba", today)), None),
              C.OG: (get_state(p, CD.shadow_key("nba", today)), CD.V1_SIGNALS)}
     both = (_card_bets(p, state[C.NEXTGEN][0], "nba", today, None)
@@ -348,7 +365,12 @@ def nba_message(p, rows: list[dict], now: datetime) -> tuple[str, str]:
             lines.append("Today: no lines posted yet for today's games — chosen at the first "
                          "later poll with lines")
         else:
-            n, note = len(card["picks"]), CD.card_note(card)
+            n = len(card["picks"])
+            try:  # the specific reason when the card is short or empty (owner 2026-11-12)
+                why = (CR.og(card, slate) if k == C.OG else CR.nextgen(p, card, slate))
+            except Exception:  # noqa: BLE001 - never breaks the push
+                why = ""
+            note = why or CD.card_note(card)
             if n == 0:
                 lines.append(f"Today: {note or 'no picks'}")
             else:
