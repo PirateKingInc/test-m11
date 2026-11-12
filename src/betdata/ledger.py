@@ -342,6 +342,13 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         maybe_refit(out, now)
     except Exception as e:  # noqa: BLE001
         log.warning("calibration refit failed: %s", e)
+    try:  # F's calibration: refit on Mondays in the same job, then f_cal on new F picks
+        from betdata import f_calibration as FC
+
+        FC.maybe_refit(out, now)
+        FC.annotate(out, now)
+    except Exception as e:  # noqa: BLE001 - never stops the ledger
+        log.warning("F calibration failed: %s", e)
     try:  # the Next Gen parlay: chosen once, graded once (owner 2026-11-06, betdata/parlay)
         from betdata.parlay import sync as parlay_sync
 

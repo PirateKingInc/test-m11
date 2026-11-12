@@ -178,6 +178,57 @@ def backtest(root: Path, rows: list[dict]) -> list[str]:
     return out
 
 
+# --- report only: each pick's label and EV on F's calibrated probability (owner 2026-11-12) ---
+
+
+def calibrated_rows(out: Path) -> list[dict]:
+    """Every official OG Ranking v2 pick with its raw and calibrated probability, EV and label
+    (the label's existing rule re-read with the calibrated edge). Report only: the card's labels
+    and stakes stay on the existing logic."""
+    from betdata.alerts.rules import decimal
+    from betdata.f_calibration import calibrate, current
+    from betdata.ledger import read_rows
+
+    picks = {r["pick_id"]: r for r in read_rows(out / "picks.csv")}
+    res = {r["pick_id"]: r for r in read_rows(out / "results.csv")}
+    rows = []
+    for r in read_rows(out / "shadow_card.csv"):
+        if r["shadow"] != "yes" or r["card_date"] < start().isoformat():
+            continue
+        pk = picks.get(r["pick_id"])
+        if pk is None or not pk.get("fair_prob"):
+            continue
+        f = current(out, date.fromisoformat(r["card_date"]))
+        p = float(pk["fair_prob"])
+        c = calibrate(p, f)
+        dec = decimal(int(pk["odds"]))
+        edge, thr = _f(r.get("edge")), _f(r.get("threshold"))
+        take = None
+        if edge is not None and thr is not None:
+            ec = edge - (p - c)
+            take = (ec >= 1.5 * thr - 1e-9
+                    and (r.get("edge_source") == "news" or r.get("pinnacle_sides") == "true"))
+        rows.append({"day": r["card_date"], "pick": f"{pk['player']} {pk['side']} "
+                     f"{pk['line']} {pk['market']}", "odds": int(pk["odds"]), "p": p, "p_cal": c,
+                     "ev": p * dec - 1, "ev_cal": c * dec - 1, "label": r["shadow_label"],
+                     "label_cal": "–" if take is None else ("TAKE" if take else "LEAN"),
+                     "fit": "none" if f is None else f.fit_date,
+                     "result": res.get(r["pick_id"], {}).get("result", "")})  # fmt: skip
+    return rows
+
+
+def calibrated_table(out: Path) -> list[str]:
+    rows = calibrated_rows(out)
+    if not rows:
+        return ["No official Ranking v2 picks yet."]
+    return ["| Day | Pick | Odds | Model p | Calibrated p | EV | EV calibrated | Label | "
+            "Label calibrated | F fit | Result |", "|---|---|---|---|---|---|---|---|---|---|---|",
+            *[f"| {r['day']} | {r['pick']} | {r['odds']:+d} | {100 * r['p']:.1f}% | "
+              f"{100 * r['p_cal']:.1f}% | {100 * r['ev']:+.1f}% | {100 * r['ev_cal']:+.1f}% | "
+              f"{r['label']} | {r['label_cal']} | {r['fit']} | {r['result'] or 'pending'} |"
+              for r in rows]]  # fmt: skip
+
+
 # --- the report and the milestone --------------------------------------------------------------
 
 
@@ -198,6 +249,11 @@ def report(root: Path, now: datetime) -> str:
           f"whichever first ({n} graded so far).", "",
           f"## Official OG vs OG Top 3 (since {start():%b %-d}, graded only)", "",
           *table(a, b), "",
+          "## Calibrated probability (report only)", "",
+          "F's weekly calibration (MODEL.md \"F calibration\") on each official pick: the "
+          "card ranks on it (the same picks and order as the raw probability); its labels and "
+          "stakes stay on the existing logic. The page shows the raw probability.", "",
+          *calibrated_table(out), "",
           "## Backtest (hindsight replay)", "", *backtest(root, rows), ""]  # fmt: skip
     return "\n".join(md) + "\n"
 

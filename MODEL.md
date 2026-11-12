@@ -3147,13 +3147,21 @@ The verdict changes no rule, pick or grade (owner 2026-11-12): F keeps feeding O
 - **Fit:** one global Platt fit for F — logistic regression of the result (win = 1) on
   logit(fair_prob) — on all graded F picks (win/loss), one per player per game (the highest model
   probability), refitted every Monday in the same job as the parlay's calibration refit
-  (`ledger.sync` -> `calibration.maybe_refit`). Each fit is a row of `ledger/calibration_fits.csv`
-  (model `F`, fit date, n, slope, intercept).
+  (`ledger.sync`, right after `calibration.maybe_refit`), and the first time when none exists.
+  Each fit is a row of `ledger/f_calibration_fits.csv` (model `F`, fit date, n, slope, intercept,
+  status, reason). Not `calibration_fits.csv`: the parlay's reader takes that file's latest row
+  whatever its source and keys it by date, so an F row there would change the parlay (its code
+  is pinned).
 - **Guard:** a fit is kept only if it is increasing (slope > 0) and n >= 200; otherwise the
   previous fit stays in force and the reason is logged.
 - **Stored:** each new F pick gets its calibrated probability as a write-once `f_cal`
   annotation (with the fit date it used); old rows are never rewritten.
-- **Ranking:** OG Ranking v2 ranks on the calibrated probability. Because the fit is increasing,
+- **First fit (2026-11-12, from the ledger):** n 544 (one per player per game), slope 1.218,
+  intercept -0.238: a 52% pick becomes 46.5%, 55% -> 50.2%, 60% -> 56.4%.
+- **Ranking:** OG Ranking v2 ranks on the calibrated probability. The F fit is applied to every
+  OG candidate's probability (F and the rare C-NBA assist pick alike), one increasing map, so the
+  ranking stays a single monotonic transform; C-NBA's own probabilities are not recalibrated or
+  stored. Because the fit is increasing,
   the picks and their order are identical to ranking on the raw probability (proven on every
   stored day since Nov 12 and on the backtest days, plus a property test). TAKE/LEAN labels keep
   their existing logic; `reports/nba/og_ranking_v2.md` shows each pick's label and EV on the
