@@ -3273,3 +3273,41 @@ official OG card, Next Gen, Spread Picks and the parlay are unchanged.
   whether threes met the bar — the OG + threes shadow beat official OG on win % over the review
   period AND threes on the shadow are .500 or better over at least 30 graded picks ("not enough
   yet" with the count otherwise). Nothing switches automatically; the owner decides.
+
+## Rules v3: rebound overs back on the official OG card (owner decision 2026-11-12)
+
+**What changed.** From the Nov 13 6:15 AM ET card (games on Eastern dates from Nov 13), the
+official OG card's eligible markets are assists (every Rules v2 assist filter unchanged: no
+unders on 5.5+ lines; no unders with 2+ key teammates Out/Doubtful) **and rebound overs**. Rebound
+unders stay filtered, now with the reason `filtered: rebound unders` (rebound overs and unders
+were both `filtered: rebounds` before). Rebound overs go through every OG Ranking v2 rule
+unchanged (price -150..+130, median strictly above the line, one pick per player-game-market,
+ranked by F's calibrated probability, up to 5, 0.5u). The OG Top 3 shadow, the Action card's pool
+(rebound overs on the official card leave it; rebound unders and overs that miss OG stay) and the
+OG + threes shadow follow automatically. **Next Gen, the parlay and news alerts keep Rules v2
+exactly** (assists only); Spread Picks, the long-shot gate, F calibration and NFL are untouched.
+Only `eligibility.alert_reason`'s OG branch changes (the pinned `reason()` used by Next Gen, the
+parlay and news is byte-identical; the pin test pins it by function, with a note).
+
+**Why.** A ledger review of live F picks since Oct 29 (one per player-game-side, 1u) showed the
+rebound losses that led to Rules v2 are rebound **unders** (42% whether or not the median rule
+keeps them), while rebound overs that pass Ranking v2's median rule went 27-16 (63%, +16.5u) and
+rebound overs failing it went 15-33. This is hindsight evidence on 43 picks, so Rules v3 comes
+with a live guardrail and a review point. The split is recomputed by code in
+`reports/nba/rules_v3.md`, beside the 2023-2025 replay (threes_backtest pipeline).
+
+**Records.** The OG record gets the marker "Rules v3 from Nov 13: rebound overs back" (history,
+earlier markers and the "Since ranking v2" row unchanged). `og_ranking_v2.md` adds a "Rebound
+overs (official)" line (record, win %, units; graded only). The Filters table splits "rebounds"
+into rebound overs and rebound unders: rows filtered before Nov 13 are split by their stored side
+(from picks.csv; no ledger rewrite); from Nov 13 OG's rebound overs are not filtered at all
+(stale `filtered: rebounds` annotations on Nov 13+ OG rebound overs, written before the change,
+are ignored by the table).
+
+**Guardrail (report trigger only).** After each morning grading, if official OG rebound overs
+under Rules v3 are 7-13 or worse over their last 20 graded picks (losses >= 13 of 20), one ntfy
+line: "OG review: rebound overs <W-L> over last 20 — see reports/nba/og_ranking_v2.md". It shares
+the one-OG-review-alert-a-day limit with the slump alert. Nothing switches automatically.
+
+**Review.** The Nov 26 / 50-pick OG review adds rebound overs (official and Action) and the side
+split (over / under) for rebounds, assists and threes.

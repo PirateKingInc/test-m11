@@ -177,3 +177,11 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **Live adds wait for the hourly sweep** (lines arrive hourly); faster polling is out of scope.
 - **Threes TAKE/LEAN label** uses F's shared 6 pp threshold (pinned labels code); labels play no
   part in Action or the shadow.
+
+## Rules v3 (2026-11-12)
+
+- **Rebound overs on the official OG card** rest on 43 hindsight picks; the guardrail (7-13 or
+  worse over the last 20) and the Nov 26 / 50-pick review decide whether they stay (owner).
+- **Same-player stacks:** a rebound over and an assist over on the same player and game can both be
+  official (one pick per player-game-market); correlation is reported at the review, not limited.
+- **Guardrail threshold** (7-13 of 20) is a report trigger, not a statistical test.
