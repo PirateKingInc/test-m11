@@ -101,3 +101,5 @@ Pc59e9c523f25:filter,Pc59e9c523f25,filter,filtered: not assists (OG),2026-11-11T
 Pfb707272c044:filter,Pfb707272c044,filter,filtered: rebounds,2026-11-12T01:00:35+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
 P15fde990e50d:filter,P15fde990e50d,filter,filtered: rebounds,2026-11-12T01:00:35+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
 Pd9f5705b1fb4:filter,Pd9f5705b1fb4,filter,filtered: rebounds,2026-11-12T01:00:35+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P30e0824a5321:filter,P30e0824a5321,filter,filtered: rebounds,2026-11-12T02:00:34+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P30e0824a5321:f_cal,P30e0824a5321,f_cal,0.4551,2026-11-12T02:00:34+00:00,"F calibration fit 2026-11-11 (slope 1.217649, intercept -0.237674, n 544); owner 2026-11-12"
