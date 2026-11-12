@@ -32,7 +32,8 @@ def test_threes_eligible_og_card_unchanged(pdb):
         _pick(p, "t_s_ast", player="S", fair=0.55)  # same player, assists: both allowed
         _pick(p, "t_long", player="L", market="threes", price=180, fair=0.9)  # price rule
         _pick(p, "t_med", player="M", market="threes", line=2.5, median=2.5, fair=0.9)  # median
-        _pick(p, "reb", player="R", market="rebounds", line=8.5, median=9.0, fair=0.95)
+        _pick(p, "reb", player="R", market="rebounds", side="under", line=8.5, median=8.0,
+              fair=0.95)  # rebound unders: out of both (Rules v3)
         _pick(p, "u55", player="U", side="under", line=6.5, median=5.0, fair=0.95)
     og, _ = _run(pdb)
     with pdb.connect() as p:

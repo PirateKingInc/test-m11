@@ -25,12 +25,17 @@ from __future__ import annotations
 from datetime import date, datetime
 
 RULES_V2_START = date(2026, 11, 10)
+# Rules v3 (owner 2026-11-12, MODEL.md "Rules v3"): from the Nov 13 card, rebound OVERS are
+# eligible for the official OG card again; rebound unders stay out with their own reason. Only
+# `alert_reason`'s OG branch changes; `reason` (Next Gen, the parlay, news) is untouched.
+RULES_V3_START = date(2026, 11, 13)
+REBOUND_UNDERS = "filtered: rebound unders"
 REBOUNDS = "filtered: rebounds"
 UNDER_ASSISTS = "filtered: under 5.5+ assists"
 TEAMMATES = "filtered: teammates out"
 NON_ASSIST = "filtered: non-assist prop"
 NOT_ASSISTS_OG = "filtered: not assists (OG)"  # OG game markets: "assists only"
-REASONS = (REBOUNDS, NON_ASSIST, NOT_ASSISTS_OG, UNDER_ASSISTS, TEAMMATES)
+REASONS = (REBOUNDS, NON_ASSIST, NOT_ASSISTS_OG, UNDER_ASSISTS, TEAMMATES, REBOUND_UNDERS)
 UNDER_LINE = 5.5
 TEAMMATES_MAX = 2  # 2 or more key teammates Out / Doubtful: no unders
 OG_SIGNALS = ("value", "snipe")
@@ -111,7 +116,19 @@ def alert_reason(m, a) -> str | None:
 
         tm = teammates_out(m, a.game_id, (a.details or {}).get("team_id"), a.player_name,
                            utc(a.created_at))  # fmt: skip
-    return reason(card, a.market, a.side, a.line, tm)
+    why = reason(card, a.market, a.side, a.line, tm)
+    if card == "og" and why == REBOUNDS and v3_applies(a.tip):  # Rules v3: overs back on OG
+        return None if a.side == "over" else REBOUND_UNDERS
+    return why
+
+
+def v3_applies(tip: datetime | None) -> bool:
+    """Rules v3 cover OG candidates for games from RULES_V3_START (Eastern date)."""
+    if tip is None:
+        return False
+    from betdata.alerts.rules import EASTERN
+
+    return tip.astimezone(EASTERN).date() >= RULES_V3_START
 
 
 # --- the Filters table (owner 2026-11-09): what each rule removed, against the card ------------
