@@ -63,6 +63,11 @@ Owner-approved additions (each allowed exactly, and nothing else):
   shows Action picks with their stake and "missed: <reason>" in the Action view, and each card's
   short / empty reason line (text). Previous snapshot kept as `ui_freeze_snapshot_m27.txt`; the
   difference is pinned (APPROVED_DIFF_ACTION_SHA).
+- 2026-11-12, Action live adds (inside the Action view only): one "Morning and live adds" line
+  (a p with its <b>) under the Action record — Morning / Live adds / Would have made OG — and,
+  as text, each Action pick's posted time and the OG note (Today renderer and Results by day);
+  threes appear in By market as data. Previous snapshot kept as `ui_freeze_snapshot_m28.txt`; the
+  difference is pinned (APPROVED_DIFF_ACTION_ADDS_SHA).
 """
 
 import hashlib
@@ -136,8 +141,9 @@ TRACKER_SCRIPT_HISTORY = {"d866cf4bf364": "M19 renderer (pre-2026-11-04)",
                           "47458f1428a0": "Next Gen | OG toggle (2026-11-05)",
                           "7cbd8c4fbbca": "Next Gen parlay block (2026-11-06)",
                           "db5c65742992": "Spread view (2026-11-10)",
-                          "007eb50fab39": "Action view (2026-11-12)"}
-TRACKER_SCRIPT_SHA = "007eb50fab39"
+                          "007eb50fab39": "Action view (2026-11-12)",
+                          "11c9addc71e2": "Action posted time and OG note (2026-11-12)"}
+TRACKER_SCRIPT_SHA = "11c9addc71e2"
 TOGGLE_SCRIPT_SHA = "6d68073346bb"  # the two-card toggle (2026-11-05)
 TOGGLE_SCRIPT_SPREAD_SHA = "4f92a4d6e007"  # with the Spread option (2026-11-10)
 TOGGLE_SCRIPT_ACTION_SHA = "af62d28260ec"  # with the Action option (2026-11-12)
@@ -154,7 +160,9 @@ APPROVED_DIFF_SPREAD_SHA = "a11c511e0720"  # m25 -> m26 (Spread Picks, 2026-11-1
 SNAPSHOT_M26 = Path(__file__).with_name("ui_freeze_snapshot_m26.txt")
 APPROVED_DIFF_RANKING_V2_SHA = "fb5b15b3460e"  # m26 -> m27 (OG Ranking v2, 2026-11-11)
 SNAPSHOT_M27 = Path(__file__).with_name("ui_freeze_snapshot_m27.txt")
-APPROVED_DIFF_ACTION_SHA = "aff0cd7d8a3e"  # m27 -> current (Action card, 2026-11-12)
+APPROVED_DIFF_ACTION_SHA = "aff0cd7d8a3e"  # m27 -> m28 (Action card, 2026-11-12)
+SNAPSHOT_M28 = Path(__file__).with_name("ui_freeze_snapshot_m28.txt")
+APPROVED_DIFF_ACTION_ADDS_SHA = "d0609dc7b83b"  # m28 -> current (Action live adds)
 APPROVED_DIFF_DEFAULT_TAB_SHA = "d60079053e6b"  # m22 -> current (NBA default tab, 2026-11-05)
 APPROVED_DIFF_TWO_CARDS_SHA = "bedb7949f2df"  # m21 snapshot -> current (two cards, 2026-11-05)
 # the lines the engine-card approval added, exactly
@@ -315,7 +323,7 @@ def test_snapshot_differs_by_exactly_the_action_card(tmp_path):
     import difflib
 
     a = SNAPSHOT_M27.read_text().splitlines()
-    b = SNAPSHOT.read_text().splitlines()
+    b = SNAPSHOT_M28.read_text().splitlines()
     d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
     assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_ACTION_SHA, d
     added = [x[1:].strip() for x in d.splitlines() if x.startswith("+") and not x.startswith("+++")]
@@ -332,6 +340,19 @@ def test_snapshot_differs_by_exactly_the_action_card(tmp_path):
     html = build_fixture_page(tmp_path)
     assert "Action picks — not official. The best picks OG passed on." in html
     assert ">Action</button>" in html
+
+
+def test_snapshot_differs_by_exactly_the_action_adds_line():
+    """2026-11-12: one "Morning and live adds" line (p with b) inside the Action record."""
+    import difflib
+
+    a = SNAPSHOT_M28.read_text().splitlines()
+    b = SNAPSHOT.read_text().splitlines()
+    d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
+    assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_ACTION_ADDS_SHA, d
+    lines = [x for x in d.splitlines() if not x.startswith(("+++", "---", "@@"))]
+    assert [x[1:].strip() for x in lines] == ["p class=meta", "b"]
+    assert all(x.startswith("+") for x in lines)
 
 
 def test_snapshot_differs_by_exactly_the_default_tab_script():
