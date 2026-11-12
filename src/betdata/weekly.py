@@ -192,6 +192,12 @@ def build(root: Path, now: datetime, main: Connection | None,
                *OGR.table(a, b), "", f"Details and the backtest: {OGR.REPORT_PATH}"]
     except Exception as e:  # noqa: BLE001 - never breaks the weekly report
         md += ["", f"OG Ranking v2 comparison unavailable: {type(e).__name__}"]
+    try:  # the Action card (owner 2026-11-12; not official)
+        from betdata import action_review as AR
+
+        md += ["", *AR.weekly(root)]
+    except Exception as e:  # noqa: BLE001 - never breaks the weekly report
+        md += ["", f"Action section unavailable: {type(e).__name__}"]
     # news alerts: their own record, the switch and the per-source table (owner 2026-11-05)
     from betdata.news import ledger as NL
 
@@ -260,9 +266,13 @@ def milestone_lines(ms: list[dict], root: Path) -> list[str]:
         if m["signal_name"] == SR.MILESTONE:  # the Spread Picks review (owner 2026-11-10)
             out.append(SR.ntfy_line(root / "ledger"))
             continue
+        from betdata import action_review as AR
         from betdata import f_verdict as FV
         from betdata import og_review as OGR
 
+        if m["signal_name"] == AR.MILESTONE:  # the Action review (owner 2026-11-12)
+            out.append(AR.ntfy_line(root / "ledger"))
+            continue
         if m["signal_name"] == FV.MILESTONE:  # F's verdict (owner 2026-11-12)
             out.append(FV.ntfy_line(root / "ledger"))
             continue

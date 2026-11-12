@@ -1,0 +1,786 @@
+{
+ "2026-10-31": {
+  "selected_at": "2026-10-31T13:03:00.000118+00:00",
+  "og_picks": 5,
+  "candidates": 25,
+  "reasons": {
+   "rebounds": 16,
+   "outside price range": 2,
+   "median wrong side": 2,
+   "ranked below top 5": 5,
+   "under 5.5+ assists": 1
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22809:assists:jamesharden:draftkings:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5611,
+    "fair_prob_cal": 0.5611,
+    "price": 110,
+    "market": "assists",
+    "player": "James Harden",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P1e36db4e8455",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22807:assists:shaigilgeousalexander:fanduel:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5553,
+    "fair_prob_cal": 0.5553,
+    "price": -112,
+    "market": "assists",
+    "player": "Shai Gilgeous-Alexander",
+    "side": "over",
+    "line": 5.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "Peabf57a0acac",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22809:assists:donovanmitchell:fanduel:4.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.555,
+    "fair_prob_cal": 0.555,
+    "price": 114,
+    "market": "assists",
+    "player": "Donovan Mitchell",
+    "side": "under",
+    "line": 4.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "Pd2d28fef2eff",
+    "result": "win",
+    "profit": "1.14"
+   }
+  ]
+ },
+ "2026-11-01": {
+  "selected_at": "2026-11-01T13:50:00.000137+00:00",
+  "og_picks": 5,
+  "candidates": 17,
+  "reasons": {
+   "teammates out": 1,
+   "rebounds": 11,
+   "ranked below top 5": 2,
+   "median wrong side": 1,
+   "outside price range": 1,
+   "under 5.5+ assists": 1
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22803:assists:scottiebarnes:draftkings:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5705,
+    "fair_prob_cal": 0.5705,
+    "price": -107,
+    "market": "assists",
+    "player": "Scottie Barnes",
+    "side": "over",
+    "line": 5.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "Pe92bbf34c84d",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22806:assists:desmondbane:fanduel:3.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5505,
+    "fair_prob_cal": 0.5505,
+    "price": -102,
+    "market": "assists",
+    "player": "Desmond Bane",
+    "side": "under",
+    "line": 3.5,
+    "reasons": [
+     "teammates out"
+    ],
+    "reason": "teammates out",
+    "pick_id": "P5773d0af5676",
+    "result": "win",
+    "profit": "0.9804"
+   },
+   {
+    "dedup_key": "snipe:22804:rebounds:dariusgarland:draftkings:2.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5432,
+    "fair_prob_cal": 0.5432,
+    "price": 105,
+    "market": "rebounds",
+    "player": "Darius Garland",
+    "side": "under",
+    "line": 2.5,
+    "reasons": [
+     "rebounds"
+    ],
+    "reason": "rebounds",
+    "pick_id": "P8c9dbb04f079",
+    "result": "win",
+    "profit": "1.05"
+   }
+  ]
+ },
+ "2026-11-02": {
+  "selected_at": "2026-11-02T13:50:00.000118+00:00",
+  "og_picks": 5,
+  "candidates": 80,
+  "reasons": {
+   "ranked below top 5": 21,
+   "under 5.5+ assists": 10,
+   "rebounds": 40,
+   "outside price range": 6,
+   "teammates out": 1,
+   "median wrong side": 6
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22802:rebounds:bennettstirtz:fanduel:1.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5933,
+    "fair_prob_cal": 0.5933,
+    "price": -102,
+    "market": "rebounds",
+    "player": "Bennett Stirtz",
+    "side": "under",
+    "line": 1.5,
+    "reasons": [
+     "rebounds"
+    ],
+    "reason": "rebounds",
+    "pick_id": "Pd78247a994a9",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22789:assists:scottiebarnes:draftkings:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5911,
+    "fair_prob_cal": 0.5911,
+    "price": -110,
+    "market": "assists",
+    "player": "Scottie Barnes",
+    "side": "over",
+    "line": 5.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "P23c1fc52b284",
+    "result": "win",
+    "profit": "0.9091"
+   },
+   {
+    "dedup_key": "snipe:22802:assists:jamesharden:fanduel:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5905,
+    "fair_prob_cal": 0.5905,
+    "price": -118,
+    "market": "assists",
+    "player": "James Harden",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "Pe76c486ebcde",
+    "result": "win",
+    "profit": "0.8475"
+   }
+  ]
+ },
+ "2026-11-04": {
+  "selected_at": "2026-11-04T13:50:00.000135+00:00",
+  "og_picks": 5,
+  "candidates": 49,
+  "reasons": {
+   "rebounds": 24,
+   "outside price range": 5,
+   "under 5.5+ assists": 5,
+   "ranked below top 5": 14,
+   "median wrong side": 4
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22784:assists:cobywhite:draftkings:3.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5972,
+    "fair_prob_cal": 0.5972,
+    "price": -110,
+    "market": "assists",
+    "player": "Coby White",
+    "side": "under",
+    "line": 3.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "P8449f90303b3",
+    "result": "win",
+    "profit": "0.9091"
+   },
+   {
+    "dedup_key": "snipe:22782:assists:jamesharden:fanduel:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5956,
+    "fair_prob_cal": 0.5956,
+    "price": -125,
+    "market": "assists",
+    "player": "James Harden",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "Pdfd883701ac4",
+    "result": "win",
+    "profit": "0.8"
+   },
+   {
+    "dedup_key": "snipe:22780:assists:camspencer:draftkings:4.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5808,
+    "fair_prob_cal": 0.5808,
+    "price": -108,
+    "market": "assists",
+    "player": "Cam Spencer",
+    "side": "over",
+    "line": 4.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "Pf174677d5af3",
+    "result": "win",
+    "profit": "0.9259"
+   }
+  ]
+ },
+ "2026-11-06": {
+  "selected_at": "2026-11-06T11:15:29.033674+00:00",
+  "og_picks": 5,
+  "candidates": 30,
+  "reasons": {
+   "median wrong side": 2,
+   "rebounds": 20,
+   "ranked below top 5": 5,
+   "outside price range": 3,
+   "teammates out": 1,
+   "under 5.5+ assists": 1
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22764:assists:dariusacuff:draftkings:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5686,
+    "fair_prob_cal": 0.5686,
+    "price": -110,
+    "market": "assists",
+    "player": "Darius Acuff Jr.",
+    "side": "over",
+    "line": 5.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "Pe827362c1006",
+    "result": "win",
+    "profit": "0.9091"
+   },
+   {
+    "dedup_key": "snipe:22764:rebounds:victorwembanyama:draftkings:11.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5539,
+    "fair_prob_cal": 0.5539,
+    "price": -106,
+    "market": "rebounds",
+    "player": "Victor Wembanyama",
+    "side": "under",
+    "line": 11.5,
+    "reasons": [
+     "rebounds"
+    ],
+    "reason": "rebounds",
+    "pick_id": "P680bf767bed4",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22764:assists:stephoncastle:draftkings:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.552,
+    "fair_prob_cal": 0.552,
+    "price": -102,
+    "market": "assists",
+    "player": "Stephon Castle",
+    "side": "under",
+    "line": 5.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P7be67ae4c71e",
+    "result": "loss",
+    "profit": "-1.0"
+   }
+  ]
+ },
+ "2026-11-07": {
+  "selected_at": "2026-11-07T11:15:33.777658+00:00",
+  "og_picks": 5,
+  "candidates": 43,
+  "reasons": {
+   "rebounds": 25,
+   "ranked below top 5": 12,
+   "under 5.5+ assists": 2,
+   "outside price range": 3,
+   "teammates out": 2
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22758:assists:anthonyblack:fanduel:4.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5973,
+    "fair_prob_cal": 0.5973,
+    "price": -118,
+    "market": "assists",
+    "player": "Anthony Black",
+    "side": "under",
+    "line": 4.5,
+    "reasons": [
+     "teammates out"
+    ],
+    "reason": "teammates out",
+    "pick_id": "Pf4e37fe5e4ef",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22760:assists:shaigilgeousalexander:fanduel:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5929,
+    "fair_prob_cal": 0.5929,
+    "price": -106,
+    "market": "assists",
+    "player": "Shai Gilgeous-Alexander",
+    "side": "over",
+    "line": 5.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "Pe8dc53782588",
+    "result": "win",
+    "profit": "0.9434"
+   },
+   {
+    "dedup_key": "snipe:22759:assists:jalenbrunson:fanduel:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5915,
+    "fair_prob_cal": 0.5915,
+    "price": -125,
+    "market": "assists",
+    "player": "Jalen Brunson",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "Pfaa1c61fa93a",
+    "result": "loss",
+    "profit": "-1.0"
+   }
+  ]
+ },
+ "2026-11-08": {
+  "selected_at": "2026-11-08T11:15:30.036930+00:00",
+  "og_picks": 5,
+  "candidates": 27,
+  "reasons": {
+   "median wrong side": 6,
+   "rebounds": 17,
+   "under 5.5+ assists": 3,
+   "outside price range": 1,
+   "ranked below top 5": 1
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22753:rebounds:jaxsonhayes:fanduel:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5562,
+    "fair_prob_cal": 0.5562,
+    "price": -106,
+    "market": "rebounds",
+    "player": "Jaxson Hayes",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "rebounds"
+    ],
+    "reason": "rebounds",
+    "pick_id": "Pd253cc2a49fb",
+    "result": "win",
+    "profit": "0.9434"
+   },
+   {
+    "dedup_key": "snipe:22750:rebounds:bamadebayo:draftkings:9.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5442,
+    "fair_prob_cal": 0.5442,
+    "price": -105,
+    "market": "rebounds",
+    "player": "Bam Adebayo",
+    "side": "under",
+    "line": 9.5,
+    "reasons": [
+     "rebounds"
+    ],
+    "reason": "rebounds",
+    "pick_id": "Pbf75b9b04085",
+    "result": "win",
+    "profit": "0.9524"
+   },
+   {
+    "dedup_key": "snipe:22754:assists:cadecunningham:fanduel:8.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5408,
+    "fair_prob_cal": 0.5408,
+    "price": 108,
+    "market": "assists",
+    "player": "Cade Cunningham",
+    "side": "under",
+    "line": 8.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "Pb1c5e4415319",
+    "result": "win",
+    "profit": "1.08"
+   }
+  ]
+ },
+ "2026-11-09": {
+  "selected_at": "2026-11-09T11:15:33.220108+00:00",
+  "og_picks": 5,
+  "candidates": 22,
+  "reasons": {
+   "rebounds": 15,
+   "under 5.5+ assists": 2,
+   "ranked below top 5": 3,
+   "teammates out": 2,
+   "median wrong side": 1
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22745:assists:scottiebarnes:fanduel:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5826,
+    "fair_prob_cal": 0.5826,
+    "price": -125,
+    "market": "assists",
+    "player": "Scottie Barnes",
+    "side": "over",
+    "line": 5.5,
+    "reasons": [
+     "ranked below top 5"
+    ],
+    "reason": "ranked below top 5",
+    "pick_id": "P92fa0deef086",
+    "result": "void",
+    "profit": "0.0"
+   },
+   {
+    "dedup_key": "snipe:22747:assists:cobywhite:fanduel:3.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5769,
+    "fair_prob_cal": 0.5769,
+    "price": -106,
+    "market": "assists",
+    "player": "Coby White",
+    "side": "under",
+    "line": 3.5,
+    "reasons": [
+     "teammates out"
+    ],
+    "reason": "teammates out",
+    "pick_id": "P9833b125bbe3",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22747:rebounds:jarrettallen:fanduel:7.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5724,
+    "fair_prob_cal": 0.5724,
+    "price": -114,
+    "market": "rebounds",
+    "player": "Jarrett Allen",
+    "side": "under",
+    "line": 7.5,
+    "reasons": [
+     "rebounds"
+    ],
+    "reason": "rebounds",
+    "pick_id": "P6a41bd6036a9",
+    "result": "win",
+    "profit": "0.8772"
+   }
+  ]
+ },
+ "2026-11-10": {
+  "selected_at": "2026-11-10T11:15:31.642671+00:00",
+  "og_picks": 5,
+  "candidates": 30,
+  "reasons": {
+   "under 5.5+ assists": 6,
+   "rebounds": 17,
+   "teammates out": 4,
+   "ranked below top 5": 2,
+   "median wrong side": 1
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22740:assists:jalenbrunson:draftkings:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5838,
+    "fair_prob_cal": 0.5838,
+    "price": -103,
+    "market": "assists",
+    "player": "Jalen Brunson",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P4df1bda46c46",
+    "result": "win",
+    "profit": "0.9709"
+   },
+   {
+    "dedup_key": "snipe:22738:assists:isaiahcollier:fanduel:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.583,
+    "fair_prob_cal": 0.583,
+    "price": 104,
+    "market": "assists",
+    "player": "Isaiah Collier",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "under 5.5+ assists",
+     "teammates out"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "Pb4317c043447",
+    "result": "win",
+    "profit": "1.04"
+   },
+   {
+    "dedup_key": "snipe:22736:assists:domantassabonis:fanduel:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5629,
+    "fair_prob_cal": 0.5629,
+    "price": -106,
+    "market": "assists",
+    "player": "Domantas Sabonis",
+    "side": "under",
+    "line": 5.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P31101bf428ec",
+    "result": "win",
+    "profit": "0.9434"
+   }
+  ]
+ },
+ "2026-11-11": {
+  "selected_at": "2026-11-11T11:15:41.861587+00:00",
+  "og_picks": 5,
+  "candidates": 30,
+  "reasons": {
+   "rebounds": 17,
+   "ranked below top 5": 4,
+   "under 5.5+ assists": 4,
+   "median wrong side": 4,
+   "outside price range": 1
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22734:assists:jalenbrunson:draftkings:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.6063,
+    "fair_prob_cal": 0.5715,
+    "price": 101,
+    "market": "assists",
+    "player": "Jalen Brunson",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P6252db0424c0",
+    "result": "win",
+    "profit": "1.01"
+   },
+   {
+    "dedup_key": "snipe:22734:rebounds:jarrettallen:draftkings:7.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5701,
+    "fair_prob_cal": 0.5265,
+    "price": -112,
+    "market": "rebounds",
+    "player": "Jarrett Allen",
+    "side": "under",
+    "line": 7.5,
+    "reasons": [
+     "rebounds"
+    ],
+    "reason": "rebounds",
+    "pick_id": "P32d81a69f724",
+    "result": "loss",
+    "profit": "-1.0"
+   },
+   {
+    "dedup_key": "snipe:22734:assists:jamesharden:draftkings:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5598,
+    "fair_prob_cal": 0.5137,
+    "price": 114,
+    "market": "assists",
+    "player": "James Harden",
+    "side": "under",
+    "line": 5.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P0ff36d9e09de",
+    "result": "win",
+    "profit": "1.14"
+   }
+  ]
+ },
+ "2026-11-12": {
+  "selected_at": "2026-11-12T11:15:32.749616+00:00",
+  "og_picks": 0,
+  "candidates": 7,
+  "reasons": {
+   "under 5.5+ assists": 2,
+   "outside price range": 1,
+   "rebounds": 4
+  },
+  "picks": [
+   {
+    "dedup_key": "snipe:22725:assists:cadecunningham:draftkings:8.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5335,
+    "fair_prob_cal": 0.4814,
+    "price": 103,
+    "market": "assists",
+    "player": "Cade Cunningham",
+    "side": "under",
+    "line": 8.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P4d6e27b4abcf",
+    "result": "",
+    "profit": ""
+   },
+   {
+    "dedup_key": "snipe:22723:assists:cooperflagg:draftkings:5.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5069,
+    "fair_prob_cal": 0.4492,
+    "price": 110,
+    "market": "assists",
+    "player": "Cooper Flagg",
+    "side": "under",
+    "line": 5.5,
+    "reasons": [
+     "under 5.5+ assists"
+    ],
+    "reason": "under 5.5+ assists",
+    "pick_id": "P8865ce0184be",
+    "result": "",
+    "profit": ""
+   },
+   {
+    "dedup_key": "snipe:22725:rebounds:paulreed:fanduel:6.5",
+    "label": "",
+    "stake": 0.25,
+    "fair_prob": 0.5043,
+    "fair_prob_cal": 0.446,
+    "price": 118,
+    "market": "rebounds",
+    "player": "Paul Reed",
+    "side": "under",
+    "line": 6.5,
+    "reasons": [
+     "rebounds",
+     "median wrong side"
+    ],
+    "reason": "rebounds",
+    "pick_id": "Pd655582a72cf",
+    "result": "",
+    "profit": ""
+   }
+  ]
+ }
+}
