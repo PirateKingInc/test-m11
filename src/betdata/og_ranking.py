@@ -368,3 +368,99 @@ def slump_check(pdb, rows: list[dict], now, topic: str | None, client=None) -> s
     with pdb.begin() as p:
         set_state(p, key, {"line": line, "status": status}, now)
     return status
+
+
+# --- the OG + threes shadow (owner 2026-11-12): OG's rules with made threes eligible ----------
+# Never official, never on the main page, never pushed; compared in og_ranking_v2.md.
+
+THREES_SINCE = date(2026, 11, 13)
+THREES_SHADOW = "og-threes-shadow"
+THREES_FIELDS = ("pick_id", "sport", "card_date", "ogthrees", "label", "stake", "selected_at",
+                 "rank", "market", "fair_prob", "price", "median", "line")  # fmt: skip
+
+
+def threes_key(sport: str, day) -> str:
+    return f"ogthrees:{sport}:{day if isinstance(day, str) else day.isoformat()}"
+
+
+def threes_applies(day: date) -> bool:
+    return day >= THREES_SINCE
+
+
+def _rules_with_threes(m, a) -> str | None:
+    """Rules v2 for OG, except made threes are eligible (its other filters concern assists
+    and rebounds only)."""
+    from betdata import eligibility as EL
+
+    if a.market == "threes":
+        return None
+    return EL.alert_reason(m, a)
+
+
+def _shadow_key(a):
+    from betdata.alerts.grade import utc
+    from betdata.alerts.rules import decimal
+
+    return (-float(a.fair_prob), decimal(int(a.price)), utc(a.created_at))
+
+
+def threes_shadow(p, sport: str, day: date, now, m=None, size: int = SIZE,
+                  og: dict | None = None) -> dict:  # fmt: skip
+    """The OG + threes shadow at `now`: OG's pool and Ranking v2 rules with threes eligible,
+    one pick per player-game-market, ranked by the raw model probability (the same order as
+    OG's for assists; threes have no F fit), top 5 at 0.5u."""
+    from betdata.alerts.card import V1_SIGNALS, day_picks
+    from betdata.alerts.grade import utc
+    from betdata.alerts.labels import available, label
+
+    out = {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
+           "source": THREES_SHADOW, "ranking": "v2+threes", "picks": []}
+    if og is not None and og.get("no_lines"):
+        out["no_lines"] = True
+        return out
+    pool = []
+    for a in day_picks(p, sport, day, V1_SIGNALS):
+        if utc(a.created_at) > now or a.tip is None or a.tip <= now:
+            continue
+        if _rules_with_threes(m, a) is not None or available(p, a, now) is not True:
+            continue
+        if reason(a) is not None:
+            continue
+        pool.append(a)
+    best: dict = {}
+    for a in sorted(pool, key=_shadow_key):
+        best.setdefault((a.game_id, (a.player_name or "").lower(), a.market), a)
+    ranked = sorted(best.values(), key=_shadow_key)
+    out["picks"] = [{**pick_entry(p, a, now, label), "market": a.market}
+                    for a in ranked[:size]]  # fmt: skip
+    out["live"] = len(pool)
+    return out
+
+
+def threes_rows(p, out, now) -> int:
+    """Write-once rows of ledger/og_threes_shadow.csv and a card-day row (kind `ogthrees`)."""
+    from sqlalchemy import select
+
+    from betdata.alerts.db import state
+    from betdata.ledger import CARD_DAY_FIELDS, _num, append_rows, pick_id
+
+    rows, days = [], []
+    for st in p.execute(select(state).where(state.c.key.like("ogthrees:%"))):
+        c = st.value or {}
+        if not c.get("day"):
+            continue
+        for i, x in enumerate(c.get("picks", []), 1):
+            rows.append({"pick_id": pick_id(x["dedup_key"]), "sport": c["sport"],
+                         "card_date": c["day"], "ogthrees": "yes", "label": x.get("label", ""),
+                         "stake": _num(x.get("stake", STAKE)),
+                         "selected_at": c.get("selected_at", ""), "rank": str(i),
+                         "market": x.get("market", ""), "fair_prob": _num(x.get("fair_prob")),
+                         "price": x.get("price", ""), "median": _num(x.get("median")),
+                         "line": _num(x.get("line"), 2)})  # fmt: skip
+        days.append({"key": f"{c['sport']}:{c['day']}:ogthrees", "sport": c["sport"],
+                     "card_date": c["day"], "kind": "ogthrees",
+                     "selected_at": c.get("selected_at", ""),
+                     "picks": str(len(c.get("picks", [])))})  # fmt: skip
+    n = append_rows(out / "og_threes_shadow.csv", THREES_FIELDS, rows)
+    append_rows(out / "card_days.csv", CARD_DAY_FIELDS, days, key="key")
+    return n

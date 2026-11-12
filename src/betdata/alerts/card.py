@@ -352,6 +352,9 @@ def run_shadow(pdb, main, now: datetime, tip_fn=first_tip, lines_fn=None) -> lis
 
                 if AC.applies(day):  # the Action card (owner 2026-11-12): not official
                     set_state(p, AC.key(day), AC.choose(p, day, now, card, m), now)
+                if OR.threes_applies(day):  # the OG + threes shadow (owner 2026-11-12)
+                    set_state(p, OR.threes_key(sport, day),
+                              OR.threes_shadow(p, sport, day, now, m, og=card), now)
         out.append(card)
     return out
 
