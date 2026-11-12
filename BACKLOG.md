@@ -163,3 +163,9 @@ Items deliberately left out of M12, with the reason. Newest first.
   Filters table, by market, same-player stacks, vs official OG on the same days) and one ntfy
   line. The owner decides whether any OG rule changes; nothing changes automatically.
 - **Action picks from Next Gen's engine, NFL, and new F markets:** out of scope (separate phases).
+
+## Threes research (2026-11-12, report only)
+
+- **Threes under today's OG rules, and Rules v2 on the old seasons:** see
+  `reports/nba/threes_backtest.md` (hindsight backtest 2023-24 to 2025-26; live lines already
+  flow from SharpAPI). Options for the owner there; nothing live changed.
