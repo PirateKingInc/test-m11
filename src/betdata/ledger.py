@@ -352,6 +352,7 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         from betdata import f_calibration as FC
 
         FC.maybe_refit(out, now)
+        FC.maybe_refit(out, now, FC.THREES)  # Mondays, once >= 200 graded threes picks
         FC.annotate(out, now)
     except Exception as e:  # noqa: BLE001 - never stops the ledger
         log.warning("F calibration failed: %s", e)

@@ -27,16 +27,24 @@ FIELDS = ("model", "fit_date", "n", "slope", "intercept", "fitted_at", "status",
 MODEL = "F"
 MIN_N = 200
 SIGNAL_NAME = "F"
+THREES = "F-threes"
+# owner 2026-11-12: the F fit stays rebounds + assists only; made threes get their own fit, on
+# Mondays once >= MIN_N graded threes picks exist (no calibrated threes value before)
+MODELS = {MODEL: {"file": FILE, "markets": ("rebounds", "assists"), "first_any_day": True},
+          THREES: {"file": "f_threes_calibration_fits.csv", "markets": ("threes",),
+                   "first_any_day": False}}  # fmt: skip
 
 
-def points(out: Path, before: datetime | None = None) -> tuple[list[float], list[int]]:
-    """(model probability, win) of every graded F pick (win/loss), one per player per game;
-    `before`: only picks graded before then (walk-forward)."""
+def points(out: Path, before: datetime | None = None,
+           model: str = MODEL) -> tuple[list[float], list[int]]:  # fmt: skip
+    """(model probability, win) of every graded F pick (win/loss) of the model's markets, one per
+    player per game; `before`: only picks graded before then (walk-forward)."""
     from betdata.f_verdict import dedup
     from betdata.ledger import counted, joined
 
     rows = [r for r in counted(joined(out))
             if r["signal_name"] == SIGNAL_NAME and r.get("result") in ("win", "loss")
+            and r.get("market") in MODELS[model]["markets"]
             and r.get("fair_prob")
             and (before is None or (r.get("graded_at")
                                     and datetime.fromisoformat(r["graded_at"]) < before))]
@@ -54,35 +62,38 @@ def fit_points(ps: list[float], ys: list[int], day: date) -> tuple[Fit | None, s
     return Fit(day.isoformat(), len(ps), round(a, 6), round(b, 6)), ""
 
 
-def maybe_refit(out: Path, now: datetime) -> Fit | None:
-    """On a Monday (Eastern), or when no accepted fit exists yet: fit once for the day. Returns
-    the new fit if accepted (a rejected attempt is recorded and the previous fit stays)."""
+def maybe_refit(out: Path, now: datetime, model: str = MODEL) -> Fit | None:
+    """On a Monday (Eastern), or (F) when no accepted fit exists yet: fit once for the day.
+    Returns the new fit if accepted (a rejected attempt is recorded, the previous fit stays)."""
     from betdata.alerts.rules import EASTERN
     from betdata.ledger import append_rows, read_rows
 
+    cfg = MODELS[model]
     day = now.astimezone(EASTERN).date()
-    have = read_rows(out / FILE)
+    have = read_rows(out / cfg["file"])
     if any(r["fit_date"] == day.isoformat() for r in have):
         return None
-    if any(r["status"] == "ok" for r in have) and day.weekday() != 0:
+    first = cfg["first_any_day"] and not any(r["status"] == "ok" for r in have)
+    if not first and day.weekday() != 0:
         return None
-    ps, ys = points(out)
+    ps, ys = points(out, model=model)
     f, why = fit_points(ps, ys, day)
-    row = {"model": MODEL, "fit_date": day.isoformat(), "n": len(ps),
+    row = {"model": model, "fit_date": day.isoformat(), "n": len(ps),
            "fitted_at": now.isoformat(), "status": "ok" if f else "rejected", "reason": why}
     if f is not None:
         row.update(slope=f.slope, intercept=f.intercept)
     else:
-        log.warning("F calibration fit %s rejected (%s); the previous fit stays", day, why)
-    append_rows(out / FILE, FIELDS, [row], key="fit_date")
+        log.warning("%s calibration fit %s rejected (%s); the previous fit stays", model, day,
+                    why)  # fmt: skip
+    append_rows(out / cfg["file"], FIELDS, [row], key="fit_date")
     return f
 
 
-def current(out: Path, day: date | None = None) -> Fit | None:
+def current(out: Path, day: date | None = None, model: str = MODEL) -> Fit | None:
     """The latest accepted fit dated on or before `day` (None: the latest)."""
     from betdata.ledger import read_rows
 
-    rows = sorted((r for r in read_rows(out / FILE) if r["status"] == "ok"
+    rows = sorted((r for r in read_rows(out / MODELS[model]["file"]) if r["status"] == "ok"
                    and (day is None or r["fit_date"] <= day.isoformat())),
                   key=lambda r: r["fit_date"])  # fmt: skip
     if not rows:
@@ -98,17 +109,24 @@ def calibrate(p: float, f: Fit | None) -> float:
 
 def annotate(out: Path, now: datetime) -> int:
     """A write-once `f_cal` annotation on each F pick created after the fit in force then (the
-    latest accepted fit fitted before the pick): its calibrated probability and the fit date."""
+    latest accepted fit of its market's model fitted before the pick): its calibrated
+    probability and the fit date. Threes picks only once a threes fit exists."""
+    return sum(_annotate(out, now, m) for m in MODELS)
+
+
+def _annotate(out: Path, now: datetime, model: str) -> int:
     from betdata.ledger import ANNOTATION_FIELDS, _iso, append_rows, read_rows
 
-    fits = sorted((r for r in read_rows(out / FILE) if r["status"] == "ok"),
+    cfg = MODELS[model]
+    fits = sorted((r for r in read_rows(out / cfg["file"]) if r["status"] == "ok"),
                   key=lambda r: r["fitted_at"])  # fmt: skip
     if not fits:
         return 0
     have = {r["key"] for r in read_rows(out / "annotations.csv")}
     rows = []
     for pk in read_rows(out / "picks.csv"):
-        if pk["signal_name"] != SIGNAL_NAME or not pk.get("fair_prob"):
+        if (pk["signal_name"] != SIGNAL_NAME or not pk.get("fair_prob")
+                or pk.get("market") not in cfg["markets"]):  # fmt: skip
             continue
         key = f"{pk['pick_id']}:f_cal"
         if key in have:
@@ -122,6 +140,6 @@ def annotate(out: Path, now: datetime) -> int:
         rows.append({"key": key, "pick_id": pk["pick_id"], "field": "f_cal",
                      "value": f"{calibrate(float(pk['fair_prob']), f):.4f}",
                      "noted_at": _iso(now),
-                     "note": f"F calibration fit {f.fit_date} (slope {f.slope}, intercept "
+                     "note": f"{model} calibration fit {f.fit_date} (slope {f.slope}, intercept "
                              f"{f.intercept}, n {f.n}); owner 2026-11-12"})  # fmt: skip
     return append_rows(out / "annotations.csv", ANNOTATION_FIELDS, rows, key="key")
