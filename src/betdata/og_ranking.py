@@ -73,28 +73,34 @@ def reason(a) -> str | None:
     return None
 
 
-def _key(a):
+def _key(a, fit=None):
+    """The ranking key: the calibrated model probability (F's fit, owner 2026-11-12; increasing,
+    so the same order as the raw probability), then the shorter price, then the earlier pick."""
     from betdata.alerts.grade import utc
     from betdata.alerts.rules import decimal
+    from betdata.f_calibration import calibrate
 
-    return (-float(a.fair_prob), decimal(int(a.price)), utc(a.created_at))
+    return (-calibrate(a.fair_prob, fit), decimal(int(a.price)), utc(a.created_at))
 
 
-def order(cands: list) -> tuple[list, dict]:
+def order(cands: list, fit=None) -> tuple[list, dict]:
     """(ranked, rejected): one pick per player per game (the best by the ranking key), all
     sorted by the ranking key; the others rejected as duplicates."""
+    from functools import partial
+
+    key = partial(_key, fit=fit)
     best: dict = {}
     rejected = {}
-    for a in sorted(cands, key=_key):
+    for a in sorted(cands, key=key):
         k = (a.game_id, (a.player_name or "").lower())
         if k in best:
             rejected[a.dedup_key] = DUPLICATE
             continue
         best[k] = a
-    return sorted(best.values(), key=_key), rejected
+    return sorted(best.values(), key=key), rejected
 
 
-def pick_entry(p, a, now, label_fn) -> dict:
+def pick_entry(p, a, now, label_fn, fit=None) -> dict:
     from betdata.alerts.card import ev
     from betdata.alerts.labels import LEAN, TAKE
 
@@ -106,10 +112,29 @@ def pick_entry(p, a, now, label_fn) -> dict:
             "threshold": lab.get("threshold"), "edge_source": lab.get("edge_source"),
             "pinnacle_sides": lab.get("pinnacle_sides"),
             "fair_prob": round(float(a.fair_prob), 4), "price": int(a.price),
+            "fair_prob_cal": round(_cal(a.fair_prob, fit), 4),
             "median": median_of(a), "line": a.line}  # fmt: skip
 
 
-def ranked_pool(p, sport: str, day: date, now, m=None) -> tuple[list, dict, dict, int]:
+def _cal(x, fit):
+    from betdata.f_calibration import calibrate
+
+    return calibrate(x, fit)
+
+
+def f_fit(day: date):
+    """F's calibration fit in force for the day (None before the first fit)."""
+    try:
+        from betdata.f_calibration import current
+        from betdata.ledger import ledger_dir
+
+        return current(ledger_dir(), day)
+    except Exception:  # noqa: BLE001 - no fit: the raw probability (the same order)
+        return None
+
+
+def ranked_pool(p, sport: str, day: date, now, m=None,
+                fit="current") -> tuple[list, dict, dict, int]:  # fmt: skip
     """(ranked, filtered, rejected, live) at `now`: OG's pool (F / C-NBA picks for the day's
     games, created by `now`, not started, after Rules v2 -> `filtered`, still Live), then the
     Ranking v2 rules (-> `rejected`), one per player, in ranking order."""
@@ -133,7 +158,9 @@ def ranked_pool(p, sport: str, day: date, now, m=None) -> tuple[list, dict, dict
             rejected[a.dedup_key] = r
             continue
         pool.append(a)
-    ranked, dup = order(pool)
+    if fit == "current":
+        fit = f_fit(day)
+    ranked, dup = order(pool, fit)
     rejected.update(dup)
     return ranked, filtered, rejected, len(pool)
 
@@ -143,8 +170,9 @@ def card(p, sport: str, day: date, now, m=None, size: int = SIZE) -> dict:
     from betdata.alerts.card import SHADOW
     from betdata.alerts.labels import label
 
-    ranked, filtered, rejected, live = ranked_pool(p, sport, day, now, m)
-    picks = [pick_entry(p, a, now, label) for a in ranked[:size]]
+    fit = f_fit(day)
+    ranked, filtered, rejected, live = ranked_pool(p, sport, day, now, m, fit)
+    picks = [pick_entry(p, a, now, label, fit) for a in ranked[:size]]
     for a in ranked[size:]:
         rejected[a.dedup_key] = OUTSIDE if size == SIZE else f"og: outside top {size}"
     out = {"sport": sport, "day": day.isoformat(), "selected_at": now.isoformat(),
@@ -153,6 +181,8 @@ def card(p, sport: str, day: date, now, m=None, size: int = SIZE) -> dict:
         out["filtered"] = filtered
     if rejected:
         out["og_rejected"] = rejected
+    if fit is not None:
+        out["f_fit"] = fit.fit_date
     return out
 
 
