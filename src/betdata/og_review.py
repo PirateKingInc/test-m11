@@ -31,6 +31,25 @@ def official_rows(rows: list[dict]) -> list[dict]:
     return [r for r in C.view(rows, C.OG) if r["day"] >= start().isoformat()]
 
 
+def rebound_overs(rows: list[dict]) -> list[dict]:
+    """Official OG rebound overs under Rules v3 (owner 2026-11-12): OG card rows from Nov 13."""
+    from betdata import cards as C
+    from betdata.eligibility import RULES_V3_START
+
+    return [r for r in C.view(rows, C.OG) if r["day"] >= RULES_V3_START.isoformat()
+            and r.get("market") == "rebounds" and r.get("side") == "over"]  # fmt: skip
+
+
+def rebound_overs_line(rows: list[dict]) -> str:
+    from betdata import official as O
+
+    rec = O.record(rebound_overs(rows), O.official_stake)
+    d = rec.wins + rec.losses
+    win = "–" if not d else f"{100 * rec.wins / d:.1f}%"
+    return (f"- Rebound overs (official, Rules v3 from Nov 13): {rec.wlp}, win {win}, "
+            f"{rec.units:+.2f}u at 0.5u ({rec.graded} graded; graded picks only)")
+
+
 def top3_rows(out: Path) -> list[dict]:
     """The Top 3 shadow's picks with their results, each at its own 0.5u stake."""
     from betdata.ledger import read_rows
@@ -331,7 +350,7 @@ def report(root: Path, now: datetime) -> str:
           f"Review: at {REVIEW_DATE:%b %-d} or {REVIEW_N} graded official Ranking v2 picks, "
           f"whichever first ({n} graded so far).", "",
           f"## Official OG vs OG Top 3 (since {start():%b %-d}, graded only)", "",
-          *table(a, b), "",
+          *table(a, b), "", rebound_overs_line(rows), "",
           "## OG + threes shadow (owner 2026-11-12; never official)", "",
           "OG Ranking v2's rules with made threes eligible, chosen at 6:15 AM ET from Nov 13; "
           "graded only, 0.5u.", "",

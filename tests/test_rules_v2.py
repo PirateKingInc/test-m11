@@ -209,7 +209,8 @@ def test_filters_table_and_review_rule():
             _row("e", "F", "2026-11-09", "win", "1", filt=EL.REBOUNDS),  # before rules v2
             _row("f", "nba-engine", "2026-11-10", "win", "0.909", card=True, stake="1")]
     t = {(r["card"], r["reason"]): r for r in EL.filters_table(rows)}
-    og = t[("OG", EL.REBOUNDS)]
+    og = t[("OG", EL.REBOUND_UNDERS)]  # Rules v3: the table splits rebounds by side (no side:
+    # not an over)
     assert (og["removed"], og["wlp"], og["units"]) == (3, "1-2-0", -1.09)
     assert og["win"] == pytest.approx(1 / 3, abs=1e-4) and og["needed"] == pytest.approx(
         1 / 1.909, abs=1e-3)

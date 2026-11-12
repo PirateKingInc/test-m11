@@ -87,3 +87,39 @@ def test_top3_is_a_subset_and_rebound_over_counts(pdb):  # noqa: F811
     assert _keys(og) == ["reb0", "reb1", "reb2", "ast0", "ast1"]
     assert _keys(t3) == ["reb0", "reb1", "reb2"]
     assert _keys(sh) == _keys(og)  # the OG + threes shadow follows Rules v3 too
+
+
+def _row(day, side, filt=EL.REBOUNDS, signal="F", result="win"):
+    return {"sport": "nba", "signal_name": signal, "day": day, "filter": filt, "side": side,
+            "market": "rebounds", "result": result, "profit": "0.9091" if result == "win"
+            else "-1.0", "odds": "-110", "clv_consensus": ""}  # fmt: skip
+
+
+def test_filters_table_splits_rebounds_by_side(monkeypatch):
+    from betdata import cards as C
+
+    monkeypatch.setattr(C, "view", lambda rows, card: [])
+    rows = [_row("2026-11-11", "over"), _row("2026-11-11", "under", result="loss"),
+            _row("2026-11-12", "under"),
+            _row("2026-11-13", "over"),  # stale Rules v2 annotation on a Rules v3 OG over
+            _row("2026-11-13", "under", EL.REBOUND_UNDERS, result="loss"),
+            _row("2026-11-13", "over", signal="nba-engine")]  # Next Gen: still filtered
+    t = {(r["card"], r["reason"]): r for r in EL.filters_table(rows)}
+    assert t[("OG", EL.REBOUND_OVERS)]["removed"] == 1  # Nov 11 only
+    assert t[("OG", EL.REBOUND_UNDERS)]["removed"] == 3
+    assert t[("OG", EL.REBOUND_UNDERS)]["wlp"] == "1-2-0"
+    assert t[("Next Gen", EL.REBOUND_OVERS)]["removed"] == 1
+    assert not any(r["reason"] == EL.REBOUNDS for r in t.values())
+
+
+def test_rebound_overs_line(monkeypatch):
+    import betdata.cards as C
+    from betdata import og_review as RV
+
+    rows = [{"day": "2026-11-13", "market": "rebounds", "side": "over", "result": "win",
+             "profit": "0.9091", "card_stake": "0.5", "odds": "-110", "clv_consensus": ""},
+            {"day": "2026-11-12", "market": "rebounds", "side": "over", "result": "loss",
+             "profit": "-1.0", "card_stake": "0.5", "odds": "-110", "clv_consensus": ""}]
+    monkeypatch.setattr(C, "view", lambda rows, card: rows)
+    assert RV.rebound_overs_line(rows).startswith(
+        "- Rebound overs (official, Rules v3 from Nov 13): 1-0-0, win 100.0%")

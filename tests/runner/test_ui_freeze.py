@@ -68,6 +68,10 @@ Owner-approved additions (each allowed exactly, and nothing else):
   as text, each Action pick's posted time and the OG note (Today renderer and Results by day);
   threes appear in By market as data. Previous snapshot kept as `ui_freeze_snapshot_m28.txt`; the
   difference is pinned (APPROVED_DIFF_ACTION_ADDS_SHA).
+- 2026-11-12, Rules v3: in the OG record only, a "Rules v3 from Nov 13: rebound overs back" marker
+  (one <b>, styled as the earlier markers); and, in the Research tab, the Filters table's rebounds
+  row split into rebound overs and rebound unders (data rows). Previous snapshot kept as
+  `ui_freeze_snapshot_m29.txt`; the difference is pinned (APPROVED_DIFF_RULES_V3_SHA).
 """
 
 import hashlib
@@ -162,7 +166,9 @@ APPROVED_DIFF_RANKING_V2_SHA = "fb5b15b3460e"  # m26 -> m27 (OG Ranking v2, 2026
 SNAPSHOT_M27 = Path(__file__).with_name("ui_freeze_snapshot_m27.txt")
 APPROVED_DIFF_ACTION_SHA = "aff0cd7d8a3e"  # m27 -> m28 (Action card, 2026-11-12)
 SNAPSHOT_M28 = Path(__file__).with_name("ui_freeze_snapshot_m28.txt")
-APPROVED_DIFF_ACTION_ADDS_SHA = "d0609dc7b83b"  # m28 -> current (Action live adds)
+APPROVED_DIFF_ACTION_ADDS_SHA = "d0609dc7b83b"  # m28 -> m29 (Action live adds)
+SNAPSHOT_M29 = Path(__file__).with_name("ui_freeze_snapshot_m29.txt")
+APPROVED_DIFF_RULES_V3_SHA = "941bf8286dd4"  # m29 -> current (Rules v3 marker, 2026-11-12)
 APPROVED_DIFF_DEFAULT_TAB_SHA = "d60079053e6b"  # m22 -> current (NBA default tab, 2026-11-05)
 APPROVED_DIFF_TWO_CARDS_SHA = "bedb7949f2df"  # m21 snapshot -> current (two cards, 2026-11-05)
 # the lines the engine-card approval added, exactly
@@ -347,12 +353,29 @@ def test_snapshot_differs_by_exactly_the_action_adds_line():
     import difflib
 
     a = SNAPSHOT_M28.read_text().splitlines()
-    b = SNAPSHOT.read_text().splitlines()
+    b = SNAPSHOT_M29.read_text().splitlines()
     d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
     assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_ACTION_ADDS_SHA, d
     lines = [x for x in d.splitlines() if not x.startswith(("+++", "---", "@@"))]
     assert [x[1:].strip() for x in lines] == ["p class=meta", "b"]
     assert all(x.startswith("+") for x in lines)
+
+
+def test_snapshot_differs_by_exactly_the_rules_v3_marker(tmp_path):
+    """2026-11-12: one <b> (the Rules v3 marker) in the OG record; nothing else."""
+    import difflib
+
+    a = SNAPSHOT_M29.read_text().splitlines()
+    b = SNAPSHOT.read_text().splitlines()
+    d = "\n".join(difflib.unified_diff(a, b, lineterm="", n=0))
+    assert hashlib.sha1(d.encode()).hexdigest()[:12] == APPROVED_DIFF_RULES_V3_SHA, d
+    lines = [x for x in d.splitlines() if not x.startswith(("+++", "---", "@@"))]
+    assert lines == ["+                b"]
+    html = build_fixture_page(tmp_path)
+    og = html[html.index("data-card='og'"):html.index("data-card='spread'")]
+    assert "<b>Rules v3 from Nov 13: rebound overs back</b>" in og
+    assert "Ranking v2 from Nov 12" in og and "Rules v2 from Nov 10" in og  # earlier markers kept
+    assert html.count("Rules v3 from Nov 13") == 1  # OG only
 
 
 def test_snapshot_differs_by_exactly_the_default_tab_script():
