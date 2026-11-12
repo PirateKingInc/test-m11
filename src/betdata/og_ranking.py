@@ -293,26 +293,48 @@ SLUMP_WINS_MAX = 3  # 3-12 or worse
 REPORT_PATH = "reports/nba/og_ranking_v2.md"
 
 
-def slump(rows: list[dict]) -> tuple[int, int] | None:
-    """(wins, losses) when official OG's last 15 graded Ranking v2 picks, over its most recent 3
-    card days, are 3-12 or worse; else None (fewer than 15 graded picks never fire)."""
+SHORT_N = 9  # owner 2026-11-12: also the last 9 decided official Ranking v2 picks...
+SHORT_WINS_MAX = 2  # ...at 2-7 or worse (any number of days: fires on short cards too)
+
+
+def _decided(rows: list[dict]) -> list[dict]:
+    """Official OG Ranking v2 picks with a win or a loss (pushes, voids and pending excluded),
+    in order."""
     from betdata import cards as C
-    from betdata import official as O
 
-    v2 = [r for r in O.graded(C.view(rows, C.OG)) if r["day"] >= start().isoformat()]
+    v2 = [r for r in C.view(rows, C.OG) if r["day"] >= start().isoformat()
+          and r.get("result") in ("win", "loss")]  # fmt: skip
+    return sorted(v2, key=lambda r: (r["day"], r.get("tip", ""), r.get("created_at", "")))
+
+
+def slump_rule(rows: list[dict]) -> tuple[str, int, int] | None:
+    """(which, wins, losses) of the first rule that fires, else None:
+    - "3 days": the last 15 decided picks over the most recent 3 card days are 3-12 or worse;
+    - "9 picks": the last 9 decided picks (any number of days) are 2-7 or worse."""
+    v2 = _decided(rows)
     days = sorted({r["day"] for r in v2})[-SLUMP_DAYS:]
-    last = sorted((r for r in v2 if r["day"] in days),
-                  key=lambda r: (r["day"], r.get("tip", ""), r.get("created_at", "")))
-    last = last[-SLUMP_N:]
-    if len(last) < SLUMP_N:
-        return None
-    w = sum(r["result"] == "win" for r in last)
-    lo = sum(r["result"] == "loss" for r in last)
-    return (w, lo) if w <= SLUMP_WINS_MAX else None
+    last = [r for r in v2 if r["day"] in days][-SLUMP_N:]
+    if len(last) == SLUMP_N:
+        w = sum(r["result"] == "win" for r in last)
+        if w <= SLUMP_WINS_MAX:
+            return "3 days", w, SLUMP_N - w
+    last = v2[-SHORT_N:]
+    if len(last) == SHORT_N:
+        w = sum(r["result"] == "win" for r in last)
+        if w <= SHORT_WINS_MAX:
+            return "9 picks", w, SHORT_N - w
+    return None
 
 
-def slump_line(w: int, lo: int) -> str:
-    return f"OG review: {w}-{lo} over the last 3 days — check {REPORT_PATH}"
+def slump(rows: list[dict]) -> tuple[int, int] | None:
+    """(wins, losses) when either slump rule fires (`slump_rule`), else None."""
+    s = slump_rule(rows)
+    return None if s is None else (s[1], s[2])
+
+
+def slump_line(w: int, lo: int, which: str = "3 days") -> str:
+    span = "the last 3 days" if which == "3 days" else f"the last {SHORT_N} graded picks"
+    return f"OG review: {w}-{lo} over {span} — check {REPORT_PATH}"
 
 
 def slump_check(pdb, rows: list[dict], now, topic: str | None, client=None) -> str | None:
@@ -329,10 +351,10 @@ def slump_check(pdb, rows: list[dict], now, topic: str | None, client=None) -> s
     with pdb.connect() as p:
         if get_state(p, key) is not None:
             return None
-    s = slump(rows)
+    s = slump_rule(rows)
     if s is None:
         return None
-    line = slump_line(*s)
+    line = slump_line(s[1], s[2], s[0])
     if not topic:
         status = "no NTFY_TOPIC"
     else:
