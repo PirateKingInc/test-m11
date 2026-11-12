@@ -167,3 +167,25 @@ def test_official_cards_identical_with_and_without_action(tmp_path, monkeypatch)
     (og1, t1, a1), (og2, t2, a2) = states
     assert og1 == og2 and t1 == t2
     assert a1 is not None and a2 is None
+
+
+def test_push_section_with_picks_none_today_and_short(pdb):
+    from betdata import morning as M
+
+    with pdb.begin() as p:
+        _pick(p, "og1", player="Zubac", fair=0.7)
+        _pick(p, "zr", player="Ivica Zubac", market="rebounds", side="under", line=9.5,
+              median=9.0, price=116, fair=0.6)
+    _run(pdb)
+    with pdb.connect() as p:
+        _t, body = M.message(p, [], "nba", NOW)
+    lines = body.split("\n")
+    i = lines.index("Action picks (not official):")
+    assert lines[i + 1] == "  Ivica Zubac u9.5 reb +116 · 0.25u · missed: rebounds"
+    assert lines[i + 2] == "  1 pick — only 1 candidate off the OG card"
+    assert i > max(j for j, x in enumerate(lines) if x.startswith("Spread"))  # after Spread
+    assert AC.push_lines({"picks": []}) == ["Action picks: none today"]
+    full = {"picks": [{"player": f"P{i}", "side": "over", "line": 4.5, "market": "assists",
+                       "price": 110, "stake": 0.25, "reason": "rebounds"} for i in range(3)],
+            "candidates": 5}
+    assert len(AC.push_lines(full)) == 4  # a full card: no reason line
