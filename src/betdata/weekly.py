@@ -260,8 +260,12 @@ def milestone_lines(ms: list[dict], root: Path) -> list[str]:
         if m["signal_name"] == SR.MILESTONE:  # the Spread Picks review (owner 2026-11-10)
             out.append(SR.ntfy_line(root / "ledger"))
             continue
+        from betdata import f_verdict as FV
         from betdata import og_review as OGR
 
+        if m["signal_name"] == FV.MILESTONE:  # F's verdict (owner 2026-11-12)
+            out.append(FV.ntfy_line(root / "ledger"))
+            continue
         if m["signal_name"] == OGR.MILESTONE:  # the OG Ranking v2 review (owner 2026-11-11)
             out.append(OGR.ntfy_line(root / "ledger"))
             continue

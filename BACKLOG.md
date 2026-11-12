@@ -123,7 +123,7 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **The engine trails the market.** On validation and test the engine alone is worse than the no-vig line in every market (Brier, log loss); the validated blend gives it 0-20% weight. Next steps, in order of expected value: per-player stats split by competitive time from play-by-play events (rates are full-game today), lineup-level (stint) offense/defense instead of box-score rates for team strength, and a possession-level simulation (the binomial shot model is too wide for sides: simulated margin SD ~16 vs 12-14 actual).
 - **Ejections vs injury exits:** stored data cannot tell them apart (one "early exit" flag). ESPN play-by-play has ejection events; the M15 stints builder could store them.
 - **D1 with/without from stints:** stints carry no player stats, so D1 used games missed, not minutes apart. A per-stint player box (from play-by-play) would allow true on/off splits.
-- **F crossed 200 before the M20 rule was written**, so its three-check verdict is not pre-registered. Judge F again on its next 200 picks (from 2026-11-04) under the M20 rule.
+- **[DONE 2026-11-12: does not work — fails all three checks; reports/nba/f_verdict.md]** **F crossed 200 before the M20 rule was written**, so its three-check verdict is not pre-registered. Judge F again on its next 200 picks (from 2026-11-04) under the M20 rule.
 - **Database rebuild drift:** nba15 rebuilt from today's published files reproduces its recorded test MAE within 0.015 (not bit-exact); the original runner database was not available here.
 - **Engine props for PRA:** no validation lines (PRA lines start 2024-25), so its blend weight is 0 (market only) and SharpAPI quotes no PRA; research only.
 
@@ -146,3 +146,13 @@ Items deliberately left out of M12, with the reason. Newest first.
   `review_pick.proj_median` already uses; Ranking v2 reads the same. Storing the distribution's
   median on C-NBA alerts would make the rule exact for them.
 - **The backtest is a small hindsight sample** (11 card days) chosen after seeing the slump.
+
+## F verdict and calibration (2026-11-12)
+
+- **Show the calibrated F probability on the page** (owner approval needed; UI freeze). The page
+  still shows F's raw model probability; the calibrated value (weekly Platt fit) is in reports
+  only (`reports/nba/og_ranking_v2.md`, `reports/nba/walkforward.md`).
+- **TAKE/LEAN on calibrated probability:** labels keep their existing logic; the report-only
+  column shows what each OG pick's label and EV would be on the calibrated probability.
+- **Per-segment calibration** (assists over vs under, by line) is research only
+  (`reports/nba/walkforward.md`); not in production.
