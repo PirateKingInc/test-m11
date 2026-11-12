@@ -169,3 +169,11 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **Threes under today's OG rules, and Rules v2 on the old seasons:** see
   `reports/nba/threes_backtest.md` (hindsight backtest 2023-24 to 2025-26; live lines already
   flow from SharpAPI). Options for the owner there; nothing live changed.
+
+## F threes and Action live adds (2026-11-12)
+
+- **Threes earn-in bar** at the Nov 26 / 50-pick OG review (shadow beats official OG on win %,
+  threes .500+ over >= 30 graded); the owner decides whether threes join the official card.
+- **Live adds wait for the hourly sweep** (lines arrive hourly); faster polling is out of scope.
+- **Threes TAKE/LEAN label** uses F's shared 6 pp threshold (pinned labels code); labels play no
+  part in Action or the shadow.

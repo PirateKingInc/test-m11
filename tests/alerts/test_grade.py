@@ -286,3 +286,24 @@ def test_nfl_stats_from_the_state_box_table(tmp_path):
                   "season": [2026], "receiving_yards": [90.0], "rushing_yards": [0.0],
                   "receptions": [7.0]}).to_parquet(raw / "stats_player_week_2026.parquet")
     assert _nfl_stats(2026, data_dir=tmp_path).iloc[0].receiving_yards == 90.0
+
+
+def test_threes_graded_from_fg3m_and_did_not_play_void(engine, pdb):
+    """F threes (owner 2026-11-12): graded from the stored fg3m; a DNP is void."""
+    with engine.begin() as c:
+        gid = _game(c, status="final")
+        sid = sport_id(c, "nba")
+        team = c.execute(select(teams.c.team_id).where(teams.c.sport_id == sid)).scalar()
+        for pid, name, mins, fg3m in (("9", "Jayson Tatum", 36.0, 4.0),
+                                      ("8", "Jrue Holiday", 0.0, 0.0)):
+            c.execute(insert(nba_player_games).values(
+                game_id=gid, team_id=team, player_id=pid, player_name=name, minutes=mins,
+                fg3m=fg3m, source="espn", known_at=NOW, fetched_at=NOW))  # fmt: skip
+    over = _alert(pdb, gid, signal="snipe", market="threes", player_name="Jayson Tatum",
+                  side="over", line=3.5, price=110, book_prob=0.5)
+    dnp = _alert(pdb, gid, signal="snipe", market="threes", player_name="Jrue Holiday",
+                 side="under", line=1.5, price=-110, book_prob=0.5, dedup_key="dnp3")
+    G.grade_all(engine, pdb, NOW)
+    assert _grade(pdb, over).result == "win" and _grade(pdb, over).profit == 1.1
+    d = _grade(pdb, dnp)
+    assert (d.result, d.profit) == ("void", 0.0)

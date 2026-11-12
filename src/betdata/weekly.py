@@ -279,7 +279,9 @@ def milestone_lines(ms: list[dict], root: Path) -> list[str]:
         if m["signal_name"] == OGR.MILESTONE:  # the OG Ranking v2 review (owner 2026-11-11)
             out.append(OGR.ntfy_line(root / "ledger"))
             continue
-        rs = [r for r in rows if r["signal_name"] == m["signal_name"]]
+        rs = ([r for r in rows if r["signal_name"] == "F" and r.get("market") == "threes"]
+              if m["signal_name"] == "F-threes" else
+              [r for r in rows if r["signal_name"] == m["signal_name"]])  # fmt: skip
         from betdata.ledger import record
 
         rec = record(rs)

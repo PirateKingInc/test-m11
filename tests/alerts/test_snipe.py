@@ -65,3 +65,19 @@ def test_poller_snipes_a_new_line_once(engine, tmp_path, monkeypatch):
                                                             "draftkings")
     assert a.book_prob == pytest.approx(no_vig(-110, -110)[0]) and a.fair_prob == 0.60
     assert "median 7.0" in a.reason and seen[0]["line"] == 6.5
+
+
+# --- F threes (owner 2026-11-12) ---------------------------------------------------------------
+
+
+def test_threes_openers_and_the_8_pp_threshold():
+    ops = S.openers_of(prop("fanduel", 2.5, -110, -110, market="threes"))
+    assert [(o.book, o.market, o.line) for o in ops] == [("fanduel", "threes", 2.5)]
+    op = S.Opener(1, "draftkings", "X", "threes", 2.5, -110, -110)  # no-vig 50%
+    assert S.judge(op, 0.5801, None).edge == pytest.approx(0.0801)  # 8 pp: alert
+    assert S.judge(op, 0.5799, None) is None  # below 8 pp: none (7.99)
+    assert S.judge(op, 0.57, None) is None  # 7 pp: none (rebounds would alert at 6)
+    assert S.judge(op, 0.41, None).side == "under"  # 9 pp under
+    assert S.judge(op, 0.60, 0.48) is None  # other books side against: none
+    reb = S.Opener(1, "draftkings", "X", "rebounds", 6.5, -110, -110)
+    assert S.judge(reb, 0.56, None).edge == pytest.approx(0.06)  # rebounds unchanged at 6 pp

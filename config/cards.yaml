@@ -38,3 +38,11 @@ nba:
       state: action  # poller state action:nba:<day>, ledger/action_card.csv (betdata/action.py)
       since: 2026-11-13
       active: true
+    # the OG + threes shadow (owner 2026-11-12): OG's rules with threes eligible; never official
+    ogthrees:
+      name: OG + threes (shadow)
+      what: OG Ranking v2 with threes eligible; shadow only
+      signals: [snipe, value]
+      state: ogthrees  # poller state ogthrees:nba:<day>, ledger/og_threes_shadow.csv
+      since: 2026-11-13
+      active: false  # a shadow: no toggle, no record on the page (the review reads its file)
