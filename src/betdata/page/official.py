@@ -137,6 +137,7 @@ V2_MARKER = "Rules v2 from Nov 10"
 V2_LABEL = "Since rules v2 (Nov 10)"
 RANK_MARKER = "Ranking v2 from Nov 12"  # OG only (owner 2026-11-11, MODEL.md "OG Ranking v2")
 RANK_LABEL = "Since ranking v2 (Nov 12)"
+V3_MARKER = "Rules v3 from Nov 13: rebound overs back"  # OG only (owner 2026-11-12, "Rules v3")
 
 
 def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
@@ -179,7 +180,10 @@ def card_header(off: list[dict], sport: str, name: str, today: date, site: Path,
               "the full record)." if card else "")
            + (f" <b>{escape(RANK_MARKER)}</b>: OG ranks its picks by the model's win probability "
               "(-150 to +130, the model's median on the bet's side; the full record continues)."
-              if rank is not None else "") + "</p><dl class='periods'>"]
+              if rank is not None else "")
+           + (f" <b>{escape(V3_MARKER)}</b>: rebound overs are eligible for OG again (rebound "
+              "unders stay out; the full record continues)." if card == "og" else "")
+           + "</p><dl class='periods'>"]
     for lab, rec in per.items():
         slug = ("since-rules-v2" if lab == V2_LABEL else "since-ranking-v2" if lab == RANK_LABEL
                 else lab.lower().replace(" ", "-"))

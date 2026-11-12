@@ -31,6 +31,7 @@ RULES_V2_START = date(2026, 11, 10)
 RULES_V3_START = date(2026, 11, 13)
 REBOUND_UNDERS = "filtered: rebound unders"
 REBOUNDS = "filtered: rebounds"
+REBOUND_OVERS = "filtered: rebound overs"  # the Filters table's side split of REBOUNDS (Rules v3)
 UNDER_ASSISTS = "filtered: under 5.5+ assists"
 TEAMMATES = "filtered: teammates out"
 NON_ASSIST = "filtered: non-assist prop"
@@ -140,6 +141,24 @@ REVIEW_RULE = (f"Review rule (fixed 2026-11-09): each filter is revisited once i
 CARD_SIGNALS = {"og": ("F", "C-NBA"), "nextgen": ("nba-engine", "news-alert")}
 
 
+# the Filters table's rows (Rules v3, owner 2026-11-12): "rebounds" split by the pick's side
+TABLE_REASONS = (REBOUND_OVERS, REBOUND_UNDERS, NON_ASSIST, NOT_ASSISTS_OG, UNDER_ASSISTS,
+                 TEAMMATES)  # fmt: skip
+
+
+def table_reason(r: dict, card: str) -> str | None:
+    """A removed pick's Filters-table reason: `filtered: rebounds` split into rebound overs and
+    rebound unders by the stored side (no ledger rewrite). From RULES_V3_START OG's rebound overs
+    are not filtered: an annotation written before Rules v3 shipped is ignored."""
+    why = r.get("filter")
+    if why != REBOUNDS:
+        return why
+    over = r.get("side") == "over"
+    if over and card == "og" and r.get("day", "") >= RULES_V3_START.isoformat():
+        return None
+    return REBOUND_OVERS if over else REBOUND_UNDERS
+
+
 def filters_table(rows: list[dict]) -> list[dict]:
     """Per card and filter reason, since RULES_V2_START: the removed picks' graded record (flat
     1 unit), win rate vs the break-even at their average odds, and the card's own record over
@@ -154,8 +173,8 @@ def filters_table(rows: list[dict]) -> list[dict]:
                 and r["day"] >= since]  # fmt: skip
         card_rec = O.record([r for r in C.view(rows, card) if r["day"] >= since],
                             O.official_stake)  # fmt: skip
-        for why in REASONS:
-            removed = [r for r in mine if r.get("filter") == why]
+        for why in TABLE_REASONS:
+            removed = [r for r in mine if table_reason(r, card) == why]
             if not removed:
                 continue
             rec = O.record(removed)

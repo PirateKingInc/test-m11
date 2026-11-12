@@ -71,6 +71,7 @@ html
               p class=meta
                 b
                 b
+                b
               dl class=periods
                 dt
                 dd
