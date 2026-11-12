@@ -328,12 +328,21 @@ def build(p, m, sport: str, day: date, now: datetime, scores: dict | None = None
     out = {"sport": sport, "day": day.isoformat(), "generated_at": now.isoformat(),
            "scores": "balldontlie" if scores else None,
            "games": list(games.values())}  # fmt: skip
+    why_ng = why_og = ""
+    if sport == "nba":  # why a card is short or empty, from stored data (owner 2026-11-12)
+        try:
+            from betdata import card_reasons as CR
+
+            s = CR.slate(m, day)
+            why_ng, why_og = CR.nextgen(p, card, s), CR.og(og, s)
+        except Exception as e:  # noqa: BLE001 - the generic note stays
+            log.warning("card reasons failed: %s", e)
     if card.get("source") == "engine":  # the engine card (owner override 2026-11-04)
         out["card_source"] = "engine"
-        out["card_note"] = card_note(card)
+        out["card_note"] = why_ng[:1].upper() + why_ng[1:] if why_ng else card_note(card)
     if og:  # OG, the second official NBA card (owner 2026-11-05)
         out["og_chosen"] = True
-        out["og_note"] = card_note(og)
+        out["og_note"] = why_og[:1].upper() + why_og[1:] if why_og else card_note(og)
     elif switch_over:
         out["og_note"] = OG_SWITCH_OVER
     if sport == "nba" and C.load():
