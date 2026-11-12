@@ -304,19 +304,36 @@ def _days(*res):
     return [(f"2026-11-{12 + i}", r) for i, r in enumerate(res)]
 
 
-def test_slump_fires_at_3_12_not_4_11():
-    l5, w1l4 = ["loss"] * 5, ["win"] + ["loss"] * 4
-    assert OR.slump(_og_rows(_days(w1l4, w1l4, w1l4))) == (3, 12)
-    w2l3 = ["win"] * 2 + ["loss"] * 3
-    assert OR.slump(_og_rows(_days(w2l3, w1l4, w1l4))) is None  # 4-11
-    assert OR.slump(_og_rows(_days(l5, l5, w1l4))) == (1, 14)  # worse fires too
-    assert OR.slump(_og_rows(_days(l5, l5, ["loss"] * 4))) is None  # 14 graded: never
-    assert OR.slump(_og_rows(_days(l5, l5, l5 + [""]))) == (0, 15)  # pending never counts
-    # only the most recent 3 card days: an older bad day is outside the window
-    assert OR.slump(_og_rows(_days(l5, ["win"] * 5, w1l4, w1l4))) is None
-    # Ranking v2 picks only: days before Nov 12 never count
-    old = _og_rows([("2026-11-10", l5), ("2026-11-11", l5)])
-    assert OR.slump(old + _og_rows(_days(l5))) is None
+def test_slump_fires_at_3_12_over_15_in_3_days_not_4_11():
+    L5 = ["loss"] * 5
+    # 3-12 over 15 / 3 days, the last 9 at 3-6 (so only the 15-pick rule fires)
+    rows = _og_rows(_days(L5, ["loss"] * 4 + ["win"], ["win", "win", "loss", "loss", "loss"]))
+    assert OR.slump_rule(rows) == ("3 days", 3, 12)
+    # 4-11 over 15, the last 9 at 4-5: nothing fires
+    rows = _og_rows(_days(L5, ["loss"] * 4 + ["win"], ["win", "win", "win", "loss", "loss"]))
+    assert OR.slump_rule(rows) is None
+    # only the most recent 3 card days and Ranking v2 picks count
+    old = _og_rows([("2026-11-10", L5), ("2026-11-11", L5)])
+    assert OR.slump_rule(old) is None
+
+
+def test_slump_fires_at_2_7_over_the_last_9_not_3_6():
+    two = _og_rows(_days(["win", "loss", "loss"], ["loss", "win", "loss"], ["loss"] * 3))
+    assert OR.slump_rule(two) == ("9 picks", 2, 7)  # 9 picks over 3 short days
+    three = _og_rows(_days(["win", "loss", "loss"], ["loss", "win", "loss"],
+                           ["loss", "win", "loss"]))
+    assert OR.slump_rule(three) is None  # 3-6
+    assert OR.slump_rule(_og_rows(_days(["loss"] * 8))) is None  # 8 decided: never
+    assert OR.slump_rule(_og_rows(_days(["loss"] * 9))) == ("9 picks", 0, 9)  # one day too
+
+
+def test_slump_excludes_pushes_voids_and_pending():
+    # the last 9 decided picks are 2-7; the push, void and pending pick are skipped, not counted
+    rows = _og_rows(_days(["win", "loss", "loss", "push"], ["loss", "win", "void", "loss"],
+                          ["loss", "loss", "", "loss"]))
+    assert OR.slump_rule(rows) == ("9 picks", 2, 7)
+    # with the push counted as a decided pick the last 9 would be 2-6-1: never like that
+    assert OR.slump(rows) == (2, 7)
 
 
 def test_slump_alert_once_a_day(tmp_path):
@@ -330,18 +347,23 @@ def test_slump_alert_once_a_day(tmp_path):
             sent.append((headers["Title"], content.decode()))
             return type("R", (), {"status_code": 200})()
 
-    w1l4 = ["win"] + ["loss"] * 4
-    rows = _og_rows(_days(w1l4, w1l4, w1l4))
+    rows = _og_rows(_days(["loss"] * 5, ["loss"] * 4 + ["win"],
+                          ["win", "win", "loss", "loss", "loss"]))  # 3-12: both rules checked
     now = datetime(2026, 11, 15, 11, 16, tzinfo=UTC)
     assert OR.slump_check(pdb, rows, now, "t", Client()) == "http 200"
     assert OR.slump_check(pdb, rows, now, "t", Client()) is None  # once a day
+    short = _og_rows(_days(["loss"] * 9))  # the 9-pick rule the same day: still once a day
+    assert OR.slump_check(pdb, short, now, "t", Client()) is None
     assert sent == [("OG review", "OG review: 3-12 over the last 3 days — check "
                                   "reports/nba/og_ranking_v2.md")]
+    assert OR.slump_check(pdb, short, now + timedelta(days=1), "t", Client()) == "http 200"
+    assert sent[-1][1] == ("OG review: 0-9 over the last 9 graded picks — check "
+                           "reports/nba/og_ranking_v2.md")
     with pdb.connect() as p:
         assert get_state(p, "og-slump:2026-11-15")["status"] == "http 200"
     ok = _og_rows(_days(["win"] * 5, ["win"] * 5, ["win"] * 5))
-    assert OR.slump_check(pdb, ok, now + timedelta(days=1), "t", Client()) is None
-    assert len(sent) == 1
+    assert OR.slump_check(pdb, ok, now + timedelta(days=2), "t", Client()) is None
+    assert len(sent) == 2
 
 
 # --- the review: report, milestone, backtest ----------------------------------------------------

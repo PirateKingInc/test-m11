@@ -3114,7 +3114,11 @@ picks only.
 **Slump alert (a review trigger, never a switch):** after each morning grading, if official OG's
 last 15 graded Ranking v2 picks, over its most recent 3 card days, are 3-12 or worse (15 graded,
 at most 3 wins), one ntfy line: "OG review: <W-L> over the last 3 days — check
-reports/nba/og_ranking_v2.md"; at most once a day.
+reports/nba/og_ranking_v2.md"; at most once a day. **Also (owner 2026-11-12):** if the last 9
+decided official Ranking v2 picks (any number of days) are 2-7 or worse, the same alert ("OG
+review: <W-L> over the last 9 graded picks — ..."), so it can fire on short cards. At most one OG
+review alert a day across both rules; pushes, voids and pending picks are excluded from both
+counts.
 
 **Review milestone:** at Nov 26 or 50 graded official Ranking v2 picks, whichever comes first,
 the comparison is written to `reports/nba/og_ranking_v2.md` and one ntfy line says the review is
