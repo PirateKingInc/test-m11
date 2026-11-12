@@ -90,11 +90,11 @@ def test_fit_is_on_one_pick_per_player_per_game(tmp_path):
 
 def test_f_cal_annotations_new_picks_only_write_once(tmp_path):
     old = {"pick_id": "Pold", "dedup_key": "old", "created_at": "2026-11-12T10:00:00+00:00",
-           "signal_name": "F", "fair_prob": "0.52"}
+           "signal_name": "F", "fair_prob": "0.52", "market": "assists"}
     new = {"pick_id": "Pnew", "dedup_key": "new", "created_at": "2026-11-12T16:00:00+00:00",
-           "signal_name": "F", "fair_prob": "0.52"}
+           "signal_name": "F", "fair_prob": "0.52", "market": "assists"}
     cnba = {"pick_id": "Pc", "dedup_key": "c", "created_at": "2026-11-12T16:00:00+00:00",
-            "signal_name": "C-NBA", "fair_prob": "0.52"}
+            "signal_name": "C-NBA", "fair_prob": "0.52", "market": "assists"}
     _ledger(tmp_path, 300, extra=[old, new, cnba])
     f = FC.maybe_refit(tmp_path, THU)  # fitted at 15:00 UTC
     assert FC.annotate(tmp_path, THU) == 1
@@ -149,3 +149,49 @@ def test_strictly_increasing_on_the_probability_grid():
     vals = [fit(p) for p in grid]
     assert all(b > a for a, b in zip(vals, vals[1:], strict=False))
     assert fit(0.52) == pytest.approx(0.465, abs=0.001)  # the first live fit: 52% -> 46.5%
+
+
+def test_threes_separate_from_the_f_fit(tmp_path):
+    """The F fit uses rebounds + assists only; threes get their own fit (Mondays, >= 200) and
+    no calibrated value before it (owner 2026-11-12)."""
+    import random
+
+    rng = random.Random(3)
+    threes = []
+    for i in range(250):
+        p = rng.uniform(0.45, 0.7)
+        threes.append({"pick_id": f"T{i}", "dedup_key": f"t{i}",
+                       "created_at": "2026-11-13T12:00:00+00:00", "sport": "nba",
+                       "game_id": str(9000 + i), "player": f"s{i}", "market": "threes",
+                       "side": "under", "line": "2.5", "odds": "-110", "signal": "snipe",
+                       "signal_name": "F", "fair_prob": f"{p:.4f}"})
+    _ledger(tmp_path, 300, extra=threes)
+    with (tmp_path / "results.csv").open("a") as f:
+        for i in range(250):
+            f.write(f"T{i},{'win' if i % 3 else 'loss'},0,,,,2026-11-14T12:00:00+00:00\n")
+    assert len(FC.points(tmp_path)[0]) == 300  # threes excluded from the F fit
+    assert len(FC.points(tmp_path, model=FC.THREES)[0]) == 250
+    assert FC.maybe_refit(tmp_path, THU, FC.THREES) is None  # not a Monday: no threes fit
+    f3 = FC.maybe_refit(tmp_path, MON, FC.THREES)
+    assert f3 is not None and f3.n == 250 and FC.current(tmp_path, model=FC.THREES) == f3
+    assert FC.current(tmp_path) is None  # the F fit is its own file
+    rows = read_rows(tmp_path / "f_threes_calibration_fits.csv")
+    assert rows[0]["model"] == "F-threes"
+    # f_cal on a new threes pick only once a threes fit exists
+    later = {**threes[0], "pick_id": "Tnew", "dedup_key": "tnew",
+             "created_at": "2026-11-17T12:00:00+00:00"}
+    import csv as _csv
+
+    with (tmp_path / "picks.csv").open("a", newline="") as f:
+        _csv.DictWriter(f, fieldnames=PICK_FIELDS, extrasaction="ignore",
+                        lineterminator="\n").writerow(later)
+    FC.annotate(tmp_path, MON + timedelta(days=1))
+    notes = [r for r in read_rows(tmp_path / "annotations.csv") if r["field"] == "f_cal"]
+    assert [r["pick_id"] for r in notes] == ["Tnew"] and "F-threes" in notes[0]["note"]
+
+
+def test_threes_fit_needs_200(tmp_path):
+    _ledger(tmp_path, 0)
+    assert FC.maybe_refit(tmp_path, MON, FC.THREES) is None
+    (r,) = read_rows(tmp_path / "f_threes_calibration_fits.csv")
+    assert (r["status"], r["reason"]) == ("rejected", "n 0 < 200")
