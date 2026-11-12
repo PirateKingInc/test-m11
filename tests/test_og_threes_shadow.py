@@ -91,3 +91,30 @@ def test_never_pushed_shown_or_official():
     body = inspect.getsource(M).split("def nba_message")[1].split("\ndef ")[0]
     assert "threes_key" not in body and "ogthrees" not in body
     assert "ogthrees" not in PO.nba_cards() and not C.active("ogthrees")
+
+
+def _r(day, result, market="assists", odds="-110"):
+    return {"day": day, "result": result, "profit": "0.9091" if result == "win" else "-1.0",
+            "card_stake": "0.5", "odds": odds, "market": market, "clv_consensus": ""}
+
+
+def test_earn_in_bar(monkeypatch, tmp_path):
+    from betdata import og_review as RV
+
+    days = ["2026-11-13"]
+    monkeypatch.setattr(RV, "card_days", lambda out, kind: days)
+    off = [_r("2026-11-13", "win")] * 5 + [_r("2026-11-13", "loss")] * 5
+    monkeypatch.setattr(RV, "official_rows", lambda rows: off)
+    few = [_r("2026-11-13", "win", "threes")] * 12
+    monkeypatch.setattr(RV, "threes_shadow_rows", lambda out: few)
+    t = "\n".join(RV.earn_in([], tmp_path))
+    assert "Not enough yet" in t and "12 of 30" in t
+    met = [_r("2026-11-13", "win", "threes")] * 18 + [_r("2026-11-13", "loss", "threes")] * 12
+    monkeypatch.setattr(RV, "threes_shadow_rows", lambda out: met)
+    assert "Threes met the bar" in "\n".join(RV.earn_in([], tmp_path))
+    bad = [_r("2026-11-13", "win", "threes")] * 14 + [_r("2026-11-13", "loss", "threes")] * 16
+    monkeypatch.setattr(RV, "threes_shadow_rows", lambda out: bad)
+    t = "\n".join(RV.earn_in([], tmp_path))
+    assert "did not meet the bar" in t and "below .500" in t
+    monkeypatch.setattr(RV, "card_days", lambda out, kind: [])
+    assert "No OG + threes shadow card yet" in RV.earn_in([], tmp_path)[0]

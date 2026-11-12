@@ -100,6 +100,32 @@ def earn_in(rows: list[dict], out: Path) -> list[str]:
     return [head, f"- {verdict} Nothing switches automatically; the owner decides."]
 
 
+def threes_replay(root: Path) -> list[str]:
+    """The OG + threes shadow replayed Oct 31 - Nov 12 (runner, real databases): labelled
+    hindsight; no made-threes picks existed then, so it is OG Ranking v2's card."""
+    import json
+
+    from betdata import official as O
+    from betdata.action_review import ADDS_REPLAY
+
+    path = root / ADDS_REPLAY
+    if not path.exists():
+        return ["Replay data not found."]
+    data = json.loads(path.read_text())
+    rows = [{"day": d, "result": p.get("result", ""), "profit": p.get("profit", ""),
+             "card_stake": "0.5", "odds": str(p["price"]), "clv_consensus": "",
+             "market": p.get("market", "")}
+            for d, x in sorted(data.items()) for p in x["shadow"]]  # fmt: skip
+    threes = sum(x.get("threes_picks_that_day", 0) for x in data.values())
+    same = sum([p["dedup_key"] for p in x["shadow"]] == x["og_v2"] for x in data.values())
+    rec = O.record(rows, O.official_stake)
+    return ["**Hindsight replay, not live results.** Each OG card day Oct 31 - Nov 12 (Nov 5 "
+            "excluded) at its stored selection time. No made-threes picks existed before Nov 13 "
+            f"(threes picks found: {threes}), so the shadow equals the OG Ranking v2 card on "
+            f"{same} of {len(data)} days.", "",
+            f"- Record: {rec.wlp}, {rec.units:+.2f}u at 0.5u ({rec.graded} graded)", ""]
+
+
 def _p(x) -> str:
     return "–" if x is None else f"{100 * x:.1f}%"
 
@@ -311,6 +337,8 @@ def report(root: Path, now: datetime) -> str:
           "graded only, 0.5u.", "",
           *table(*_threes_sides(rows, out)), "",
           "### Threes earn-in bar (report only)", "", *earn_in(rows, out), "",
+          "### OG + threes shadow, hindsight replay (Oct 31 - Nov 12)", "",
+          *threes_replay(root),
           "## Calibrated probability (report only)", "",
           "F's weekly calibration (MODEL.md \"F calibration\") on each official pick: the "
           "card ranks on it (the same picks and order as the raw probability); its labels and "

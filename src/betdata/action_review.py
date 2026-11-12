@@ -14,6 +14,8 @@ MILESTONE = "action-card"
 REVIEW_N = 100
 REPORT = Path("reports") / "nba" / "action_review.md"
 REPLAY = Path("reports") / "nba" / "action_replay.json"
+# Oct 31 - Nov 12 with live adds and the OG + threes shadow (runner, real databases; 2026-11-12)
+ADDS_REPLAY = Path("reports") / "nba" / "live_adds_replay.json"
 STAKE = 0.25
 
 
@@ -116,6 +118,53 @@ def replay(root: Path) -> list[str]:
             f"Picks per day: {per}", ""]
 
 
+def _replay_rows(x: list[dict], day: str, posted: str) -> list[dict]:
+    return [{"day": day, "result": p.get("result", ""), "profit": p.get("profit", ""),
+             "card_stake": str(STAKE), "odds": str(p["price"]), "clv_consensus": "",
+             "action_reason": p["reason"], "market": p["market"],
+             "player": p.get("player") or "", "action_posted": posted,
+             "action_og": "yes" if p.get("og_quality") else ""} for p in x]  # fmt: skip
+
+
+def _odds(o) -> str:
+    return "–" if o is None else (f"+{o}" if o > 0 else str(o))
+
+
+def adds_replay(root: Path) -> list[str]:
+    """The hindsight replay with live adds (owner 2026-11-12): labelled, never in the record."""
+    from betdata import action as AC
+    from betdata import official as O
+
+    path = root / ADDS_REPLAY
+    if not path.exists():
+        return ["Replay data not found."]
+    data = json.loads(path.read_text())
+    rows, per = [], []
+    for d, x in sorted(data.items()):
+        rows += _replay_rows(x["morning"], d, "morning") + _replay_rows(x["adds"], d, "live")
+        per.append(f"{d[5:]}: {len(x['morning'])}+{len(x['adds'])}")
+    sub = AC.sub_records(rows)
+    why: dict = {}
+    for x in data.values():
+        for k, v in x.get("why_not", {}).items():
+            why[k] = why.get(k, 0) + v
+    return ["**Hindsight replay, not live results; never counted in the Action record.** Each "
+            "OG card day Oct 31 - Nov 12 (Nov 5 excluded): the morning Action card (today's rule: "
+            "raw model probability) at the stored OG selection time, then live adds judged at "
+            "every real sweep after it (each distinct created_at of an OG-signal pick), 6 AM - "
+            "11 PM ET, with that day's actual OG card. Prices are judged Live from the stored "
+            "lines as of each sweep. No made-threes picks existed before Nov 13, so none appear.",
+            "", *summary(rows),
+            "- Sub-records: " + " · ".join(f"{k} {r.wlp}, {_u(r.units)}"
+                                           for k, r in sub.items()),
+            f"- Live adds: {sum(len(x['adds']) for x in data.values())} over {len(data)} days "
+            f"({sum(x['sweeps'] for x in data.values())} sweeps judged); not added: "
+            + (", ".join(f"{v} {k}" for k, v in sorted(why.items(), key=lambda kv: -kv[1]))
+               or "none"),
+            f"- Average odds: {_odds(O.record(rows, O.official_stake).avg_odds)}",
+            "", f"Morning + live adds per day: {', '.join(per)}", ""]
+
+
 def report(root: Path, now: datetime) -> str:
     from betdata import official as O
 
@@ -129,7 +178,9 @@ def report(root: Path, now: datetime) -> str:
           "decides; nothing changes automatically.", "",
           f"## Live record (from Nov 13; review at {REVIEW_N} graded)", "", *summary(rows),
           *filters_compare(all_rows), *stacks(rows), *vs_og(rows, all_rows), "",
-          "## Hindsight replay (Oct 31 - Nov 12)", "", *replay(root)]  # fmt: skip
+          "## Hindsight replay (Oct 31 - Nov 12)", "", *replay(root),
+          "## Hindsight replay with live adds (Oct 31 - Nov 12)", "",
+          *adds_replay(root)]  # fmt: skip
     return "\n".join(md) + "\n"
 
 
