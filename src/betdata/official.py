@@ -43,7 +43,10 @@ def dataset(out: Path) -> list[dict]:
     rr = {r["pick_id"]: r for r in read_rows(out / REVIEW_RESULT)}
     sh = {r["pick_id"]: r for r in read_rows(out / "shadow_card.csv")}
     sp = {r["pick_id"]: r for r in read_rows(out / "spread_card.csv")}  # Spread Picks
-    ac = {r["pick_id"]: r for r in read_rows(out / "action_card.csv")}  # Action (not official)
+    ac = {r["pick_id"]: {**r, "posted": "morning"}
+          for r in read_rows(out / "action_card.csv")}  # Action (not official)
+    for r in read_rows(out / "action_adds.csv"):  # its live adds (owner 2026-11-12)
+        ac.setdefault(r["pick_id"], {**r, "action": "yes", "action_stake": r["stake"]})
     rows = []
     for r in counted(joined(out), spread=True):
         p, q = rp.get(r["pick_id"], {}), rr.get(r["pick_id"], {})
@@ -56,6 +59,9 @@ def dataset(out: Path) -> list[dict]:
                      "action_stake": z.get("action_stake", ""),
                      "action_reason": z.get("reason", ""),
                      "action_reasons": z.get("reasons", ""),
+                     "action_posted": z.get("posted", ""),
+                     "action_og": z.get("og_quality") == "true",
+                     "action_note": z.get("note", ""),
                      "spread": y.get("spread") == "yes", "spread_date": y.get("card_date", ""),
                      "spread_label": y.get("spread_label", ""),
                      "spread_stake": y.get("spread_stake", ""),

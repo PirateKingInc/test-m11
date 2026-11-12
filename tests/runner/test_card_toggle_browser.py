@@ -87,6 +87,8 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
     ac = {**g["picks"][0], "id": "ac1", "player": "Ivica Zubac", "market": "Rebounds",
           "pick": "under 9.5", "odds": "+116", "card": False, "og": False, "action": True,
           "action_stake": 0.25, "action_note": "missed: rebounds", "label": "",
+          "action_posted": "live 8:15 AM ET",
+          "action_og": "Would have made OG (posted after the morning card)",
           "signal": "F", "bet": "1:reb:zubac:under"}
     doc = {**TRACKER_DOC, "og_chosen": True, "spread_chosen": True, "action_chosen": True,
            "og_note": "1 pick today — OG found no other value",
@@ -140,6 +142,8 @@ def test_toggle_switches_every_card_section_in_a_browser(tmp_path, monkeypatch):
     assert act["pressed"] == ["false", "false", "false", "true"] and act["stored"] == "action"
     assert act["tonight"].startswith("— Tonight: 1 card pick")
     assert "0.25u" in out["action_text"] and "missed: rebounds" in out["action_text"]
+    assert "posted live 8:15 AM ET" in out["action_text"]
+    assert "Would have made OG (posted after the morning card)" in out["action_text"]
     assert act2["official"] == ["action"] and act2["stored"] == "action"
 
 

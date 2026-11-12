@@ -447,3 +447,17 @@ def adds_ledger_rows(p, out: Path, now: datetime) -> int:
                          "reason": x.get("reason", ""), "reasons": "; ".join(x.get("reasons", [])),
                          "push": x.get("push", "")})  # fmt: skip
     return append_rows(out / "action_adds.csv", ADDS_FIELDS, rows)
+
+
+
+def sub_records(rows: list[dict]) -> dict:
+    """The Action record's parts (owner 2026-11-12): Morning, Live adds and, of the live adds,
+    Would have made OG; graded picks only (Morning + Live adds = the whole)."""
+    from betdata import official as O
+
+    live = [r for r in rows if str(r.get("action_posted", "")).startswith("live")]
+    morning = [r for r in rows if not str(r.get("action_posted", "")).startswith("live")]
+    return {"Morning": O.record(morning, O.official_stake),
+            "Live adds": O.record(live, O.official_stake),
+            "Would have made OG": O.record([r for r in live if r.get("action_og")],
+                                           O.official_stake)}  # fmt: skip

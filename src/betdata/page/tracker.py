@@ -72,8 +72,11 @@ SCRIPT = """<script>
     return act(sport) === 'spread' ? ps : ps.filter(function (p) { return !p.spread; }); }
   function badge(sport, p) {
     // Action (owner 2026-11-12): no label, its 0.25u stake and why OG passed on it
+    // live adds (owner 2026-11-12): the posted time, and the OG note where it applies
     if (act(sport) === 'action' && p.action) return ' <span class="lbl">' + p.action_stake +
-      'u</span> <span class="meta">' + esc(p.action_note) + '</span>';
+      'u</span> <span class="meta">' + esc(p.action_note) + ' · posted ' +
+      esc(p.action_posted || 'morning') + (p.action_og ? ' · ' + esc(p.action_og) : '') +
+      '</span>';
     var og = act(sport) === 'og', c = on(sport, p);
     var lb = og && p.og ? p.og_label : p.label, st = og && p.og ? p.og_stake : p.stake;
     return (lb ? ' <span class="lbl ' + esc(lb.toLowerCase()) + '">' + esc(lb) +

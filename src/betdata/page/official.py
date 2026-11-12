@@ -94,6 +94,9 @@ def action_header(off: list[dict], sport: str, today: date, site: Path, label: s
         O.write_csv(site / href, rec.rows)
         out.append(f"<dt>{escape(lab)}</dt><dd>{stat_line(rec, href)}</dd>")
     out.append("</dl>")
+    subs = AC.sub_records(off)  # Morning / Live adds / Would have made OG (owner 2026-11-12)
+    out.append("<p class='meta'><b>Morning and live adds</b>: " + escape(" · ".join(
+        f"{k}: {r.wlp}, {_units(r.units)}" for k, r in subs.items())) + "</p>")
     for title, by in (("By reason", "reason"), ("By market", "market")):
         parts = AC.breakdown(off, by)
         txt = " · ".join(f"{k}: {r.wlp}, {_units(r.units)}" for k, r in parts.items())
@@ -380,7 +383,10 @@ def card_days_html(rows: list[dict], off: list[dict], sport: str, today: date, s
                                if r.get("review_tag") else "")
                             + (" · <b>on both cards</b>" if both and C.both_mark(r, both)
                                and card != C.SPREAD else "")
-                            + (f" · missed: <b>{escape(r.get('action_reason', ''))}</b>"
+                            + (f" · missed: <b>{escape(r.get('action_reason', ''))}</b> · "
+                               f"posted {escape(r.get('action_posted') or 'morning')}"
+                               + (f" · <b>{escape(r['action_note'])}</b>"
+                                  if r.get("action_note") else "")
                                if card == C.ACTION else "")
                             + (" · <b>reconstructed</b>" if card == C.SPREAD
                                and r.get("spread_backfill") else "")
