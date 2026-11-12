@@ -343,6 +343,9 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
 
         annotation_rows(p, out, now)
         top3_rows(p, out, now)  # the OG Top 3 shadow (never in an official record)
+        from betdata.og_ranking import threes_rows
+
+        threes_rows(p, out, now)  # the OG + threes shadow (owner 2026-11-12)
     except Exception as e:  # noqa: BLE001
         log.warning("og ranking reasons failed: %s", e)
     try:  # the parlay's calibration, refit on Mondays (owner 2026-11-09, calibration.py)
