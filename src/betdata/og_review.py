@@ -50,6 +50,35 @@ def rebound_overs_line(rows: list[dict]) -> str:
             f"{rec.units:+.2f}u at 0.5u ({rec.graded} graded; graded picks only)")
 
 
+def side_split(rows: list[dict]) -> list[str]:
+    """The Rules v3 review (owner 2026-11-12): rebound overs on Action, and official OG and Action
+    by market and side (rebounds, assists, threes) from Nov 13; graded picks only."""
+    from betdata import cards as C
+    from betdata import official as O
+    from betdata.eligibility import RULES_V3_START
+
+    since = RULES_V3_START.isoformat()
+    cards = (("Official OG (0.5u)", C.OG), ("Action (0.25u, not official)", C.ACTION))
+    view = {k: [r for r in C.view(rows, k) if r["day"] >= since] for _n, k in cards}
+    ac = O.record([r for r in view[C.ACTION] if r.get("market") == "rebounds"
+                   and r.get("side") == "over"], O.official_stake)  # fmt: skip
+    out = [f"- Rebound overs (Action, from Nov 13): {ac.wlp}, {ac.units:+.2f}u at 0.25u "
+           f"({ac.graded} graded)", "",
+           "| Market · side | " + " | ".join(n for n, _k in cards) + " |",
+           "|---|" + "---|" * len(cards)]
+    for mk in ("rebounds", "assists", "threes"):
+        for sd in ("over", "under"):
+            cells = []
+            for _n, k in cards:
+                rec = O.record([r for r in view[k] if r.get("market") == mk
+                                and r.get("side") == sd], O.official_stake)  # fmt: skip
+                d = rec.wins + rec.losses
+                cells.append(f"{rec.wlp}, {rec.units:+.2f}u" + (
+                    f" ({100 * rec.wins / d:.0f}%)" if d else ""))
+            out.append(f"| {mk} · {sd} | " + " | ".join(cells) + " |")
+    return out
+
+
 def top3_rows(out: Path) -> list[dict]:
     """The Top 3 shadow's picks with their results, each at its own 0.5u stake."""
     from betdata.ledger import read_rows
@@ -351,6 +380,10 @@ def report(root: Path, now: datetime) -> str:
           f"whichever first ({n} graded so far).", "",
           f"## Official OG vs OG Top 3 (since {start():%b %-d}, graded only)", "",
           *table(a, b), "", rebound_overs_line(rows), "",
+          "## Rules v3 review: rebound overs and the side split (from Nov 13, graded only)", "",
+          "Owner decision 2026-11-12 (MODEL.md \"Rules v3\"): rebound overs are back on the "
+          "official card; the guardrail alerts at 7-13 or worse over the last 20 official "
+          "rebound overs. Nothing switches automatically.", "", *side_split(rows), "",
           "## OG + threes shadow (owner 2026-11-12; never official)", "",
           "OG Ranking v2's rules with made threes eligible, chosen at 6:15 AM ET from Nov 13; "
           "graded only, 0.5u.", "",
