@@ -254,3 +254,19 @@ def note(card: dict | None) -> str:
             else "Action: no picks — no OG candidates today"
     return f"Action: {n} pick{'s' if n != 1 else ''} — only {c} candidate{'s' if c != 1 else ''}" \
         " off the OG card"
+
+
+# --- the record (graded only, 0.25u) --------------------------------------------------------
+
+
+def breakdown(rows: list[dict], by: str) -> dict:
+    """{tag: Rec} of the Action card's graded picks by reason tag (`reason`) or `market`; the
+    parts sum to the whole record."""
+    from betdata import official as O
+
+    groups: dict = {}
+    for r in O.graded(rows):
+        k = r.get("action_reason") if by == "reason" else r.get("market")
+        groups.setdefault(k or "?", []).append(r)
+    return {k: O.record(v, O.official_stake)
+            for k, v in sorted(groups.items(), key=lambda kv: -len(kv[1]))}  # fmt: skip
