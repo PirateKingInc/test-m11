@@ -59,6 +59,10 @@ def ledger_publish(db: Path = typer.Option(Path("data/poller.sqlite"), help="Pol
     topic = os.environ.get("NTFY_TOPIC") or None
     now = datetime.now(UTC)
     ms = json.loads(PENDING.read_text()).get("milestones", []) if PENDING.exists() else []
+    if any(m["signal_name"] == "action-card" for m in ms):  # the Action review report
+        from betdata.action_review import write as action_write
+
+        typer.echo(f"action review: wrote {action_write(PROJECT_ROOT, now)}")
     if any(m["signal_name"] == "F:verdict-nov4" for m in ms):  # F's verdict report
         from betdata.f_verdict import write as f_write
 
@@ -154,3 +158,13 @@ def walkforward(rule: str = typer.Option("all", help="all, or one of: actual, v2
         typer.echo(line)
     if write:
         typer.echo(f"wrote {WF.write(PROJECT_ROOT, datetime.now(UTC), cut)}")
+
+
+@ledger_app.command("action-review")
+def action_review():
+    """Write reports/nba/action_review.md now: the Action card's record, by reason and market,
+    same-player stacks, vs OG, and the hindsight replay (owner 2026-11-12). Report only."""
+    from betdata.action_review import write
+    from betdata.config import PROJECT_ROOT
+
+    typer.echo(f"wrote {write(PROJECT_ROOT, datetime.now(UTC))}")

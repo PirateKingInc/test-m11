@@ -54,7 +54,7 @@ def test_milestone_at_50_once_with_one_ntfy_line(tmp_path):
     assert got == [{"signal_name": "spread-card", "graded": "50",
                     "reached_at": "2026-12-20T12:00:00+00:00"}]
     assert not [m for m in milestones(tmp_path, NOW) if m["signal_name"] == SR.MILESTONE]
-    root = tmp_path.parent / "root"
+    root = tmp_path / "root"
     (root / "ledger").mkdir(parents=True)
     _ledger(root / "ledger", 50)
     (line,) = milestone_lines(got, root)
