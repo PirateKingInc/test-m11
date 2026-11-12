@@ -47,6 +47,63 @@ def top3_rows(out: Path) -> list[dict]:
     return rows
 
 
+def threes_shadow_rows(out: Path) -> list[dict]:
+    """The OG + threes shadow's picks (owner 2026-11-12) with their results, 0.5u each."""
+    from betdata.ledger import read_rows
+
+    res = {r["pick_id"]: r for r in read_rows(out / "results.csv")}
+    picks = {r["pick_id"]: r for r in read_rows(out / "picks.csv")}
+    rows = []
+    for r in read_rows(out / "og_threes_shadow.csv"):
+        x, p = res.get(r["pick_id"], {}), picks.get(r["pick_id"], {})
+        rows.append({**p, "pick_id": r["pick_id"], "day": r["card_date"],
+                     "market": r.get("market") or p.get("market", ""),
+                     "card_stake": r["stake"], "odds": p.get("odds") or r["price"],
+                     "result": x.get("result", ""), "profit": x.get("profit", ""),
+                     "clv_consensus": x.get("clv_consensus", "")})  # fmt: skip
+    return rows
+
+
+EARN_IN_N = 30  # graded threes picks on the shadow before the bar can be met
+
+
+def earn_in(rows: list[dict], out: Path) -> list[str]:
+    """The threes earn-in bar (owner 2026-11-12; report only): over the shadow's days, the OG +
+    threes shadow beats official OG on win %, AND its threes picks are .500+ over >= 30
+    graded. Nothing switches; the owner decides."""
+    from betdata import official as O
+
+    sh = threes_shadow_rows(out)
+    days = set(card_days(out, "ogthrees"))
+    if not days:
+        return ["No OG + threes shadow card yet (it starts with the Nov 13 morning card)."]
+    off = [r for r in official_rows(rows) if r["day"] in days]
+    a, b = O.record(off, O.official_stake), O.record(sh, O.official_stake)
+    t = O.record([r for r in sh if r.get("market") == "threes"], O.official_stake)
+
+    def pct(rec):
+        d = rec.wins + rec.losses
+        return None if not d else rec.wins / d
+
+    pa, pb, pt = pct(a), pct(b), pct(t)
+    head = (f"- Same days ({len(days)}): official OG {a.wlp} ({_p(pa)}) vs OG + threes shadow "
+            f"{b.wlp} ({_p(pb)}); threes on the shadow {t.wlp} ({_p(pt)}, {t.graded} graded).")
+    if t.graded < EARN_IN_N:
+        verdict = (f"**Not enough yet:** {t.graded} of {EARN_IN_N} graded threes picks on the "
+                   "shadow.")
+    else:
+        beat = pa is not None and pb is not None and pb > pa
+        ok = pt is not None and pt >= 0.5
+        verdict = ("**Threes met the bar**" if beat and ok else "**Threes did not meet the bar**"
+                   ) + (f" (shadow {'beat' if beat else 'did not beat'} official OG on win %; "
+                        f"threes {'at' if ok else 'below'} .500).")  # fmt: skip
+    return [head, f"- {verdict} Nothing switches automatically; the owner decides."]
+
+
+def _p(x) -> str:
+    return "–" if x is None else f"{100 * x:.1f}%"
+
+
 def card_days(out: Path, kind: str) -> list[str]:
     from betdata.ledger import read_rows
 
@@ -249,6 +306,11 @@ def report(root: Path, now: datetime) -> str:
           f"whichever first ({n} graded so far).", "",
           f"## Official OG vs OG Top 3 (since {start():%b %-d}, graded only)", "",
           *table(a, b), "",
+          "## OG + threes shadow (owner 2026-11-12; never official)", "",
+          "OG Ranking v2's rules with made threes eligible, chosen at 6:15 AM ET from Nov 13; "
+          "graded only, 0.5u.", "",
+          *table(*_threes_sides(rows, out)), "",
+          "### Threes earn-in bar (report only)", "", *earn_in(rows, out), "",
           "## Calibrated probability (report only)", "",
           "F's weekly calibration (MODEL.md \"F calibration\") on each official pick: the "
           "card ranks on it (the same picks and order as the raw probability); its labels and "
@@ -256,6 +318,17 @@ def report(root: Path, now: datetime) -> str:
           *calibrated_table(out), "",
           "## Backtest (hindsight replay)", "", *backtest(root, rows), ""]  # fmt: skip
     return "\n".join(md) + "\n"
+
+
+def _threes_sides(rows: list[dict], out: Path) -> tuple[Side, Side]:
+    days = card_days(out, "ogthrees")
+    sh = threes_shadow_rows(out)
+    off = [r for r in official_rows(rows) if r["day"] in set(days)]
+    a = side("OG official, same days", off, days)
+    b = side("OG + threes shadow", sh, days)
+    t = side("its threes picks only", [r for r in sh if r.get("market") == "threes"], days)
+    b.name = f"OG + threes shadow (threes only: {t.rec.wlp}, {t.rec.units:+.2f}u)"
+    return a, b
 
 
 def write(root: Path, now: datetime) -> Path:
