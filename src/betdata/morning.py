@@ -390,6 +390,13 @@ def nba_message(p, rows: list[dict], now: datetime) -> tuple[str, str]:
         lines += SP.push_lines(p, rows, today)
     except Exception as e:  # noqa: BLE001
         log.warning("spread push section failed: %s", e)
+    try:  # Action picks (owner 2026-11-12): not official, after Spread picks
+        from betdata import action as AC
+
+        if AC.applies(today):
+            lines += AC.push_lines(get_state(p, AC.key(today)))
+    except Exception as e:  # noqa: BLE001
+        log.warning("action push section failed: %s", e)
     late = ungraded_games(rows, "nba", today - timedelta(days=1))
     if late:
         lines.append(f"Not graded yet: {', '.join(late)} (no final box score yet; graded on "
