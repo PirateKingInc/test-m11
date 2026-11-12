@@ -22,3 +22,16 @@ Owner decision 2026-11-12 (MODEL.md "Action card"): the best picks OG did not ma
 
 Picks per day: 10-31: 3, 11-01: 3, 11-02: 3, 11-04: 3, 11-06: 3, 11-07: 3, 11-08: 3, 11-09: 3, 11-10: 3, 11-11: 3, 11-12: 3
 
+## Hindsight replay with live adds (Oct 31 - Nov 12)
+
+**Hindsight replay, not live results; never counted in the Action record.** Each OG card day Oct 31 - Nov 12 (Nov 5 excluded): the morning Action card (today's rule: raw model probability) at the stored OG selection time, then live adds judged at every real sweep after it (each distinct created_at of an OG-signal pick), 6 AM - 11 PM ET, with that day's actual OG card. Prices are judged Live from the stored lines as of each sweep. No made-threes picks existed before Nov 13, so none appear.
+
+- Record: 29-23-0, +1.56u at 0.25u, ROI +12.0% (52 graded; graded picks only)
+- By reason: rebounds 11-6-0, +1.34u · under 5.5+ assists 8-6-0, +0.46u · ranked below top 5 6-2-0, +0.93u · posted after the morning card 3-4-0, -0.16u · non-assist market 0-3-0, -0.75u · teammates out 1-2-0, -0.25u
+- By market: assists 18-14-0, +0.97u · rebounds 11-6-0, +1.34u · h2h 0-2-0, -0.50u · spreads 0-1-0, -0.25u
+- Sub-records: Morning 19-10-0, +2.09u · Live adds 10-13-0, -0.53u · Would have made OG 10-10-0, +0.22u
+- Live adds: 27 over 11 days (60 sweeps judged); not added: 83 below the bar, 37 daily cap reached, 1 tips within 30 minutes
+- Average odds: +101
+
+Morning + live adds per day: 10-31: 3+3, 11-01: 3+1, 11-02: 3+3, 11-04: 3+2, 11-06: 3+3, 11-07: 3+3, 11-08: 3+3, 11-09: 3+3, 11-10: 3+0, 11-11: 3+3, 11-12: 3+3
+

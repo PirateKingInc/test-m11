@@ -45,3 +45,25 @@ def test_stacks_count_same_player_nights():
             {"day": "e", "player": "Zubac", "result": "win"},
             {"day": "e", "player": "Zubac", "result": "loss"}]
     assert AR.stacks(rows) == ["- Same-player stacks: 2 (all won 1, all lost 0, split 1)"]
+
+
+def test_adds_replay_is_labelled_and_sums(tmp_path):
+    import json
+
+    from betdata import action_review as AR
+    from betdata import og_review as RV
+
+    pk = {"price": -110, "reason": "rebounds", "market": "rebounds", "player": "A",
+          "dedup_key": "k1", "result": "win", "profit": "0.9091"}
+    add = {**pk, "dedup_key": "k2", "result": "loss", "profit": "-1.0", "og_quality": True}
+    data = {"2026-11-01": {"morning": [pk], "adds": [add], "sweeps": 2,
+                           "why_not": {"below the bar": 3}, "shadow": [pk], "og_v2": ["k1"],
+                           "threes_picks_that_day": 0}}
+    (tmp_path / AR.ADDS_REPLAY).parent.mkdir(parents=True)
+    (tmp_path / AR.ADDS_REPLAY).write_text(json.dumps(data))
+    t = "\n".join(AR.adds_replay(tmp_path))
+    assert t.startswith("**Hindsight replay, not live results")
+    assert "Morning 1-0-0" in t and "Live adds 0-1-0" in t and "Would have made OG 0-1-0" in t
+    assert "3 below the bar" in t and "11-01: 1+1" in t
+    s = "\n".join(RV.threes_replay(tmp_path))
+    assert "threes picks found: 0" in s and "1 of 1 days" in s
