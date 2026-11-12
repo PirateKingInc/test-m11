@@ -236,7 +236,9 @@ def push_lines(card: dict | None) -> list[str]:
         return ["Action picks: chosen with the OG card"]
     if not card.get("picks"):
         return ["Action picks: none today"]
-    return ["Action picks (not official):", *[f"  {pick_line(x)}" for x in card["picks"]]]
+    out = ["Action picks (not official):", *[f"  {pick_line(x)}" for x in card["picks"]]]
+    why = note(card)  # a short card says why (owner 2026-11-12)
+    return out + ([f"  {why.split(': ', 1)[1]}"] if why else [])
 
 
 def note(card: dict | None) -> str:
