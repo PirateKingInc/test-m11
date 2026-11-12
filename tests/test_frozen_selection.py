@@ -76,3 +76,23 @@ def test_og_split_is_a_pure_refactor(tmp_path, monkeypatch):
                 old = card.decide(p, None, "nba", day, now, TIP, card.V1_SIGNALS, lf)
                 new = card.decide_og(p, None, "nba", day, now, TIP, lf)
                 assert new == old, (has, now)
+
+
+# The official OG card's selection (OG Ranking v2, owner 2026-11-11) and its Top 3 shadow, pinned
+# before F threes / Action live adds / the OG + threes shadow (owner 2026-11-12).
+OG_FUNCTIONS = {
+    ("og_ranking", "reason"): "f63d66a1f0ee", ("og_ranking", "median_of"): "5c1c571e3f94",
+    ("og_ranking", "_key"): "2de547fc038b", ("og_ranking", "order"): "d1829699966d",
+    ("og_ranking", "pick_entry"): "7a43675c29a6", ("og_ranking", "ranked_pool"): "48f3c466a033",
+    ("og_ranking", "card"): "361002ca24b4", ("og_ranking", "top3_of"): "1f7a1a087bb9",
+    ("og_ranking", "f_fit"): "f60f81aa8e3b", ("og_ranking", "applies"): "182a72dccaa8",
+    ("card", "decide_og"): "2a4d88bfa728", ("card", "choose_og"): "0e0a6672114a",
+}  # fmt: skip
+
+
+def test_official_og_selection_unchanged():
+    from betdata import og_ranking
+
+    mods = {"og_ranking": og_ranking, "card": card}
+    got = {k: _h(inspect.getsource(getattr(mods[k[0]], k[1])).encode()) for k in OG_FUNCTIONS}
+    assert got == OG_FUNCTIONS

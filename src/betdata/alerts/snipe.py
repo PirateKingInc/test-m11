@@ -1,9 +1,10 @@
-"""M18 Part F: opening-line prop snipes, NBA rebounds and assists (MODEL.md "M18 Part F").
+"""M18 Part F: opening-line prop snipes, NBA rebounds, assists and (owner 2026-11-12) made
+threes (MODEL.md "M18 Part F"; "F threes, Action live adds and the OG + threes shadow").
 
 When a DK or FD rebound or assist prop first posts (both sides new in `openers`), nbap15 prices
 that line the moment it posts: P(over | no push) from its distribution at the projection, with
 the validated calibration. A side is alerted when:
-- its probability beats the book's no-vig by at least 6 pp; and
+- its probability beats the book's no-vig by at least 6 pp (threes: M15's 8 pp); and
 - if other books already quote that line, their consensus does not side against the model:
   its no-vig probability of the side is not below the book's.
 
@@ -18,9 +19,14 @@ from dataclasses import dataclass
 from betdata.alerts.feeds import Quote
 from betdata.moneyline import no_vig
 
-MARKETS = ("rebounds", "assists")
+MARKETS = ("rebounds", "assists", "threes")
 SOFT = ("draftkings", "fanduel")
 EDGE = 0.06
+EDGES = {"threes": 0.08}  # per market; M15's validated threes threshold (owner 2026-11-12)
+
+
+def edge_for(market: str) -> float:
+    return EDGES.get(market, EDGE)
 
 
 @dataclass(frozen=True)
@@ -35,7 +41,8 @@ class Opener:
 
 
 def openers_of(new: list[Quote]) -> list[Opener]:
-    """Two-way NBA rebound/assist openers at DK/FD (over and under first seen together)."""
+    """Two-way NBA rebound / assist / made-threes openers at DK/FD (over and under first seen
+    together)."""
     from betdata.alerts.poller import _norm
 
     sides: dict[tuple, dict[str, Quote]] = {}
@@ -71,7 +78,7 @@ def judge(op: Opener, p_over: float, cons_over: float | None) -> Snipe | None:
     best = None
     for side, pm, pb, price in (("over", p_over, nv[0], op.over),
                                 ("under", 1 - p_over, nv[1], op.under)):  # fmt: skip
-        if pm - pb < EDGE:
+        if pm - pb < edge_for(op.market):
             continue
         pc = None if cons_over is None else (cons_over if side == "over" else 1 - cons_over)
         if pc is not None and pc < pb:  # the other books side against the model

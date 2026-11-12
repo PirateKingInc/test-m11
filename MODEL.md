@@ -3223,3 +3223,53 @@ the push and that card's view say why in one line built from stored data, e.g. "
 2-game slate; 7 candidates: 4 rebounds, 2 under 5.5+ assists, 1 outside price range." or "Next
 Gen: no picks — no edge found on 4 games." The generic "found no value" text stays only where no
 specific reason is stored (e.g. a card pushed later by the poller).
+
+## F threes, Action live adds and the OG + threes shadow (owner decision 2026-11-12)
+
+**Why.** About 1 in 5 F picks post after the 6:15 AM card (mostly 7-9 AM); the official OG card
+stays morning-only so its record stays clean, but the unofficial Action card picks them up
+through the day. The threes backtest (reports/nba/threes_backtest.md) found threes under today's
+OG rules would have won narrowly; live DK/FD threes lines already arrive. Threes go live now,
+feeding Action at once and earning their way toward the official card through a shadow. The
+official OG card, Next Gen, Spread Picks and the parlay are unchanged.
+
+- **F threes (Part F extended):** F's opening-line snipes cover player made threes at DK and FD
+  with nbap15's calibrated P(over | no push) for threes and the same alert logic (dedup per
+  opener, "does not side against" consensus check, median from nbap15's distribution,
+  review_pick capture, grading from the stored fg3m; a player who does not play is void). The
+  threes edge threshold is M15's 8 pp (rebounds and assists stay at 6 pp). Threes picks are F
+  picks (signal `snipe`, name F, market `threes`) with their own milestones (`F-threes:60`,
+  `F-threes:200`). Their creation-time TAKE/LEAN label uses the shared F threshold in the pinned
+  labels code (it plays no part in Action or the shadow). Threes are not eligible for the official
+  OG card: Rules v2 already rejects them ("filtered: non-assist prop"), so they flow to Action and
+  the shadow.
+- **Calibration:** the F fit (`ledger/f_calibration_fits.csv`) stays rebounds + assists only.
+  A separate threes Platt fit (model `F-threes`, `ledger/f_threes_calibration_fits.csv`) joins the
+  same Monday job once >= 200 graded threes picks exist (one per player-game); until then no
+  calibrated threes value is stored.
+- **Action ranking:** by the raw model probability (`fair_prob`) across markets; the same order
+  as before for rebounds and assists (F's fit is increasing). Each pick stores its calibrated
+  value where one exists, for reports.
+- **Action live adds:** on every poller cycle after the morning Action card (6 AM - 11 PM ET; none
+  overnight), each new F / C-NBA pick created since the morning card for that day's games becomes
+  a live add when its game tips more than 30 minutes later, its player-game-market is not already
+  on today's OG or Action card (another market of the same player is allowed), its price is still
+  Live, and either it is **OG-quality** (passes every Rules v2 and Ranking v2 rule and its model
+  probability is at least OG's 5th pick's today, or OG had fewer than 5) or its model probability
+  is at least the morning Action card's 3rd pick's (or that card had fewer than 3). At most 3 live
+  adds a day; OG-quality first, then by probability; an add is never replaced or removed, and
+  morning picks are never swapped. Each add is recorded at its posted time, price, line and book
+  (0.25u, `ledger/action_adds.csv`), tagged "live <time ET>", OG-quality adds noted "Would have made
+  OG (posted after the morning card)". One ntfy push per add, titled "Action add (not official)".
+- **Action records:** the Action record includes live adds, with sub-records "Morning", "Live
+  adds" and "Would have made OG" (graded only); never in any official record or goal.
+- **OG + threes shadow (morning only):** at 6:15 AM ET, OG Ranking v2's rules exactly, except
+  threes are eligible alongside assists (Rules v2's other filters unchanged; price, median,
+  one-per-player-game-market and ranking rules apply to threes too); top 5 at 0.5u; state
+  `ogthrees:nba:<day>`, `ledger/og_threes_shadow.csv`. Never on the main page, never in the push,
+  never official; compared in `reports/nba/og_ranking_v2.md` with official OG and the Top 3,
+  including its threes-only subset.
+- **Threes earn-in bar (report only):** at the Nov 26 / 50-pick OG review the report states
+  whether threes met the bar — the OG + threes shadow beat official OG on win % over the review
+  period AND threes on the shadow are .500 or better over at least 30 graded picks ("not enough
+  yet" with the count otherwise). Nothing switches automatically; the owner decides.

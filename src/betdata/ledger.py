@@ -688,6 +688,11 @@ def milestones(out: Path, now: datetime) -> list[dict]:
         for n in MILESTONES:
             if g >= n and (name, str(n)) not in done:
                 new.append({"signal_name": name, "graded": str(n), "reached_at": _iso(now)})
+    # F's threes on their own (owner 2026-11-12): F-threes at 60 and 200 graded threes picks
+    g3 = record([r for r in by.get("F", []) if r.get("market") == "threes"]).graded
+    for n in MILESTONES:
+        if g3 >= n and ("F-threes", str(n)) not in done:
+            new.append({"signal_name": "F-threes", "graded": str(n), "reached_at": _iso(now)})
     if new:
         _append_milestones(path, new)
     try:  # the Spread Picks review at 50 graded picks (owner 2026-11-10), once
