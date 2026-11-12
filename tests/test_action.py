@@ -43,23 +43,24 @@ def test_pool_excludes_og_picks_and_their_player_game_market(pdb):
         _pick(p, "og1_other_line", player="Zubac", fair=0.69, line=3.5, median=5.0)  # same pgm
         _pick(p, "og1_fd", player="Zubac", fair=0.6, book="fanduel")  # same pgm, other book
         _pick(p, "zubac_reb", player="Zubac", market="rebounds", fair=0.65, line=9.5,
-              median=10.5)  # same player, other market: allowed
+              median=8.5, side="under")  # same player, other market: allowed
     og, act = _run(pdb)
     assert _keys(og) == ["og1"]
     assert _keys(act) == ["zubac_reb"]
-    assert act["picks"][0]["reasons"] == ["rebounds"]
+    assert act["picks"][0]["reasons"] == ["rebound unders"]
 
 
 def test_same_player_twice_in_action_in_different_markets_one_per_market(pdb):
     with pdb.begin() as p:
-        _pick(p, "reb_a", player="Zubac", market="rebounds", fair=0.62, line=9.5, median=10.0)
-        _pick(p, "reb_b", player="Zubac", market="rebounds", fair=0.66, line=8.5, median=10.0,
-              book="fanduel")  # same pgm: the higher probability is kept
+        _pick(p, "reb_a", player="Zubac", market="rebounds", fair=0.62, line=9.5, median=8.0,
+              side="under")
+        _pick(p, "reb_b", player="Zubac", market="rebounds", fair=0.66, line=8.5, median=8.0,
+              side="under", book="fanduel")  # same pgm: the higher probability is kept
         _pick(p, "ast_u", player="Zubac", side="under", line=6.5, median=5.0, fair=0.64)
     og, act = _run(pdb)
     assert og["picks"] == []
     assert _keys(act) == ["reb_b", "ast_u"]
-    assert [x["reasons"] for x in act["picks"]] == [["rebounds"], ["under 5.5+ assists"]]
+    assert [x["reasons"] for x in act["picks"]] == [["rebound unders"], ["under 5.5+ assists"]]
 
 
 def test_a_market_it_has_never_seen_joins(pdb):
@@ -78,15 +79,16 @@ def test_all_reject_kinds_and_below_top_5_with_ordered_reasons(pdb):
         _pick(p, "price", fair=0.75, price=150)  # Ranking v2: price
         _pick(p, "wrongmed", fair=0.74, median=4.0)  # Ranking v2: median
         _pick(p, "multi", fair=0.73, market="rebounds", price=200, median=3.0, line=8.5)
+        # (a rebound over: eligible under Rules v3 from Nov 13, so only Ranking v2 rules apply)
         _pick(p, "tm", fair=0.72, side="under", line=4.5, median=3.0)  # Rules v2: teammates
     og, act = _run(pdb)
     assert _keys(og) == [f"og{i}" for i in range(5)]
     reasons = {x["dedup_key"]: x["reasons"] for x in act["picks"]}
     assert _keys(act) == ["price", "wrongmed", "multi"]  # by probability, top 3
     assert reasons == {"price": ["outside price range"], "wrongmed": ["median wrong side"],
-                       "multi": ["rebounds", "outside price range", "median wrong side"]}
-    assert act["picks"][2]["reason"] == "rebounds"  # the first in Rules v2 -> Ranking v2 order
-    assert act["reasons"] == {"outside price range": 1, "median wrong side": 1, "rebounds": 1,
+                       "multi": ["outside price range", "median wrong side"]}
+    assert act["picks"][2]["reason"] == "outside price range"  # Rules v3 -> Ranking v2 order
+    assert act["reasons"] == {"outside price range": 2, "median wrong side": 1,
                               "teammates out": 1, "ranked below top 5": 1}
 
 
@@ -104,7 +106,7 @@ def test_ranking_order_tie_breaks_stake_and_no_labels(pdb):
 def test_fewer_than_3_and_empty(pdb, tmp_path):
     with pdb.begin() as p:
         _pick(p, "ok")
-        _pick(p, "reb", market="rebounds", line=8.5, median=9.0)
+        _pick(p, "reb", market="rebounds", side="under", line=8.5, median=8.0)
     og, act = _run(pdb)
     assert _keys(og) == ["ok"] and _keys(act) == ["reb"]
     assert AC.note(act) == "Action: 1 pick — only 1 candidate off the OG card"
@@ -130,14 +132,14 @@ def test_ledger_rows_reference_existing_picks(pdb, tmp_path):
     from betdata.ledger import pick_id, read_rows
 
     with pdb.begin() as p:
-        _pick(p, "reb", market="rebounds", line=8.5, median=9.0, player="Zubac")
+        _pick(p, "reb", market="rebounds", side="under", line=8.5, median=8.0, player="Zubac")
     _run(pdb)
     for _ in range(2):
         with pdb.connect() as p:
             AC.ledger_rows(p, tmp_path, NOW)
     (r,) = read_rows(tmp_path / "action_card.csv")
     assert (r["pick_id"], r["action_stake"], r["reason"], r["market"]) == (
-        pick_id("reb"), "0.25", "rebounds", "rebounds")
+        pick_id("reb"), "0.25", "rebound unders", "rebounds")
     (d,) = read_rows(tmp_path / "card_days.csv")
     assert (d["kind"], d["picks"]) == ("action", "1")
 
@@ -181,7 +183,7 @@ def test_push_section_with_picks_none_today_and_short(pdb):
         _t, body = M.message(p, [], "nba", NOW)
     lines = body.split("\n")
     i = lines.index("Action picks (not official):")
-    assert lines[i + 1] == "  Ivica Zubac u9.5 reb +116 · 0.25u · missed: rebounds"
+    assert lines[i + 1] == "  Ivica Zubac u9.5 reb +116 · 0.25u · missed: rebound unders"
     assert lines[i + 2] == "  1 pick — only 1 candidate off the OG card"
     assert i > max(j for j, x in enumerate(lines) if x.startswith("Spread"))  # after Spread
     assert AC.push_lines({"picks": []}) == ["Action picks: none today"]

@@ -12,6 +12,7 @@ from betdata.alerts.db import engine_for, get_state
 from tests.test_action import NOW, TIP, _pick, _run
 
 LATER = NOW + timedelta(hours=2)  # 8:15 AM ET
+RU = {"market": "rebounds", "side": "under", "line": 8.5, "median": 8.0}  # Rules v3: off OG
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def _morning(pdb):
         for i in range(5):  # OG's five: 0.80 .. 0.76
             _pick(p, f"og{i}", player=f"O{i}", fair=0.80 - i / 100)
         for i in range(3):  # the morning Action card: rebounds 0.70, 0.69, 0.68
-            _pick(p, f"ac{i}", player=f"A{i}", market="rebounds", line=8.5, median=9.0,
+            _pick(p, f"ac{i}", player=f"A{i}", **RU,
                   fair=0.70 - i / 100)
     og, ac = _run(pdb)
     assert len(og["picks"]) == 5 and [x["dedup_key"] for x in ac["picks"]] == ["ac0", "ac1",
@@ -57,12 +58,12 @@ def test_og_quality_and_beats_the_morning_third(pdb):
     _morning(pdb)
     with pdb.begin() as p:
         _later(p, "ogq", player="Q", fair=0.78)  # assists, passes every rule, >= OG's 5th
-        _later(p, "beat", player="B", market="rebounds", line=8.5, median=9.0, fair=0.685)
-        _later(p, "weak", player="W", market="rebounds", line=8.5, median=9.0, fair=0.60)
+        _later(p, "beat", player="B", **RU, fair=0.685)
+        _later(p, "weak", player="W", **RU, fair=0.60)
     new, c = _adds(pdb)
     assert [(x["dedup_key"], x["og_quality"]) for x in new] == [("ogq", True), ("beat", False)]
     assert new[0]["note"] == AC.OG_NOTE and new[0]["reason"] == AC.POSTED_AFTER
-    assert new[1]["reason"] == "rebounds" and new[0]["stake"] == 0.25
+    assert new[1]["reason"] == "rebound unders" and new[0]["stake"] == 0.25
     assert new[0]["posted"] == "live 8:15 AM ET"
     assert [t for t, _ in c.sent] == ["Action add (not official)"] * 2
     assert c.sent[0][1].endswith("· 0.25u · missed: posted after the morning card · "
@@ -75,7 +76,7 @@ def test_rejections_tip_soon_stale_same_pgm_and_other_market(pdb):
     with pdb.begin() as p:
         _later(p, "stale", player="S", fair=0.79, live=False)  # price no longer Live
         _later(p, "same", player="O0", fair=0.79, line=3.5, median=5.0)  # O0 assists on OG
-        _later(p, "other", player="O0", market="rebounds", line=8.5, median=9.0,
+        _later(p, "other", player="O0", **RU,
                fair=0.69)  # O0 in another market: allowed
     new, _ = _adds(pdb)
     assert [x["dedup_key"] for x in new] == ["other"]
@@ -96,10 +97,10 @@ def get_state_log(pdb):
 def test_daily_cap_og_quality_first_and_no_swaps(pdb):
     _morning(pdb)
     with pdb.begin() as p:
-        _later(p, "b1", player="B1", market="rebounds", line=8.5, median=9.0, fair=0.95)
-        _later(p, "b2", player="B2", market="rebounds", line=8.5, median=9.0, fair=0.94)
+        _later(p, "b1", player="B1", **RU, fair=0.95)
+        _later(p, "b2", player="B2", **RU, fair=0.94)
         _later(p, "q1", player="Q1", fair=0.77)  # OG-quality, lower probability: first
-        _later(p, "b3", player="B3", market="rebounds", line=8.5, median=9.0, fair=0.93)
+        _later(p, "b3", player="B3", **RU, fair=0.93)
     new, _ = _adds(pdb)
     assert [x["dedup_key"] for x in new] == ["q1", "b1", "b2"]  # cap 3, OG-quality first
     assert get_state_log(pdb)["why_not"] == {"daily cap reached": 1}
@@ -115,7 +116,7 @@ def test_daily_cap_og_quality_first_and_no_swaps(pdb):
 def test_each_pick_is_judged_once(pdb):
     _morning(pdb)
     with pdb.begin() as p:
-        _later(p, "once", player="X", market="rebounds", line=8.5, median=9.0, fair=0.69)
+        _later(p, "once", player="X", **RU, fair=0.69)
     assert len(_adds(pdb)[0]) == 1
     assert _adds(pdb, now=LATER + timedelta(minutes=5))[0] == []  # not seen again
 

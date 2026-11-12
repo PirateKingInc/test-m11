@@ -15,7 +15,8 @@ from datetime import date, datetime
 OG_SIZE = 5
 NG_SIZE = 5
 # Rules v2 (eligibility.py) and Ranking v2 (og_ranking.py) reasons -> the short tags
-TAGS = {"filtered: rebounds": "rebounds", "filtered: non-assist prop": "non-assist market",
+TAGS = {"filtered: rebounds": "rebounds", "filtered: rebound unders": "rebound unders",
+        "filtered: non-assist prop": "non-assist market",
         "filtered: not assists (OG)": "non-assist market",
         "filtered: under 5.5+ assists": "under 5.5+ assists",
         "filtered: teammates out": "teammates out",

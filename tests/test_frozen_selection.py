@@ -14,7 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = {
     "src/betdata/spread.py": "207f1477bbb2",
     "src/betdata/parlay.py": "e9de07d78779",
-    "src/betdata/eligibility.py": "d7a50d0b793b",
+    # eligibility.py: pinned by function below since Rules v3 (owner 2026-11-12), which changes
+    # only the official OG branch of `alert_reason` (file hash before Rules v3: d7a50d0b793b)
     "src/betdata/alerts/labels.py": "d33a412654be",
     "src/betdata/nba/engine/picks.py": "b4ab046e59bd",
     "src/betdata/calibration.py": "8517ee194c54",
@@ -96,3 +97,22 @@ def test_official_og_selection_unchanged():
     mods = {"og_ranking": og_ranking, "card": card}
     got = {k: _h(inspect.getsource(getattr(mods[k[0]], k[1])).encode()) for k in OG_FUNCTIONS}
     assert got == OG_FUNCTIONS
+
+
+# Rules v2 for Next Gen, the parlay and news (owner 2026-11-12, Rules v3): `reason()` and the rule
+# helpers keep their exact source from before Rules v3; only `alert_reason`'s OG branch changed
+# (rebound overs eligible on the official OG card from Nov 13), with the owner's approval.
+ELIGIBILITY_FUNCTIONS = {"card_of": "33a8e116bdf3", "reason": "12f8bab4c181",
+                         "applies": "bab68d5995df", "teammates_out": "b93a31f6b31f",
+                         "_norm": "6ff08329ff34",
+                         "alert_reason": "36ef92f4b0db"}  # Rules v3 (was 4b345a98ea4b)
+
+
+def test_rules_v2_for_next_gen_unchanged():
+    from betdata import eligibility as EL
+
+    got = {n: _h(inspect.getsource(getattr(EL, n)).encode()) for n in ELIGIBILITY_FUNCTIONS}
+    assert got == ELIGIBILITY_FUNCTIONS
+    assert (EL.UNDER_LINE, EL.TEAMMATES_MAX, EL.OG_SIGNALS, EL.NEXTGEN_SIGNALS,
+            EL.RULES_V2_START.isoformat()) == (5.5, 2, ("value", "snipe"), ("engine", "flash"),
+                                               "2026-11-10")

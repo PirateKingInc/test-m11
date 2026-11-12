@@ -25,6 +25,7 @@ FIELDS = ("pick_id", "sport", "card_date", "action", "action_stake", "selected_a
           "reasons")  # fmt: skip
 # the reason tags, in the order shown (Rules v2, then Ranking v2)
 REBOUNDS = "rebounds"
+REBOUND_UNDERS = "rebound unders"  # Rules v3 (owner 2026-11-12): from Nov 13, OG's rebound reason
 NON_ASSIST = "non-assist market"
 UNDER_55 = "under 5.5+ assists"
 TEAMMATES = "teammates out"
@@ -34,8 +35,8 @@ NO_MEDIAN = "no median"
 MEDIAN = "median wrong side"
 DUPLICATE = "duplicate player"
 BELOW = "ranked below top 5"
-ORDER = (REBOUNDS, NON_ASSIST, UNDER_55, TEAMMATES, NO_PROB, PRICE, NO_MEDIAN, MEDIAN, DUPLICATE,
-         BELOW)  # fmt: skip
+ORDER = (REBOUNDS, REBOUND_UNDERS, NON_ASSIST, UNDER_55, TEAMMATES, NO_PROB, PRICE, NO_MEDIAN,
+         MEDIAN, DUPLICATE, BELOW)  # fmt: skip
 MARKET_SHORT = {"rebounds": "reb", "assists": "ast", "points": "pts", "threes": "3pm",
                 "pra": "pra", "steals": "stl", "blocks": "blk"}
 
@@ -65,7 +66,10 @@ def rules_v2_reasons(a, m=None) -> list[str]:
     from betdata import eligibility as EL
 
     out = []
-    if a.market == "rebounds":
+    if a.market == "rebounds" and EL.v3_applies(a.tip):  # Rules v3: rebound overs eligible
+        if a.side != "over":
+            out.append(REBOUND_UNDERS)
+    elif a.market == "rebounds":
         out.append(REBOUNDS)
     elif a.market != "assists":
         out.append(NON_ASSIST)
