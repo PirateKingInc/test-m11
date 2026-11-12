@@ -16,6 +16,30 @@ Review: at Nov 26 or 50 graded official Ranking v2 picks, whichever first (0 gra
 | Picks per day | 0.0 (0 over 1 days) | 0.0 (0 over 1 days) |
 | Worst 3-day stretch | 0-0, +0.00u (2026-11-12 to 2026-11-12) | 0-0, +0.00u (2026-11-12 to 2026-11-12) |
 
+## OG + threes shadow (owner 2026-11-12; never official)
+
+OG Ranking v2's rules with made threes eligible, chosen at 6:15 AM ET from Nov 13; graded only, 0.5u.
+
+| | OG official, same days | OG + threes shadow (threes only: 0-0-0, +0.00u) |
+|---|---|---|
+| Record (W-L-P) | 0-0-0 | 0-0-0 |
+| Win % | – | – |
+| Units (0.5u) | +0.00 | +0.00 |
+| ROI | – | – |
+| Average odds | – | – |
+| Picks per day | – (0 over 0 days) | – (0 over 0 days) |
+| Worst 3-day stretch | 0-0, +0.00u (–) | 0-0, +0.00u (–) |
+
+### Threes earn-in bar (report only)
+
+No OG + threes shadow card yet (it starts with the Nov 13 morning card).
+
+### OG + threes shadow, hindsight replay (Oct 31 - Nov 12)
+
+**Hindsight replay, not live results.** Each OG card day Oct 31 - Nov 12 (Nov 5 excluded) at its stored selection time. No made-threes picks existed before Nov 13 (threes picks found: 0), so the shadow equals the OG Ranking v2 card on 11 of 11 days.
+
+- Record: 25-20-0, +2.60u at 0.5u (45 graded)
+
 ## Calibrated probability (report only)
 
 F's weekly calibration (MODEL.md "F calibration") on each official pick: the card ranks on it (the same picks and order as the raw probability); its labels and stakes stay on the existing logic. The page shows the raw probability.

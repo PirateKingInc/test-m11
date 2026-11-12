@@ -138,6 +138,7 @@ class Report:
     spread: dict = field(default_factory=dict)  # Spread Picks (owner 2026-11-10)
     og3: dict = field(default_factory=dict)  # the OG Top 3 shadow (owner 2026-11-11)
     action: dict = field(default_factory=dict)  # the Action card (owner 2026-11-12)
+    ogthrees: dict = field(default_factory=dict)  # the OG + threes shadow (owner 2026-11-12)
     slate: int | None = None  # NBA games today
     parlay: object = None  # 2 / 3 legs, "none", or None (not chosen: see errors)
     errors: list = field(default_factory=list)
@@ -257,6 +258,12 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
             ac = get_state(p, action_key(day))
         if ac is not None:
             rep.action = {"nba": len(ac.get("picks", []))}
+        from betdata.og_ranking import threes_key
+
+        with pdb.connect() as p:
+            t3s = get_state(p, threes_key("nba", day))
+        if t3s is not None:
+            rep.ogthrees = {"nba": len(t3s.get("picks", []))}
     except Exception:  # noqa: BLE001
         log.exception("og top 3 state failed")
     # the Next Gen parlay (owner 2026-11-06): fail-safe; an error is logged and the cards,
@@ -269,7 +276,8 @@ def run(main, pdb, poller, now: datetime, *, settings=None, registry=None, activ
         set_state(p, STATE.format(day=day.isoformat()),
                   {"at": now.isoformat(), "sports": rep.sports, "steps": rep.steps,
                    "cards": rep.cards, "shadow": rep.shadow, "spread": rep.spread,
-                   "og3": rep.og3, "action": rep.action, "slate": rep.slate,
+                   "og3": rep.og3, "action": rep.action, "ogthrees": rep.ogthrees,
+                   "slate": rep.slate,
                    "parlay": rep.parlay,
                    "errors": rep.errors,
                    "engine_picks": rep.engine_picks}, now)  # fmt: skip
