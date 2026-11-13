@@ -1,1 +1,4 @@
 pick_id,sport,card_date,action,action_stake,selected_at,rank,market,player,fair_prob,fair_prob_cal,price,reason,reasons
+Pc33d1fd9a486,nba,2026-11-13,yes,0.25,2026-11-13T11:15:39.473297+00:00,1,threes,Jaylon Tyson,0.6549,0.6324,104,non-assist market,non-assist market
+P0392400b4195,nba,2026-11-13,yes,0.25,2026-11-13T11:15:39.473297+00:00,2,threes,Sidy Cissoko,0.6356,0.6082,-144,non-assist market,non-assist market
+P221000346d54,nba,2026-11-13,yes,0.25,2026-11-13T11:15:39.473297+00:00,3,threes,Norman Powell,0.6234,0.5929,-120,non-assist market,non-assist market

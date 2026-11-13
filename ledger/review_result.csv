@@ -1020,3 +1020,30 @@ Pfb707272c044,7.0,24.0,,LAL 123-112 MIL,[],2.5,-21.02,Market disagreed,2026-11-1
 P15fde990e50d,5.0,23.0,,LAL 123-112 MIL,[],2.5,-0.05,Market disagreed,2026-11-12T11:15:32+00:00
 Pd9f5705b1fb4,7.0,33.0,,ORL 123-108 UTA,[],3.5,2.03,Variance,2026-11-12T11:15:32+00:00
 P30e0824a5321,7.0,17.0,,OKC 108-118 POR,[],5.5,3.34,Variance,2026-11-12T11:15:32+00:00
+P76f055c283c6,8.0,35.0,,TOR 112-123 PHI,"[{""player"": ""LeBron James"", ""from"": ""Questionable"", ""to"": ""Out""}]",5.5,3.65,News after pick,2026-11-13T11:15:34+00:00
+P295b16ed3d34,3.0,28.0,,TOR 112-123 PHI,"[{""player"": ""LeBron James"", ""from"": ""Questionable"", ""to"": ""Out""}]",4.5,22.18,News after pick,2026-11-13T11:15:34+00:00
+P32daa41ea2bb,8.0,36.0,,TOR 112-123 PHI,"[{""player"": ""LeBron James"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,5.53,News after pick,2026-11-13T11:15:34+00:00
+Pdb6ce6bd19d2,3.0,25.0,,TOR 112-123 PHI,"[{""player"": ""Scottie Barnes"", ""from"": ""Available"", ""to"": ""Out""}]",1.5,6.71,News after pick,2026-11-13T11:15:34+00:00
+P4b98df253b66,6.0,28.0,,TOR 112-123 PHI,"[{""player"": ""Scottie Barnes"", ""from"": ""Available"", ""to"": ""Out""}]",5.5,3.85,News after pick,2026-11-13T11:15:34+00:00
+P22235d02d558,4.0,32.0,,TOR 112-123 PHI,"[{""player"": ""Scottie Barnes"", ""from"": ""Available"", ""to"": ""Out""}]",1.5,-0.26,News after pick,2026-11-13T11:15:34+00:00
+Pe27c7dc902e9,,,,TOR 112-123 PHI,"[{""player"": ""LeBron James"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,,,2026-11-13T11:15:34+00:00
+P49c5262a39c1,8.0,36.0,,TOR 112-123 PHI,"[{""player"": ""LeBron James"", ""from"": ""Questionable"", ""to"": ""Out""}]",6.5,-7.19,News after pick,2026-11-13T11:15:34+00:00
+P3842176cd802,5.0,32.0,,TOR 112-123 PHI,"[{""player"": ""Scottie Barnes"", ""from"": ""Available"", ""to"": ""Out""}]",3.5,3.82,News after pick,2026-11-13T11:15:34+00:00
+P770e5e9e8ba7,5.0,25.0,,TOR 112-123 PHI,"[{""player"": ""Scottie Barnes"", ""from"": ""Available"", ""to"": ""Out""}]",8.5,-5.48,News after pick,2026-11-13T11:15:34+00:00
+P0438ff841bf2,2.0,35.0,,TOR 112-123 PHI,"[{""player"": ""LeBron James"", ""from"": ""Questionable"", ""to"": ""Out""}]",3.5,1.66,News after pick,2026-11-13T11:15:34+00:00
+Pd821d37843e7,2.0,34.0,,TOR 112-123 PHI,[],1.5,-7.64,Minutes miss,2026-11-13T11:15:34+00:00
+P6c47c39f7578,1.0,25.0,,TOR 112-123 PHI,[],2.5,6.0,Variance,2026-11-13T11:15:34+00:00
+P4d6e27b4abcf,11.0,48.0,,DET 144-140 WAS,[],8.5,4.57,Minutes miss,2026-11-13T11:15:39+00:00
+P87d4af2721f0,1.0,41.0,,DET 144-140 WAS,[],2.5,3.8,Minutes miss,2026-11-13T11:15:39+00:00
+Pd655582a72cf,11.0,38.0,,DET 144-140 WAS,[],6.5,8.29,Minutes miss,2026-11-13T11:15:39+00:00
+P8865ce0184be,3.0,27.0,,DAL 94-133 MIN,[],5.5,-0.49,Market disagreed,2026-11-13T11:15:39+00:00
+Pb7c5f6c8e5af,2.0,27.0,,DAL 94-133 MIN,[],4.5,4.85,Variance,2026-11-13T11:15:39+00:00
+P6aca142f56fb,9.0,25.0,,DAL 94-133 MIN,[],5.5,8.01,Minutes miss,2026-11-13T11:15:39+00:00
+Pe4974c3b6bfc,3.0,25.0,,DAL 94-133 MIN,[],3.5,1.36,Variance,2026-11-13T11:15:39+00:00
+Pd16b9c3538a0,0.0,15.0,,DAL 94-133 MIN,[],4.5,4.08,Minutes miss,2026-11-13T11:15:39+00:00
+Pe46e72f7a96a,0.0,15.0,,DAL 94-133 MIN,[],0.5,-0.42,Minutes miss,2026-11-13T11:15:39+00:00
+Pdc9104bd9de7,1.0,16.0,,DAL 94-133 MIN,[],1.5,-0.22,Market disagreed,2026-11-13T11:15:39+00:00
+Pe46625f32bd5,0.0,15.0,,DAL 94-133 MIN,[],1.5,,Minutes miss,2026-11-13T11:15:39+00:00
+P8e5f1293f93e,1.0,10.0,,DAL 94-133 MIN,[],1.5,-4.71,Minutes miss,2026-11-13T11:15:39+00:00
+P8378a9dd920d,2.0,13.0,,DAL 94-133 MIN,"[{""player"": ""Morez Johnson Jr."", ""from"": ""Probable"", ""to"": ""Available""}]",4.5,9.19,News after pick,2026-11-13T11:15:39+00:00
+Pc52759f72bb1,6.0,25.0,,DAL 94-133 MIN,[],2.5,0.37,Minutes miss,2026-11-13T11:15:39+00:00
