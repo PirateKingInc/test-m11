@@ -1151,3 +1151,8 @@ P8ce05438c320,NOP,MEM,2.0,28.5,,2.5,"{""Dejounte Murray"": ""Out"", ""Herbert Jo
 Pacd46eda5765,GB,MIN,,,,-3.0,,2026-11-13T22:00:34+00:00,alert
 P6e05cabdc07a,GB,MIN,,,,,,2026-11-13T22:00:34+00:00,alert
 P6e42d78b9e61,GB,MIN,,,,-3.0,,2026-11-13T22:00:34+00:00,alert
+P568aa31e3530,MIA,CLE,5.0,18.5,,4.5,"{""Andrew Wiggins"": ""Available"", ""Bam Adebayo"": ""Available"", ""Bobby Portis"": ""Available"", ""Davion Mitchell"": ""Available"", ""Giannis Antetokounmpo"": ""Available"", ""Klay Thompson"": ""Probable"", ""Pelle Larsson"": ""Doubtful""}",2026-11-13T23:00:33+00:00,alert
+P04f145b779c1,UTA,HOU,1.0,23.6,,1.5,"{""Ace Bailey"": ""Available"", ""Darryn Peterson"": ""Available"", ""Jaren Jackson Jr."": ""Out"", ""Jaxson Hayes"": ""Available"", ""Josh Green"": ""Available"", ""Keyonte George"": ""Available"", ""Lauri Markkanen"": ""Out""}",2026-11-13T23:00:33+00:00,alert
+P4aebb149b21a,UTA,HOU,2.0,20.1,,1.5,"{""Ace Bailey"": ""Available"", ""Brice Sensabaugh"": ""Available"", ""Darryn Peterson"": ""Available"", ""Jaren Jackson Jr."": ""Out"", ""Jaxson Hayes"": ""Available"", ""Keyonte George"": ""Available"", ""Lauri Markkanen"": ""Out""}",2026-11-13T23:00:33+00:00,alert
+P04be9d8fc034,SF,DAL,,,,-4.5,,2026-11-13T23:00:33+00:00,alert
+P247bbd71349a,,,,,,55.5,,2026-11-13T23:00:33+00:00,alert
