@@ -1,0 +1,47 @@
+KEYS ['action:nba:2026-11-13', 'actionadds:nba:2026-11-13', 'card:nba:2026-11-13', 'morning:2026-11-13', 'og3:nba:2026-11-13', 'ogthrees:nba:2026-11-13', 'parlay:nba:2026-11-13', 'shadow:nba:2026-11-13', 'spread:nba:2026-11-13']
+card:nba:2026-11-13 selected_at 2026-11-13T11:15:39.473297+00:00 ranking None source engine no_lines None
+shadow:nba:2026-11-13 selected_at 2026-11-13T11:15:39.473297+00:00 ranking v2 source card-v1-shadow no_lines None
+    {"dedup_key": "snipe:22717:assists:jarrettallen:fanduel:1.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5694, "fair_prob_cal": 0.5256, "price": -118, "median": 1.0, "line": 1.5}
+    {"dedup_key": "snipe:22715:assists:dylanharper:fanduel:4.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5427, "fair_prob_cal": 0.4927, "price": 108, "median": 4.0, "line": 4.5}
+    {"dedup_key": "snipe:22719:assists:dejountemurray:fanduel:4.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5319, "fair_prob_cal": 0.4795, "price": 114, "median": 5.0, "line": 4.5}
+    {"dedup_key": "snipe:22718:assists:jalensmith:fanduel:1.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5193, "fair_prob_cal": 0.4642, "price": 110, "median": 1.0, "line": 1.5}
+    {"dedup_key": "snipe:22719:assists:tyjerome:fanduel:5.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5174, "fair_prob_cal": 0.4619, "price": 114, "median": 6.0, "line": 5.5}
+   FILTERED {'filtered: under 5.5+ assists': 8, 'filtered: non-assist prop': 30, 'filtered: rebound unders': 25, 'filtered: teammates out': 2}
+   REJECTED {'og: price outside -150..+130': 11, "og: median not on the bet's side": 1, 'og: duplicate player': 2, 'og: outside top 5': 8}
+og3:nba:2026-11-13 selected_at 2026-11-13T11:15:39.473297+00:00 ranking v2 source og-top3-shadow no_lines None
+    {"dedup_key": "snipe:22717:assists:jarrettallen:fanduel:1.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5694, "fair_prob_cal": 0.5256, "price": -118, "median": 1.0, "line": 1.5}
+    {"dedup_key": "snipe:22715:assists:dylanharper:fanduel:4.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5427, "fair_prob_cal": 0.4927, "price": 108, "median": 4.0, "line": 4.5}
+    {"dedup_key": "snipe:22719:assists:dejountemurray:fanduel:4.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5319, "fair_prob_cal": 0.4795, "price": 114, "median": 5.0, "line": 4.5}
+action:nba:2026-11-13 selected_at 2026-11-13T11:15:39.473297+00:00 ranking None source action no_lines None
+    {"dedup_key": "snipe:22717:threes:jaylontyson:fanduel:1.5", "label": "", "stake": 0.25, "fair_prob": 0.6549, "fair_prob_cal": 0.6324, "price": 104, "line": 1.5, "market": "threes", "side": "under", "player": "Jaylon Tyson", "reason": "non-assist market", "reasons": ["non-assist market"]}
+    {"dedup_key": "snipe:22714:threes:sidycissoko:draftkings:1.5", "label": "", "stake": 0.25, "fair_prob": 0.6356, "fair_prob_cal": 0.6082, "price": -144, "line": 1.5, "market": "threes", "side": "under", "player": "Sidy Cissoko", "reason": "non-assist market", "reasons": ["non-assist market"]}
+    {"dedup_key": "snipe:22718:threes:normanpowell:fanduel:2.5", "label": "", "stake": 0.25, "fair_prob": 0.6234, "fair_prob_cal": 0.5929, "price": -120, "line": 2.5, "market": "threes", "side": "under", "player": "Norman Powell", "reason": "non-assist market", "reasons": ["non-assist market"]}
+actionadds:nba:2026-11-13 selected_at None ranking None source None no_lines None
+    {"dedup_key": "snipe:22721:assists:braydenburries:draftkings:3.5", "label": "", "stake": 0.25, "fair_prob": 0.6204, "fair_prob_cal": 0.5892, "price": -144, "line": 3.5, "market": "assists", "side": "under", "player": "Brayden Burries", "book": "draftkings", "reason": "posted after the morning card", "reasons": ["posted after the morning card"], "posted": "live 7:05 AM ET", "og_quality": true, "note": "Would have made OG (posted after the morning card)"}
+   ADDS_FULL [{"dedup_key": "snipe:22721:assists:braydenburries:draftkings:3.5", "game_id": 22721, "label": "", "stake": 0.25, "fair_prob": 0.6204, "fair_prob_cal": 0.5892, "price": -144, "market": "assists", "player": "Brayden Burries", "side": "under", "line": 3.5, "book": "draftkings", "reasons": ["posted after the morning card"], "reason": "posted after the morning card", "og_quality": true, "note": "Would have made OG (posted after the morning card)", "posted_at": "2026-11-13T12:05:12.977011+00:00", "posted": "live 7:05 AM ET", "push": "http 200"}]
+   EVALUATED_THROUGH 2026-11-13T13:07:00.000115+00:00
+   LOG {"at": "2026-11-13T12:05:12.977011+00:00", "new": 1, "added": ["snipe:22721:assists:braydenburries:draftkings:3.5"], "why_not": {}}
+   LOG {"at": "2026-11-13T13:03:00.000113+00:00", "new": 2, "added": [], "why_not": {"below the bar": 2}}
+ogthrees:nba:2026-11-13 selected_at 2026-11-13T11:15:39.473297+00:00 ranking v2+threes source og-threes-shadow no_lines None
+    {"dedup_key": "snipe:22717:threes:jaylontyson:fanduel:1.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.6549, "fair_prob_cal": 0.6549, "price": 104, "median": 1.0, "line": 1.5, "market": "threes"}
+    {"dedup_key": "snipe:22714:threes:sidycissoko:draftkings:1.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.6356, "fair_prob_cal": 0.6356, "price": -144, "median": 1.0, "line": 1.5, "market": "threes"}
+    {"dedup_key": "snipe:22718:threes:normanpowell:fanduel:2.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.6234, "fair_prob_cal": 0.6234, "price": -120, "median": 2.0, "line": 2.5, "market": "threes"}
+    {"dedup_key": "snipe:22717:assists:jarrettallen:fanduel:1.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5694, "fair_prob_cal": 0.5694, "price": -118, "median": 1.0, "line": 1.5, "market": "assists"}
+    {"dedup_key": "snipe:22715:threes:stephoncastle:fanduel:1.5", "label": "LEAN", "stake": 0.5, "fair_prob": 0.5585, "fair_prob_cal": 0.5585, "price": 114, "median": 1.0, "line": 1.5, "market": "threes"}
+spread:nba:2026-11-13 selected_at 2026-11-13T11:15:39.473297+00:00 ranking None source spread no_lines None
+morning:2026-11-13 selected_at None ranking None source None no_lines None
+    {"at": "2026-11-13T11:15:39.473297+00:00", "sports": ["nba", "nfl"], "steps": ["grade", "ledger", "engine", "select", "parlay", "publish"], "cards": {"nba": 0}, "shadow": {"nba": 5}, "spread": {"nba": 0}, "og3": {"nba": 3}, "action": {"nba": 3}, "ogthrees": {"nba": 5}, "slate": 9, "parlay": "none", "errors": [], "engine_picks": 0, "push": {"nba": "http 200", "nfl": "http 200"}}
+F THREES PICKS: 32
+    2026-11-12 19:04:00.000114+00:00 TOR @ PHI Dean Wade under 0.5 164 draftkings 0.5024 0.3556 2026-11-13 00:00:00+00:00 False None
+    2026-11-12 22:04:00.000139+00:00 DAL @ MIN Trey Lyles under 0.5 155 draftkings 0.4573 0.3681 2026-11-13 01:00:00+00:00 False None
+    2026-11-13 00:04:08.430610+00:00 CLE @ MIA Meleek Thomas over 2.5 162 fanduel 0.4844 0.357 2026-11-14 01:00:00+00:00 False None
+    2026-11-13 00:04:08.430610+00:00 CLE @ MIA Jaylon Tyson under 1.5 104 fanduel 0.6549 0.4581 2026-11-14 01:00:00+00:00 False None
+    2026-11-13 04:01:00.000123+00:00 UTA @ HOU Josh Green under 0.5 178 draftkings 0.4889 0.3378 2026-11-14 01:30:00+00:00 False None
+    2026-11-13 04:01:00.000123+00:00 UTA @ HOU Darryn Peterson under 1.5 139 draftkings 0.472 0.3919 2026-11-14 01:30:00+00:00 False None
+    2026-11-13 04:01:00.000123+00:00 UTA @ HOU Kevin Durant under 1.5 118 draftkings 0.5201 0.4301 2026-11-14 01:30:00+00:00 False None
+    2026-11-13 11:00:36.005141+00:00 NYK @ IND OG Anunoby under 1.5 142 draftkings 0.4725 0.3876 2026-11-14 00:00:00+00:00 False None
+    2026-11-13 11:00:36.005141+00:00 NYK @ IND Karl-Anthony Towns over 1.5 171 draftkings 0.4499 0.3468 2026-11-14 00:00:00+00:00 False None
+    2026-11-13 11:00:36.005141+00:00 NYK @ IND Obi Toppin over 1.5 124 draftkings 0.5079 0.4181 2026-11-14 00:00:00+00:00 False None
+    2026-11-13 11:00:36.005141+00:00 MIL @ ORL Franz Wagner under 1.5 121 draftkings 0.5549 0.4237 2026-11-14 00:00:00+00:00 False None
+    2026-11-13 11:00:36.005141+00:00 ATL @ CHI Jalen Smith under 1.5 140 fanduel 0.5205 0.3896 2026-11-14 01:00:00+00:00 False None
+DONE
