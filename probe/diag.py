@@ -30,6 +30,7 @@ with pdb.connect() as p:
             print("   FILTERED", dict(Counter((c.get("filtered") or {}).values())))
             print("   REJECTED", dict(Counter((c.get("og_rejected") or {}).values())))
         if k.startswith("actionadds:"):
+            print("   ADDS_FULL", json.dumps(c.get("adds"), default=str))
             print("   EVALUATED_THROUGH", c.get("evaluated_through"))
             for lg in c.get("log", [])[-12:]:
                 print("   LOG", json.dumps(lg, default=str))
