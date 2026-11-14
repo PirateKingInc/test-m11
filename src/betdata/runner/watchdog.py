@@ -14,6 +14,13 @@
 
 Standard library only (it runs before anything is installed). State lives in a small JSON file
 kept in the Actions cache between runs.
+
+The watchdog keeps its own time (owner 2026-11-14): GitHub's cron fires rarely under load (on Nov
+14 the hourly cron started twice between 21:00 and 23:00 UTC; the watchdog's own cron not once),
+so each watchdog run checks CHECKS times, CHECK_EVERY apart, then dispatches the next run. The
+clock dispatches a watchdog when none is running, and the watchdog a clock: either chain restarts
+the other, and the cron is a third way in. A run that starts while an older one is mid-loop
+(started less than HANDOFF ago) exits at once, so there is one chain.
 """
 
 from __future__ import annotations
@@ -36,6 +43,10 @@ GRACE = timedelta(minutes=20)  # ...although a slot was due at least this long a
 STILL_DOWN = timedelta(minutes=45)
 CLOCK_HUNG = timedelta(minutes=70)  # a clock run waits at most ~61 minutes
 STATE = Path("data/watchdog.json")
+CHECKS = 3
+CHECK_EVERY = timedelta(minutes=20)
+HANDOFF = timedelta(minutes=45)  # an older run started longer ago than this is hung: ignored
+HANDOFF_WAIT = 120  # seconds: an older run that just dispatched this one finishes by then
 NTFY = "https://ntfy.sh/"
 
 
@@ -180,7 +191,21 @@ def ntfy(line: str) -> str:
         return f"error {type(e).__name__}"
 
 
-def main() -> int:
+def another_chain(now: datetime, me: int, others: list[tuple[int, datetime]]) -> bool:
+    """Is an older watchdog run mid-loop (so this one should exit)? `others`: (run id, start)
+    of the queued/running watchdog runs."""
+    return any(rid < me and now - t < HANDOFF for rid, t in others)
+
+
+def _others(me: int) -> list[tuple[int, datetime]]:
+    out = []
+    for r in _api("/actions/workflows/watchdog.yml/runs?per_page=10")["workflow_runs"]:
+        if r["id"] != me and r["status"] in ("queued", "in_progress", "waiting", "pending"):
+            out.append((r["id"], _t(r["run_started_at"] or r["created_at"])))
+    return out
+
+
+def check() -> None:
     now = datetime.now(UTC)
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     dec = decide(now, fetch(now), state)
@@ -194,9 +219,39 @@ def main() -> int:
     STATE.write_text(json.dumps(dec.state))
     clock = "dispatched" if dec.dispatch_clock else "ok"
     print(f"watchdog {now:%Y-%m-%d %H:%M} UTC ({et(now)}): clock={clock}"
-          f" hourly={dec.dispatch_hourly or '-'} alert={dec.alert or '-'} {sent} {dec.note}")
+          f" hourly={dec.dispatch_hourly or '-'} alert={dec.alert or '-'} {sent} {dec.note}",
+          flush=True)
+
+
+def main(argv: list[str]) -> int:
+    import time as _time
+
+    me = int(os.environ.get("GITHUB_RUN_ID", "0"))
+    if "--loop" not in argv:
+        check()
+        return 0
+    waited = 0
+    while another_chain(datetime.now(UTC), me, _others(me)):
+        if waited >= HANDOFF_WAIT:  # still running: mid-loop, not a hand-over
+            print("watchdog: an older run is mid-loop; exiting (one chain)")
+            _write_out("chain=false")
+            return 0
+        _time.sleep(15)
+        waited += 15
+    for i in range(CHECKS):
+        check()
+        if i < CHECKS - 1:
+            _time.sleep(CHECK_EVERY.total_seconds())
+    _write_out("chain=true")
     return 0
 
 
+def _write_out(line: str) -> None:
+    out = os.environ.get("GITHUB_OUTPUT")
+    if out:
+        with open(out, "a") as f:
+            f.write(line + "\n")
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))
