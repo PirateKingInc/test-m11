@@ -1,20 +1,20 @@
-# OG Ranking v2 (2026-11-13)
+# OG Ranking v2 (2026-11-14)
 
 Owner decision 2026-11-11 (MODEL.md "OG Ranking v2"): from Nov 12 OG ranks its pool by the model's win probability, -150 to +130, median on the bet's side, one pick per player, up to 5 at 0.5u. The OG Top 3 is a shadow: never shown, pushed or counted officially. Nothing switches automatically; the owner decides.
 
-Review: at Nov 26 or 50 graded official Ranking v2 picks, whichever first (0 graded so far).
+Review: at Nov 26 or 50 graded official Ranking v2 picks, whichever first (4 graded so far).
 
 ## Official OG vs OG Top 3 (since Nov 12, graded only)
 
 | | OG official (Ranking v2, top 5) | OG Top 3 (shadow) |
 |---|---|---|
-| Record (W-L-P) | 0-0-0 | 0-0-0 |
-| Win % | – | – |
-| Units (0.5u) | +0.00 | +0.00 |
-| ROI | – | – |
-| Average odds | – | – |
+| Record (W-L-P) | 3-1-0 | 2-0-0 |
+| Win % | 75.0% | 100.0% |
+| Units (0.5u) | +1.03 | +0.96 |
+| ROI | +51.7% | +96.4% |
+| Average odds | +104 | -104 |
 | Picks per day | 2.5 (5 over 2 days) | 1.5 (3 over 2 days) |
-| Worst 3-day stretch | 0-0, +0.00u (2026-11-12 to 2026-11-13) | 0-0, +0.00u (2026-11-12 to 2026-11-13) |
+| Worst 3-day stretch | 3-1, +1.03u (2026-11-12 to 2026-11-13) | 2-0, +0.96u (2026-11-12 to 2026-11-13) |
 
 - Rebound overs (official, Rules v3 from Nov 13): 0-0-0, win –, +0.00u at 0.5u (0 graded; graded picks only)
 
@@ -28,29 +28,29 @@ Owner decision 2026-11-12 (MODEL.md "Rules v3"): rebound overs are back on the o
 |---|---|---|
 | rebounds · over | 0-0-0, +0.00u | 0-0-0, +0.00u |
 | rebounds · under | 0-0-0, +0.00u | 0-0-0, +0.00u |
-| assists · over | 0-0-0, +0.00u | 0-0-0, +0.00u |
-| assists · under | 0-0-0, +0.00u | 0-0-0, +0.00u |
+| assists · over | 1-0-0, +0.57u (100%) | 0-0-0, +0.00u |
+| assists · under | 2-1-0, +0.46u (67%) | 1-0-0, +0.17u (100%) |
 | threes · over | 0-0-0, +0.00u | 0-0-0, +0.00u |
-| threes · under | 0-0-0, +0.00u | 0-0-0, +0.00u |
+| threes · under | 0-0-0, +0.00u | 1-2-0, -0.33u (33%) |
 
 ## OG + threes shadow (owner 2026-11-12; never official)
 
 OG Ranking v2's rules with made threes eligible, chosen at 6:15 AM ET from Nov 13; graded only, 0.5u.
 
-| | OG official, same days | OG + threes shadow (threes only: 0-0-0, +0.00u) |
+| | OG official, same days | OG + threes shadow (threes only: 1-3-0, -1.15u) |
 |---|---|---|
-| Record (W-L-P) | 0-0-0 | 0-0-0 |
-| Win % | – | – |
-| Units (0.5u) | +0.00 | +0.00 |
-| ROI | – | – |
-| Average odds | – | – |
+| Record (W-L-P) | 3-1-0 | 2-3-0 |
+| Win % | 75.0% | 40.0% |
+| Units (0.5u) | +1.03 | -0.73 |
+| ROI | +51.7% | -29.2% |
+| Average odds | +104 | -110 |
 | Picks per day | 5.0 (5 over 1 days) | 5.0 (5 over 1 days) |
-| Worst 3-day stretch | 0-0, +0.00u (2026-11-13 to 2026-11-13) | 0-0, +0.00u (2026-11-13 to 2026-11-13) |
+| Worst 3-day stretch | 3-1, +1.03u (2026-11-13 to 2026-11-13) | 2-3, -0.73u (2026-11-13 to 2026-11-13) |
 
 ### Threes earn-in bar (report only)
 
-- Same days (1): official OG 0-0-0 (–) vs OG + threes shadow 0-0-0 (–); threes on the shadow 0-0-0 (–, 0 graded).
-- **Not enough yet:** 0 of 30 graded threes picks on the shadow. Nothing switches automatically; the owner decides.
+- Same days (1): official OG 3-1-0 (75.0%) vs OG + threes shadow 2-3-0 (40.0%); threes on the shadow 1-3-0 (25.0%, 4 graded).
+- **Not enough yet:** 4 of 30 graded threes picks on the shadow. Nothing switches automatically; the owner decides.
 
 ### OG + threes shadow, hindsight replay (Oct 31 - Nov 12)
 
@@ -64,11 +64,11 @@ F's weekly calibration (MODEL.md "F calibration") on each official pick: the car
 
 | Day | Pick | Odds | Model p | Calibrated p | EV | EV calibrated | Label | Label calibrated | F fit | Result |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 2026-11-13 | Jarrett Allen under 1.5 assists | -118 | 56.9% | 52.6% | +5.2% | -2.9% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-13 | Jalen Smith under 1.5 assists | +110 | 51.9% | 46.4% | +9.1% | -2.5% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-13 | Dejounte Murray over 4.5 assists | +114 | 53.2% | 47.9% | +13.8% | +2.6% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-13 | Ty Jerome over 5.5 assists | +114 | 51.7% | 46.2% | +10.7% | -1.2% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-13 | Dylan Harper under 4.5 assists | +108 | 54.3% | 49.3% | +12.9% | +2.5% | LEAN | LEAN | 2026-11-11 | pending |
+| 2026-11-13 | Jarrett Allen under 1.5 assists | -118 | 56.9% | 52.6% | +5.2% | -2.9% | LEAN | LEAN | 2026-11-11 | win |
+| 2026-11-13 | Jalen Smith under 1.5 assists | +110 | 51.9% | 46.4% | +9.1% | -2.5% | LEAN | LEAN | 2026-11-11 | loss |
+| 2026-11-13 | Dejounte Murray over 4.5 assists | +114 | 53.2% | 47.9% | +13.8% | +2.6% | LEAN | LEAN | 2026-11-11 | void |
+| 2026-11-13 | Ty Jerome over 5.5 assists | +114 | 51.7% | 46.2% | +10.7% | -1.2% | LEAN | LEAN | 2026-11-11 | win |
+| 2026-11-13 | Dylan Harper under 4.5 assists | +108 | 54.3% | 49.3% | +12.9% | +2.5% | LEAN | LEAN | 2026-11-11 | win |
 
 ## Backtest (hindsight replay)
 
