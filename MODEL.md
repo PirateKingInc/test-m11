@@ -3356,3 +3356,9 @@ says which part failed and by how much, and what the next fix would be.
 **D5.** Next Gen (its card, blend weights with 0% engine on spreads, the gate) is not changed;
 the report says whether the D2 fix would improve the engine's moneyline probabilities, as a
 recommendation only.
+
+**Pre-registered T (recorded 2026-11-14, before the test run):** T = **0.58**. On walk-forward
+validation (2019-2022, closing lines, underdogs) no T in the grid reached 53.5% (all 49.98% -
+51.0%), so the rule's fallback applied: the best validation win rate among T with 150+ picks,
+0.58 (1164-1119, 51.0%, 2309 picks). Validation already shows the engine-vs-market slope after
+the fix at 0.57, below the bar's 0.8 (reports/nba/spread_engine_validation.json).
