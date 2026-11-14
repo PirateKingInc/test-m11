@@ -52,9 +52,12 @@ def test_next_gen_keeps_rules_v2(side, monkeypatch):
 def test_rebound_over_through_ranking_v2(pdb):  # noqa: F811
     with pdb.begin() as p:
         _pick(p, "reb_ok", player="R1", market="rebounds", line=8.5, median=9.5, fair=0.70)
-        _pick(p, "reb_med", player="R2", market="rebounds", line=8.5, median=8.5, fair=0.72)
+        # own games: the fixture's quotes share one clock, so same-line quotes of one game
+        # could make another pick's price look stale (order-dependent)
+        _pick(p, "reb_med", player="R2", market="rebounds", line=8.5, median=8.5, fair=0.72,
+              gid=8)
         _pick(p, "reb_price", player="R3", market="rebounds", line=8.5, median=10.0,
-              price=-170, fair=0.71)  # fmt: skip
+              price=-170, fair=0.71, gid=9)  # fmt: skip
         _pick(p, "reb_under", player="R4", market="rebounds", side="under", line=8.5,
               median=7.5, fair=0.80)  # fmt: skip
         _pick(p, "ast", player="A1", fair=0.65)
