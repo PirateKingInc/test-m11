@@ -103,7 +103,30 @@ def wait_for_next_slot(now: datetime | None = None, sleep=None) -> datetime:
     return target
 
 
+CATCHUP_AFTER = timedelta(minutes=3)  # a clock run that starts this late into an hour
+
+
+def catchup_due(now: datetime) -> bool:
+    """Does a clock run starting at `now` owe this hour's run (owner 2026-11-14, "a missed hour
+    runs immediately")? Yes when it starts mid-hour (a restart: the chain broke, or the watchdog
+    or a person dispatched it) inside the 7am-10pm window. A normal tick starts seconds after the
+    hour, when the previous tick has just dispatched this slot. The hourly runner skips a slot
+    that already ran, so a catch-up never runs a slot twice."""
+    return in_window(now) and now - slot(now) >= CATCHUP_AFTER
+
+
+def _out(line: str) -> None:
+    print(line)
+    out = os.environ.get("GITHUB_OUTPUT")
+    if out:
+        with open(out, "a") as f:
+            f.write(line + "\n")
+
+
 def main(argv: list[str]) -> int:
+    if len(argv) > 1 and argv[1] == "--catchup":  # clock: a restart runs this hour at once
+        _out(f"catchup={'true' if catchup_due(datetime.now(UTC)) else 'false'}")
+        return 0
     if len(argv) > 1 and argv[1] == "--morning":  # clock: the run started in the 6 AM ET hour
         return morning_main(datetime.now(UTC))
     if len(argv) > 1 and argv[1] == "--wait":  # clock workflow: wait, then decide that hour

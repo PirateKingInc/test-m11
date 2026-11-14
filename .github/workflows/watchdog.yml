@@ -1,0 +1,53 @@
+# The hourly watchdog (owner 2026-11-14, PROJECT.md "Hourly reliability";
+# src/betdata/runner/watchdog.py). Independent of the clock chain: every ~20 minutes it
+#  - restarts the clock (silently, any hour) when no clock run is queued or running, or the
+#    running one is hung (started more than 70 minutes ago: a lost runner);
+#  - from 6:00 AM to 11:00 PM ET, when no hourly run did its work in the last 90 minutes although
+#    a slot was due, dispatches the clock and the hourly run once and sends one ntfy line
+#    ("betdata: hourly run missed since <time ET> — restarted"), and one "still down" line if no
+#    hourly run completes within 45 minutes of that restart. Overnight it never alerts.
+# Standard library only; its small state file lives in the Actions cache.
+
+name: watchdog
+
+on:
+  schedule:
+    - cron: "7,27,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # NTFY_TOPIC lives in this environment (main only); nothing is deployed from this job.
+    environment: github-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: src/betdata/runner/watchdog.py
+          sparse-checkout-cone-mode: false
+      - name: Restore the watchdog state
+        uses: actions/cache/restore@v4
+        with:
+          path: data/watchdog.json
+          key: betdata-watchdog-v1-${{ github.run_id }}
+          restore-keys: betdata-watchdog-v1-
+      - name: Check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python3 src/betdata/runner/watchdog.py
+      - name: Save the watchdog state
+        if: ${{ always() && hashFiles('data/watchdog.json') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: data/watchdog.json
+          key: betdata-watchdog-v1-${{ github.run_id }}

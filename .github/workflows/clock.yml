@@ -3,7 +3,7 @@
 # the next hour, dispatches the hourly run if that hour is 7am-10pm Eastern, then dispatches
 # itself again. Dispatches made with the workflow token do start runs (GitHub's exception for
 # workflow_dispatch). Only one clock runs at a time (a newer one cancels an older one), and the
-# cron below restarts the chain if it ever breaks. Hourly runs it starts are recorded with
+# watchdog restarts the chain if it ever breaks. Hourly runs it starts are recorded with
 # trigger "clock"; a slot already run by cron or clock is skipped, so they never double up.
 #
 # M16: the `poll` job runs the alert poller beside the clock for the same hour (MODEL.md and
@@ -11,13 +11,19 @@
 # untouched. It reads the hourly state as a throwaway copy (restored, never saved here), keeps
 # its own database under its own cache key, pauses while an hourly run is queued or running,
 # and stops at :56, before the next clock run starts (which would cancel it).
+#
+# Reliability (owner 2026-11-14, PROJECT.md "Hourly reliability"): no cron of its own any more.
+# The old 6-hourly restart cron fired late (Nov 13 19:47, Nov 14 06:33 and 18:11 UTC) while a
+# healthy clock was running and, with cancel-in-progress, cancelled it and its poll job
+# mid-hour. The watchdog (.github/workflows/watchdog.yml) dispatches a clock only when none is
+# running or the running one is hung (a lost runner, as on Nov 13 13:00 UTC, whose wait never
+# ended). A clock that starts mid-hour first runs that hour (catch-up); timeouts sit just above
+# the longest wait (6:00 -> 6:15 -> 7:00 = 60 minutes).
 
 name: clock
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 */6 * * *"
 
 permissions:
   actions: write
@@ -30,12 +36,22 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 66
     steps:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: src/betdata/runner/window.py
           sparse-checkout-cone-mode: false
+      # A restart (the watchdog, a person, a broken chain) runs this hour now instead of
+      # skipping it; the hourly runner skips a slot that already ran (owner 2026-11-14).
+      - id: catchup
+        name: Catch up this hour (a mid-hour restart only)
+        run: python3 src/betdata/runner/window.py --catchup
+      - name: Start this hour's run
+        if: steps.catchup.outputs.catchup == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run hourly.yml --repo "${{ github.repository }}" --ref main -f trigger=clock
       # The morning update (owner 2026-11-05, betdata/morning.py): the clock run that starts in
       # the 6 AM ET hour sleeps to 6:15 and starts the hourly workflow with trigger `morning`
       # (it exits at once on a day without NBA or NFL games yesterday or today), then waits for
@@ -50,6 +66,7 @@ jobs:
         run: gh workflow run hourly.yml --repo "${{ github.repository }}" --ref main -f trigger=morning
       - id: wait
         name: Wait for the next hour
+        timeout-minutes: 62
         env:
           RUN_TRIGGER: clock
         run: python3 src/betdata/runner/window.py --wait

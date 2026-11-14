@@ -31,7 +31,8 @@ from betdata.sports import Sport
 
 log = logging.getLogger(__name__)
 MIN_HISTORY_GAMES = 500  # fewer final games than this for an active sport = state lost
-AUTOMATIC_TRIGGERS = ("schedule", "clock")  # GitHub's cron, or the clock workflow
+# GitHub's cron, the clock workflow, or the watchdog's restart (owner 2026-11-14): one run a slot
+AUTOMATIC_TRIGGERS = ("schedule", "clock", "watchdog")
 LIVE_SLACK = timedelta(minutes=30)  # a run whose `now` is this close to the wall clock is live
 
 
