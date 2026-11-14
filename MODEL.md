@@ -3315,3 +3315,44 @@ the one-OG-review-alert-a-day limit with the slump alert. Nothing switches autom
 
 **Review.** The Nov 26 / 50-pick OG review adds rebound overs (official and Action) and the side
 split (over / under) for rebounds, assists and threes.
+
+## Spread engine (owner decision 2026-11-14; nba/engine/spread.py, reports/nba/spread_engine.md)
+
+**Why.** The owner wants spread picks on underdogs that do not make Next Gen's card when the
+model independently and strongly agrees. The live engine cannot judge that: its game
+probabilities are squeezed toward 50/50 (engine_grades, 68 games: engine logit = 0.069 + 0.405 x
+market logit; home favorites ~10 pts below the market, home underdogs ~13 pts above, the engine
+above the market on 33 of 35 home underdogs), so it "agrees" with nearly every underdog.
+
+**D1 diagnosis** (`diagnose`, on the engine's own morning simulations of 2016-2022 with constants
+fitted on 2015-2022): the engine's mean margin against the actual margin and the market's spread
+(shrinkage), the home-court mean, and the simulations' margin spread against the actual residual
+(the margin-to-probability step); each fix's effect on the moneyline logit slope.
+
+**D2 model** (`SpreadModel`): margin_hat = a + b x engine margin (de-shrunk, home court
+re-estimated), residual sigma; P(home covers line L | no push) = Phi((margin_hat + L) / sigma);
+the away side is 1 - that at its own line. Fitted only on seasons before the one it scores.
+
+**D3 test, fixed before looking.** Everything is chosen on seasons up to 2022-23: the engine's
+constants on 2015-2022, the spread model on 2016-2022, and the pick threshold T by walk-forward
+validation over 2019-2022 (each season scored by a model fitted on the seasons before it, at the
+closing line, the only line stored for those seasons). **T rule (pre-registered):** in the grid
+0.52, 0.53, ..., 0.62, the smallest T whose validation underdog picks reach 53.5% with at least
+150 picks; if none, the T with the best validation win rate among those with 150+ picks. The test
+seasons 2023-24, 2024-25, 2025-26 are scored once, at the **opening** line (the earliest stored,
+before the 6:15 AM morning; no morning line is stored for history), units at -110 (no spread
+prices are stored for history). Leakage tests: no test-season game in any fit or in choosing T;
+the engine's morning prediction point and the opening line come before the game.
+
+**D4 bar (test seasons, underdogs only, at T), all must hold:** at least 300 picks; win rate >=
+53.5% with the lower end of its 95% range above 50%; positive units in at least 2 of 3 seasons;
+the fixed margin's slope on the market's spread between 0.8 and 1.25. If all hold, Spread path 2
+goes live from the next morning run (underdogs that did not trigger path 1, P(cover) >= T at a
+DK/FD line priced -125 or better, tip > 30 minutes later, Live; at most 2 a day, highest P(cover)
+first; 1u; stored with path, line, price, book, P(cover) and market no-vig; the Spread view's path
+tag, "By path" line and "Path 2 from <date>" marker). If any fails, nothing ships live; the report
+says which part failed and by how much, and what the next fix would be.
+
+**D5.** Next Gen (its card, blend weights with 0% engine on spreads, the gate) is not changed;
+the report says whether the D2 fix would improve the engine's moneyline probabilities, as a
+recommendation only.
