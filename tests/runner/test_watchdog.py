@@ -113,3 +113,30 @@ def test_workflows_wired():
     from betdata.runner.hourly import AUTOMATIC_TRIGGERS
 
     assert "watchdog" in AUTOMATIC_TRIGGERS  # a restart never runs a slot twice
+
+
+def test_one_watchdog_chain():
+    now = T7
+    me = 500
+    # an older run mid-loop (started 15 minutes ago): this one exits
+    assert W.another_chain(now, me, [(499, now - timedelta(minutes=15))])
+    # an older run started more than 45 minutes ago is hung: ignored (a hand-over is waited out
+    # in main: the older run finishes seconds after dispatching this one)
+    assert not W.another_chain(now, me, [(499, now - timedelta(minutes=46))])
+    # a newer run never stops an older one
+    assert not W.another_chain(now, me, [(501, now - timedelta(minutes=1))])
+    assert W.CHECKS * W.CHECK_EVERY.total_seconds() / 60 == 60  # ~20-minute cadence
+
+
+def test_watchdog_and_clock_keep_each_other_alive():
+    wf = PROJECT_ROOT / ".github" / "workflows"
+    dog = yaml.safe_load((wf / "watchdog.yml").read_text())
+    assert "concurrency" not in dog  # never cancels or queues behind a healthy run
+    steps = dog["jobs"]["check"]["steps"]
+    assert "--loop" in steps[2]["run"]
+    keep = steps[-1]
+    assert "watchdog.yml" in keep["run"] and "chain == 'true'" in keep["if"]
+    assert dog["jobs"]["check"]["timeout-minutes"] < 60
+    clock = yaml.safe_load((wf / "clock.yml").read_text())
+    names = [s.get("name", "") for s in clock["jobs"]["tick"]["steps"]]
+    assert "Keep a watchdog running" in names

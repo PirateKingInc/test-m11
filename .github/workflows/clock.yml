@@ -42,6 +42,14 @@ jobs:
         with:
           sparse-checkout: src/betdata/runner/window.py
           sparse-checkout-cone-mode: false
+      # The watchdog keeps its own chain; start one when none is running (owner 2026-11-14).
+      - name: Keep a watchdog running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh run list --repo "${{ github.repository }}" --workflow watchdog.yml --limit 10 \
+                --json status --jq '[.[] | select(.status=="in_progress" or .status=="queued")] | length' || echo 1)
+          if [ "$n" = "0" ]; then gh workflow run watchdog.yml --repo "${{ github.repository }}" --ref main; fi
       # A restart (the watchdog, a person, a broken chain) runs this hour now instead of
       # skipping it; the hourly runner skips a slot that already ran (owner 2026-11-14).
       - id: catchup

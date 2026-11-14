@@ -7,6 +7,12 @@
 #    ("betdata: hourly run missed since <time ET> — restarted"), and one "still down" line if no
 #    hourly run completes within 45 minutes of that restart. Overnight it never alerts.
 # Standard library only; its small state file lives in the Actions cache.
+#
+# It keeps its own time: GitHub's cron fires rarely under load, so each run checks 3 times, 20
+# minutes apart, then dispatches the next run. The clock starts a watchdog when none is running
+# (and the watchdog a clock); the cron below is a third way in. A run that starts while an older
+# one is mid-loop exits at once, so there is one chain. No concurrency group: a new run never
+# cancels or queues behind a healthy one.
 
 name: watchdog
 
@@ -19,14 +25,10 @@ permissions:
   actions: write
   contents: read
 
-concurrency:
-  group: watchdog
-  cancel-in-progress: false
-
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 50
     # NTFY_TOPIC lives in this environment (main only); nothing is deployed from this job.
     environment: github-pages
     steps:
@@ -40,14 +42,20 @@ jobs:
           path: data/watchdog.json
           key: betdata-watchdog-v1-${{ github.run_id }}
           restore-keys: betdata-watchdog-v1-
-      - name: Check
+      - id: check
+        name: Check every 20 minutes (3 checks)
         env:
           GITHUB_TOKEN: ${{ github.token }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-        run: python3 src/betdata/runner/watchdog.py
+        run: python3 src/betdata/runner/watchdog.py --loop
       - name: Save the watchdog state
         if: ${{ always() && hashFiles('data/watchdog.json') != '' }}
         uses: actions/cache/save@v4
         with:
           path: data/watchdog.json
           key: betdata-watchdog-v1-${{ github.run_id }}
+      - name: Keep the watchdog going
+        if: ${{ always() && steps.check.outcome == 'success' && steps.check.outputs.chain == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run watchdog.yml --repo "${{ github.repository }}" --ref main
