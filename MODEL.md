@@ -3315,3 +3315,12 @@ the one-OG-review-alert-a-day limit with the slump alert. Nothing switches autom
 
 **Review.** The Nov 26 / 50-pick OG review adds rebound overs (official and Action) and the side
 split (over / under) for rebounds, assists and threes.
+
+## Action threes cap (owner decision 2026-11-14)
+
+From the Nov 15 card, the Action card takes **at most 1 made-threes pick a card day across the
+morning card and live adds combined**. Threes probabilities run higher than rebounds and assists,
+so on Nov 13 and 14 the morning card was 100% threes unders and Action stopped testing what OG
+rejects (F threes 11-24 so far). When the cap is reached, further threes are skipped ("threes
+cap", stored on the card state / the live-add log and as an `action_cap` annotation; still graded)
+and the next best pick of another market takes the place. The OG + threes shadow is not capped.
