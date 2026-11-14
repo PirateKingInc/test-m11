@@ -19,6 +19,16 @@ CARD = "action"
 SIZE = 3
 STAKE = 0.25
 START = date(2026, 11, 13)
+# owner 2026-11-14: at most 1 threes pick a card day across the morning card and live adds;
+# further threes are skipped ("threes cap") for the next best pick of another market
+THREES_CAP = 1
+THREES_CAP_START = date(2026, 11, 15)
+CAPPED = "threes cap"
+
+
+def capped(day: date | str, threes_so_far: int, market: str) -> bool:
+    d = date.fromisoformat(day) if isinstance(day, str) else day
+    return d >= THREES_CAP_START and market == "threes" and threes_so_far >= THREES_CAP
 SOURCE = "action"
 FIELDS = ("pick_id", "sport", "card_date", "action", "action_stake", "selected_at", "rank",
           "market", "player", "fair_prob", "fair_prob_cal", "price", "reason",
@@ -161,19 +171,30 @@ def choose(p, day: date, now: datetime, og: dict, m=None) -> dict:
     for a in sorted(cands, key=k):  # one per player-game-market: the best by the key
         best.setdefault(pgm(a.game_id, a.player_name, a.market), a)
     ranked = sorted(best.values(), key=k)
+    chosen, skipped, threes = [], {}, 0
+    for a in ranked:
+        if len(chosen) >= SIZE:
+            break
+        if capped(day, threes, a.market):
+            skipped[a.dedup_key] = CAPPED
+            continue
+        threes += a.market == "threes"
+        chosen.append(a)
     picks = [{"dedup_key": a.dedup_key, "label": "", "stake": STAKE,
               "fair_prob": None if a.fair_prob is None else round(float(a.fair_prob), 4),
               "fair_prob_cal": None if a.fair_prob is None
               else round(calibrate(a.fair_prob, fit), 4),
               "price": int(a.price), "market": a.market, "player": a.player_name,
               "side": a.side, "line": a.line, "reasons": a.reasons, "reason": a.reasons[0]}
-             for a in ranked[:SIZE]]  # fmt: skip
+             for a in chosen]  # fmt: skip
     counts: dict = {}
     for a in cands:
         counts[a.reasons[0]] = counts.get(a.reasons[0], 0) + 1
     out = {"sport": "nba", "day": day.isoformat(), "selected_at": now.isoformat(),
            "source": SOURCE, "picks": picks, "candidates": len(ranked), "seen": seen,
            "reasons": counts}
+    if skipped:
+        out["capped"] = skipped
     if og.get("no_lines"):
         out["no_lines"] = True
     if fit is not None:
@@ -352,7 +373,8 @@ def evaluate_adds(p, day, now: datetime, og: dict, ac: dict, st: dict,
             continue
         ok.append((og_quality, p_, a))
     ok.sort(key=lambda t: (not t[0], -t[1]))
-    out = []
+    threes = sum(x.get("market") == "threes" for x in [*ac.get("picks", []), *adds])
+    out, cap_keys = [], []
     fit = OR.f_fit(day)
     for og_q, p_, a in ok:
         if len(adds) + len(out) >= ADDS:
@@ -361,6 +383,11 @@ def evaluate_adds(p, day, now: datetime, og: dict, ac: dict, st: dict,
         k = pgm(a.game_id, a.player_name, a.market)
         if k in taken:
             continue
+        if capped(day, threes, a.market):
+            why_not[CAPPED] = why_not.get(CAPPED, 0) + 1
+            cap_keys.append(a.dedup_key)
+            continue
+        threes += a.market == "threes"
         taken.add(k)
         why = rules_v2_reasons(a, m) + ranking_v2_reasons(a)
         reasons = [r for r in ORDER if r in why] or [POSTED_AFTER if og_q else BELOW]
@@ -375,6 +402,8 @@ def evaluate_adds(p, day, now: datetime, og: dict, ac: dict, st: dict,
                     "posted": f"live {_et(now)}"})  # fmt: skip
     log = {"at": now.isoformat(), "new": len(new), "added": [x["dedup_key"] for x in out],
            "why_not": why_not}
+    if cap_keys:
+        log["capped"] = cap_keys
     return out, log
 
 
@@ -452,6 +481,28 @@ def adds_ledger_rows(p, out: Path, now: datetime) -> int:
                          "push": x.get("push", "")})  # fmt: skip
     return append_rows(out / "action_adds.csv", ADDS_FIELDS, rows)
 
+
+
+def cap_annotations(p, out: Path, now: datetime) -> int:
+    """One `action_cap` annotation ("threes cap") per threes pick the cap kept off the Action
+    card (morning or live add), still graded like every pick (owner 2026-11-14)."""
+    from sqlalchemy import select
+
+    from betdata.alerts.db import state
+    from betdata.ledger import ANNOTATION_FIELDS, _iso, append_rows, pick_id
+
+    keys = []
+    for st in p.execute(select(state).where(state.c.key.like("action:%")
+                                            | state.c.key.like("actionadds:%"))):  # fmt: skip
+        c = st.value or {}
+        keys += list((c.get("capped") or {}).keys())
+        for lg in c.get("log", []):
+            keys += lg.get("capped", [])
+    rows = [{"key": f"{pick_id(k)}:action_cap", "pick_id": pick_id(k), "field": "action_cap",
+             "value": CAPPED, "noted_at": _iso(now),
+             "note": "Action threes cap (owner 2026-11-14): at most 1 threes pick a day; "
+                     "still graded"} for k in dict.fromkeys(keys)]  # fmt: skip
+    return append_rows(out / "annotations.csv", ANNOTATION_FIELDS, rows, key="key")
 
 
 def sub_records(rows: list[dict]) -> dict:

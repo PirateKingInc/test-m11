@@ -325,6 +325,9 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
         from betdata.action import adds_ledger_rows
 
         adds_ledger_rows(p, out, now)  # the Action card's live adds
+        from betdata.action import cap_annotations
+
+        cap_annotations(p, out, now)  # the threes cap (owner 2026-11-14)
     except Exception as e:  # noqa: BLE001 - never stops the ledger
         log.warning("action ledger failed: %s", e)
     annotate(out, now)
@@ -381,6 +384,12 @@ def sync(p: Connection, m: Connection | None, out: Path, now: datetime,
             grade_games(p, m, out, now)
         except Exception as e:  # noqa: BLE001 - the engine grades never stop the ledger
             log.warning("engine grades failed: %s", e)
+        try:  # both sides of h2h / spreads, morning and pre-tip (owner 2026-11-14)
+            from betdata.nba.engine_game_grades import grade as game_grade
+
+            game_grade(p, m, out, now)
+        except Exception as e:  # noqa: BLE001 - never stops the ledger
+            log.warning("engine game grades failed: %s", e)
     return {"picks": n_p, "results": n_r, "milestones": milestones(out, now)}
 
 

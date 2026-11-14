@@ -140,6 +140,12 @@ def run(engine, now: datetime, path: Path = LIVE_PATH) -> int:
         snapshot(doc, now, path.parent / "nba_engine_snapshots")
     except Exception as e:  # noqa: BLE001 - a snapshot never breaks the run
         log.warning("nba engine snapshot failed: %s", e)
+    try:  # both sides at the morning snapshot (owner 2026-11-14, engine_game_grades.py)
+        from betdata.nba.engine_game_grades import morning_snapshot
+
+        morning_snapshot(doc, now, path.parent / "nba_engine_snapshots_morning")
+    except Exception as e:  # noqa: BLE001 - a snapshot never breaks the run
+        log.warning("nba engine morning snapshot failed: %s", e)
     return len(doc["games"])
 
 
