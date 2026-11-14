@@ -185,3 +185,13 @@ Items deliberately left out of M12, with the reason. Newest first.
 - **Same-player stacks:** a rebound over and an assist over on the same player and game can both be
   official (one pick per player-game-market); correlation is reported at the review, not limited.
 - **Guardrail threshold** (7-13 of 20) is a report trigger, not a statistical test.
+
+## Hourly reliability and the spread engine (2026-11-14)
+
+- **Watchdog cron is GitHub's**: like every cron it can be late or dropped; the clock chain and
+  the watchdog cover each other, but a GitHub-wide outage stops both.
+- **Spread engine lines**: history has closing lines for 2017-2022 and openers only for 2015-16 and
+  2023 on; validation uses closing lines and the test opening lines. No spread prices in history
+  (units at -110).
+- **Spread engine live record** starts with engine_game_grades.csv (Nov 15); before that only the
+  raw engine's home-side close is stored.

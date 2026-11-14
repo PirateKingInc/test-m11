@@ -1,0 +1,262 @@
+{
+ "pads": {
+  "player:fg2a": {
+   "padding": 79.8,
+   "season_r": 0.874,
+   "league": 0.1113
+  },
+  "player:fg3a": {
+   "padding": 61.1,
+   "season_r": 0.903,
+   "league": 0.0622
+  },
+  "player:fta": {
+   "padding": 255.4,
+   "season_r": 0.846,
+   "league": 0.0452
+  },
+  "player:oreb": {
+   "padding": 167.4,
+   "season_r": 0.924,
+   "league": 0.0202
+  },
+  "player:dreb": {
+   "padding": 170.4,
+   "season_r": 0.895,
+   "league": 0.0674
+  },
+  "player:ast": {
+   "padding": 99.5,
+   "season_r": 0.9,
+   "league": 0.0475
+  },
+  "player:tov": {
+   "padding": 462.3,
+   "season_r": 0.8,
+   "league": 0.0267
+  },
+  "player:usage": {
+   "padding": 76.3,
+   "season_r": 0.864,
+   "league": 0.2201
+  },
+  "player:fg2_pct": {
+   "padding": 126.6,
+   "season_r": 0.357,
+   "league": 0.5187
+  },
+  "player:fg3_pct": {
+   "padding": 147.6,
+   "season_r": 0.338,
+   "league": 0.3582
+  },
+  "player:ft_pct": {
+   "padding": 50.7,
+   "season_r": 0.477,
+   "league": 0.7714
+  },
+  "player:comp_share": {
+   "padding": 0.5,
+   "season_r": 0.779,
+   "league": 0.4732
+  },
+  "player:garbage_share": {
+   "padding": 1.8,
+   "season_r": 0.643,
+   "league": 0.4265
+  },
+  "team:pace": {
+   "padding": 3.4,
+   "season_r": 0.548,
+   "league": 99.7528
+  },
+  "team:off_ppp": {
+   "padding": 760.1,
+   "season_r": 0.619,
+   "league": 1.0861
+  },
+  "team:def_ppp": {
+   "padding": 915.1,
+   "season_r": 0.651,
+   "league": 1.0861
+  },
+  "team:oreb_rate": {
+   "padding": 429.3,
+   "season_r": 0.4,
+   "league": 0.2303
+  },
+  "team:dreb_rate": {
+   "padding": 1056.1,
+   "season_r": 0.377,
+   "league": 0.7697
+  },
+  "team:fg3a_allowed": {
+   "padding": 259.2,
+   "season_r": 0.812,
+   "league": 0.311
+  },
+  "team:fg2_pct_allowed": {
+   "padding": 465.1,
+   "season_r": 0.756,
+   "league": 0.5187
+  },
+  "team:fg3_pct_allowed": {
+   "padding": 3338.3,
+   "season_r": 0.22,
+   "league": 0.3582
+  },
+  "team:tov_forced": {
+   "padding": 1084.5,
+   "season_r": 0.462,
+   "league": 0.1337
+  },
+  "team:ast_share": {
+   "padding": 222.6,
+   "season_r": 0.644,
+   "league": 0.5935
+  }
+ },
+ "params": {
+  "cm": "cm1",
+  "w": {
+   "blowout": 1.0,
+   "ot": 1.0,
+   "fouls": 1.0,
+   "exit": 1.0
+  },
+  "h_min_stable": 3,
+  "h_min_change": 3,
+  "h_rate_stable": 20,
+  "h_rate_change": 20
+ },
+ "play_table": {
+  "Available": 0.8656099241902137,
+  "Doubtful": 0.05190989226248776,
+  "Out": 0.005121575257321864,
+  "Probable": 0.8883720930232558,
+  "Questionable": 0.503219512195122,
+  "Removed": 0.05405405405405406,
+  "n:Available": 1449.0,
+  "n:Doubtful": 1019.0,
+  "n:Out": 20109.0,
+  "n:Probable": 3008.0,
+  "n:Questionable": 5123.0,
+  "n:Removed": 35.0,
+  "n:none|norep|0": 186257.0,
+  "n:none|norep|1": 16767.0,
+  "n:none|norep|2-4": 18037.0,
+  "n:none|norep|5+": 20452.0,
+  "n:none|rep|0": 111403.0,
+  "n:none|rep|1": 8420.0,
+  "n:none|rep|2-4": 7910.0,
+  "n:none|rep|5+": 7326.0,
+  "none|norep|0": 0.9064528425472058,
+  "none|norep|1": 0.47247897906851927,
+  "none|norep|2-4": 0.2867121237319142,
+  "none|norep|5+": 0.10144714970176982,
+  "none|rep|0": 0.9253534401508011,
+  "none|rep|1": 0.5267157444787461,
+  "none|rep|2-4": 0.3722194135490394,
+  "none|rep|5+": 0.14929039301310043
+ },
+ "g_curve": [
+  [
+   3.0,
+   0.018823768823768825
+  ],
+  [
+   6.0,
+   0.02241017964071856
+  ],
+  [
+   9.0,
+   0.11525264394829612
+  ],
+  [
+   12.0,
+   0.4757579102281089
+  ],
+  [
+   15.0,
+   1.4445242718446603
+  ],
+  [
+   18.0,
+   2.5788706968933672
+  ],
+  [
+   21.0,
+   3.433694942903752
+  ],
+  [
+   25.0,
+   3.6629380139152437
+  ],
+  [
+   30.0,
+   3.4794832944832943
+  ],
+  [
+   99.0,
+   2.8963782051282054
+  ]
+ ],
+ "home": 0.011354805482982178,
+ "b2b": {
+  "starter": 0.9740310499059434,
+  "bench": 1.0238404155464687
+ },
+ "ret": 0.977010657354764,
+ "use_team": 1.1011403280456549,
+ "p_ot": 0.05655199451141821,
+ "league": {},
+ "seasons": [
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022
+ ],
+ "sim": {
+  "sd_pace": 3.0,
+  "sd_shoot": 0.0,
+  "sd_script": 10.0,
+  "fga_disp": 0.1,
+  "k_shot": 6.0,
+  "level": 0.9987351460922951,
+  "k_reb": 8.0,
+  "k_ast": 6.0,
+  "ot_band": 0.7973754678065057,
+  "script": false,
+  "addons": []
+ },
+ "play_by_minutes": [
+  [
+   8.0,
+   0.4989173884077282
+  ],
+  [
+   14.0,
+   0.7482153480071386
+  ],
+  [
+   20.0,
+   0.9061897463786028
+  ],
+  [
+   26.0,
+   0.958308615902997
+  ],
+  [
+   32.0,
+   0.9716903660803042
+  ],
+  [
+   99.0,
+   0.9765954043823639
+  ]
+ ]
+}

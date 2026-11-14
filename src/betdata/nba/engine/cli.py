@@ -134,3 +134,71 @@ def live_cmd():
 
 
 __all__ = ["engine_app"]
+
+
+# --- the spread engine (owner 2026-11-14, MODEL.md "Spread engine"; nba/engine/spread.py) ----
+# Three steps, in this order, so the threshold is recorded before the test is run:
+#   spread-build    the engine's morning simulations of 2016-2025 with constants fitted on
+#                   2015-2022 only -> reports/nba/spread_engine_games.csv
+#   spread-validate D1 diagnosis + walk-forward validation (2019-2022) and the pre-registered T
+#                   -> reports/nba/spread_engine_validation.json (T then goes into MODEL.md)
+#   spread-test     D3 once on 2023-2025 at T, and the D4 bar -> reports/nba/spread_engine.json
+
+SPREAD_GAMES = REPORTS / "spread_engine_games.csv"
+
+
+def _today() -> str:
+    return datetime.now(UTC).date().isoformat()
+
+
+SPREAD_VALID = REPORTS / "spread_engine_validation.json"
+SPREAD_TEST = REPORTS / "spread_engine.json"
+
+
+@engine_app.command("spread-build")
+def spread_build_cmd(fit: Path = typer.Option(..., help="Constants on 2015-2022 only."),
+                     n: int = 2000, out: Path = typer.Option(SPREAD_GAMES)):  # fmt: skip
+    from betdata.nba.engine import spread as S
+
+    with _engine().connect() as c:
+        d = S.build(c, json.loads(fit.read_text()), range(S.FIRST, 2026), n, log=typer.echo)
+    d.to_csv(out, index=False)
+    typer.echo(f"{out} ({len(d)} games)")
+
+
+@engine_app.command("spread-validate")
+def spread_validate_cmd(games: Path = typer.Option(SPREAD_GAMES)):
+    import pandas as pd
+
+    from betdata.nba.engine import spread as S
+
+    d = pd.read_csv(games)
+    pre = d[d.season <= 2022]  # nothing from the test seasons
+    t, table = S.choose_t(pre)
+    res = {"diagnosis_2016_2022": S.diagnose(pre), "t": t, "t_rule": S.choose_t.__doc__,
+           "validation_table": table,
+           "validation_fits": {int(s): vars(g["_m"].iloc[0]) for s, g in
+                               S.walk_forward(pre).groupby("season")}}  # fmt: skip
+    SPREAD_VALID.write_text(json.dumps(res, indent=1, default=str) + "\n")
+    (REPORTS / "spread_engine.md").write_text(S.report_md(res, None, None, _today()))
+    typer.echo(f"T = {t}; {SPREAD_VALID}")
+
+
+@engine_app.command("spread-test")
+def spread_test_cmd(games: Path = typer.Option(SPREAD_GAMES), t: float = typer.Option(...)):
+    import pandas as pd
+
+    from betdata.nba.engine import spread as S
+
+    d = pd.read_csv(games)
+    res = S.test(d, t)
+    res["diagnosis_test_seasons"] = S.diagnose(d[d.season.isin(S.TEST)])
+    res["bar"] = S.bar(res)
+    res["d5"] = S.d5(d)
+    SPREAD_TEST.write_text(json.dumps(res, indent=1, default=str) + "\n")
+    from betdata.ledger import read_rows
+
+    valid = json.loads(SPREAD_VALID.read_text())
+    live = S.live_section(read_rows(Path("ledger") / "engine_grades.csv"), t)
+    (REPORTS / "spread_engine.md").write_text(S.report_md(valid, res, live, _today()))
+    typer.echo(json.dumps(res["bar"], indent=1, default=str))
