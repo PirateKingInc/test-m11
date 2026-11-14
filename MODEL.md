@@ -3362,3 +3362,14 @@ validation (2019-2022, closing lines, underdogs) no T in the grid reached 53.5% 
 51.0%), so the rule's fallback applied: the best validation win rate among T with 150+ picks,
 0.58 (1164-1119, 51.0%, 2309 picks). Validation already shows the engine-vs-market slope after
 the fix at 0.57, below the bar's 0.8 (reports/nba/spread_engine_validation.json).
+
+**Result (test run 2026-11-14, after T was recorded): the D4 bar is NOT met; nothing ships live.**
+Test seasons 2023-2025 at the opening line, underdogs at T = 0.58: 761-753-5 (50.3%, 95%
+47.8-52.8%), -61.2u at -110; positive in 1 of 3 seasons; the fixed margin's slope on the
+market's 0.70 (bar 0.8-1.25). Brier of P(cover) 0.2601 vs the line's 0.25. D1: the engine's
+margin is shrunk (actual-on-engine slope 1.15) and its simulations too spread out (16.0 vs 13.5
+pts), but most of the squeeze is missing signal (engine-on-market slope 0.50 raw). D5: the fix
+improves the engine's moneyline probability on the test seasons (Brier 0.2157 -> 0.2119, logit
+slope on the market's 0.45 -> 0.63) but it stays well behind the closing market (0.1994): a
+recommendation to apply the margin rescale and residual sigma to Next Gen's ML input, not a
+change made here. Full tables: reports/nba/spread_engine.md.

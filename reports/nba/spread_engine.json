@@ -1,0 +1,266 @@
+{
+ "model": {
+  "a": -0.04225996086605116,
+  "b": 1.1477382406110952,
+  "sigma": 13.45880651415051,
+  "seasons": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022
+  ]
+ },
+ "t": 0.58,
+ "line": "opening",
+ "calibration": [
+  {
+   "bin": "0.0-0.1",
+   "n": 1,
+   "p_mean": 0.0885,
+   "cover": 0.0
+  },
+  {
+   "bin": "0.1-0.2",
+   "n": 12,
+   "p_mean": 0.1636,
+   "cover": 0.3333
+  },
+  {
+   "bin": "0.2-0.3",
+   "n": 101,
+   "p_mean": 0.2647,
+   "cover": 0.3663
+  },
+  {
+   "bin": "0.3-0.4",
+   "n": 549,
+   "p_mean": 0.3598,
+   "cover": 0.5082
+  },
+  {
+   "bin": "0.4-0.5",
+   "n": 1181,
+   "p_mean": 0.4539,
+   "cover": 0.4953
+  },
+  {
+   "bin": "0.5-0.6",
+   "n": 1246,
+   "p_mean": 0.5468,
+   "cover": 0.5008
+  },
+  {
+   "bin": "0.6-0.7",
+   "n": 641,
+   "p_mean": 0.6404,
+   "cover": 0.4961
+  },
+  {
+   "bin": "0.7-0.8",
+   "n": 148,
+   "p_mean": 0.7373,
+   "cover": 0.5541
+  },
+  {
+   "bin": "0.8-0.9",
+   "n": 30,
+   "p_mean": 0.8398,
+   "cover": 0.5667
+  },
+  {
+   "bin": "0.9-1.0",
+   "n": 3,
+   "p_mean": 0.916,
+   "cover": 0.6667
+  }
+ ],
+ "brier": {
+  "brier_model": 0.26009,
+  "brier_line": 0.25,
+  "n": 3912
+ },
+ "dogs": {
+  "n": 1519,
+  "w": 761,
+  "l": 753,
+  "p": 5,
+  "win": 0.5026,
+  "win_95": [
+   0.4775,
+   0.5278
+  ],
+  "units": -61.18,
+  "roi": -0.0403
+ },
+ "all": {
+  "n": 1894,
+  "w": 954,
+  "l": 934,
+  "p": 6,
+  "win": 0.5053,
+  "win_95": [
+   0.4828,
+   0.5278
+  ],
+  "units": -66.73,
+  "roi": -0.0352
+ },
+ "by_season": {
+  "2023": {
+   "dogs": {
+    "n": 470,
+    "w": 217,
+    "l": 248,
+    "p": 5,
+    "win": 0.4667,
+    "win_95": [
+     0.4218,
+     0.5121
+    ],
+    "units": -50.73,
+    "roi": -0.1079
+   },
+   "all": {
+    "n": 598,
+    "w": 287,
+    "l": 305,
+    "p": 6,
+    "win": 0.4848,
+    "win_95": [
+     0.4448,
+     0.525
+    ],
+    "units": -44.09,
+    "roi": -0.0737
+   }
+  },
+  "2024": {
+   "dogs": {
+    "n": 462,
+    "w": 248,
+    "l": 214,
+    "p": 0,
+    "win": 0.5368,
+    "win_95": [
+     0.4912,
+     0.5818
+    ],
+    "units": 11.45,
+    "roi": 0.0248
+   },
+   "all": {
+    "n": 605,
+    "w": 317,
+    "l": 288,
+    "p": 0,
+    "win": 0.524,
+    "win_95": [
+     0.4841,
+     0.5635
+    ],
+    "units": 0.18,
+    "roi": 0.0003
+   }
+  },
+  "2025": {
+   "dogs": {
+    "n": 587,
+    "w": 296,
+    "l": 291,
+    "p": 0,
+    "win": 0.5043,
+    "win_95": [
+     0.4639,
+     0.5445
+    ],
+    "units": -21.91,
+    "roi": -0.0373
+   },
+   "all": {
+    "n": 691,
+    "w": 350,
+    "l": 341,
+    "p": 0,
+    "win": 0.5065,
+    "win_95": [
+     0.4693,
+     0.5437
+    ],
+    "units": -22.82,
+    "roi": -0.033
+   }
+  }
+ },
+ "engine_vs_market_slope": 0.701,
+ "diagnosis_test_seasons": {
+  "n": 3936,
+  "actual_on_engine_slope": 1.273,
+  "engine_on_market_slope": 0.584,
+  "actual_on_market_slope": 1.038,
+  "sd_engine_margin": 5.42,
+  "sd_market_margin": 7.77,
+  "mean_engine_margin": 2.15,
+  "mean_actual_margin": 2.01,
+  "mean_market_margin": 2.04,
+  "sim_sd_mean": 16.34,
+  "residual_sd": 14.55,
+  "h2h_logit_slope_raw": 0.448,
+  "h2h_logit_slope_mean_fixed": 0.576,
+  "h2h_logit_slope_sd_fixed": 0.506,
+  "h2h_logit_slope_both_fixed": 0.654,
+  "fit": {
+   "a": -0.724,
+   "b": 1.273,
+   "sigma": 14.47
+  },
+  "engine_vs_market_slope_after": 0.744
+ },
+ "bar": {
+  "met": false,
+  "checks": {
+   "picks >= 300": {
+    "ok": true,
+    "value": 1519
+   },
+   "win >= 53.5%": {
+    "ok": false,
+    "value": 0.5026
+   },
+   "95% low > 50%": {
+    "ok": false,
+    "value": [
+     0.4775,
+     0.5278
+    ]
+   },
+   "positive in >= 2 of 3 seasons": {
+    "ok": false,
+    "value": 1
+   },
+   "engine-vs-market slope 0.8-1.25": {
+    "ok": false,
+    "value": 0.701
+   }
+  }
+ },
+ "d5": {
+  "n": 3937,
+  "raw_engine": {
+   "brier": 0.21571,
+   "logloss": 0.62139
+  },
+  "fixed_engine": {
+   "brier": 0.21186,
+   "logloss": 0.6121
+  },
+  "market_close": {
+   "brier": 0.19944,
+   "logloss": 0.58218
+  },
+  "h2h_logit_slope_raw": 0.448,
+  "h2h_logit_slope_fixed": 0.634
+ }
+}

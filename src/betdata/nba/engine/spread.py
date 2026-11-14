@@ -316,6 +316,42 @@ def _r(r: dict) -> str:
             + f" ({win}, 95% {lo}-{hi}), {r['units']:+.1f}u at -110")
 
 
+NEXT_FIX = [
+    "**What the next fix would be.** The D2 rescaling cannot create information the engine's "
+    "margin does not carry: after de-shrinking (slope 1.15) and the right residual spread "
+    "(13.4 pts, not the simulations' 16), the engine's margin still moves only ~0.5-0.7 times "
+    "as much as the market's, and the cover rate is ~50% in every probability bin from 0.3 to "
+    "0.7. The squeeze is mostly missing signal in the engine's team strength, not its "
+    "probability step. Next: (1) feed the engine's game margin from team-level ratings that "
+    "track the market (the M13/M14 team models' margin, or a player-rating prior shrunk less "
+    "toward the mean, checked on 2016-2022 by the engine-on-market slope first); (2) re-run "
+    "this same pre-registered test only when validation shows the engine-on-market slope >= "
+    "0.8 and validation underdog picks at or above 53.5%; (3) never fit on 2023-2025.",
+]
+
+
+def miss_lines(res: dict) -> list[str]:
+    """By how much each failed part of the bar missed."""
+    r, out = res["dogs"], ["**By how much it missed:**", ""]
+    if (r["win"] or 0) < 0.535:
+        out.append(f"- Win rate {100 * (r['win'] or 0):.1f}% vs 53.5%: "
+                   f"{100 * ((r['win'] or 0) - 0.535):+.1f} pts.")
+    if r["win_95"] and r["win_95"][0] <= 0.5:
+        out.append(f"- 95% range low end {100 * r['win_95'][0]:.1f}% vs above 50%: "
+                   f"{100 * (r['win_95'][0] - 0.5):+.1f} pts.")
+    pos = sum(1 for s in TEST if res["by_season"][s]["dogs"]["units"] > 0)
+    if pos < 2:
+        out.append(f"- Positive seasons {pos} of 3 vs at least 2.")
+    sl = res["engine_vs_market_slope"]
+    if not 0.8 <= sl <= 1.25:
+        out.append(f"- Engine-vs-market slope {sl} vs 0.8-1.25: "
+                   f"{sl - 0.8:+.3f} below the floor." if sl < 0.8 else
+                   f"- Engine-vs-market slope {sl} vs 0.8-1.25: {sl - 1.25:+.3f} above.")
+    if r["n"] < 300:
+        out.append(f"- Picks {r['n']} vs at least 300.")
+    return out
+
+
 def report_md(valid: dict, test_res: dict | None, live: dict | None, when: str) -> str:
     dg = valid["diagnosis_2016_2022"]
     md = [f"# Spread engine ({when})", "",
@@ -367,6 +403,8 @@ def report_md(valid: dict, test_res: dict | None, live: dict | None, when: str) 
                        else "NOT MET: nothing ships live") + "**", ""]
         md += [f"- {k}: {'pass' if v['ok'] else 'FAIL'} ({v['value']})"
                for k, v in bar["checks"].items()]
+        if not bar["met"]:
+            md += ["", *miss_lines(test_res), "", *NEXT_FIX]
         if "d5" in test_res:
             x = test_res["d5"]
             md += ["", "## D5: would the fix help Next Gen's moneyline probability? "
@@ -402,7 +440,19 @@ def live_section(grades: list[dict], t: float) -> dict:
     g = pd.DataFrame(res, columns=["result", "units"])
     rec = record(g)
     dogs_all = sum(1 for r in rows if float(r["line"]) != 0)
-    return {"record": rec, "lines": [
+    h2h = [r for r in grades if r.get("kind") == "game" and r.get("market") == "h2h"
+           and r.get("p_engine") and r.get("p_close")]  # fmt: skip
+    sq = None
+    if len(h2h) >= 10:
+        b, a = np.polyfit(_logit([float(r["p_close"]) for r in h2h]),
+                          _logit([float(r["p_engine"]) for r in h2h]), 1)  # fmt: skip
+        sq = (round(float(a), 3), round(float(b), 3), len(h2h))
+    return {"record": rec, "squeeze": sq, "lines": [
+        *([f"- The squeeze, reproduced on engine_grades.csv (raw live engine, {sq[2]} games): "
+           f"engine logit = {sq[0]} + {sq[1]} x market logit. After the D2 fix the moneyline "
+           "logit slope on the test seasons rises from the raw engine's to the fixed one's (D5); "
+           "the fixed model needs the engine's mean margin, stored live only from Nov 15."]
+          if sq else []),
         f"- Raw engine (before the fix), home-side closing spreads in engine_grades.csv: "
         f"{len(rows)} games; the raw engine takes the underdog at P >= {t} in "
         f"{rec['n']} of {dogs_all}: {_r(rec)}.",
