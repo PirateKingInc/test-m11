@@ -253,15 +253,27 @@ def build(conn, fit: dict, seasons, n_sims: int = 2000, log=None,
     side = V.side_lines(conn, inp.g)
     eng = F.Engine(inp, Fit.from_json(fit))
     gids = inp.g[inp.g.season.isin(list(seasons)) & (inp.g.status == "final")].game_id
-    games, _props, _d = V.simulate(eng, gids, None, side, n_sims, point=point, log=log)
+    import pickle
+    from pathlib import Path
+
+    raw = Path("data/derived/spread_engine_sims.pkl")  # kept, so a later step never re-simulates
+    if raw.exists():
+        games = pickle.loads(raw.read_bytes())
+    else:
+        games, _props, _d = V.simulate(eng, gids, None, side, n_sims, point=point, log=log)
+        raw.parent.mkdir(parents=True, exist_ok=True)
+        raw.write_bytes(pickle.dumps(games))
     res = pd.DataFrame(conn.execute(select(results.c.game_id, results.c.home_score,
                                            results.c.away_score)
                                     .where(results.c.final.is_(True))).all(),
                        columns=["game_id", "home_score", "away_score"])  # fmt: skip
     res = res.drop_duplicates("game_id")
+    games = games.reset_index(drop=True) if "game_id" in games.columns else games.reset_index()
+    side = side.copy()
+    side.index = side.index.rename("_gid")
     g = (games.rename(columns={"mu_margin": "mu", "sd_margin": "sd"})
          [["game_id", "mu", "sd", "p_home_win"]]
-         .merge(inp.g[["game_id", "season", "tip"]], on="game_id")
+         .merge(inp.g[["game_id", "season", "tip"]].reset_index(drop=True), on="game_id")
          .merge(res, on="game_id")
          .merge(side[["c_spread", "o_spread", "c_ml_home", "c_ml_away"]],
                 left_on="game_id", right_index=True, how="left"))  # fmt: skip
