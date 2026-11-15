@@ -1156,3 +1156,16 @@ Pb482190c03b1,0.0,10.0,,MEM 142-111 NOP,[],0.5,0.0,Minutes miss,2026-11-14T11:15
 Pfb6e667c979d,0.0,10.0,,MEM 142-111 NOP,[],2.5,-1.6,Minutes miss,2026-11-14T11:15:31+00:00
 Pd796f5b3c16d,1.0,21.0,,GSW 85-123 SAS,[],0.5,4.08,Variance,2026-11-14T11:15:31+00:00
 Pec719badc904,4.0,30.0,,GSW 85-123 SAS,[],2.5,-18.06,Minutes miss,2026-11-14T11:15:31+00:00
+P56cd0063fbb3,4.0,41.0,,DEN 116-108 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Trey Murphy III"", ""from"": ""Available"", ""to"": ""Out""}]",2.5,9.27,News after pick,2026-11-15T12:00:32+00:00
+P03cef1ae550f,7.0,28.0,,DEN 116-108 NOP,[],4.5,-7.78,Market disagreed,2026-11-15T12:00:32+00:00
+P184ce4d13b82,2.0,24.0,,DEN 116-108 NOP,[],2.5,6.65,Variance,2026-11-15T12:00:32+00:00
+P2b292e7acf32,1.0,33.0,,DEN 116-108 NOP,[],2.5,5.76,Variance,2026-11-15T12:00:32+00:00
+Pb8a21446a969,7.0,33.0,,DEN 116-108 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Trey Murphy III"", ""from"": ""Available"", ""to"": ""Out""}]",5.5,3.27,News after pick,2026-11-15T12:00:32+00:00
+P5f8344c5f89a,1.0,37.0,,DEN 116-108 NOP,[],1.5,3.11,Variance,2026-11-15T12:00:32+00:00
+P881d7ac31781,4.0,33.0,,DEN 116-108 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Trey Murphy III"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,3.17,News after pick,2026-11-15T12:00:32+00:00
+P4273473edf18,5.0,33.0,,DEN 116-108 NOP,[],4.5,2.44,Variance,2026-11-15T12:00:32+00:00
+Pa098277dc693,3.0,24.0,,DEN 116-108 NOP,[],1.5,-0.44,Market disagreed,2026-11-15T12:00:32+00:00
+Pa4995e2510e4,8.0,37.0,,DEN 116-108 NOP,[],11.5,2.27,Variance,2026-11-15T12:00:32+00:00
+P8d36ce942736,6.0,41.0,,DEN 116-108 NOP,"[{""player"": ""Dejounte Murray"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Trey Murphy III"", ""from"": ""Available"", ""to"": ""Out""}]",4.5,3.24,News after pick,2026-11-15T12:00:32+00:00
+P0933e6bbedfb,-10.0,,,DAL 117-127 CLE,"[{""player"": ""Donovan Mitchell"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Evan Mobley"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""James Harden"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jarrett Allen"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Peyton Watson"", ""from"": ""Available"", ""to"": ""Out""}]",-8.5,19.46,News after pick,2026-11-15T12:00:32+00:00
+Pedda4b7067c5,-10.0,,,DAL 117-127 CLE,"[{""player"": ""Donovan Mitchell"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Evan Mobley"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""James Harden"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Jarrett Allen"", ""from"": ""Available"", ""to"": ""Out""}, {""player"": ""Peyton Watson"", ""from"": ""Available"", ""to"": ""Out""}]",,19.6,News after pick,2026-11-15T12:00:32+00:00
