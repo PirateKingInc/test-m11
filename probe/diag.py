@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, select
 from betdata.alerts.db import alerts, state
 
 pdb = create_engine("sqlite:///file:data/poller.sqlite?mode=ro&uri=true")
-D = "2026-11-13"
+D = "2026-11-15"
 F = ("dedup_key", "label", "stake", "fair_prob", "fair_prob_cal", "price", "median", "line",
      "market", "side", "player", "book", "reason", "reasons", "posted", "og_quality", "note")
 with pdb.connect() as p:
