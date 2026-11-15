@@ -140,3 +140,21 @@ def test_watchdog_and_clock_keep_each_other_alive():
     clock = yaml.safe_load((wf / "clock.yml").read_text())
     names = [s.get("name", "") for s in clock["jobs"]["tick"]["steps"]]
     assert "Keep a watchdog running" in names
+
+
+def test_nov15_morning_false_alarm_cannot_recur():
+    """Nov 15 6:14 AM ET: no completed hourly run in the lookback made the watchdog assume a
+    day-long gap; it alerted and dispatched a clock, which cancelled the healthy clock's wait for
+    the 6:15 morning update. Now: no measured gap, no alert; a healthy clock is never replaced."""
+    six14 = datetime(2026, 11, 15, 11, 14, 57, tzinfo=UTC)
+    clock = [datetime(2026, 11, 15, 11, 0, 13, tzinfo=UTC)]  # waiting for 6:15
+    d = W.decide(six14, W.Runs([], False, clock), {})
+    assert d.alert is None and not d.dispatch_clock and d.dispatch_hourly is None
+    last = datetime(2026, 11, 15, 3, 3, tzinfo=UTC)  # 10:03 PM ET, found with the long lookback
+    d = W.decide(six14, W.Runs([last], False, clock), {})
+    assert d.alert is None and not d.dispatch_clock
+    # the morning really missed (6:47 AM, clock healthy): the hourly morning run, no new clock
+    late = datetime(2026, 11, 15, 11, 47, tzinfo=UTC)
+    d = W.decide(late, W.Runs([last], False, clock), {})
+    assert d.dispatch_hourly == "morning" and not d.dispatch_clock
+    assert W.LOOKBACK >= timedelta(hours=12)

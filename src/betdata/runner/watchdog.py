@@ -42,6 +42,8 @@ GAP = timedelta(minutes=90)  # no completed hourly run for this long...
 GRACE = timedelta(minutes=20)  # ...although a slot was due at least this long ago
 STILL_DOWN = timedelta(minutes=45)
 CLOCK_HUNG = timedelta(minutes=70)  # a clock run waits at most ~61 minutes
+LOOKBACK = timedelta(hours=36)  # completed hourly runs are looked up this far back (overnight
+# there are none from 10 PM to 6:15 AM ET: 8+ hours)
 STATE = Path("data/watchdog.json")
 CHECKS = 3
 CHECK_EVERY = timedelta(minutes=20)
@@ -100,6 +102,7 @@ def decide(now: datetime, runs: Runs, state: dict) -> Decision:
     dec = Decision(state=st)
     # 1. the clock chain, silently, at any hour
     alive = [t for t in runs.clock_active if now - t < CLOCK_HUNG]
+    clock_ok = bool(alive)
     if not alive:
         dec.dispatch_clock = True
         dec.note = "clock: none running" if not runs.clock_active else "clock: hung"
@@ -118,7 +121,9 @@ def decide(now: datetime, runs: Runs, state: dict) -> Decision:
         return dec
     if not in_window(now) or runs.hourly_active:
         return dec
-    since = last or (now - timedelta(days=1))
+    if last is None:  # nothing to measure a gap from: never guess (Nov 15 6:14 AM false alarm)
+        return dec
+    since = last
     if now - since <= GAP:
         return dec
     due = [s for s in due_slots(since, now) if now - s >= GRACE]
@@ -127,7 +132,9 @@ def decide(now: datetime, runs: Runs, state: dict) -> Decision:
     first = due[0]
     latest = due[-1]
     is_morning = latest.astimezone(EASTERN).time() == MORNING
-    dec.dispatch_clock = True
+    # a healthy clock is never replaced: a new clock run cancels the running one, which on
+    # Nov 15 cancelled its wait for the 6:15 morning update
+    dec.dispatch_clock = not clock_ok
     dec.dispatch_hourly = "morning" if is_morning else "watchdog"
     dec.alert = f"betdata: hourly run missed since {et(first)} — restarted"
     st["outage"] = {"since": first.isoformat(), "restarted_at": now.isoformat(),
@@ -156,8 +163,8 @@ def _t(s: str) -> datetime:
 
 def fetch(now: datetime) -> Runs:
     runs = Runs()
-    since = (now - timedelta(hours=6)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    for r in _api(f"/actions/workflows/hourly.yml/runs?per_page=30&created=>={since}")[
+    since = (now - LOOKBACK).strftime("%Y-%m-%dT%H:%M:%SZ")
+    for r in _api(f"/actions/workflows/hourly.yml/runs?per_page=100&created=>={since}")[
             "workflow_runs"]:
         if r["status"] in ("queued", "in_progress", "waiting", "pending", "requested"):
             runs.hourly_active = True
@@ -167,6 +174,8 @@ def fetch(now: datetime) -> Runs:
         for j in _api(f"/actions/runs/{r['id']}/jobs")["jobs"]:
             if j["name"] == "run" and j["conclusion"] == "success" and j.get("completed_at"):
                 runs.hourly_done.append(_t(j["completed_at"]))
+        if runs.hourly_done:  # newest first: the latest completed run is all the check needs
+            break
     for r in _api("/actions/workflows/clock.yml/runs?per_page=10")["workflow_runs"]:
         if r["status"] in ("queued", "in_progress", "waiting", "pending", "requested"):
             runs.clock_active.append(_t(r["run_started_at"] or r["created_at"]))
