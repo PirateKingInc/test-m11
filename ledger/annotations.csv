@@ -679,3 +679,5 @@ P242065372402:f_cal,P242065372402,f_cal,0.3905,2026-11-16T13:00:38+00:00,"F cali
 Pf0be55c367b5:f_cal,Pf0be55c367b5,f_cal,0.4695,2026-11-16T13:00:38+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
 P456bd8d44b61:f_cal,P456bd8d44b61,f_cal,0.5106,2026-11-16T13:00:38+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
 P198b195bd81d:f_cal,P198b195bd81d,f_cal,0.4776,2026-11-16T13:00:38+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+Pab531523cbf9:action_cap,Pab531523cbf9,action_cap,threes cap,2026-11-16T23:00:31+00:00,Action threes cap (owner 2026-11-14): at most 1 threes pick a day; still graded
+Pab531523cbf9:filter,Pab531523cbf9,filter,filtered: non-assist prop,2026-11-16T23:00:31+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
