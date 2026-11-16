@@ -1,20 +1,20 @@
-# OG Ranking v2 (2026-11-15)
+# OG Ranking v2 (2026-11-16)
 
 Owner decision 2026-11-11 (MODEL.md "OG Ranking v2"): from Nov 12 OG ranks its pool by the model's win probability, -150 to +130, median on the bet's side, one pick per player, up to 5 at 0.5u. The OG Top 3 is a shadow: never shown, pushed or counted officially. Nothing switches automatically; the owner decides.
 
-Review: at Nov 26 or 50 graded official Ranking v2 picks, whichever first (8 graded so far).
+Review: at Nov 26 or 50 graded official Ranking v2 picks, whichever first (13 graded so far).
 
 ## Official OG vs OG Top 3 (since Nov 12, graded only)
 
 | | OG official (Ranking v2, top 5) | OG Top 3 (shadow) |
 |---|---|---|
-| Record (W-L-P) | 5-3-0 | 3-1-0 |
-| Win % | 62.5% | 75.0% |
-| Units (0.5u) | +1.18 | +1.01 |
-| ROI | +29.6% | +50.7% |
-| Average odds | +110 | +104 |
-| Picks per day | 3.8 (15 over 4 days) | 2.2 (9 over 4 days) |
-| Worst 3-day stretch | 5-3, +1.18u (2026-11-12 to 2026-11-14) | 3-1, +1.01u (2026-11-12 to 2026-11-14) |
+| Record (W-L-P) | 6-7-0 | 4-3-0 |
+| Win % | 46.2% | 57.1% |
+| Units (0.5u) | -0.24 | +0.59 |
+| ROI | -3.6% | +17.0% |
+| Average odds | +109 | +102 |
+| Picks per day | 4.0 (20 over 5 days) | 2.4 (12 over 5 days) |
+| Worst 3-day stretch | 3-6, -1.27u (2026-11-14 to 2026-11-16) | 2-3, -0.37u (2026-11-14 to 2026-11-16) |
 
 - Rebound overs (official, Rules v3 from Nov 13): 0-0-0, win –, +0.00u at 0.5u (0 graded; graded picks only)
 
@@ -22,35 +22,35 @@ Review: at Nov 26 or 50 graded official Ranking v2 picks, whichever first (8 gra
 
 Owner decision 2026-11-12 (MODEL.md "Rules v3"): rebound overs are back on the official card; the guardrail alerts at 7-13 or worse over the last 20 official rebound overs. Nothing switches automatically.
 
-- Rebound overs (Action, from Nov 13): 0-0-0, +0.00u at 0.25u (0 graded)
+- Rebound overs (Action, from Nov 13): 1-0-0, +0.28u at 0.25u (1 graded)
 
 | Market · side | Official OG (0.5u) | Action (0.25u, not official) |
 |---|---|---|
-| rebounds · over | 0-0-0, +0.00u | 0-0-0, +0.00u |
-| rebounds · under | 0-0-0, +0.00u | 0-0-0, +0.00u |
-| assists · over | 3-2-0, +0.72u (60%) | 0-0-0, +0.00u |
-| assists · under | 2-1-0, +0.46u (67%) | 2-1-0, +0.23u (67%) |
+| rebounds · over | 0-0-0, +0.00u | 1-0-0, +0.28u (100%) |
+| rebounds · under | 0-0-0, +0.00u | 1-1-0, -0.01u (50%) |
+| assists · over | 3-3-0, +0.22u (50%) | 0-0-0, +0.00u |
+| assists · under | 3-4-0, -0.46u (43%) | 2-1-0, +0.23u (67%) |
 | threes · over | 0-0-0, +0.00u | 0-0-0, +0.00u |
-| threes · under | 0-0-0, +0.00u | 3-3-0, -0.20u (50%) |
+| threes · under | 0-0-0, +0.00u | 3-4-0, -0.45u (43%) |
 
 ## OG + threes shadow (owner 2026-11-12; never official)
 
 OG Ranking v2's rules with made threes eligible, chosen at 6:15 AM ET from Nov 13; graded only, 0.5u.
 
-| | OG official, same days | OG + threes shadow (threes only: 3-4-0, -0.90u) |
+| | OG official, same days | OG + threes shadow (threes only: 4-7-0, -1.94u) |
 |---|---|---|
-| Record (W-L-P) | 5-3-0 | 4-5-0 |
-| Win % | 62.5% | 44.4% |
-| Units (0.5u) | +1.18 | -0.98 |
-| ROI | +29.6% | -21.8% |
-| Average odds | +110 | -108 |
-| Picks per day | 5.0 (15 over 3 days) | 5.0 (15 over 3 days) |
-| Worst 3-day stretch | 5-3, +1.18u (2026-11-13 to 2026-11-15) | 4-5, -0.98u (2026-11-13 to 2026-11-15) |
+| Record (W-L-P) | 6-7-0 | 5-9-0 |
+| Win % | 46.2% | 35.7% |
+| Units (0.5u) | -0.24 | -2.52 |
+| ROI | -3.6% | -36.0% |
+| Average odds | +109 | -109 |
+| Picks per day | 5.0 (20 over 4 days) | 5.0 (20 over 4 days) |
+| Worst 3-day stretch | 3-6, -1.27u (2026-11-14 to 2026-11-16) | 5-9, -2.52u (2026-11-13 to 2026-11-15) |
 
 ### Threes earn-in bar (report only)
 
-- Same days (3): official OG 5-3-0 (62.5%) vs OG + threes shadow 4-5-0 (44.4%); threes on the shadow 3-4-0 (42.9%, 7 graded).
-- **Not enough yet:** 7 of 30 graded threes picks on the shadow. Nothing switches automatically; the owner decides.
+- Same days (4): official OG 6-7-0 (46.2%) vs OG + threes shadow 5-9-0 (35.7%); threes on the shadow 4-7-0 (36.4%, 11 graded).
+- **Not enough yet:** 11 of 30 graded threes picks on the shadow. Nothing switches automatically; the owner decides.
 
 ### OG + threes shadow, hindsight replay (Oct 31 - Nov 12)
 
@@ -74,11 +74,16 @@ F's weekly calibration (MODEL.md "F calibration") on each official pick: the car
 | 2026-11-14 | Tyrese Proctor over 2.5 assists | +120 | 50.1% | 44.2% | +10.2% | -2.7% | LEAN | LEAN | 2026-11-11 | win |
 | 2026-11-14 | Jarrett Allen under 1.5 assists | +104 | 54.9% | 50.0% | +11.9% | +2.0% | LEAN | LEAN | 2026-11-11 | void |
 | 2026-11-14 | Ausar Thompson over 4.5 assists | +110 | 50.9% | 45.2% | +6.9% | -5.1% | LEAN | LEAN | 2026-11-11 | win |
-| 2026-11-15 | Obi Toppin over 1.5 assists | +102 | 54.3% | 49.4% | +9.8% | -0.3% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-15 | Victor Wembanyama under 2.5 assists | +116 | 51.9% | 46.3% | +12.0% | +0.1% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-15 | Reed Sheppard under 4.5 assists | -126 | 60.9% | 57.4% | +9.2% | +3.0% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-15 | Tyler Herro under 4.5 assists | +116 | 53.2% | 48.0% | +15.0% | +3.7% | LEAN | LEAN | 2026-11-11 | pending |
-| 2026-11-15 | Brayden Burries under 2.5 assists | +124 | 53.2% | 47.9% | +19.1% | +7.4% | LEAN | LEAN | 2026-11-11 | pending |
+| 2026-11-15 | Obi Toppin over 1.5 assists | +102 | 54.3% | 49.4% | +9.8% | -0.3% | LEAN | LEAN | 2026-11-11 | loss |
+| 2026-11-15 | Victor Wembanyama under 2.5 assists | +116 | 51.9% | 46.3% | +12.0% | +0.1% | LEAN | LEAN | 2026-11-11 | loss |
+| 2026-11-15 | Reed Sheppard under 4.5 assists | -126 | 60.9% | 57.4% | +9.2% | +3.0% | LEAN | LEAN | 2026-11-11 | loss |
+| 2026-11-15 | Tyler Herro under 4.5 assists | +116 | 53.2% | 48.0% | +15.0% | +3.7% | LEAN | LEAN | 2026-11-11 | win |
+| 2026-11-15 | Brayden Burries under 2.5 assists | +124 | 53.2% | 47.9% | +19.1% | +7.4% | LEAN | LEAN | 2026-11-11 | loss |
+| 2026-11-16 | Derrick White under 4.5 assists | -106 | 56.2% | 52.8% | +9.3% | +2.6% | LEAN | LEAN | 2026-11-16 | pending |
+| 2026-11-16 | Jarrett Allen under 1.5 assists | -110 | 55.3% | 51.6% | +5.5% | -1.5% | LEAN | LEAN | 2026-11-16 | pending |
+| 2026-11-16 | Peyton Watson over 2.5 assists | +130 | 52.0% | 47.4% | +19.6% | +9.0% | LEAN | LEAN | 2026-11-16 | pending |
+| 2026-11-16 | Julius Randle under 4.5 assists | -104 | 54.9% | 51.1% | +7.7% | +0.2% | LEAN | LEAN | 2026-11-16 | pending |
+| 2026-11-16 | Reed Sheppard over 2.5 assists | +110 | 54.2% | 50.2% | +13.8% | +5.4% | LEAN | LEAN | 2026-11-16 | pending |
 
 ## Backtest (hindsight replay)
 

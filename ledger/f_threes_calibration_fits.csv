@@ -1,0 +1,2 @@
+model,fit_date,n,slope,intercept,fitted_at,status,reason
+F-threes,2026-11-16,71,,,2026-11-16T11:40:29.513867+00:00,rejected,n 71 < 200
