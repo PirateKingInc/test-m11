@@ -980,3 +980,8 @@ P7c6d4af120e4:filter,P7c6d4af120e4,filter,filtered: rebound unders,2026-11-18T16
 P7c6d4af120e4:f_cal,P7c6d4af120e4,f_cal,0.4525,2026-11-18T16:00:34+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
 P3031330b572f:filter,P3031330b572f,filter,filtered: not assists (OG),2026-11-18T19:00:36+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
 Peba1341a7d53:f_cal,Peba1341a7d53,f_cal,0.4338,2026-11-18T21:00:37+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P9efdcb0f1fc5:filter,P9efdcb0f1fc5,filter,filtered: non-assist prop,2026-11-18T23:00:34+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pe1455dd77b4c:f_cal,Pe1455dd77b4c,f_cal,0.4313,2026-11-18T23:00:34+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+Pa0fbe5c85ca4:f_cal,Pa0fbe5c85ca4,f_cal,0.4611,2026-11-18T23:00:34+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P5b7e64249ef9:f_cal,P5b7e64249ef9,f_cal,0.4399,2026-11-18T23:00:34+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P5da64be92fa0:f_cal,P5da64be92fa0,f_cal,0.4535,2026-11-18T23:00:34+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
