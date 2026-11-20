@@ -1269,3 +1269,8 @@ P0786f49dbeed:og_rank,P0786f49dbeed,og_rank,og: price outside -150..+130,2026-11
 Pe3a89109d54b:og_rank,Pe3a89109d54b,og_rank,og: price outside -150..+130,2026-11-20T11:15:45+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
 Pe0e94105f628:og_rank,Pe0e94105f628,og_rank,og: price outside -150..+130,2026-11-20T11:15:45+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
 P001193138bc8:og_rank,P001193138bc8,og_rank,og: median not on the bet's side,2026-11-20T11:15:45+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P8e8c18416453:filter,P8e8c18416453,filter,filtered: under 5.5+ assists,2026-11-20T13:00:39+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pfe63a6dd3fa0:filter,Pfe63a6dd3fa0,filter,filtered: rebound unders,2026-11-20T13:00:39+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P294b415cf9da:f_cal,P294b415cf9da,f_cal,0.4372,2026-11-20T13:00:39+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P8e8c18416453:f_cal,P8e8c18416453,f_cal,0.5760,2026-11-20T13:00:39+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+Pfe63a6dd3fa0:f_cal,Pfe63a6dd3fa0,f_cal,0.5206,2026-11-20T13:00:39+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
