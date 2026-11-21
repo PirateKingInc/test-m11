@@ -1328,3 +1328,60 @@ P73f051dc9468:f_cal,P73f051dc9468,f_cal,0.4733,2026-11-21T03:00:43+00:00,"F cali
 Pa25aaf0f5536:f_cal,Pa25aaf0f5536,f_cal,0.4065,2026-11-21T03:00:43+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
 P0e49da9c4c32:f_cal,P0e49da9c4c32,f_cal,0.4950,2026-11-21T03:00:43+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
 P528411498419:f_cal,P528411498419,f_cal,0.5015,2026-11-21T03:00:43+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+Pc4b9fb209cdb:filter,Pc4b9fb209cdb,filter,filtered: under 5.5+ assists,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P095f80b6cb5d:filter,P095f80b6cb5d,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P2e101604529a:filter,P2e101604529a,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P691d7aad44a1:filter,P691d7aad44a1,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P8819c9f9bf4e:filter,P8819c9f9bf4e,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P1780c2feb9ad:filter,P1780c2feb9ad,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P1b57bc988dcc:filter,P1b57bc988dcc,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P329dece95070:filter,P329dece95070,filter,filtered: under 5.5+ assists,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pe378144021db:filter,Pe378144021db,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P5b95ebc1a3dc:filter,P5b95ebc1a3dc,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pec7f3fb48ff0:filter,Pec7f3fb48ff0,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pc1cf923a420a:filter,Pc1cf923a420a,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P009ef6cdfed4:filter,P009ef6cdfed4,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P92b492653f2f:filter,P92b492653f2f,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pbf83cb08b0d8:filter,Pbf83cb08b0d8,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P9056f11b2e4b:filter,P9056f11b2e4b,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P2b9947ddd003:filter,P2b9947ddd003,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pc91a7d059d0c:filter,Pc91a7d059d0c,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P54948161de86:filter,P54948161de86,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pce09e973582a:filter,Pce09e973582a,filter,filtered: non-assist prop,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P8fd867674b2c:filter,P8fd867674b2c,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+P88a24e7e19a1:filter,P88a24e7e19a1,filter,filtered: rebound unders,2026-11-21T11:15:28+00:00,"rules v2 (owner 2026-11-09): not eligible for the cards, parlay or news alerts; still graded"
+Pc4b9fb209cdb:f_cal,Pc4b9fb209cdb,f_cal,0.4929,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P691d7aad44a1:f_cal,P691d7aad44a1,f_cal,0.4489,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P754fe486b23e:f_cal,P754fe486b23e,f_cal,0.4655,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P1b57bc988dcc:f_cal,P1b57bc988dcc,f_cal,0.4741,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P329dece95070:f_cal,P329dece95070,f_cal,0.4597,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+Pa7350f9c81d8:f_cal,Pa7350f9c81d8,f_cal,0.4654,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P2d6df77a9c14:f_cal,P2d6df77a9c14,f_cal,0.5109,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+Pc1cf923a420a:f_cal,Pc1cf923a420a,f_cal,0.4877,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P009ef6cdfed4:f_cal,P009ef6cdfed4,f_cal,0.4755,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P2e2108d682c1:f_cal,P2e2108d682c1,f_cal,0.4886,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P63fcd5a7d4d5:f_cal,P63fcd5a7d4d5,f_cal,0.4749,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+Pbf83cb08b0d8:f_cal,Pbf83cb08b0d8,f_cal,0.4543,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P9056f11b2e4b:f_cal,P9056f11b2e4b,f_cal,0.4907,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P2b9947ddd003:f_cal,P2b9947ddd003,f_cal,0.4483,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P71666051b6ea:f_cal,P71666051b6ea,f_cal,0.4293,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P641db3bd6fbf:f_cal,P641db3bd6fbf,f_cal,0.4480,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P54948161de86:f_cal,P54948161de86,f_cal,0.4545,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P4c76205a56cd:f_cal,P4c76205a56cd,f_cal,0.4518,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P8fd867674b2c:f_cal,P8fd867674b2c,f_cal,0.4761,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P88a24e7e19a1:f_cal,P88a24e7e19a1,f_cal,0.4520,2026-11-21T11:15:28+00:00,"F calibration fit 2026-11-16 (slope 1.285158, intercept -0.209199, n 742); owner 2026-11-12"
+P06d7d6fe3ef2:action_cap,P06d7d6fe3ef2,action_cap,threes cap,2026-11-21T11:15:34+00:00,Action threes cap (owner 2026-11-14): at most 1 threes pick a day; still graded
+P92b492653f2f:action_cap,P92b492653f2f,action_cap,threes cap,2026-11-21T11:15:34+00:00,Action threes cap (owner 2026-11-14): at most 1 threes pick a day; still graded
+P2e101604529a:action_cap,P2e101604529a,action_cap,threes cap,2026-11-21T11:15:34+00:00,Action threes cap (owner 2026-11-14): at most 1 threes pick a day; still graded
+P5b95ebc1a3dc:action_cap,P5b95ebc1a3dc,action_cap,threes cap,2026-11-21T11:15:34+00:00,Action threes cap (owner 2026-11-14): at most 1 threes pick a day; still graded
+P72814db5aa7b:og_rank,P72814db5aa7b,og_rank,og: median not on the bet's side,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P5b4773434c03:og_rank,P5b4773434c03,og_rank,og: price outside -150..+130,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+Pc7e4cf467e05:og_rank,Pc7e4cf467e05,og_rank,og: price outside -150..+130,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+Pbdb70a8b4ebf:og_rank,Pbdb70a8b4ebf,og_rank,og: price outside -150..+130,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P16d42a06f63e:og_rank,P16d42a06f63e,og_rank,og: price outside -150..+130,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P754fe486b23e:og_rank,P754fe486b23e,og_rank,og: price outside -150..+130,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P71666051b6ea:og_rank,P71666051b6ea,og_rank,og: median not on the bet's side,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P641db3bd6fbf:og_rank,P641db3bd6fbf,og_rank,og: price outside -150..+130,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+Pa7350f9c81d8:og_rank,Pa7350f9c81d8,og_rank,og: duplicate player,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P01b759656b1d:og_rank,P01b759656b1d,og_rank,og: outside top 5,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
+P4c76205a56cd:og_rank,P4c76205a56cd,og_rank,og: outside top 5,2026-11-21T11:15:34+00:00,OG Ranking v2 (owner 2026-11-11): not on the OG card; still graded
